@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic -std=c11
+CFLAGS=-Wall -Wextra -Wpedantic -std=c11 -pthread
 SRC=src/main.c
-BIN=socket_app
+BIN=talksphere
 
 all: $(BIN)
 

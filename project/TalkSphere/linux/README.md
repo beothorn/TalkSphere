@@ -1,10 +1,10 @@
-# Linux Socket Client/Server (Ports 8513 and 8512)
+# TalkSphere Linux Socket Demo
 
 This project is a **learning-focused** C socket example.
 
-It contains one program (`socket_app`) that can run in two modes:
-- **Server mode**: listens on TCP port **8513**.
-- **Client mode**: binds to local TCP port **8512**, connects to server port **8513**, and sends a message.
+It contains one program (`talksphere`) that runs as both client and server at the same time:
+- **Server side**: listens on TCP port **8513** by default.
+- **Client side**: binds to local TCP port **8512** by default, connects to the local server side, and sends a message.
 
 ## Project Structure
 
@@ -25,39 +25,74 @@ make
 ```
 
 Output binary:
-- `./socket_app`
+- `./talksphere`
 
 ## Run
 
-### 1) Start server (terminal 1)
+Run with default ports:
 
 ```bash
-./socket_app server
+./talksphere
 ```
 
-### 2) Start client (terminal 2)
+Run with custom ports:
 
 ```bash
-./socket_app client <server_ip> "<message>"
+./talksphere <client_port> <server_port>
 ```
 
-Example on same machine:
+Example:
 
 ```bash
-./socket_app client 127.0.0.1 "Hello from client"
+./talksphere 8999 9898
+```
+
+## Test
+
+Build the binary first:
+
+```bash
+make clean all
+```
+
+Test the default ports:
+
+```bash
+./talksphere
+```
+
+Expected output should look like:
+
+```text
+Server listening on port 8513...
+Sent message to 127.0.0.1:8513 from local port 8512
+Received from 127.0.0.1:8512 -> Hello from TalkSphere
+```
+
+Test custom ports:
+
+```bash
+./talksphere 8999 9898
+```
+
+Expected output should look like:
+
+```text
+Server listening on port 9898...
+Sent message to 127.0.0.1:9898 from local port 8999
+Received from 127.0.0.1:8999 -> Hello from TalkSphere
 ```
 
 ## What to Observe (Learning Notes)
 
-- The server prints `Received from <ip>:8512 -> ...` because the client explicitly binds to local port `8512` before connecting.
-- The server listens on `8513`, so client destination is always `<server_ip>:8513`.
+- With defaults, the server prints `Received from <ip>:8512 -> ...` because the client explicitly binds to local port `8512` before connecting.
+- With `./talksphere 8999 9898`, the client binds on `8999` and the server listens on `9898`.
 - The code comments in `src/main.c` explain each socket API step (`socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv`) and *why* it is done.
 
 ## Troubleshooting
 
-- If `bind: Address already in use` appears for client, something is already using local port `8512`.
-- If `connect` fails, ensure server is running and firewalls allow TCP `8513`.
-- If testing across machines, use the server machine's reachable IP (not `127.0.0.1`).
+- If `bind: Address already in use` appears, something is already using one of the configured ports.
+- Client and server ports must be different.
 
 ## Clean
 
