@@ -12,8 +12,15 @@ It contains one program (`talksphere`) that runs as both client and server at th
 linux/
 ├── Makefile
 ├── README.md
+├── tests/
+│   └── run_tests.sh
 └── src/
-    └── main.c
+    ├── logging.h
+    ├── main.c
+    ├── program_arguments.c
+    ├── program_arguments.h
+    ├── socket_basics.c
+    └── socket_basics.h
 ```
 
 ## Build
@@ -47,12 +54,40 @@ Example:
 ./talksphere 8999 9898
 ```
 
+## Log Level
+
+By default, TalkSphere prints `info`, `warn`, `error`, and `fatal` logs.
+
+Use `TALKSPHERE_LOG_LEVEL` to choose the minimum log level:
+
+```bash
+TALKSPHERE_LOG_LEVEL=trace ./talksphere
+TALKSPHERE_LOG_LEVEL=debug ./talksphere 8999 9898
+TALKSPHERE_LOG_LEVEL=warn ./talksphere
+```
+
+Accepted values:
+- `trace`
+- `debug`
+- `info`
+- `warn`
+- `error`
+- `fatal`
+
+Missing or unknown values use `info`.
+
 ## Test
 
 Build the binary first:
 
 ```bash
 make clean all
+```
+
+Run the automated happy-path and error-path checks:
+
+```bash
+make test
 ```
 
 Test the default ports:

@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -Wpedantic -std=c11 -pthread
-SRC=src/main.c
+SRC=$(wildcard src/*.c)
 BIN=talksphere
 
 all: $(BIN)
@@ -11,4 +11,7 @@ $(BIN): $(SRC)
 clean:
 	rm -f $(BIN)
 
-.PHONY: all clean
+test: all
+	./tests/run_tests.sh
+
+.PHONY: all clean test

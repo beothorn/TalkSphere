@@ -10,6 +10,15 @@ static int parse_port(
 Variable name refers to what the variable is, not what it should do. Example:  
 Prefer `server_address` over `server_address_to_connect_after_starting`  
 
+Comment on the variable. Example:  
+```
+server_file_descriptor = socket(
+    AF_INET, // AF_INET = IPv4
+    SOCK_STREAM, // SOCK_STREAM = TCP stream socket.
+    DEFAULT_SOCKET_PROTOCOL
+);
+```
+
 Prefer breaking down function instead of commenting.  
 Prefer to put functions related to the same responsability in a separate file.  
 Use folders to organize code, try to organize by domain instead of technology. Example:  
