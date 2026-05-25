@@ -1,136 +1,58 @@
-# TalkSphere
+# TalkSphere (Linux Prototype)
 
-This project is a p2p resorce sharing and messaging.   
-
-It contains one program (`talksphere`) that runs as both client and server at the same time:
-- **Server side**: listens on TCP port **8513** by default.
-- **Client side**: binds to local TCP port **8512** by default, connects to the local server side, and sends a message.
-
-## Project Structure
-
-```
-linux/
-├── Makefile
-├── README.md
-├── tests/
-│   └── run_tests.sh
-└── src/
-    ├── logging.h
-    ├── main.c
-    ├── program_arguments.c
-    ├── program_arguments.h
-    ├── socket_basics.c
-    └── socket_basics.h
-```
+This prototype runs one server instance per process and waits for inbound TCP messages.
 
 ## Build
-
-From the `linux` folder:
 
 ```bash
 make
 ```
 
-Output binary:
-- `./talksphere`
-
 ## Run
 
-Run with default ports:
-
 ```bash
-./talksphere
+./talksphere <instance_port> <reserved_port>
 ```
 
-Run with custom ports:
+- `instance_port`: the TCP port where this TalkSphere instance listens.
+- `reserved_port`: reserved for next iterations (today we only validate it and keep it different from `instance_port`).
 
+## Current Messages
+
+- `CONNECT:<target_host>:<target_port>,FROM:<reply_host>:<reply_port>`
+  - When received, the instance connects to `<target_host>:<target_port>` and sends `MESSAGE:Hello`.
+  - Then it connects to `<reply_host>:<reply_port>` and sends `MESSAGE:Hello`.
+- `MESSAGE:<text>`
+  - When received, the instance prints `<text>`.
+
+## Step-by-step demo with two instances and nc
+
+Terminal 1:
 ```bash
-./talksphere <client_port> <server_port>
+./talksphere 8734 8999
 ```
 
-Example:
-
+Terminal 2:
 ```bash
-./talksphere 8999 9898
+./talksphere 8735 9898
 ```
 
-## Log Level
-
-By default, TalkSphere prints `info`, `warn`, `error`, and `fatal` logs.
-
-Use `TALKSPHERE_LOG_LEVEL` to choose the minimum log level:
-
+Terminal 3 (listen for the callback hello on port 8999):
 ```bash
-TALKSPHERE_LOG_LEVEL=trace ./talksphere
-TALKSPHERE_LOG_LEVEL=debug ./talksphere 8999 9898
-TALKSPHERE_LOG_LEVEL=warn ./talksphere
+nc -l 8999
 ```
 
-Accepted values:
-- `trace`
-- `debug`
-- `info`
-- `warn`
-- `error`
-- `fatal`
+Terminal 4 (send connect command to instance 1):
+```bash
+printf 'CONNECT:localhost:8735,FROM:localhost:8999' | nc -N localhost 8734
+```
 
-Missing or unknown values use `info`.
+Expected result:
+- Terminal 2 prints `Hello` (instance 2 received `MESSAGE:Hello`).
+- Terminal 3 receives `MESSAGE:Hello` (callback path from instance 1).
 
 ## Test
 
-Build the binary first:
-
-```bash
-make clean all
-```
-
-Run the automated happy-path and error-path checks:
-
 ```bash
 make test
-```
-
-Test the default ports:
-
-```bash
-./talksphere
-```
-
-Expected output should look like:
-
-```text
-Server listening on port 8513...
-Sent message to 127.0.0.1:8513 from local port 8512
-Received from 127.0.0.1:8512 -> Hello from TalkSphere
-```
-
-Test custom ports:
-
-```bash
-./talksphere 8999 9898
-```
-
-Expected output should look like:
-
-```text
-Server listening on port 9898...
-Sent message to 127.0.0.1:9898 from local port 8999
-Received from 127.0.0.1:8999 -> Hello from TalkSphere
-```
-
-## What to Observe (Learning Notes)
-
-- With defaults, the server prints `Received from <ip>:8512 -> ...` because the client explicitly binds to local port `8512` before connecting.
-- With `./talksphere 8999 9898`, the client binds on `8999` and the server listens on `9898`.
-- The code comments in `src/main.c` explain each socket API step (`socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv`) and *why* it is done.
-
-## Troubleshooting
-
-- If `bind: Address already in use` appears, something is already using one of the configured ports.
-- Client and server ports must be different.
-
-## Clean
-
-```bash
-make clean
 ```
