@@ -1,6 +1,6 @@
-# TalkSphere Linux Socket Demo
+# TalkSphere
 
-This project is a **learning-focused** C socket example.
+This project is a p2p resorce sharing and messaging.   
 
 It contains one program (`talksphere`) that runs as both client and server at the same time:
 - **Server side**: listens on TCP port **8513** by default.
