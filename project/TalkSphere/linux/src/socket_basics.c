@@ -3,16 +3,13 @@
 #include "logging.h"
 
 #include <arpa/inet.h>
-#include <errno.h>
 #include <netinet/in.h>
-#include <pthread.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
@@ -23,26 +20,22 @@
 #define STRING_TERMINATOR '\0'
 #define DEFAULT_SOCKET_PROTOCOL 0
 #define ENABLE_SOCKET_OPTION 1
-#define LISTEN_BACKLOG 1
-#define SERVER_WAIT_TIMEOUT_SECONDS 5
-#define SERVER_WAIT_TIMEOUT_MICROSECONDS 0
-#define NO_READY_FILE_DESCRIPTORS 0
-#define SELECT_FILE_DESCRIPTOR_COUNT_OFFSET 1
+#define LISTEN_BACKLOG 8
 #define RECEIVE_BUFFER_TERMINATOR_SPACE 1
 #define RECEIVE_FLAGS 0
 #define SEND_FLAGS 0
 #define INVALID_INET_PTON_RESULT 0
-#define SERVER_START_DELAY_SECONDS 1
 
-#define DEFAULT_SERVER_IP "127.0.0.1"
-#define DEFAULT_MESSAGE "Hello from TalkSphere"
+#define CONNECT_PREFIX "CONNECT:"
+#define FROM_PREFIX ",FROM:"
+#define MESSAGE_PREFIX "MESSAGE:"
+#define DEFAULT_CONNECT_HOST "127.0.0.1"
 
-struct server_config {
-    int server_port;
-};
-
-struct server_result {
-    int exit_code;
+struct connect_instruction {
+    char target_host[INET_ADDRSTRLEN];
+    int target_port;
+    char reply_host[INET_ADDRSTRLEN];
+    int reply_port;
 };
 
 static int configure_reusable_socket(
@@ -73,17 +66,9 @@ static void build_local_address(
     int local_port
 ) {
     TALKSPHERE_LOG_TRACE("build_local_address(): now we build an IPv4 address that binds on every local interface");
-    TALKSPHERE_LOG_DEBUG(
-        "Building local socket address for port %d",
-        local_port
-    );
+    TALKSPHERE_LOG_DEBUG("Building local socket address for port %d", local_port);
 
-    memset(
-        local_address,
-        STRUCT_ZERO_FILL,
-        sizeof(*local_address)
-    );
-
+    memset(local_address, STRUCT_ZERO_FILL, sizeof(*local_address));
     local_address->sin_family = AF_INET; // AF_INET tells the kernel this is an IPv4 address.
     local_address->sin_addr.s_addr = htonl(INADDR_ANY); // INADDR_ANY accepts local traffic on any interface.
     local_address->sin_port = htons((uint16_t)local_port); // sockaddr_in stores ports in network byte order.
@@ -91,37 +76,22 @@ static void build_local_address(
 
 static int build_remote_address(
     struct sockaddr_in *remote_address,
-    const char *server_ip,
-    int server_port
+    const char *remote_host,
+    int remote_port
 ) {
-    TALKSPHERE_LOG_TRACE("build_remote_address(): now we build the IPv4 address for the server endpoint");
-    TALKSPHERE_LOG_DEBUG(
-        "Building remote socket address for %s:%d",
-        server_ip,
-        server_port
-    );
+    TALKSPHERE_LOG_TRACE("build_remote_address(): now we build an IPv4 address for a remote endpoint");
+    TALKSPHERE_LOG_DEBUG("Building remote address for %s:%d", remote_host, remote_port);
 
-    memset(
-        remote_address,
-        STRUCT_ZERO_FILL,
-        sizeof(*remote_address)
-    );
+    memset(remote_address, STRUCT_ZERO_FILL, sizeof(*remote_address));
+    remote_address->sin_family = AF_INET; // AF_INET tells connect that this is an IPv4 endpoint.
+    remote_address->sin_port = htons((uint16_t)remote_port); // TCP expects network byte order.
 
-    remote_address->sin_family = AF_INET; // AF_INET tells connect that this is an IPv4 server.
-    remote_address->sin_port = htons((uint16_t)server_port); // TCP expects network byte order here.
+    if (strcmp(remote_host, "localhost") == 0) {
+        remote_host = DEFAULT_CONNECT_HOST;
+    }
 
-    if (inet_pton(
-            AF_INET,
-            server_ip,
-            &remote_address->sin_addr
-        ) <= INVALID_INET_PTON_RESULT
-    ) {
-        TALKSPHERE_LOG_ERROR("The server IP is unwanted because it cannot be converted into an IPv4 address");
-        fprintf(
-            stderr,
-            "Invalid server IP: %s\n",
-            server_ip
-        );
+    if (inet_pton(AF_INET, remote_host, &remote_address->sin_addr) <= INVALID_INET_PTON_RESULT) {
+        TALKSPHERE_LOG_WARN("The remote host is unwanted because it cannot be converted into an IPv4 address");
         return TALKSPHERE_FAILURE;
     }
 
@@ -131,11 +101,7 @@ static int build_remote_address(
 static int create_tcp_socket(void) {
     TALKSPHERE_LOG_TRACE("create_tcp_socket(): now we ask the kernel for an IPv4 TCP socket");
 
-    int socket_file_descriptor = socket(
-        AF_INET, // AF_INET = IPv4.
-        SOCK_STREAM, // SOCK_STREAM = TCP stream socket.
-        DEFAULT_SOCKET_PROTOCOL
-    );
+    int socket_file_descriptor = socket(AF_INET, SOCK_STREAM, DEFAULT_SOCKET_PROTOCOL);
 
     if (socket_file_descriptor == SYSTEM_CALL_FAILED) {
         TALKSPHERE_LOG_ERROR("socket failed so no network endpoint can be created");
@@ -146,101 +112,126 @@ static int create_tcp_socket(void) {
     return socket_file_descriptor;
 }
 
-static int wait_for_client_connection(
-    int server_file_descriptor
+static int parse_connect_instruction(
+    const char *message_text,
+    struct connect_instruction *connect_instruction
 ) {
-    TALKSPHERE_LOG_TRACE("wait_for_client_connection(): now we wait briefly until the server socket is readable");
+    TALKSPHERE_LOG_TRACE("parse_connect_instruction(): now we parse a connect request coming from an external caller");
+    TALKSPHERE_LOG_DEBUG("Parsing instruction text: %s", message_text);
 
-    fd_set read_file_descriptors;
-    FD_ZERO(&read_file_descriptors); // Clear the set before adding file descriptors.
-    FD_SET(
-        server_file_descriptor,
-        &read_file_descriptors
-    ); // Monitor the server socket for incoming connections.
-
-    struct timeval timeout;
-    timeout.tv_sec = SERVER_WAIT_TIMEOUT_SECONDS;
-    timeout.tv_usec = SERVER_WAIT_TIMEOUT_MICROSECONDS;
-
-    int ready_file_descriptor_count = select(
-        server_file_descriptor + SELECT_FILE_DESCRIPTOR_COUNT_OFFSET,
-        &read_file_descriptors,
-        NULL,
-        NULL,
-        &timeout
+    int scanned_fields = sscanf(
+        message_text,
+        "CONNECT:%15[^:]:%d,FROM:%15[^:]:%d",
+        connect_instruction->target_host,
+        &connect_instruction->target_port,
+        connect_instruction->reply_host,
+        &connect_instruction->reply_port
     );
 
-    if (ready_file_descriptor_count == SYSTEM_CALL_FAILED) {
-        TALKSPHERE_LOG_ERROR("select failed so the server cannot know whether a client is waiting");
-        perror("select");
-        return TALKSPHERE_FAILURE;
-    }
-
-    if (ready_file_descriptor_count == NO_READY_FILE_DESCRIPTORS) {
-        TALKSPHERE_LOG_WARN("Waiting timed out because no client connected before the demo timeout");
-        fprintf(
-            stderr,
-            "Timed out waiting for a client connection.\n"
-        );
+    if (scanned_fields != 4) {
+        TALKSPHERE_LOG_WARN("The input message is unwanted because it does not match the CONNECT message shape");
         return TALKSPHERE_FAILURE;
     }
 
     return TALKSPHERE_SUCCESS;
 }
 
-static int receive_client_message(
-    int connected_client_file_descriptor,
-    const struct sockaddr_in *client_address
+static int send_message_to_endpoint(
+    const char *remote_host,
+    int remote_port,
+    const char *message_text
 ) {
-    TALKSPHERE_LOG_TRACE("receive_client_message(): now we receive bytes and print them as a message");
+    TALKSPHERE_LOG_TRACE("send_message_to_endpoint(): now we open an outgoing connection and send a single message");
+    TALKSPHERE_LOG_DEBUG("Sending '%s' to %s:%d", message_text, remote_host, remote_port);
 
-    char receive_buffer[BUFFER_SIZE];
-
-    ssize_t bytes_read = recv(
-        connected_client_file_descriptor,
-        receive_buffer,
-        sizeof(receive_buffer) - RECEIVE_BUFFER_TERMINATOR_SPACE,
-        RECEIVE_FLAGS
-    );
-
-    if (bytes_read == SYSTEM_CALL_FAILED) {
-        TALKSPHERE_LOG_ERROR("recv failed so the server could not read the client message");
-        perror("recv");
+    int client_file_descriptor = create_tcp_socket();
+    if (client_file_descriptor == SOCKET_NOT_CREATED_YET) {
         return TALKSPHERE_FAILURE;
     }
 
-    TALKSPHERE_LOG_DEBUG(
-        "Received %zd bytes from client",
-        bytes_read
-    );
+    struct sockaddr_in remote_address;
+    if (build_remote_address(&remote_address, remote_host, remote_port) != TALKSPHERE_SUCCESS) {
+        close(client_file_descriptor);
+        return TALKSPHERE_FAILURE;
+    }
 
-    receive_buffer[bytes_read] = STRING_TERMINATOR; // Make received bytes printable as a C string.
+    if (connect(client_file_descriptor, (struct sockaddr *)&remote_address, sizeof(remote_address)) == SYSTEM_CALL_FAILED) {
+        TALKSPHERE_LOG_ERROR("connect failed so this peer could not reach the requested remote endpoint");
+        perror("connect");
+        close(client_file_descriptor);
+        return TALKSPHERE_FAILURE;
+    }
 
-    char client_ip[INET_ADDRSTRLEN] = {STRUCT_ZERO_FILL};
-    inet_ntop(
-        AF_INET,
-        &client_address->sin_addr,
-        client_ip,
-        sizeof(client_ip)
-    );
+    size_t message_length = strlen(message_text);
+    ssize_t sent_bytes_count = send(client_file_descriptor, message_text, message_length, SEND_FLAGS);
+    if (sent_bytes_count != (ssize_t)message_length) {
+        TALKSPHERE_LOG_ERROR("send failed so the remote endpoint did not receive the full message");
+        perror("send");
+        close(client_file_descriptor);
+        return TALKSPHERE_FAILURE;
+    }
 
-    printf(
-        "Received from %s:%d -> %s\n",
-        client_ip,
-        ntohs(client_address->sin_port),
-        receive_buffer
-    );
-
+    close(client_file_descriptor);
     return TALKSPHERE_SUCCESS;
 }
 
-static int run_server(
+static int handle_connect_instruction(
+    const struct connect_instruction *connect_instruction,
     int server_port
 ) {
-    TALKSPHERE_LOG_TRACE("run_server(): now the server opens a socket, waits for one client, and reads one message");
+    TALKSPHERE_LOG_TRACE("handle_connect_instruction(): now this server connects to the target and sends a hello to the caller endpoint");
+
+    if (connect_instruction->target_port == server_port) {
+        TALKSPHERE_LOG_WARN("The target port is unwanted because it would cause a self-loop connection");
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (send_message_to_endpoint(connect_instruction->target_host, connect_instruction->target_port, "MESSAGE:Hello") != TALKSPHERE_SUCCESS) {
+        TALKSPHERE_LOG_WARN("The target peer could not be reached so the chain request cannot complete");
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (send_message_to_endpoint(connect_instruction->reply_host, connect_instruction->reply_port, "MESSAGE:Hello") != TALKSPHERE_SUCCESS) {
+        TALKSPHERE_LOG_WARN("The reply endpoint could not be reached so the caller did not receive the hello message");
+        return TALKSPHERE_FAILURE;
+    }
+
+    TALKSPHERE_LOG_INFO("A CONNECT request completed and hello was sent");
+    return TALKSPHERE_SUCCESS;
+}
+
+static int process_received_message(
+    const char *message_text,
+    int server_port
+) {
+    TALKSPHERE_LOG_TRACE("process_received_message(): now we branch based on the incoming message type");
+
+    if (strncmp(message_text, CONNECT_PREFIX, strlen(CONNECT_PREFIX)) == 0) {
+        struct connect_instruction connect_instruction;
+        if (parse_connect_instruction(message_text, &connect_instruction) != TALKSPHERE_SUCCESS) {
+            return TALKSPHERE_FAILURE;
+        }
+        return handle_connect_instruction(&connect_instruction, server_port);
+    }
+
+    if (strncmp(message_text, MESSAGE_PREFIX, strlen(MESSAGE_PREFIX)) == 0) {
+        const char *message_payload = message_text + strlen(MESSAGE_PREFIX);
+        printf("%s\n", message_payload);
+        fflush(stdout);
+        TALKSPHERE_LOG_INFO("A peer message was printed to stdout");
+        return TALKSPHERE_SUCCESS;
+    }
+
+    TALKSPHERE_LOG_WARN("The message type is unwanted because this server only knows CONNECT and MESSAGE");
+    return TALKSPHERE_FAILURE;
+}
+
+int run_socket_basics(
+    const struct program_arguments *program_arguments
+) {
+    TALKSPHERE_LOG_TRACE("run_socket_basics(): now we run one server instance and process incoming connections forever");
 
     int server_file_descriptor = create_tcp_socket();
-
     if (server_file_descriptor == SOCKET_NOT_CREATED_YET) {
         return TALKSPHERE_FAILURE;
     }
@@ -251,234 +242,63 @@ static int run_server(
     }
 
     struct sockaddr_in server_address;
-    build_local_address(
-        &server_address,
-        server_port
-    );
+    build_local_address(&server_address, program_arguments->client_port);
 
-    if (bind(
-            server_file_descriptor,
-            (struct sockaddr *)&server_address,
-            sizeof(server_address)
-        ) == SYSTEM_CALL_FAILED
-    ) {
+    if (bind(server_file_descriptor, (struct sockaddr *)&server_address, sizeof(server_address)) == SYSTEM_CALL_FAILED) {
         TALKSPHERE_LOG_ERROR("bind failed so the server cannot listen on the requested port");
         perror("bind");
         close(server_file_descriptor);
         return TALKSPHERE_FAILURE;
     }
 
-    if (listen(
-            server_file_descriptor,
-            LISTEN_BACKLOG
-        ) == SYSTEM_CALL_FAILED
-    ) {
+    if (listen(server_file_descriptor, LISTEN_BACKLOG) == SYSTEM_CALL_FAILED) {
         TALKSPHERE_LOG_ERROR("listen failed so the server cannot accept client connections");
         perror("listen");
         close(server_file_descriptor);
         return TALKSPHERE_FAILURE;
     }
 
-    TALKSPHERE_LOG_INFO("Server is listening successfully");
-    printf(
-        "Server listening on port %d...\n",
-        server_port
-    );
+    TALKSPHERE_LOG_INFO("Server is listening for peer messages");
+    printf("Server listening on port %d...\n", program_arguments->client_port);
 
-    if (wait_for_client_connection(server_file_descriptor) != TALKSPHERE_SUCCESS) {
-        close(server_file_descriptor);
-        return TALKSPHERE_FAILURE;
+    while (true) {
+        TALKSPHERE_LOG_TRACE("run_socket_basics(): now the loop waits for the next connection");
+
+        struct sockaddr_in client_address;
+        socklen_t client_address_length = sizeof(client_address);
+        int connected_client_file_descriptor = accept(
+            server_file_descriptor,
+            (struct sockaddr *)&client_address,
+            &client_address_length
+        );
+
+        if (connected_client_file_descriptor == SYSTEM_CALL_FAILED) {
+            TALKSPHERE_LOG_ERROR("accept failed so the server could not receive the waiting client");
+            perror("accept");
+            continue;
+        }
+
+        char receive_buffer[BUFFER_SIZE];
+        ssize_t read_bytes_count = recv(
+            connected_client_file_descriptor,
+            receive_buffer,
+            sizeof(receive_buffer) - RECEIVE_BUFFER_TERMINATOR_SPACE,
+            RECEIVE_FLAGS
+        );
+
+        if (read_bytes_count == SYSTEM_CALL_FAILED) {
+            TALKSPHERE_LOG_WARN("recv failed so this specific connection could not be parsed");
+            perror("recv");
+            close(connected_client_file_descriptor);
+            continue;
+        }
+
+        receive_buffer[read_bytes_count] = STRING_TERMINATOR;
+        TALKSPHERE_LOG_DEBUG("Received message text: %s", receive_buffer);
+
+        process_received_message(receive_buffer, program_arguments->client_port);
+        close(connected_client_file_descriptor);
     }
 
-    struct sockaddr_in client_address;
-    socklen_t client_address_length = sizeof(client_address);
-
-    int connected_client_file_descriptor = accept(
-        server_file_descriptor,
-        (struct sockaddr *)&client_address,
-        &client_address_length
-    );
-
-    if (connected_client_file_descriptor == SYSTEM_CALL_FAILED) {
-        TALKSPHERE_LOG_ERROR("accept failed so the server could not receive the waiting client");
-        perror("accept");
-        close(server_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    int receive_status = receive_client_message(
-        connected_client_file_descriptor,
-        &client_address
-    );
-
-    close(connected_client_file_descriptor);
-    close(server_file_descriptor);
-    return receive_status;
-}
-
-static void *server_thread_main(
-    void *raw_config
-) {
-    TALKSPHERE_LOG_TRACE("server_thread_main(): now we run the server on a background thread");
-
-    struct server_config *server_config = (struct server_config *)raw_config;
-    struct server_result *server_result = malloc(sizeof(*server_result));
-
-    if (server_result == NULL) {
-        TALKSPHERE_LOG_ERROR("malloc failed so the server thread cannot return a structured result");
-        perror("malloc");
-        return NULL;
-    }
-
-    server_result->exit_code = run_server(server_config->server_port);
-    return server_result;
-}
-
-static int run_client(
-    const char *server_ip,
-    const char *message,
-    int client_port,
-    int server_port
-) {
-    TALKSPHERE_LOG_TRACE("run_client(): now the client binds locally, connects to the server, and sends one message");
-
-    int client_file_descriptor = create_tcp_socket();
-
-    if (client_file_descriptor == SOCKET_NOT_CREATED_YET) {
-        return TALKSPHERE_FAILURE;
-    }
-
-    if (configure_reusable_socket(client_file_descriptor) != TALKSPHERE_SUCCESS) {
-        close(client_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    struct sockaddr_in local_address;
-    build_local_address(
-        &local_address,
-        client_port
-    );
-
-    if (bind(
-            client_file_descriptor,
-            (struct sockaddr *)&local_address,
-            sizeof(local_address)
-        ) == SYSTEM_CALL_FAILED
-    ) {
-        TALKSPHERE_LOG_ERROR("bind failed so the client cannot use the requested source port");
-        perror("bind");
-        close(client_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    struct sockaddr_in server_address;
-
-    if (build_remote_address(
-            &server_address,
-            server_ip,
-            server_port
-        ) != TALKSPHERE_SUCCESS
-    ) {
-        close(client_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    if (connect(
-            client_file_descriptor,
-            (struct sockaddr *)&server_address,
-            sizeof(server_address)
-        ) == SYSTEM_CALL_FAILED
-    ) {
-        TALKSPHERE_LOG_ERROR("connect failed so the client could not reach the local demo server");
-        perror("connect");
-        close(client_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    size_t message_length = strlen(message);
-    ssize_t bytes_sent = send(
-        client_file_descriptor,
-        message,
-        message_length,
-        SEND_FLAGS
-    );
-
-    if (bytes_sent != (ssize_t)message_length) {
-        TALKSPHERE_LOG_ERROR("send failed so the demo message may not have reached the server");
-        perror("send");
-        close(client_file_descriptor);
-        return TALKSPHERE_FAILURE;
-    }
-
-    TALKSPHERE_LOG_INFO("Client sent the demo message successfully");
-    printf(
-        "Sent message to %s:%d from local port %d\n",
-        server_ip,
-        server_port,
-        client_port
-    );
-
-    close(client_file_descriptor);
     return TALKSPHERE_SUCCESS;
-}
-
-int run_socket_basics(
-    const struct program_arguments *program_arguments
-) {
-    TALKSPHERE_LOG_TRACE("run_socket_basics(): now we coordinate the server thread and the client run");
-
-    struct server_config server_config = {
-        .server_port = program_arguments->server_port
-    };
-    pthread_t server_thread;
-
-    int thread_status = pthread_create(
-        &server_thread,
-        NULL,
-        server_thread_main,
-        &server_config
-    );
-
-    if (thread_status != TALKSPHERE_SUCCESS) {
-        TALKSPHERE_LOG_ERROR("pthread_create failed so the server cannot run beside the client");
-        errno = thread_status;
-        perror("pthread_create");
-        return TALKSPHERE_FAILURE;
-    }
-
-    sleep(SERVER_START_DELAY_SECONDS);
-
-    int client_status = run_client(
-        DEFAULT_SERVER_IP,
-        DEFAULT_MESSAGE,
-        program_arguments->client_port,
-        program_arguments->server_port
-    );
-
-    void *raw_thread_result = NULL;
-    thread_status = pthread_join(
-        server_thread,
-        &raw_thread_result
-    );
-
-    if (thread_status != TALKSPHERE_SUCCESS) {
-        TALKSPHERE_LOG_ERROR("pthread_join failed so the server result cannot be collected");
-        errno = thread_status;
-        perror("pthread_join");
-        return TALKSPHERE_FAILURE;
-    }
-
-    int server_status = TALKSPHERE_FAILURE;
-
-    if (raw_thread_result != NULL) {
-        struct server_result *server_result = (struct server_result *)raw_thread_result;
-        server_status = server_result->exit_code;
-        free(server_result);
-    }
-
-    if (client_status == TALKSPHERE_SUCCESS && server_status == TALKSPHERE_SUCCESS) {
-        TALKSPHERE_LOG_INFO("Socket basics demo finished successfully");
-    }
-
-    return client_status != TALKSPHERE_SUCCESS ? client_status : server_status;
 }
