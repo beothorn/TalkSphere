@@ -1,7 +1,7 @@
 # TalkSphere Docs
 
 TalkSphere is a peer-to-peer network built around these principles: 
-- decentralized  
+- Decentralized  
 - resource sharing  
 - trust-based reachability  
 - hardware independence  
@@ -29,3 +29,70 @@ This way, there is a much more direct relation between what you get from service
 # Hardware independence
 
 Since your data is spread among trusted peers, you can always get you data back as long as you have your private/public key pair.  
+
+# Notes
+
+Every user needs a random unique ID  
+Every user needs keys for signing and a pair of keys for encrypting  
+
+Needs to define Talksphere api and glossary
+
+Identity: A person or a service denoted by a unique id
+Challenge: Something that gives credits, can be keep something on storage, do some calculation or anything.
+Credits: A debt between two identities. Both needs to keep track of credits owned/owed. Debts can be transferred, but it is a process that involves the three parties, new credit owner, old owner and the credit giver. A credit is always between two entities. 
+
+Problem: who spends the credit, and when? It is like both sides have an infinite pile of credits
+Credits cannot be twosided
+When a service is provided, a decision is needed. Do I pay with the service provider credits or with mine?
+The service provider may require their own credit. So for example
+CentralMessageHub wants storage to be payed with their own credits
+Alice wants to store a message, but CentralMessageHub does not want to get paid with Alice credits, but with CentralMessageHub credits
+So, for Alice, it is ok to be paid either Alice credits or CentralMessageHub credits for her storage, but for CentralMessageHub, only CentralMessageHub counts
+
+Unless there is some service Alice only accepts Alice credits, Alice credits are useless.
+
+
+Messaging app
+Dashboard app
+Find people app
+Public Identity app
+
+Credit giving actions are open to anyone
+
+Credit giving actions
+
+Store data
+Store and deliver package from Alice to Bob async (need identifying id and challenge keys)
+Custom usage (credits for api usage)
+
+Messaging app
+
+The messaging uses TalkSphere to send/receive messages
+
+Alice wants to send message to Bob
+Alice has no public IP, Bob has no public IP
+CentralMessageHub and AlternativeMessageHub have fixed public ip
+Alice wants to use CentralMessageHub and AlternativeMessageHub
+CentralMessageHub and AlternativeMessageHub offers some credit earning functions like storage per time per credit
+Alice stores data for CentralMessageHub and AlternativeMessageHub and get AlternativeMessageHub credits
+Alice signs a message (from her to Bob), encrypts it with Bob key so only he can read and sends it to CentralMessageHub and and AlternativeMessageHub using the credits she got from storing stuff. CentralMessageHub and AlternativeMessageHub promises to keep the message for the agreed time until Bob picks it
+Bob search for messages for him in all his hubs (spending credits he got earlier)
+CentralMessageHub tells Bob there is a message to him from Alice (all with uids, CentralMessageHub actually does not know Alice or Bob by name)
+Bob spend someCentralMessageHub credits and recovers the message
+Bob signs the message hash as delivered, so CentralMessageHub can tell Alice it was delivered next time she asks (with signed proof)  
+When CentralMessageHub prove to Alice it delivered the message, Alice trust in CentralMessageHub grows.
+
+The app that write and reads the message is not Talksphere, but talks to talksphere
+
+Dashboard app
+
+Similar, but CentralDashboard stores plain broadcast messages signed
+Bob uses CentralDashboardCredits to store messages, and anyone that follows him can ask for the message (paying credits too)
+
+Tit for tat storage
+Bob and Alice  want to backup their data. They each Store each others data (Getting BobCredits and AliceCredits)
+If Bob and Alice cant reach each other, they can use an intermediary, for example CentralMessageHub.
+There can be a CentralMessageHub fast storage that is cheaper for live communication (short lived, costs less credits)
+
+
+

@@ -9,12 +9,12 @@
 #define TALKSPHERE_LOG_LEVEL_ENVIRONMENT_VARIABLE "TALKSPHERE_LOG_LEVEL"
 
 enum talksphere_log_level {
-    TALKSPHERE_LOG_LEVEL_TRACE,
-    TALKSPHERE_LOG_LEVEL_DEBUG,
-    TALKSPHERE_LOG_LEVEL_INFO,
-    TALKSPHERE_LOG_LEVEL_WARN,
-    TALKSPHERE_LOG_LEVEL_ERROR,
-    TALKSPHERE_LOG_LEVEL_FATAL
+    TRACE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+    FATAL
 };
 
 /*
@@ -24,17 +24,17 @@ static inline const char *talksphere_log_level_name(
     enum talksphere_log_level log_level
 ) {
     switch (log_level) {
-        case TALKSPHERE_LOG_LEVEL_TRACE:
+        case TRACE:
             return "trace";
-        case TALKSPHERE_LOG_LEVEL_DEBUG:
+        case DEBUG:
             return "debug";
-        case TALKSPHERE_LOG_LEVEL_INFO:
+        case INFO:
             return "info";
-        case TALKSPHERE_LOG_LEVEL_WARN:
+        case WARN:
             return "warn";
-        case TALKSPHERE_LOG_LEVEL_ERROR:
+        case ERROR:
             return "error";
-        case TALKSPHERE_LOG_LEVEL_FATAL:
+        case FATAL:
             return "fatal";
     }
 
@@ -55,7 +55,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
     const char *configured_log_level = getenv(TALKSPHERE_LOG_LEVEL_ENVIRONMENT_VARIABLE);
 
     if (configured_log_level == NULL) {
-        return TALKSPHERE_LOG_LEVEL_INFO;
+        return INFO;
     }
 
     if (talksphere_strings_are_equal(
@@ -63,7 +63,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "trace"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_TRACE;
+        return TRACE;
     }
 
     if (talksphere_strings_are_equal(
@@ -71,7 +71,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "debug"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_DEBUG;
+        return DEBUG;
     }
 
     if (talksphere_strings_are_equal(
@@ -79,7 +79,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "info"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_INFO;
+        return INFO;
     }
 
     if (talksphere_strings_are_equal(
@@ -87,7 +87,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "warn"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_WARN;
+        return WARN;
     }
 
     if (talksphere_strings_are_equal(
@@ -95,7 +95,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "error"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_ERROR;
+        return ERROR;
     }
 
     if (talksphere_strings_are_equal(
@@ -103,10 +103,10 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
             "fatal"
         )
     ) {
-        return TALKSPHERE_LOG_LEVEL_FATAL;
+        return FATAL;
     }
 
-    return TALKSPHERE_LOG_LEVEL_INFO;
+    return INFO;
 }
 
 static inline int talksphere_should_log(
@@ -154,22 +154,22 @@ static inline void talksphere_log(
     );
 }
 
-#define TALKSPHERE_LOG_TRACE(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_TRACE, __FILE__, __func__, __VA_ARGS__)
+#define LOG_TRACE(...) \
+    talksphere_log(TRACE, __FILE__, __func__, __VA_ARGS__)
 
-#define TALKSPHERE_LOG_DEBUG(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_DEBUG, __FILE__, __func__, __VA_ARGS__)
+#define LOG_DEBUG(...) \
+    talksphere_log(DEBUG, __FILE__, __func__, __VA_ARGS__)
 
-#define TALKSPHERE_LOG_INFO(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_INFO, __FILE__, __func__, __VA_ARGS__)
+#define LOG_INFO(...) \
+    talksphere_log(INFO, __FILE__, __func__, __VA_ARGS__)
 
-#define TALKSPHERE_LOG_WARN(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_WARN, __FILE__, __func__, __VA_ARGS__)
+#define LOG_WARN(...) \
+    talksphere_log(WARN, __FILE__, __func__, __VA_ARGS__)
 
-#define TALKSPHERE_LOG_ERROR(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_ERROR, __FILE__, __func__, __VA_ARGS__)
+#define LOG_ERROR(...) \
+    talksphere_log(ERROR, __FILE__, __func__, __VA_ARGS__)
 
-#define TALKSPHERE_LOG_FATAL(...) \
-    talksphere_log(TALKSPHERE_LOG_LEVEL_FATAL, __FILE__, __func__, __VA_ARGS__)
+#define LOG_FATAL(...) \
+    talksphere_log(FATAL, __FILE__, __func__, __VA_ARGS__)
 
 #endif

@@ -23,7 +23,7 @@
 static void print_usage(
     const char *program_name
 ) {
-    TALKSPHERE_LOG_TRACE("print_usage(): now we print the valid command shapes");
+    LOG_TRACE("print_usage(): now we print the valid command shapes");
 
     fprintf(
         stderr,
@@ -45,8 +45,8 @@ static int parse_port(
     const char *port_name,
     int *port
 ) {
-    TALKSPHERE_LOG_TRACE("parse_port(): now we validate that the port text is a number in the TCP port range");
-    TALKSPHERE_LOG_DEBUG(
+    LOG_TRACE("parse_port(): now we validate that the port text is a number in the TCP port range");
+    LOG_DEBUG(
         "Parsing %s port from text %s",
         port_name,
         port_text
@@ -64,7 +64,7 @@ static int parse_port(
         || port_value < MINIMUM_PORT
         || port_value > MAXIMUM_PORT
     ) {
-        TALKSPHERE_LOG_WARN(
+        LOG_WARN(
             "The %s port is unwanted because it must be an integer from %d to %d",
             port_name,
             MINIMUM_PORT,
@@ -86,10 +86,10 @@ static int parse_port(
 static int validate_different_ports(
     const struct program_arguments *program_arguments
 ) {
-    TALKSPHERE_LOG_TRACE("validate_different_ports(): now we check the client and server do not compete for one port");
+    LOG_TRACE("validate_different_ports(): now we check the client and server do not compete for one port");
 
     if (program_arguments->client_port == program_arguments->server_port) {
-        TALKSPHERE_LOG_WARN("Client and server ports are unwanted when equal because both sockets need to bind");
+        LOG_WARN("Client and server ports are unwanted when equal because both sockets need to bind");
         fprintf(
             stderr,
             "Client and server ports must be different.\n"
@@ -105,8 +105,8 @@ int parse_program_arguments(
     char *argument_values[],
     struct program_arguments *program_arguments
 ) {
-    TALKSPHERE_LOG_TRACE("parse_program_arguments(): now we turn process arguments into socket settings");
-    TALKSPHERE_LOG_DEBUG(
+    LOG_TRACE("parse_program_arguments(): now we turn process arguments into socket settings");
+    LOG_DEBUG(
         "Received %d program arguments",
         argument_count
     );
@@ -119,13 +119,13 @@ int parse_program_arguments(
     if (argument_count != DEFAULT_ARGUMENT_COUNT
         && argument_count != CUSTOM_PORT_ARGUMENT_COUNT
     ) {
-        TALKSPHERE_LOG_WARN("Argument count is unwanted because the program accepts either no ports or both ports");
+        LOG_WARN("Argument count is unwanted because the program accepts either no ports or both ports");
         print_usage(program_name);
         return TALKSPHERE_FAILURE;
     }
 
     if (argument_count == CUSTOM_PORT_ARGUMENT_COUNT) {
-        TALKSPHERE_LOG_TRACE("parse_program_arguments(): custom ports were provided so we parse both explicitly");
+        LOG_TRACE("parse_program_arguments(): custom ports were provided so we parse both explicitly");
 
         if (parse_port(
                 argument_values[CLIENT_PORT_ARGUMENT_INDEX],

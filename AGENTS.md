@@ -38,6 +38,11 @@ network
     resource_sharing
     trusted_network
 ```  
+
+Keep in mind separation of responsibilities. Do not share data structures between unrelated domains.  
+For example, if socket has a struct package, it may be convenient to use package on encryption, but that would violate separation of responsibilities.  
+Prefer instead using many primitive arguments or a structure in a shared parent folder.   
+
 Prefer to reassign a variable to a better named variable than reusing it. Example:  
 Prefer:
 ```
