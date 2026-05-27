@@ -4,6 +4,34 @@ set -u
 binary_path="./talksphere"
 failure_count=0
 
+run_expect_failure() {
+    local test_name="$1"
+    local expected_text="$2"
+    shift
+    shift
+
+    local output
+    if output="$($binary_path "$@" 2>&1)"; then
+        printf 'not ok - %s
+%s
+' "$test_name" "$output"
+        failure_count=$((failure_count + 1))
+        return
+    fi
+
+    if [[ "$output" != *"$expected_text"* ]]; then
+        printf 'not ok - %s
+expected text: %s
+%s
+' "$test_name" "$expected_text" "$output"
+        failure_count=$((failure_count + 1))
+        return
+    fi
+
+    printf 'ok - %s
+' "$test_name"
+}
+
 run_expect_identifier_creation() {
     local test_name="creates app directory and identifier"
     local temporary_root
@@ -15,13 +43,15 @@ run_expect_identifier_creation() {
     TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root/data" timeout 2 "$binary_path" >/dev/null 2>&1 || true
 
     if [[ ! -d "$app_directory_path" ]]; then
-        printf 'not ok - %s (directory was not created)\n' "$test_name"
+        printf 'not ok - %s (directory was not created)
+' "$test_name"
         failure_count=$((failure_count + 1))
         return
     fi
 
     if [[ ! -f "$app_directory_path/id" ]]; then
-        printf 'not ok - %s (id file was not created)\n' "$test_name"
+        printf 'not ok - %s (id file was not created)
+' "$test_name"
         failure_count=$((failure_count + 1))
         return
     fi
@@ -30,12 +60,14 @@ run_expect_identifier_creation() {
     identifier_text="$(cat "$app_directory_path/id")"
 
     if [[ ! "$identifier_text" =~ ^[A-Za-z0-9_-]{22}$ ]]; then
-        printf 'not ok - %s (id format is invalid: %s)\n' "$test_name" "$identifier_text"
+        printf 'not ok - %s (id format is invalid: %s)
+' "$test_name" "$identifier_text"
         failure_count=$((failure_count + 1))
         return
     fi
 
-    printf 'ok - %s\n' "$test_name"
+    printf 'ok - %s
+' "$test_name"
 }
 
 run_expect_identifier_kept() {
@@ -55,16 +87,21 @@ run_expect_identifier_kept() {
     resulting_identifier="$(cat "$app_directory_path/id")"
 
     if [[ "$resulting_identifier" != "$existing_identifier" ]]; then
-        printf 'not ok - %s (existing id was modified)\n' "$test_name"
+        printf 'not ok - %s (existing id was modified)
+' "$test_name"
         failure_count=$((failure_count + 1))
         return
     fi
 
-    printf 'ok - %s\n' "$test_name"
+    printf 'ok - %s
+' "$test_name"
 }
 
 run_expect_identifier_creation
 run_expect_identifier_kept
+run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
+run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
+run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
 
 if [ "$failure_count" -ne 0 ]; then
     exit 1

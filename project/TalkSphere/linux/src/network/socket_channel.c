@@ -226,8 +226,10 @@ static int process_received_message(
     return TALKSPHERE_FAILURE;
 }
 
-int run_socket_channel(void) {
-    LOG_TRACE("run_socket_basics(): now we run one server instance and process incoming connections forever");
+int run_socket_channel(
+    const struct program_arguments *program_arguments
+) {
+    LOG_TRACE("run_socket_channel(): now we run one server instance and process incoming connections forever");
 
     int server_file_descriptor = create_tcp_socket();
     if (server_file_descriptor == SOCKET_NOT_CREATED_YET) {
@@ -240,7 +242,7 @@ int run_socket_channel(void) {
     }
 
     struct sockaddr_in server_address;
-    build_local_address(&server_address, DEFAULT_CLIENT_PORT);
+    build_local_address(&server_address, program_arguments->client_port);
 
     if (bind(server_file_descriptor, (struct sockaddr *)&server_address, sizeof(server_address)) == SYSTEM_CALL_FAILED) {
         LOG_ERROR("bind failed so the server cannot listen on the requested port");
@@ -257,10 +259,10 @@ int run_socket_channel(void) {
     }
 
     LOG_INFO("Server is listening for peer messages");
-    printf("Server listening on port %d...\n", DEFAULT_CLIENT_PORT);
+    printf("Server listening on port %d...\n", program_arguments->client_port);
 
     while (true) {
-        LOG_TRACE("run_socket_basics(): now the loop waits for the next connection");
+        LOG_TRACE("run_socket_channel(): now the loop waits for the next connection");
 
         struct sockaddr_in client_address;
         socklen_t client_address_length = sizeof(client_address);
@@ -294,7 +296,7 @@ int run_socket_channel(void) {
         receive_buffer[read_bytes_count] = STRING_TERMINATOR;
         LOG_DEBUG("Received message text: %s", receive_buffer);
 
-        process_received_message(receive_buffer, DEFAULT_CLIENT_PORT);
+        process_received_message(receive_buffer, program_arguments->client_port);
         close(connected_client_file_descriptor);
     }
 
