@@ -41,7 +41,16 @@ network
 
 Keep in mind separation of responsibilities. Do not share data structures between unrelated domains.  
 For example, if socket has a struct package, it may be convenient to use package on encryption, but that would violate separation of responsibilities.  
-Prefer instead using many primitive arguments or a structure in a shared parent folder.   
+Prefer instead using many primitive arguments or a structure in a shared parent folder.  
+
+Rule of thumb, if include has a parent folder, it should not have a folder after it. Example:  
+Good:
+`#include "../logging.h"`  
+Bad:
+`#include "../program_arguments/arguments.h`  
+Okayish (as long as it is clear what it contains and it only contains stuff shared by at least two folders):  
+`#include "../common/result.h"`  
+Why? because having one folder knowing the contents of another creates strong dependency. We need to separate concerns to make it maintenable.  
 
 Prefer to reassign a variable to a better named variable than reusing it. Example:  
 Prefer:
