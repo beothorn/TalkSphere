@@ -94,5 +94,14 @@ Bob and Alice  want to backup their data. They each Store each others data (Gett
 If Bob and Alice cant reach each other, they can use an intermediary, for example CentralMessageHub.
 There can be a CentralMessageHub fast storage that is cheaper for live communication (short lived, costs less credits)
 
+## Technical Overview
+
+- Identity and signatures, Ed25519  
+- Encryption, X25519 and XChaCha20-Poly1305  
+- Hashing, BLAKE3 or SHA-256  
+- Message discovery, Kademlia DHT  
+- Routing, weighted graph algorithms such as Dijkstra  
+- Storage verification, challenge-response proofs  
+
 
 
