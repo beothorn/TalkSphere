@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic -std=c11 -pthread
-SRC=$(wildcard src/*.c)
+CFLAGS=-Wall -Wextra -Wpedantic -std=c11 -pthread -Isrc
+SRC=$(shell find src -name "*.c")
 BIN=talksphere
 
 all: $(BIN)

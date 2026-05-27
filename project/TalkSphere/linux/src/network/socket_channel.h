@@ -3,8 +3,6 @@
 
 #include "../argumentParsing/program_arguments.h"
 
-int run_socket_channel(
-    const struct program_arguments *program_arguments
-);
+int run_socket_channel(void);
 
 #endif
