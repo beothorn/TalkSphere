@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEFAULT_SERVER_PORT 8513
-#define DEFAULT_CLIENT_PORT 8512
-
 #define PROGRAM_NAME_ARGUMENT_INDEX 0
 #define FIRST_CHARACTER_INDEX 0
 #define CLIENT_PORT_ARGUMENT_INDEX 1

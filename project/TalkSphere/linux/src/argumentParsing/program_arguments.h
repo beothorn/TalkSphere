@@ -1,8 +1,10 @@
 #ifndef TALKSPHERE_PROGRAM_ARGUMENTS_H
 #define TALKSPHERE_PROGRAM_ARGUMENTS_H
 
-#define TALKSPHERE_SUCCESS 0
-#define TALKSPHERE_FAILURE 1
+#include "../common/result.h"
+
+#define DEFAULT_SERVER_PORT 8513
+#define DEFAULT_CLIENT_PORT 8512
 
 struct program_arguments {
     int client_port;

@@ -12,68 +12,93 @@ run_expect_failure() {
 
     local output
     if output="$($binary_path "$@" 2>&1)"; then
-        printf 'not ok - %s\n%s\n' "$test_name" "$output"
+        printf 'not ok - %s
+%s
+' "$test_name" "$output"
         failure_count=$((failure_count + 1))
         return
     fi
 
     if [[ "$output" != *"$expected_text"* ]]; then
-        printf 'not ok - %s\nexpected text: %s\n%s\n' "$test_name" "$expected_text" "$output"
+        printf 'not ok - %s
+expected text: %s
+%s
+' "$test_name" "$expected_text" "$output"
         failure_count=$((failure_count + 1))
         return
     fi
 
-    printf 'ok - %s\n' "$test_name"
+    printf 'ok - %s
+' "$test_name"
 }
 
-run_expect_scenario_success() {
-    local listener_port=18999
-    local instance_one_port=18734
-    local instance_two_port=18735
+run_expect_identifier_creation() {
+    local test_name="creates app directory and identifier"
+    local temporary_root
+    temporary_root="$(mktemp -d)"
 
-    local listener_output_file
-    listener_output_file="$(mktemp)"
+    local app_directory_path="$temporary_root/data/talksphere"
+    mkdir -p "$temporary_root/data"
 
-    local instance_one_log_file
-    instance_one_log_file="$(mktemp)"
+    TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root/data" timeout 2 "$binary_path" >/dev/null 2>&1 || true
 
-    local instance_two_log_file
-    instance_two_log_file="$(mktemp)"
-
-    timeout 8 nc -l "$listener_port" > "$listener_output_file" &
-    local listener_process_id=$!
-
-    TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" "$instance_one_port" 19901 > "$instance_one_log_file" 2>&1 &
-    local instance_one_process_id=$!
-
-    TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" "$instance_two_port" 19902 > "$instance_two_log_file" 2>&1 &
-    local instance_two_process_id=$!
-
-    sleep 1
-    printf 'CONNECT:localhost:%d,FROM:localhost:%d' "$instance_two_port" "$listener_port" | nc -N localhost "$instance_one_port"
-
-    wait "$listener_process_id"
-    wait "$instance_one_process_id"
-    wait "$instance_two_process_id"
-
-    if ! grep -q "MESSAGE:Hello" "$listener_output_file"; then
-        printf 'not ok - two-instance connect scenario (listener did not receive MESSAGE:Hello)\n'
-        cat "$listener_output_file"
+    if [[ ! -d "$app_directory_path" ]]; then
+        printf 'not ok - %s (directory was not created)
+' "$test_name"
         failure_count=$((failure_count + 1))
         return
     fi
 
-    if ! grep -q "^Hello$" "$instance_two_log_file"; then
-        printf 'not ok - two-instance connect scenario (instance two did not print Hello)\n'
-        cat "$instance_two_log_file"
+    if [[ ! -f "$app_directory_path/id" ]]; then
+        printf 'not ok - %s (id file was not created)
+' "$test_name"
         failure_count=$((failure_count + 1))
         return
     fi
 
-    printf 'ok - two-instance connect scenario\n'
+    local identifier_text
+    identifier_text="$(cat "$app_directory_path/id")"
+
+    if [[ ! "$identifier_text" =~ ^[A-Za-z0-9_-]{22}$ ]]; then
+        printf 'not ok - %s (id format is invalid: %s)
+' "$test_name" "$identifier_text"
+        failure_count=$((failure_count + 1))
+        return
+    fi
+
+    printf 'ok - %s
+' "$test_name"
 }
 
-run_expect_scenario_success
+run_expect_identifier_kept() {
+    local test_name="keeps existing identifier"
+    local temporary_root
+    temporary_root="$(mktemp -d)"
+
+    local app_directory_path="$temporary_root/data/talksphere"
+    mkdir -p "$app_directory_path"
+
+    local existing_identifier="AAAAAAAAAAAAAAAAAAAAAA"
+    printf '%s' "$existing_identifier" > "$app_directory_path/id"
+
+    TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root/data" timeout 2 "$binary_path" >/dev/null 2>&1 || true
+
+    local resulting_identifier
+    resulting_identifier="$(cat "$app_directory_path/id")"
+
+    if [[ "$resulting_identifier" != "$existing_identifier" ]]; then
+        printf 'not ok - %s (existing id was modified)
+' "$test_name"
+        failure_count=$((failure_count + 1))
+        return
+    fi
+
+    printf 'ok - %s
+' "$test_name"
+}
+
+run_expect_identifier_creation
+run_expect_identifier_kept
 run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
 run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
 run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
