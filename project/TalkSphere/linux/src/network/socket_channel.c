@@ -1,6 +1,6 @@
 #include "socket_channel.h"
 
-#include "../argumentParsing/program_arguments.h"
+#include "../common/result.h"
 #include "logging.h"
 
 #include <arpa/inet.h>

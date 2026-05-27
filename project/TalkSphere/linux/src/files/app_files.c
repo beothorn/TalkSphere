@@ -1,5 +1,6 @@
 #include "app_files.h"
 
+#include "../common/result.h"
 #include "../logging.h"
 
 #include <errno.h>
