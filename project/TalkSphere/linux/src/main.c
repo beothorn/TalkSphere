@@ -23,5 +23,8 @@ int main(
         return TALKSPHERE_FAILURE;
     }
 
-    return run_socket_channel(&program_arguments);
+    return run_socket_channel(
+        program_arguments.client_port,
+        program_arguments.server_port
+    );
 }

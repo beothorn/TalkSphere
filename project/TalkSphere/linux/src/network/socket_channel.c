@@ -1,5 +1,6 @@
 #include "socket_channel.h"
 
+#include "../argumentParsing/program_arguments.h"
 #include "logging.h"
 
 #include <arpa/inet.h>
@@ -177,11 +178,11 @@ static int send_message_to_endpoint(
 
 static int handle_connect_instruction(
     const struct connect_instruction *connect_instruction,
-    int server_port
+    int listening_port
 ) {
     LOG_TRACE("handle_connect_instruction(): now this server connects to the target and sends a hello to the caller endpoint");
 
-    if (connect_instruction->target_port == server_port) {
+    if (connect_instruction->target_port == listening_port) {
         LOG_WARN("The target port is unwanted because it would cause a self-loop connection");
         return TALKSPHERE_FAILURE;
     }
@@ -202,7 +203,7 @@ static int handle_connect_instruction(
 
 static int process_received_message(
     const char *message_text,
-    int server_port
+    int listening_port
 ) {
     LOG_TRACE("process_received_message(): now we branch based on the incoming message type");
 
@@ -211,7 +212,7 @@ static int process_received_message(
         if (parse_connect_instruction(message_text, &connect_instruction) != TALKSPHERE_SUCCESS) {
             return TALKSPHERE_FAILURE;
         }
-        return handle_connect_instruction(&connect_instruction, server_port);
+        return handle_connect_instruction(&connect_instruction, listening_port);
     }
 
     if (strncmp(message_text, MESSAGE_PREFIX, strlen(MESSAGE_PREFIX)) == 0) {
@@ -227,9 +228,13 @@ static int process_received_message(
 }
 
 int run_socket_channel(
-    const struct program_arguments *program_arguments
+    int client_port,
+    int server_port
 ) {
     LOG_TRACE("run_socket_channel(): now we run one server instance and process incoming connections forever");
+    LOG_DEBUG("run_socket_channel(): client_port=%d, server_port=%d", client_port, server_port);
+
+    (void)server_port;
 
     int server_file_descriptor = create_tcp_socket();
     if (server_file_descriptor == SOCKET_NOT_CREATED_YET) {
@@ -242,7 +247,7 @@ int run_socket_channel(
     }
 
     struct sockaddr_in server_address;
-    build_local_address(&server_address, program_arguments->client_port);
+    build_local_address(&server_address, client_port);
 
     if (bind(server_file_descriptor, (struct sockaddr *)&server_address, sizeof(server_address)) == SYSTEM_CALL_FAILED) {
         LOG_ERROR("bind failed so the server cannot listen on the requested port");
@@ -259,7 +264,7 @@ int run_socket_channel(
     }
 
     LOG_INFO("Server is listening for peer messages");
-    printf("Server listening on port %d...\n", program_arguments->client_port);
+    printf("Server listening on port %d...\n", client_port);
 
     while (true) {
         LOG_TRACE("run_socket_channel(): now the loop waits for the next connection");
@@ -296,7 +301,7 @@ int run_socket_channel(
         receive_buffer[read_bytes_count] = STRING_TERMINATOR;
         LOG_DEBUG("Received message text: %s", receive_buffer);
 
-        process_received_message(receive_buffer, program_arguments->client_port);
+        process_received_message(receive_buffer, client_port);
         close(connected_client_file_descriptor);
     }
 
