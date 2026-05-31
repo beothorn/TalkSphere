@@ -95,4 +95,30 @@ If Bob and Alice cant reach each other, they can use an intermediary, for exampl
 There can be a CentralMessageHub fast storage that is cheaper for live communication (short lived, costs less credits)
 
 
+## MVP Goal
+
+- Asynchronous messaging
+- Messages persist even if peers are offline
+- Delivery happens when routes become available
+
+---
+
+## Technical Overview
+
+- Identity and signatures, Ed25519  
+- Encryption, X25519 and XChaCha20-Poly1305  
+- Hashing, BLAKE3 or SHA-256  
+- Message discovery, Kademlia DHT  
+- Routing, weighted graph algorithms such as Dijkstra  
+- Storage verification, challenge-response proofs  
+
+---
+
+## Key Properties
+
+- Anti-spam, cost increases with distance  
+- Decentralization, no central control  
+- Resource-based economy, value comes from contribution  
+- Trust-scoped interaction, access is local  
+- Relevance-oriented, information flows through trusted paths  
 
