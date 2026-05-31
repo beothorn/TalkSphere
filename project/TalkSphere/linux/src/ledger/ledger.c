@@ -3,10 +3,36 @@
 #include "../common/result.h"
 #include "../logging.h"
 
+#include <dirent.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #define LEDGER_DIRECTORY_NAME "ledger"
+#define CURRENT_DIRECTORY_NAME "."
+#define PARENT_DIRECTORY_NAME ".."
+
+static int build_ledger_directory_path(
+    const char *app_storage_directory_path,
+    char *ledger_directory_path,
+    size_t ledger_directory_path_size
+) {
+    LOG_TRACE("build_ledger_directory_path(): now we build the directory that contains all credit counters");
+
+    if (snprintf(
+            ledger_directory_path,
+            ledger_directory_path_size,
+            "%s/%s",
+            app_storage_directory_path,
+            LEDGER_DIRECTORY_NAME
+        ) >= (int)ledger_directory_path_size
+    ) {
+        LOG_ERROR("Ledger directory path is too long so ledger operation cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
 
 static int build_ledger_file_path(
     const char *app_storage_directory_path,
@@ -30,6 +56,15 @@ static int build_ledger_file_path(
     }
 
     return TALKSPHERE_SUCCESS;
+}
+
+static int directory_entry_is_ledger_account(
+    const char *directory_entry_name
+) {
+    LOG_TRACE("directory_entry_is_ledger_account(): now we ignore navigation entries that are not account ids");
+
+    return strcmp(directory_entry_name, CURRENT_DIRECTORY_NAME) != 0
+        && strcmp(directory_entry_name, PARENT_DIRECTORY_NAME) != 0;
 }
 
 int ledger_get_credits(
@@ -151,4 +186,60 @@ int ledger_spend_credit(
         identifier_text,
         credit_count - 1
     );
+}
+
+int ledger_get_credit_summary(
+    const char *app_storage_directory_path,
+    const char *local_identifier_text,
+    struct ledger_credit_summary *ledger_credit_summary
+) {
+    LOG_TRACE("ledger_get_credit_summary(): now we calculate what this local id owns and what it owes to others");
+
+    ledger_credit_summary->owned_credits = 0;
+    ledger_credit_summary->owed_credits = 0;
+
+    char ledger_directory_path[PATH_MAX];
+    if (build_ledger_directory_path(
+            app_storage_directory_path,
+            ledger_directory_path,
+            sizeof(ledger_directory_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    DIR *ledger_directory = opendir(ledger_directory_path);
+    if (ledger_directory == NULL) {
+        LOG_ERROR("Opening ledger directory failed so credit summary cannot be calculated");
+        return TALKSPHERE_FAILURE;
+    }
+
+    struct dirent *ledger_directory_entry = readdir(ledger_directory);
+    while (ledger_directory_entry != NULL) {
+        const char *account_identifier_text = ledger_directory_entry->d_name;
+
+        if (directory_entry_is_ledger_account(account_identifier_text)) {
+            int account_credit_count = 0;
+            if (ledger_get_credits(
+                    app_storage_directory_path,
+                    account_identifier_text,
+                    &account_credit_count
+                ) != TALKSPHERE_SUCCESS
+            ) {
+                closedir(ledger_directory);
+                return TALKSPHERE_FAILURE;
+            }
+
+            if (strcmp(account_identifier_text, local_identifier_text) == 0) {
+                ledger_credit_summary->owned_credits += account_credit_count;
+            } else {
+                ledger_credit_summary->owed_credits += account_credit_count;
+            }
+        }
+
+        ledger_directory_entry = readdir(ledger_directory);
+    }
+
+    closedir(ledger_directory);
+    return TALKSPHERE_SUCCESS;
 }

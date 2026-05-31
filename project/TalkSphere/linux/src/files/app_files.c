@@ -114,12 +114,12 @@ static int build_default_app_directory_path(
     return TALKSPHERE_SUCCESS;
 }
 
-static int resolve_storage_directory_path(
+int resolve_app_storage_directory_path(
     const char *app_storage_directory_path,
     char *resolved_directory_path,
     size_t resolved_directory_path_size
 ) {
-    LOG_TRACE("resolve_storage_directory_path(): now we resolve the storage directory based on arguments");
+    LOG_TRACE("resolve_app_storage_directory_path(): now we resolve the storage directory based on arguments");
 
     if (app_storage_directory_path != NULL && app_storage_directory_path[0] != '\0') {
         if (snprintf(
@@ -252,7 +252,7 @@ int ensure_app_files(
     LOG_TRACE("ensure_app_files(): now we ensure required app files and directories exist before network startup");
 
     char resolved_directory_path[PATH_MAX];
-    if (resolve_storage_directory_path(
+    if (resolve_app_storage_directory_path(
             app_storage_directory_path,
             resolved_directory_path,
             sizeof(resolved_directory_path)
@@ -293,7 +293,7 @@ int read_local_identifier(
     LOG_TRACE("read_local_identifier(): now we load the local identifier from the storage directory");
 
     char resolved_directory_path[PATH_MAX];
-    if (resolve_storage_directory_path(
+    if (resolve_app_storage_directory_path(
             app_storage_directory_path,
             resolved_directory_path,
             sizeof(resolved_directory_path)

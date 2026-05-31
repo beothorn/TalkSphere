@@ -74,10 +74,45 @@ run_two_instance_credit_scenario() {
     printf 'ok - %s\n' "$test_name"
 }
 
+run_expect_ledger_summary() {
+    local test_name="prints ledger owned and owed credits"
+    local temporary_root; temporary_root="$(mktemp -d)"
+    local app_directory_path="$temporary_root/app"
+
+    local initial_output
+    if ! initial_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --ledger-summary "$app_directory_path" 2>&1)"; then
+        printf 'not ok - %s (initial summary command failed)\n%s\n' "$test_name" "$initial_output"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    local local_identifier
+    local_identifier="$(cat "$app_directory_path/id")"
+    printf '3' > "$app_directory_path/ledger/$local_identifier"
+    printf '4' > "$app_directory_path/ledger/other-peer"
+
+    local summary_output
+    if ! summary_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --ledger-summary "$app_directory_path" 2>&1)"; then
+        printf 'not ok - %s (summary command failed)\n%s\n' "$test_name" "$summary_output"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    if [[ "$summary_output" != *"Owned credits: 3"* || "$summary_output" != *"Owed credits: 4"* ]]; then
+        printf 'not ok - %s (unexpected summary)\n%s\n' "$test_name" "$summary_output"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    printf 'ok - %s\n' "$test_name"
+}
+
 run_expect_identifier_creation
 run_two_instance_credit_scenario
+run_expect_ledger_summary
 run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
 run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
 run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
+run_expect_failure "ledger summary with too many arguments" "Usage:" --ledger-summary /tmp extra
 
 if [ "$failure_count" -ne 0 ]; then exit 1; fi

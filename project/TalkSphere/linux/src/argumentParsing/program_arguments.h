@@ -6,10 +6,16 @@
 #define DEFAULT_SERVER_PORT 8513
 #define DEFAULT_CLIENT_PORT 8512
 
+enum program_mode {
+    PROGRAM_MODE_RUN_SERVER,
+    PROGRAM_MODE_PRINT_LEDGER_SUMMARY
+};
+
 struct program_arguments {
     int client_port;
     int server_port;
     const char *app_storage_directory_path;
+    enum program_mode program_mode;
 };
 
 int parse_program_arguments(
