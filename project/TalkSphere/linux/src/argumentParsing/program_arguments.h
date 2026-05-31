@@ -9,6 +9,7 @@
 struct program_arguments {
     int client_port;
     int server_port;
+    const char *app_storage_directory_path;
 };
 
 int parse_program_arguments(

@@ -1,0 +1,19 @@
+#ifndef TALKSPHERE_MESSAGE_PARSER_H
+#define TALKSPHERE_MESSAGE_PARSER_H
+
+struct message_processing_dependencies {
+    int (*send_message_to_endpoint)(
+        const char *remote_host,
+        int remote_port,
+        const char *message_text
+    );
+    int listening_port;
+    const char *app_storage_directory_path;
+};
+
+int process_received_message(
+    const char *message_text,
+    const struct message_processing_dependencies *message_processing_dependencies
+);
+
+#endif

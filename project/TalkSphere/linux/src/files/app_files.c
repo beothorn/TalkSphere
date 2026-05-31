@@ -17,14 +17,15 @@
 
 #define TALKSPHERE_APPLICATION_DIRECTORY_NAME "talksphere"
 #define TALKSPHERE_IDENTIFIER_FILE_NAME "id"
-#define RANDOM_IDENTIFIER_BYTES 16
-#define BASE64URL_IDENTIFIER_LENGTH 22
+#define TALKSPHERE_LEDGER_DIRECTORY_NAME "ledger"
+#define RANDOM_IDENTIFIER_BYTES 96
+#define BASE64URL_IDENTIFIER_LENGTH 128
 
 static int directory_exists(
     const char *directory_path,
     bool *directory_found
 ) {
-    LOG_TRACE("directory_exists(): now we check whether the app data directory already exists");
+    LOG_TRACE("directory_exists(): now we check whether a directory path exists");
 
     struct stat directory_status;
     if (stat(directory_path, &directory_status) != 0) {
@@ -33,25 +34,47 @@ static int directory_exists(
             return TALKSPHERE_SUCCESS;
         }
 
-        LOG_ERROR("Checking the app data directory failed so the startup flow cannot continue");
+        LOG_ERROR("Checking a required directory failed so the startup flow cannot continue");
         return TALKSPHERE_FAILURE;
     }
 
     *directory_found = S_ISDIR(directory_status.st_mode);
-
     if (!*directory_found) {
-        LOG_ERROR("The app data path exists but is not a directory so startup cannot proceed safely");
+        LOG_ERROR("The path exists but is not a directory so startup cannot proceed safely");
         return TALKSPHERE_FAILURE;
     }
 
     return TALKSPHERE_SUCCESS;
 }
 
-static int build_app_directory_path(
+static int create_directory_if_missing(
+    const char *directory_path
+) {
+    LOG_TRACE("create_directory_if_missing(): now we ensure a required directory exists");
+
+    bool directory_found = false;
+    if (directory_exists(directory_path, &directory_found) != TALKSPHERE_SUCCESS) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (directory_found) {
+        return TALKSPHERE_SUCCESS;
+    }
+
+    LOG_INFO("Creating required application directory because it was not present");
+    if (mkdir(directory_path, 0700) != 0) {
+        LOG_ERROR("Could not create required directory so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int build_default_app_directory_path(
     char *app_directory_path,
     size_t app_directory_path_size
 ) {
-    LOG_TRACE("build_app_directory_path(): now we compute where Linux application files should live");
+    LOG_TRACE("build_default_app_directory_path(): now we compute the default Linux application directory");
 
     const char *xdg_data_home = getenv("XDG_DATA_HOME");
     const char *home_directory = getenv("HOME");
@@ -91,39 +114,44 @@ static int build_app_directory_path(
     return TALKSPHERE_SUCCESS;
 }
 
-static int create_directory_if_missing(
-    const char *directory_path
+static int resolve_storage_directory_path(
+    const char *app_storage_directory_path,
+    char *resolved_directory_path,
+    size_t resolved_directory_path_size
 ) {
-    LOG_TRACE("create_directory_if_missing(): now we ensure the app data directory exists");
+    LOG_TRACE("resolve_storage_directory_path(): now we resolve the storage directory based on arguments");
 
-    bool directory_found = false;
-    if (directory_exists(directory_path, &directory_found) != TALKSPHERE_SUCCESS) {
-        return TALKSPHERE_FAILURE;
-    }
-
-    if (directory_found) {
+    if (app_storage_directory_path != NULL && app_storage_directory_path[0] != '\0') {
+        if (snprintf(
+                resolved_directory_path,
+                resolved_directory_path_size,
+                "%s",
+                app_storage_directory_path
+            ) >= (int)resolved_directory_path_size
+        ) {
+            LOG_ERROR("The custom app storage directory path is too long");
+            return TALKSPHERE_FAILURE;
+        }
         return TALKSPHERE_SUCCESS;
     }
 
-    LOG_INFO("Creating app data directory because it was not present");
-    if (mkdir(directory_path, 0700) != 0) {
-        LOG_ERROR("Could not create the app data directory so startup cannot continue");
-        return TALKSPHERE_FAILURE;
-    }
-
-    return TALKSPHERE_SUCCESS;
+    return build_default_app_directory_path(
+        resolved_directory_path,
+        resolved_directory_path_size
+    );
 }
 
-static void base64url_encode_16_bytes(
+static void base64url_encode_96_bytes(
     const unsigned char random_bytes[RANDOM_IDENTIFIER_BYTES],
     char encoded_identifier[BASE64URL_IDENTIFIER_LENGTH + 1]
 ) {
-    LOG_TRACE("base64url_encode_16_bytes(): now we encode random bytes as Base64URL without padding");
+    LOG_TRACE("base64url_encode_96_bytes(): now we encode random bytes as Base64URL without padding");
 
-    static const char base64url_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    static const char base64url_alphabet[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-    size_t output_index = 0;
-    for (size_t random_index = 0; random_index < 15; random_index += 3) {
+    int output_index = 0;
+    for (int random_index = 0; random_index < RANDOM_IDENTIFIER_BYTES; random_index += 3) {
         unsigned int merged_bytes = ((unsigned int)random_bytes[random_index] << 16)
             | ((unsigned int)random_bytes[random_index + 1] << 8)
             | (unsigned int)random_bytes[random_index + 2];
@@ -134,10 +162,29 @@ static void base64url_encode_16_bytes(
         encoded_identifier[output_index++] = base64url_alphabet[merged_bytes & 0x3F];
     }
 
-    unsigned int final_group = ((unsigned int)random_bytes[15] << 16);
-    encoded_identifier[output_index++] = base64url_alphabet[(final_group >> 18) & 0x3F];
-    encoded_identifier[output_index++] = base64url_alphabet[(final_group >> 12) & 0x3F];
     encoded_identifier[output_index] = '\0';
+}
+
+static int build_identifier_file_path(
+    const char *app_directory_path,
+    char *identifier_file_path,
+    size_t identifier_file_path_size
+) {
+    LOG_TRACE("build_identifier_file_path(): now we compute the identifier file path");
+
+    if (snprintf(
+            identifier_file_path,
+            identifier_file_path_size,
+            "%s/%s",
+            app_directory_path,
+            TALKSPHERE_IDENTIFIER_FILE_NAME
+        ) >= (int)identifier_file_path_size
+    ) {
+        LOG_ERROR("The identifier file path is too long so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
 }
 
 static int ensure_identifier_file(
@@ -146,15 +193,12 @@ static int ensure_identifier_file(
     LOG_TRACE("ensure_identifier_file(): now we create the installation identifier if it does not exist yet");
 
     char identifier_file_path[PATH_MAX];
-    if (snprintf(
-            identifier_file_path,
-            sizeof(identifier_file_path),
-            "%s/%s",
+    if (build_identifier_file_path(
             app_directory_path,
-            TALKSPHERE_IDENTIFIER_FILE_NAME
-        ) >= (int)sizeof(identifier_file_path)
+            identifier_file_path,
+            sizeof(identifier_file_path)
+        ) != TALKSPHERE_SUCCESS
     ) {
-        LOG_ERROR("The identifier file path is too long so startup cannot continue");
         return TALKSPHERE_FAILURE;
     }
 
@@ -174,12 +218,7 @@ static int ensure_identifier_file(
     }
 
     unsigned char random_bytes[RANDOM_IDENTIFIER_BYTES];
-    ssize_t random_bytes_read_count = getrandom(
-        random_bytes,
-        sizeof(random_bytes),
-        0
-    );
-
+    ssize_t random_bytes_read_count = getrandom(random_bytes, sizeof(random_bytes), 0);
     if (random_bytes_read_count != (ssize_t)sizeof(random_bytes)) {
         LOG_ERROR("Cryptographic random generation failed so identifier creation cannot continue");
         close(identifier_file_descriptor);
@@ -187,7 +226,7 @@ static int ensure_identifier_file(
     }
 
     char encoded_identifier[BASE64URL_IDENTIFIER_LENGTH + 1];
-    base64url_encode_16_bytes(random_bytes, encoded_identifier);
+    base64url_encode_96_bytes(random_bytes, encoded_identifier);
 
     size_t encoded_identifier_length = strlen(encoded_identifier);
     ssize_t written_bytes_count = write(
@@ -207,17 +246,85 @@ static int ensure_identifier_file(
     return TALKSPHERE_SUCCESS;
 }
 
-int ensure_app_files(void) {
-    LOG_TRACE("ensure_app_files(): now we ensure required Linux app files exist before network startup");
+int ensure_app_files(
+    const char *app_storage_directory_path
+) {
+    LOG_TRACE("ensure_app_files(): now we ensure required app files and directories exist before network startup");
 
-    char app_directory_path[PATH_MAX];
-    if (build_app_directory_path(app_directory_path, sizeof(app_directory_path)) != TALKSPHERE_SUCCESS) {
+    char resolved_directory_path[PATH_MAX];
+    if (resolve_storage_directory_path(
+            app_storage_directory_path,
+            resolved_directory_path,
+            sizeof(resolved_directory_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
         return TALKSPHERE_FAILURE;
     }
 
-    if (create_directory_if_missing(app_directory_path) != TALKSPHERE_SUCCESS) {
+    if (create_directory_if_missing(resolved_directory_path) != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 
-    return ensure_identifier_file(app_directory_path);
+    if (ensure_identifier_file(resolved_directory_path) != TALKSPHERE_SUCCESS) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    char ledger_directory_path[PATH_MAX];
+    if (snprintf(
+            ledger_directory_path,
+            sizeof(ledger_directory_path),
+            "%s/%s",
+            resolved_directory_path,
+            TALKSPHERE_LEDGER_DIRECTORY_NAME
+        ) >= (int)sizeof(ledger_directory_path)
+    ) {
+        LOG_ERROR("The ledger directory path is too long so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return create_directory_if_missing(ledger_directory_path);
+}
+
+int read_local_identifier(
+    const char *app_storage_directory_path,
+    char *identifier_text,
+    int identifier_text_size
+) {
+    LOG_TRACE("read_local_identifier(): now we load the local identifier from the storage directory");
+
+    char resolved_directory_path[PATH_MAX];
+    if (resolve_storage_directory_path(
+            app_storage_directory_path,
+            resolved_directory_path,
+            sizeof(resolved_directory_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    char identifier_file_path[PATH_MAX];
+    if (build_identifier_file_path(
+            resolved_directory_path,
+            identifier_file_path,
+            sizeof(identifier_file_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    FILE *identifier_file = fopen(identifier_file_path, "r");
+    if (identifier_file == NULL) {
+        LOG_ERROR("Opening identifier file failed so we cannot process credit commands");
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (fgets(identifier_text, identifier_text_size, identifier_file) == NULL) {
+        fclose(identifier_file);
+        LOG_ERROR("Reading identifier file failed so we cannot process credit commands");
+        return TALKSPHERE_FAILURE;
+    }
+
+    fclose(identifier_file);
+    identifier_text[strcspn(identifier_text, "\r\n")] = '\0';
+    return TALKSPHERE_SUCCESS;
 }

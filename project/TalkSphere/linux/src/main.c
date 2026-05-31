@@ -19,12 +19,13 @@ int main(
         return TALKSPHERE_FAILURE;
     }
 
-    if (ensure_app_files() != TALKSPHERE_SUCCESS) {
+    if (ensure_app_files(program_arguments.app_storage_directory_path) != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 
     return run_socket_channel(
         program_arguments.client_port,
-        program_arguments.server_port
+        program_arguments.server_port,
+        program_arguments.app_storage_directory_path
     );
 }

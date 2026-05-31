@@ -11,6 +11,8 @@
 #define SERVER_PORT_ARGUMENT_INDEX 2
 #define DEFAULT_ARGUMENT_COUNT 1
 #define CUSTOM_PORT_ARGUMENT_COUNT 3
+#define CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT 4
+#define STORAGE_DIRECTORY_ARGUMENT_INDEX 3
 
 #define DECIMAL_BASE 10
 #define MINIMUM_PORT 1
@@ -112,16 +114,20 @@ int parse_program_arguments(
 
     program_arguments->client_port = DEFAULT_CLIENT_PORT;
     program_arguments->server_port = DEFAULT_SERVER_PORT;
+    program_arguments->app_storage_directory_path = NULL;
 
     if (argument_count != DEFAULT_ARGUMENT_COUNT
         && argument_count != CUSTOM_PORT_ARGUMENT_COUNT
+        && argument_count != CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT
     ) {
         LOG_WARN("Argument count is unwanted because the program accepts either no ports or both ports");
         print_usage(program_name);
         return TALKSPHERE_FAILURE;
     }
 
-    if (argument_count == CUSTOM_PORT_ARGUMENT_COUNT) {
+    if (argument_count == CUSTOM_PORT_ARGUMENT_COUNT
+        || argument_count == CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT
+    ) {
         LOG_TRACE("parse_program_arguments(): custom ports were provided so we parse both explicitly");
 
         if (parse_port(
@@ -137,6 +143,10 @@ int parse_program_arguments(
         ) {
             print_usage(program_name);
             return TALKSPHERE_FAILURE;
+        }
+
+        if (argument_count == CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT) {
+            program_arguments->app_storage_directory_path = argument_values[STORAGE_DIRECTORY_ARGUMENT_INDEX];
         }
     }
 
