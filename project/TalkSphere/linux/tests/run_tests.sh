@@ -238,10 +238,69 @@ TESTSOURCE
     printf 'ok - %s\n' "$test_name"
 }
 
+run_expect_shared_storage_placeholders() {
+    local test_name="shared storage placeholders validate inputs"
+    local temporary_root; temporary_root="$(mktemp -d)"
+    local test_source_path="$temporary_root/shared_storage_placeholder_test.c"
+    local test_binary_path="$temporary_root/shared_storage_placeholder_test"
+
+    cat > "$test_source_path" <<'TESTSOURCE'
+#include "sharedStorage/shared_storage.h"
+#include "common/result.h"
+
+#include <stddef.h>
+
+int main(void) {
+    const char *app_storage_directory_path = "/tmp/talksphere-shared-storage-test";
+
+    if (shared_storage_share_available_storage(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+        return 1;
+    }
+
+    if (shared_storage_recover_sold_storage(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+        return 2;
+    }
+
+    if (shared_storage_clear_aged_storage(app_storage_directory_path, 60) != TALKSPHERE_SUCCESS) {
+        return 3;
+    }
+
+    if (shared_storage_share_available_storage(NULL) != TALKSPHERE_FAILURE) {
+        return 4;
+    }
+
+    if (shared_storage_recover_sold_storage(NULL) != TALKSPHERE_FAILURE) {
+        return 5;
+    }
+
+    if (shared_storage_clear_aged_storage(app_storage_directory_path, -1) != TALKSPHERE_FAILURE) {
+        return 6;
+    }
+
+    return 0;
+}
+TESTSOURCE
+
+    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" src/sharedStorage/shared_storage.c -o "$test_binary_path"; then
+        printf 'not ok - %s (compile failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    if ! TALKSPHERE_LOG_LEVEL=fatal "$test_binary_path"; then
+        printf 'not ok - %s (placeholder behavior failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    printf 'ok - %s\n' "$test_name"
+}
+
 run_expect_identifier_creation
 run_two_instance_credit_scenario
 run_expect_ledger_summary
 run_expect_encryption_placeholders
+run_expect_shared_storage_placeholders
 run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
 run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
 run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
