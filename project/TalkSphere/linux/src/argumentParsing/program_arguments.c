@@ -4,13 +4,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PROGRAM_NAME_ARGUMENT_INDEX 0
 #define FIRST_CHARACTER_INDEX 0
 #define CLIENT_PORT_ARGUMENT_INDEX 1
 #define SERVER_PORT_ARGUMENT_INDEX 2
+#define STORAGE_DIRECTORY_ARGUMENT_INDEX 3
+#define LEDGER_SUMMARY_ARGUMENT_INDEX 1
+#define LEDGER_SUMMARY_STORAGE_DIRECTORY_ARGUMENT_INDEX 2
 #define DEFAULT_ARGUMENT_COUNT 1
 #define CUSTOM_PORT_ARGUMENT_COUNT 3
+#define CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT 4
+#define LEDGER_SUMMARY_ARGUMENT_COUNT 2
+#define LEDGER_SUMMARY_WITH_STORAGE_ARGUMENT_COUNT 3
+#define LEDGER_SUMMARY_ARGUMENT_TEXT "--ledger-summary"
 
 #define DECIMAL_BASE 10
 #define MINIMUM_PORT 1
@@ -26,10 +34,14 @@ static void print_usage(
         stderr,
         "Usage:\n"
         "  %s\n"
-        "  %s <client_port> <server_port>\n\n"
+        "  %s <client_port> <server_port>\n"
+        "  %s <client_port> <server_port> <storage_directory>\n"
+        "  %s --ledger-summary [storage_directory]\n\n"
         "Ports:\n"
         "  Default client port: %d\n"
         "  Default server port: %d\n",
+        program_name,
+        program_name,
         program_name,
         program_name,
         DEFAULT_CLIENT_PORT,
@@ -97,32 +109,71 @@ static int validate_different_ports(
     return TALKSPHERE_SUCCESS;
 }
 
-int parse_program_arguments(
+static int argument_is_ledger_summary_command(
+    const char *argument_text
+) {
+    LOG_TRACE("argument_is_ledger_summary_command(): now we check whether the user asked for ledger totals");
+
+    return strcmp(
+        argument_text,
+        LEDGER_SUMMARY_ARGUMENT_TEXT
+    ) == 0;
+}
+
+static void initialize_program_arguments(
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("initialize_program_arguments(): now we set defaults before applying user arguments");
+
+    program_arguments->client_port = DEFAULT_CLIENT_PORT;
+    program_arguments->server_port = DEFAULT_SERVER_PORT;
+    program_arguments->app_storage_directory_path = NULL;
+    program_arguments->program_mode = PROGRAM_MODE_RUN_SERVER;
+}
+
+static int parse_ledger_summary_arguments(
     int argument_count,
     char *argument_values[],
     struct program_arguments *program_arguments
 ) {
-    LOG_TRACE("parse_program_arguments(): now we turn process arguments into socket settings");
-    LOG_DEBUG(
-        "Received %d program arguments",
-        argument_count
-    );
+    LOG_TRACE("parse_ledger_summary_arguments(): now we parse the command that prints ledger owned and owed totals");
 
-    const char *program_name = argument_values[PROGRAM_NAME_ARGUMENT_INDEX];
-
-    program_arguments->client_port = DEFAULT_CLIENT_PORT;
-    program_arguments->server_port = DEFAULT_SERVER_PORT;
-
-    if (argument_count != DEFAULT_ARGUMENT_COUNT
-        && argument_count != CUSTOM_PORT_ARGUMENT_COUNT
+    if (argument_count != LEDGER_SUMMARY_ARGUMENT_COUNT
+        && argument_count != LEDGER_SUMMARY_WITH_STORAGE_ARGUMENT_COUNT
     ) {
-        LOG_WARN("Argument count is unwanted because the program accepts either no ports or both ports");
-        print_usage(program_name);
+        LOG_WARN("Ledger summary arguments are unwanted because the command accepts only an optional storage directory");
         return TALKSPHERE_FAILURE;
     }
 
-    if (argument_count == CUSTOM_PORT_ARGUMENT_COUNT) {
-        LOG_TRACE("parse_program_arguments(): custom ports were provided so we parse both explicitly");
+    program_arguments->program_mode = PROGRAM_MODE_PRINT_LEDGER_SUMMARY;
+
+    if (argument_count == LEDGER_SUMMARY_WITH_STORAGE_ARGUMENT_COUNT) {
+        program_arguments->app_storage_directory_path =
+            argument_values[LEDGER_SUMMARY_STORAGE_DIRECTORY_ARGUMENT_INDEX];
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int parse_server_arguments(
+    int argument_count,
+    char *argument_values[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_server_arguments(): now we parse arguments used to run the socket server");
+
+    if (argument_count != DEFAULT_ARGUMENT_COUNT
+        && argument_count != CUSTOM_PORT_ARGUMENT_COUNT
+        && argument_count != CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT
+    ) {
+        LOG_WARN("Argument count is unwanted because the program accepts no arguments, both ports, or both ports with storage");
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (argument_count == CUSTOM_PORT_ARGUMENT_COUNT
+        || argument_count == CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT
+    ) {
+        LOG_TRACE("parse_server_arguments(): custom ports were provided so we parse both explicitly");
 
         if (parse_port(
                 argument_values[CLIENT_PORT_ARGUMENT_INDEX],
@@ -135,10 +186,51 @@ int parse_program_arguments(
                 &program_arguments->server_port
             ) != TALKSPHERE_SUCCESS
         ) {
-            print_usage(program_name);
             return TALKSPHERE_FAILURE;
+        }
+
+        if (argument_count == CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT) {
+            program_arguments->app_storage_directory_path = argument_values[STORAGE_DIRECTORY_ARGUMENT_INDEX];
         }
     }
 
     return validate_different_ports(program_arguments);
+}
+
+int parse_program_arguments(
+    int argument_count,
+    char *argument_values[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_program_arguments(): now we turn process arguments into socket or ledger settings");
+    LOG_DEBUG(
+        "Received %d program arguments",
+        argument_count
+    );
+
+    const char *program_name = argument_values[PROGRAM_NAME_ARGUMENT_INDEX];
+    initialize_program_arguments(program_arguments);
+
+    int parse_result = TALKSPHERE_FAILURE;
+    if (argument_count >= LEDGER_SUMMARY_ARGUMENT_COUNT
+        && argument_is_ledger_summary_command(argument_values[LEDGER_SUMMARY_ARGUMENT_INDEX])
+    ) {
+        parse_result = parse_ledger_summary_arguments(
+            argument_count,
+            argument_values,
+            program_arguments
+        );
+    } else {
+        parse_result = parse_server_arguments(
+            argument_count,
+            argument_values,
+            program_arguments
+        );
+    }
+
+    if (parse_result != TALKSPHERE_SUCCESS) {
+        print_usage(program_name);
+    }
+
+    return parse_result;
 }

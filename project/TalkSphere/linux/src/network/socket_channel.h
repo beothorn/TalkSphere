@@ -3,7 +3,8 @@
 
 int run_socket_channel(
     int client_port,
-    int server_port
+    int server_port,
+    const char *app_storage_directory_path
 );
 
 #endif
