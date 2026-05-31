@@ -107,9 +107,141 @@ run_expect_ledger_summary() {
     printf 'ok - %s\n' "$test_name"
 }
 
+
+run_expect_encryption_placeholders() {
+    local test_name="encryption placeholders return empty outputs and reject missing output sizes"
+    local temporary_root; temporary_root="$(mktemp -d)"
+    local test_source_path="$temporary_root/encryption_placeholder_test.c"
+    local test_binary_path="$temporary_root/encryption_placeholder_test"
+
+    cat > "$test_source_path" <<'TESTSOURCE'
+#include "encryption/encryption.h"
+#include "common/result.h"
+
+#include <stddef.h>
+
+int main(void) {
+    unsigned char public_key_bytes[1];
+    unsigned char private_key_bytes[1];
+    unsigned char encrypted_message_bytes[1];
+    unsigned char signature_bytes[1];
+    const unsigned char message_bytes[] = "hello";
+    size_t public_key_size = 99;
+    size_t private_key_size = 99;
+    size_t encrypted_message_size = 99;
+    size_t signature_size = 99;
+
+    if (create_encryption_keys(
+            public_key_bytes,
+            sizeof(public_key_bytes),
+            &public_key_size,
+            private_key_bytes,
+            sizeof(private_key_bytes),
+            &private_key_size
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 1;
+    }
+
+    if (public_key_size != 0 || private_key_size != 0) {
+        return 2;
+    }
+
+    if (encrypt_message(
+            public_key_bytes,
+            public_key_size,
+            message_bytes,
+            sizeof(message_bytes),
+            encrypted_message_bytes,
+            sizeof(encrypted_message_bytes),
+            &encrypted_message_size
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 3;
+    }
+
+    if (encrypted_message_size != 0) {
+        return 4;
+    }
+
+    if (sign_message(
+            private_key_bytes,
+            private_key_size,
+            message_bytes,
+            sizeof(message_bytes),
+            signature_bytes,
+            sizeof(signature_bytes),
+            &signature_size
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 5;
+    }
+
+    if (signature_size != 0) {
+        return 6;
+    }
+
+    if (create_encryption_keys(
+            public_key_bytes,
+            sizeof(public_key_bytes),
+            NULL,
+            private_key_bytes,
+            sizeof(private_key_bytes),
+            &private_key_size
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 7;
+    }
+
+    if (encrypt_message(
+            public_key_bytes,
+            public_key_size,
+            message_bytes,
+            sizeof(message_bytes),
+            encrypted_message_bytes,
+            sizeof(encrypted_message_bytes),
+            NULL
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 8;
+    }
+
+    if (sign_message(
+            private_key_bytes,
+            private_key_size,
+            message_bytes,
+            sizeof(message_bytes),
+            signature_bytes,
+            sizeof(signature_bytes),
+            NULL
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 9;
+    }
+
+    return 0;
+}
+TESTSOURCE
+
+    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" src/encryption/encryption.c -o "$test_binary_path"; then
+        printf 'not ok - %s (compile failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    if ! TALKSPHERE_LOG_LEVEL=fatal "$test_binary_path"; then
+        printf 'not ok - %s (placeholder behavior failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    printf 'ok - %s\n' "$test_name"
+}
+
 run_expect_identifier_creation
 run_two_instance_credit_scenario
 run_expect_ledger_summary
+run_expect_encryption_placeholders
 run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
 run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
 run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
