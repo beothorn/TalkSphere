@@ -1,0 +1,6 @@
+#ifndef TALKSPHERE_APP_FILE_NAMES_H
+#define TALKSPHERE_APP_FILE_NAMES_H
+
+#define TALKSPHERE_OFFERINGS_FILE_NAME "offerings"
+
+#endif

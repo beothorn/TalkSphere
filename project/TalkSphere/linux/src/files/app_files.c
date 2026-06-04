@@ -1,5 +1,6 @@
 #include "app_files.h"
 
+#include "../common/app_file_names.h"
 #include "../common/result.h"
 #include "../logging.h"
 
@@ -18,6 +19,13 @@
 #define TALKSPHERE_APPLICATION_DIRECTORY_NAME "talksphere"
 #define TALKSPHERE_IDENTIFIER_FILE_NAME "id"
 #define TALKSPHERE_LEDGER_DIRECTORY_NAME "ledger"
+#define DEFAULT_OFFERINGS_TEXT "[\n" \
+    "{\"availability\": \"alwaysOn\"},\n" \
+    "{\"reachableAt\": \"www.isageek.com.br:9876\"},\n" \
+    "{\"operation\":\"buy\", \"creditType\":\"own\", \"price\": 1,\"type\":\"storage\", \"offerInfo\":{\"size\": 100000, \"period\": 10}},\n" \
+    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 1,\"type\":\"storage\", \"offerInfo\":{\"size\": 100000, \"period\": 30}},\n" \
+    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 0.01,\"type\":\"storeMessage\", \"offerInfo\":{\"size\": 1, \"period\": 10}},\n" \
+    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 0.001,\"type\":\"askForMessages\"},]"
 #define RANDOM_IDENTIFIER_BYTES 96
 #define BASE64URL_IDENTIFIER_LENGTH 128
 
@@ -187,6 +195,28 @@ static int build_identifier_file_path(
     return TALKSPHERE_SUCCESS;
 }
 
+static int build_offerings_file_path(
+    const char *app_directory_path,
+    char *offerings_file_path,
+    size_t offerings_file_path_size
+) {
+    LOG_TRACE("build_offerings_file_path(): now we compute where the local offerings document lives");
+
+    if (snprintf(
+            offerings_file_path,
+            offerings_file_path_size,
+            "%s/%s",
+            app_directory_path,
+            TALKSPHERE_OFFERINGS_FILE_NAME
+        ) >= (int)offerings_file_path_size
+    ) {
+        LOG_ERROR("The offerings file path is too long so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
 static int ensure_identifier_file(
     const char *app_directory_path
 ) {
@@ -246,6 +276,55 @@ static int ensure_identifier_file(
     return TALKSPHERE_SUCCESS;
 }
 
+static int ensure_offerings_file(
+    const char *app_directory_path
+) {
+    LOG_TRACE("ensure_offerings_file(): now we create the default local offerings document if it does not exist yet");
+
+    char offerings_file_path[PATH_MAX];
+    if (build_offerings_file_path(
+            app_directory_path,
+            offerings_file_path,
+            sizeof(offerings_file_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    int offerings_file_descriptor = open(
+        offerings_file_path,
+        O_WRONLY | O_CREAT | O_EXCL,
+        0600
+    );
+
+    if (offerings_file_descriptor < 0) {
+        if (errno == EEXIST) {
+            return TALKSPHERE_SUCCESS;
+        }
+
+        LOG_ERROR("Opening the offerings file failed so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    const char *default_offerings_text = DEFAULT_OFFERINGS_TEXT;
+    size_t default_offerings_text_length = strlen(default_offerings_text);
+    ssize_t written_bytes_count = write(
+        offerings_file_descriptor,
+        default_offerings_text,
+        default_offerings_text_length
+    );
+
+    close(offerings_file_descriptor);
+
+    if (written_bytes_count != (ssize_t)default_offerings_text_length) {
+        LOG_ERROR("Writing the default offerings failed so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    LOG_INFO("A default local offerings document was created");
+    return TALKSPHERE_SUCCESS;
+}
+
 int ensure_app_files(
     const char *app_storage_directory_path
 ) {
@@ -266,6 +345,10 @@ int ensure_app_files(
     }
 
     if (ensure_identifier_file(resolved_directory_path) != TALKSPHERE_SUCCESS) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (ensure_offerings_file(resolved_directory_path) != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 

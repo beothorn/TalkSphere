@@ -27,8 +27,11 @@ run_expect_identifier_creation() {
     [[ -d "$app_directory_path" ]] || { printf 'not ok - creates app directory and identifier (directory not created)\n'; failure_count=$((failure_count+1)); return; }
     [[ -d "$app_directory_path/ledger" ]] || { printf 'not ok - creates app directory and identifier (ledger not created)\n'; failure_count=$((failure_count+1)); return; }
     [[ -f "$app_directory_path/id" ]] || { printf 'not ok - creates app directory and identifier (id not created)\n'; failure_count=$((failure_count+1)); return; }
+    [[ -f "$app_directory_path/offerings" ]] || { printf 'not ok - creates app directory and identifier (offerings not created)\n'; failure_count=$((failure_count+1)); return; }
     local identifier_text; identifier_text="$(cat "$app_directory_path/id")"
     if [[ ! "$identifier_text" =~ ^[A-Za-z0-9_-]{128}$ ]]; then printf 'not ok - creates app directory and identifier (invalid id format)\n'; failure_count=$((failure_count+1)); return; fi
+    local offerings_text; offerings_text="$(cat "$app_directory_path/offerings")"
+    if [[ "$offerings_text" != *'"availability": "alwaysOn"'* || "$offerings_text" != *'"type":"askForMessages"'* ]]; then printf 'not ok - creates app directory and identifier (invalid offerings)\n'; failure_count=$((failure_count+1)); return; fi
     printf 'ok - creates app directory and identifier\n'
 }
 
@@ -296,11 +299,149 @@ TESTSOURCE
     printf 'ok - %s\n' "$test_name"
 }
 
+run_expect_offerings_reader() {
+    local test_name="offerings reader returns local file text and validates errors"
+    local temporary_root; temporary_root="$(mktemp -d)"
+    local test_source_path="$temporary_root/offerings_reader_test.c"
+    local test_binary_path="$temporary_root/offerings_reader_test"
+
+    cat > "$test_source_path" <<'TESTSOURCE'
+#include "offerings/offerings.h"
+#include "common/result.h"
+
+#include <stdio.h>
+#include <string.h>
+
+int main(
+    int argument_count,
+    char *argument_values[]
+) {
+    if (argument_count != 2) {
+        return 1;
+    }
+
+    const char *app_storage_directory_path = argument_values[1];
+    char offerings_text[256];
+
+    if (read_local_offerings(
+            app_storage_directory_path,
+            offerings_text,
+            strlen("[{\"availability\":\"alwaysOn\"}]") + 1
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 8;
+    }
+
+    if (strcmp(
+            offerings_text,
+            "[{\"availability\":\"alwaysOn\"}]"
+        ) != 0
+    ) {
+        return 9;
+    }
+
+    char missing_file_directory_path[256];
+    if (snprintf(
+            missing_file_directory_path,
+            sizeof(missing_file_directory_path),
+            "%s-missing",
+            app_storage_directory_path
+        ) < 0
+    ) {
+        return 10;
+    }
+
+    if (read_local_offerings(
+            missing_file_directory_path,
+            offerings_text,
+            sizeof(offerings_text)
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 11;
+    }
+
+    if (read_local_offerings(
+            app_storage_directory_path,
+            offerings_text,
+            sizeof(offerings_text)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 2;
+    }
+
+    if (strcmp(
+            offerings_text,
+            "[{\"availability\":\"alwaysOn\"}]"
+        ) != 0
+    ) {
+        return 3;
+    }
+
+    char small_offerings_text[4];
+    if (read_local_offerings(
+            app_storage_directory_path,
+            small_offerings_text,
+            sizeof(small_offerings_text)
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 4;
+    }
+
+    if (read_local_offerings(
+            NULL,
+            offerings_text,
+            sizeof(offerings_text)
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 5;
+    }
+
+    if (read_local_offerings(
+            app_storage_directory_path,
+            NULL,
+            sizeof(offerings_text)
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 6;
+    }
+
+    if (read_local_offerings(
+            app_storage_directory_path,
+            offerings_text,
+            0
+        ) != TALKSPHERE_FAILURE
+    ) {
+        return 7;
+    }
+
+    return 0;
+}
+TESTSOURCE
+
+    mkdir -p "$temporary_root/app"
+    printf '[{"availability":"alwaysOn"}]' > "$temporary_root/app/offerings"
+
+    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" src/offerings/offerings.c -o "$test_binary_path"; then
+        printf 'not ok - %s (compile failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    if ! TALKSPHERE_LOG_LEVEL=fatal "$test_binary_path" "$temporary_root/app"; then
+        printf 'not ok - %s (reader behavior failed)\n' "$test_name"
+        failure_count=$((failure_count+1))
+        return
+    fi
+
+    printf 'ok - %s\n' "$test_name"
+}
+
 run_expect_identifier_creation
 run_two_instance_credit_scenario
 run_expect_ledger_summary
 run_expect_encryption_placeholders
 run_expect_shared_storage_placeholders
+run_expect_offerings_reader
 run_expect_failure "invalid client port" "Invalid client port: bad" bad 9898
 run_expect_failure "invalid server port" "Invalid server port: bad" 8999 bad
 run_expect_failure "same client and server port" "Client and server ports must be different." 8999 8999
