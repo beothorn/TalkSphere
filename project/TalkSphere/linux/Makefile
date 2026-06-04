@@ -16,6 +16,6 @@ clean:
 	rm -rf $(BUILD_DIRECTORY)
 
 test: all
-	./tests/run_tests.sh
+	bash ./test/run_tests.sh
 
 .PHONY: all clean test

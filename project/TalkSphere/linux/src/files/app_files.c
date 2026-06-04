@@ -16,6 +16,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 #define TALKSPHERE_APPLICATION_DIRECTORY_NAME "talksphere"
 #define TALKSPHERE_IDENTIFIER_FILE_NAME "id"
 #define TALKSPHERE_LEDGER_DIRECTORY_NAME "ledger"
