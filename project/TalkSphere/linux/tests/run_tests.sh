@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-binary_path="./talksphere"
+binary_path="./build/talksphere"
 failure_count=0
 
 run_expect_failure() {
