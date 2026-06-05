@@ -2,7 +2,7 @@
 set -u
 
 binary_path="./build/talksphere"
-test_name="two instances pay then message spends credits"
+test_name="socket commands"
 temporary_root="$(mktemp -d)"
 instance_one_data="$temporary_root/instance1"
 instance_two_data="$temporary_root/instance2"
@@ -24,6 +24,9 @@ printf 'MESSAGE:paid hello' | nc -N localhost 9201
 sleep 0.3
 
 remaining_credits="$(cat "$instance_two_data/ledger/$receiver_identifier" 2>/dev/null || echo "missing")"
+custom_offerings='{"availability":"changedAtHome","reachableAt":["localhost:9201"],"buy":[],"sell":[]}'
+printf '%s' "$custom_offerings" >"$instance_two_data/offerings"
+offerings_response="$(printf 'LIST_OFFERINGS' | nc -N localhost 9201)"
 
 kill "$instance_one_process_id" "$instance_two_process_id" >/dev/null 2>&1 || true
 wait "$instance_one_process_id" "$instance_two_process_id" >/dev/null 2>&1 || true
@@ -35,5 +38,13 @@ fi
 
 if ! grep -q "paid hello" "$temporary_root/instance2.log"; then
     printf 'not ok - %s (message not printed)\n' "$test_name"
+    exit 1
+fi
+
+if [[ "$offerings_response" != "$custom_offerings" ]]; then
+    printf 'not ok - %s (LIST_OFFERINGS did not return current home offerings)\nexpected: %s\nreceived: %s\n' \
+        "$test_name" \
+        "$custom_offerings" \
+        "$offerings_response"
     exit 1
 fi

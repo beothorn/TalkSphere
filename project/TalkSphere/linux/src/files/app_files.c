@@ -23,15 +23,11 @@
 #define TALKSPHERE_APPLICATION_DIRECTORY_NAME "talksphere"
 #define TALKSPHERE_IDENTIFIER_FILE_NAME "id"
 #define TALKSPHERE_LEDGER_DIRECTORY_NAME "ledger"
-#define DEFAULT_OFFERINGS_TEXT "[\n" \
-    "{\"availability\": \"alwaysOn\"},\n" \
-    "{\"reachableAt\": \"www.isageek.com.br:9876\"},\n" \
-    "{\"operation\":\"buy\", \"creditType\":\"own\", \"price\": 1,\"type\":\"storage\", \"offerInfo\":{\"size\": 100000, \"period\": 10}},\n" \
-    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 1,\"type\":\"storage\", \"offerInfo\":{\"size\": 100000, \"period\": 30}},\n" \
-    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 0.01,\"type\":\"storeMessage\", \"offerInfo\":{\"size\": 1, \"period\": 10}},\n" \
-    "{\"operation\":\"sell\", \"creditType\":\"own\", \"price\": 0.001,\"type\":\"askForMessages\"},]"
+#define DEFAULT_OFFERINGS_FILE_PATH "defaults/offerings.json"
+#define REPOSITORY_DEFAULT_OFFERINGS_FILE_PATH "project/TalkSphere/linux/defaults/offerings.json"
 #define RANDOM_IDENTIFIER_BYTES 96
 #define BASE64URL_IDENTIFIER_LENGTH 128
+#define FILE_COPY_BUFFER_SIZE 4096
 
 static int directory_exists(
     const char *directory_path,
@@ -280,6 +276,97 @@ static int ensure_identifier_file(
     return TALKSPHERE_SUCCESS;
 }
 
+static FILE *open_default_offerings_file(void) {
+    LOG_TRACE("open_default_offerings_file(): now we open the default offerings document shipped with the application");
+
+    FILE *default_offerings_file = fopen(
+        DEFAULT_OFFERINGS_FILE_PATH,
+        "r"
+    );
+    if (default_offerings_file != NULL) {
+        return default_offerings_file;
+    }
+
+    return fopen(
+        REPOSITORY_DEFAULT_OFFERINGS_FILE_PATH,
+        "r"
+    );
+}
+
+static int write_all_bytes(
+    int file_descriptor,
+    const char *file_text,
+    size_t file_text_length
+) {
+    LOG_TRACE("write_all_bytes(): now we keep writing until the whole file chunk is stored");
+
+    size_t written_total_count = 0;
+    while (written_total_count < file_text_length) {
+        ssize_t written_bytes_count = write(
+            file_descriptor,
+            file_text + written_total_count,
+            file_text_length - written_total_count
+        );
+
+        if (written_bytes_count <= 0) {
+            LOG_ERROR("Writing bytes failed so the file cannot be completed");
+            return TALKSPHERE_FAILURE;
+        }
+
+        written_total_count += (size_t)written_bytes_count;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int copy_default_offerings_file(
+    int offerings_file_descriptor
+) {
+    LOG_TRACE("copy_default_offerings_file(): now we copy the shipped default offerings into the local app file");
+
+    FILE *default_offerings_file = open_default_offerings_file();
+    if (default_offerings_file == NULL) {
+        LOG_ERROR("Opening the default offerings asset failed so startup cannot create the local offerings file");
+        return TALKSPHERE_FAILURE;
+    }
+
+    char file_copy_buffer[FILE_COPY_BUFFER_SIZE];
+    while (true) {
+        size_t read_bytes_count = fread(
+            file_copy_buffer,
+            sizeof(char),
+            sizeof(file_copy_buffer),
+            default_offerings_file
+        );
+
+        if (read_bytes_count > 0) {
+            if (write_all_bytes(
+                offerings_file_descriptor,
+                file_copy_buffer,
+                read_bytes_count
+            ) != TALKSPHERE_SUCCESS
+            ) {
+                fclose(default_offerings_file);
+                LOG_ERROR("Writing the default offerings failed so startup cannot continue");
+                return TALKSPHERE_FAILURE;
+            }
+        }
+
+        if (read_bytes_count < sizeof(file_copy_buffer)) {
+            if (ferror(default_offerings_file)) {
+                fclose(default_offerings_file);
+                LOG_ERROR("Reading the default offerings asset failed so startup cannot create the local offerings file");
+                return TALKSPHERE_FAILURE;
+            }
+
+            break;
+        }
+    }
+
+    fclose(default_offerings_file);
+    return TALKSPHERE_SUCCESS;
+}
+
 static int ensure_offerings_file(
     const char *app_directory_path
 ) {
@@ -310,18 +397,13 @@ static int ensure_offerings_file(
         return TALKSPHERE_FAILURE;
     }
 
-    const char *default_offerings_text = DEFAULT_OFFERINGS_TEXT;
-    size_t default_offerings_text_length = strlen(default_offerings_text);
-    ssize_t written_bytes_count = write(
-        offerings_file_descriptor,
-        default_offerings_text,
-        default_offerings_text_length
+    int copy_default_offerings_result = copy_default_offerings_file(
+        offerings_file_descriptor
     );
 
     close(offerings_file_descriptor);
 
-    if (written_bytes_count != (ssize_t)default_offerings_text_length) {
-        LOG_ERROR("Writing the default offerings failed so startup cannot continue");
+    if (copy_default_offerings_result != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 

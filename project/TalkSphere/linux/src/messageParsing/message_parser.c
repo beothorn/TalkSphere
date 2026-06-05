@@ -4,6 +4,7 @@
 #include "../files/app_files.h"
 #include "../ledger/ledger.h"
 #include "../logging.h"
+#include "../offerings/offerings.h"
 
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -13,6 +14,7 @@
 #define MESSAGE_PREFIX "MESSAGE:"
 #define PAY_PREFIX "PAY:"
 #define CREDITS_PREFIX "CREDITS:"
+#define LIST_OFFERINGS_COMMAND "LIST_OFFERINGS"
 #define IDENTIFIER_SIZE 256
 
 struct connect_instruction {
@@ -79,9 +81,25 @@ static int handle_connect_instruction(
 
 int process_received_message(
     const char *message_text,
-    const struct message_processing_dependencies *message_processing_dependencies
+    const struct message_processing_dependencies *message_processing_dependencies,
+    char *response_text,
+    size_t response_text_size
 ) {
     LOG_TRACE("process_received_message(): now we branch based on the incoming message type");
+
+    if (response_text != NULL && response_text_size > 0) {
+        response_text[0] = '\0';
+    }
+
+    if (strcmp(message_text, LIST_OFFERINGS_COMMAND) == 0) {
+        LOG_TRACE("process_received_message(): now we return the current local offerings document to the connected peer");
+
+        return read_local_offerings(
+            message_processing_dependencies->app_storage_directory_path,
+            response_text,
+            response_text_size
+        );
+    }
 
     if (strncmp(message_text, CONNECT_PREFIX, strlen(CONNECT_PREFIX)) == 0) {
         struct connect_instruction connect_instruction;
@@ -149,6 +167,6 @@ int process_received_message(
         return TALKSPHERE_SUCCESS;
     }
 
-    LOG_WARN("The message type is unwanted because this server only knows CONNECT, MESSAGE, PAY, and CREDITS");
+    LOG_WARN("The message type is unwanted because this server only knows CONNECT, MESSAGE, PAY, CREDITS, and LIST_OFFERINGS");
     return TALKSPHERE_FAILURE;
 }

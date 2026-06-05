@@ -1,0 +1,160 @@
+{
+  "availability": "alwaysOn",
+  "reachableAt": [
+    "www.isageek.com.br:9979"
+  ],
+  "buy": [
+    {
+      "service": "store",
+      "credit": "own",
+      "description": "store some data for a period of time",
+      "info": {
+        "pricePerByte": 0.00000001,
+        "periodInDays": 10
+      },
+      "input": {
+        "chunkId": "string",
+        "data": "byteArray"
+      },
+      "output": {
+        "success": "bool"
+      }
+    },
+    {
+      "service": "storeRecover",
+      "credit": "own",
+      "description": "recover stored data",
+      "info": {
+        "pricePerByte": 0.0000000000000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    }
+  ],
+  "sell": [
+    {
+      "service": "store",
+      "credit": "own",
+      "description": "store some data for a period of time",
+      "info": {
+        "pricePerByte": 0.00000001,
+        "periodInDays": 30
+      },
+      "input": {
+        "chunkId": "string",
+        "data": "byteArray"
+      },
+      "output": {
+        "success": "bool"
+      }
+    },
+    {
+      "service": "storeRecover",
+      "credit": "own",
+      "description": "recover stored data",
+      "info": {
+        "pricePerByte": 0.0000000000000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    },
+    {
+      "service": "storeEncryptedPackage",
+      "credit": "own",
+      "price": "0.01",
+      "description": "store some data for a period of time that can be recovered by a different id",
+      "info": {
+        "pricePerByte": 0.00000001,
+        "periodInDays": 10
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    },
+    {
+      "service": "searchEncryptedPackage",
+      "credit": "own",
+      "description": "Returns if there are packages for id in this server",
+      "info": {
+        "pricePerCall": 0.00000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "id": "string"
+      },
+      "output": {
+        "packageList": "PackageInfoArray"
+      }
+    },
+    {
+      "service": "getEncryptedPackage",
+      "credit": "own",
+      "description": "Returns a package from package info",
+      "info": {
+        "pricePerCall": 0.0001
+      },
+      "input": {
+        "package": "packageInfo"
+      },
+      "output": {
+        "packageContents": "byteArray"
+      }
+    },
+    {
+      "service": "getCurrentTemperature",
+      "credit": "own",
+      "description": "returns the current temperature",
+      "info": {
+        "pricePerCall": 1
+      },
+      "input": {
+        "location": "string"
+      },
+      "output": {
+        "weatherInCelsius": "int"
+      }
+    },
+    {
+      "service": "creditsBalance",
+      "credit": "own",
+      "description": "returns the current credits balance",
+      "info": {
+        "pricePerCall": 0.000000000001
+      },
+      "input": {
+        "id": "string"
+      },
+      "output": {
+        "credits": "string"
+      }
+    },
+    {
+      "service": "lookupID",
+      "credit": "own",
+      "description": "returns the public info for this ID",
+      "info": {
+        "pricePerCall": 0.0001
+      },
+      "input": {
+        "id": "string"
+      },
+      "output": {
+        "info": "profileInfo"
+      }
+    }
+  ]
+}

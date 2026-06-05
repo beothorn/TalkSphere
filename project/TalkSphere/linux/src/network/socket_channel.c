@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
+#define RESPONSE_BUFFER_SIZE 16384
 #define SOCKET_NOT_CREATED_YET (-1)
 #define SYSTEM_CALL_FAILED (-1)
 #define STRUCT_ZERO_FILL 0
@@ -141,6 +142,33 @@ static int send_message_to_endpoint(
         : TALKSPHERE_FAILURE;
 }
 
+static int send_response_to_connected_client(
+    int connected_client_file_descriptor,
+    const char *response_text
+) {
+    LOG_TRACE("send_response_to_connected_client(): now we return a command response on the accepted socket connection");
+
+    size_t response_text_length = strlen(response_text);
+    size_t sent_total_count = 0;
+    while (sent_total_count < response_text_length) {
+        ssize_t sent_bytes_count = send(
+            connected_client_file_descriptor,
+            response_text + sent_total_count,
+            response_text_length - sent_total_count,
+            SEND_FLAGS
+        );
+
+        if (sent_bytes_count <= 0) {
+            LOG_ERROR("Sending the socket response failed so the connected peer cannot receive the command result");
+            return TALKSPHERE_FAILURE;
+        }
+
+        sent_total_count += (size_t)sent_bytes_count;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
 int run_socket_channel(
     int client_port,
     int server_port,
@@ -212,10 +240,19 @@ int run_socket_channel(
         }
 
         receive_buffer[read_bytes_count] = STRING_TERMINATOR;
-        process_received_message(
+        char response_buffer[RESPONSE_BUFFER_SIZE];
+        if (process_received_message(
             receive_buffer,
-            &message_processing_dependencies
-        );
+            &message_processing_dependencies,
+            response_buffer,
+            sizeof(response_buffer)
+        ) == TALKSPHERE_SUCCESS && response_buffer[0] != STRING_TERMINATOR
+        ) {
+            send_response_to_connected_client(
+                connected_client_file_descriptor,
+                response_buffer
+            );
+        }
         close(connected_client_file_descriptor);
     }
 

@@ -9,6 +9,8 @@
 
 #define IDENTIFIER_TEXT_SIZE 256
 #define PATH_TEXT_SIZE 512
+#define OFFERINGS_TEXT_SIZE 8192
+#define DEFAULT_OFFERINGS_FILE_PATH "defaults/offerings.json"
 
 static int path_exists(
     const char *path
@@ -63,7 +65,8 @@ static int offerings_have_expected_defaults(
     const char *app_storage_directory_path
 ) {
     char offerings_file_path[PATH_TEXT_SIZE];
-    char offerings_text[1024];
+    char offerings_text[OFFERINGS_TEXT_SIZE];
+    char default_offerings_text[OFFERINGS_TEXT_SIZE];
 
     if (build_path(
             app_storage_directory_path,
@@ -92,14 +95,27 @@ static int offerings_have_expected_defaults(
     fclose(offerings_file);
     offerings_text[read_bytes_count] = '\0';
 
-    return strstr(
+    FILE *default_offerings_file = fopen(
+        DEFAULT_OFFERINGS_FILE_PATH,
+        "r"
+    );
+    if (default_offerings_file == NULL) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    size_t default_read_bytes_count = fread(
+        default_offerings_text,
+        sizeof(char),
+        sizeof(default_offerings_text) - 1,
+        default_offerings_file
+    );
+    fclose(default_offerings_file);
+    default_offerings_text[default_read_bytes_count] = '\0';
+
+    return strcmp(
         offerings_text,
-        "\"availability\": \"alwaysOn\""
-    ) != NULL
-        && strstr(
-            offerings_text,
-            "\"type\":\"askForMessages\""
-        ) != NULL
+        default_offerings_text
+    ) == 0
         ? TALKSPHERE_SUCCESS
         : TALKSPHERE_FAILURE;
 }
