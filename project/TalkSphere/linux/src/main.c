@@ -5,6 +5,7 @@
 #include "network/socket_channel.h"
 
 #include <limits.h>
+#include <stdio.h>
 
 #define IDENTIFIER_TEXT_SIZE 256
 
@@ -24,6 +25,10 @@ int main(
         return TALKSPHERE_FAILURE;
     }
 
+    if (program_arguments.program_mode == PROGRAM_MODE_PRINT_HELP) {
+        return TALKSPHERE_SUCCESS;
+    }
+
     char resolved_storage_directory_path[PATH_MAX];
     if (resolve_app_storage_directory_path(
             program_arguments.app_storage_directory_path,
@@ -36,6 +41,32 @@ int main(
 
     if (ensure_app_files(resolved_storage_directory_path) != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.program_mode == PROGRAM_MODE_PRINT_HOME) {
+        printf(
+            "%s\n",
+            resolved_storage_directory_path
+        );
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (program_arguments.program_mode == PROGRAM_MODE_PRINT_IDENTIFIER) {
+        char local_identifier_text[IDENTIFIER_TEXT_SIZE];
+        if (read_local_identifier(
+                resolved_storage_directory_path,
+                local_identifier_text,
+                sizeof(local_identifier_text)
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        printf(
+            "%s\n",
+            local_identifier_text
+        );
+        return TALKSPHERE_SUCCESS;
     }
 
     if (program_arguments.program_mode == PROGRAM_MODE_PRINT_LEDGER_SUMMARY) {

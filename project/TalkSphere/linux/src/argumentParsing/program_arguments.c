@@ -13,12 +13,25 @@
 #define STORAGE_DIRECTORY_ARGUMENT_INDEX 3
 #define LEDGER_SUMMARY_ARGUMENT_INDEX 1
 #define LEDGER_SUMMARY_STORAGE_DIRECTORY_ARGUMENT_INDEX 2
+#define IDENTIFIER_ARGUMENT_INDEX 1
+#define IDENTIFIER_STORAGE_DIRECTORY_ARGUMENT_INDEX 2
+#define HOME_ARGUMENT_INDEX 1
+#define HOME_STORAGE_DIRECTORY_ARGUMENT_INDEX 2
+#define HELP_ARGUMENT_INDEX 1
 #define DEFAULT_ARGUMENT_COUNT 1
 #define CUSTOM_PORT_ARGUMENT_COUNT 3
 #define CUSTOM_PORT_AND_STORAGE_ARGUMENT_COUNT 4
 #define LEDGER_SUMMARY_ARGUMENT_COUNT 2
 #define LEDGER_SUMMARY_WITH_STORAGE_ARGUMENT_COUNT 3
+#define IDENTIFIER_ARGUMENT_COUNT 2
+#define IDENTIFIER_WITH_STORAGE_ARGUMENT_COUNT 3
+#define HOME_ARGUMENT_COUNT 2
+#define HOME_WITH_STORAGE_ARGUMENT_COUNT 3
+#define HELP_ARGUMENT_COUNT 2
 #define LEDGER_SUMMARY_ARGUMENT_TEXT "--ledger-summary"
+#define IDENTIFIER_ARGUMENT_TEXT "--id"
+#define HOME_ARGUMENT_TEXT "--home"
+#define HELP_ARGUMENT_TEXT "--help"
 
 #define DECIMAL_BASE 10
 #define MINIMUM_PORT 1
@@ -26,20 +39,27 @@
 #define STRING_TERMINATOR '\0'
 
 static void print_usage(
+    FILE *output_file,
     const char *program_name
 ) {
     LOG_TRACE("print_usage(): now we print the valid command shapes");
 
     fprintf(
-        stderr,
+        output_file,
         "Usage:\n"
         "  %s\n"
         "  %s <client_port> <server_port>\n"
         "  %s <client_port> <server_port> <storage_directory>\n"
+        "  %s --id [storage_directory]\n"
+        "  %s --home [storage_directory]\n"
         "  %s --ledger-summary [storage_directory]\n\n"
+        "  %s --help\n\n"
         "Ports:\n"
         "  Default client port: %d\n"
         "  Default server port: %d\n",
+        program_name,
+        program_name,
+        program_name,
         program_name,
         program_name,
         program_name,
@@ -120,6 +140,39 @@ static int argument_is_ledger_summary_command(
     ) == 0;
 }
 
+static int argument_is_identifier_command(
+    const char *argument_text
+) {
+    LOG_TRACE("argument_is_identifier_command(): now we check whether the user asked for the local id");
+
+    return strcmp(
+        argument_text,
+        IDENTIFIER_ARGUMENT_TEXT
+    ) == 0;
+}
+
+static int argument_is_help_command(
+    const char *argument_text
+) {
+    LOG_TRACE("argument_is_help_command(): now we check whether the user asked to see command help");
+
+    return strcmp(
+        argument_text,
+        HELP_ARGUMENT_TEXT
+    ) == 0;
+}
+
+static int argument_is_home_command(
+    const char *argument_text
+) {
+    LOG_TRACE("argument_is_home_command(): now we check whether the user asked for the app storage folder");
+
+    return strcmp(
+        argument_text,
+        HOME_ARGUMENT_TEXT
+    ) == 0;
+}
+
 static void initialize_program_arguments(
     struct program_arguments *program_arguments
 ) {
@@ -150,6 +203,69 @@ static int parse_ledger_summary_arguments(
     if (argument_count == LEDGER_SUMMARY_WITH_STORAGE_ARGUMENT_COUNT) {
         program_arguments->app_storage_directory_path =
             argument_values[LEDGER_SUMMARY_STORAGE_DIRECTORY_ARGUMENT_INDEX];
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int parse_identifier_arguments(
+    int argument_count,
+    char *argument_values[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_identifier_arguments(): now we parse the command that prints the local id");
+
+    if (argument_count != IDENTIFIER_ARGUMENT_COUNT
+        && argument_count != IDENTIFIER_WITH_STORAGE_ARGUMENT_COUNT
+    ) {
+        LOG_WARN("Identifier arguments are unwanted because the command accepts only an optional storage directory");
+        return TALKSPHERE_FAILURE;
+    }
+
+    program_arguments->program_mode = PROGRAM_MODE_PRINT_IDENTIFIER;
+
+    if (argument_count == IDENTIFIER_WITH_STORAGE_ARGUMENT_COUNT) {
+        program_arguments->app_storage_directory_path =
+            argument_values[IDENTIFIER_STORAGE_DIRECTORY_ARGUMENT_INDEX];
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int parse_help_arguments(
+    int argument_count,
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_help_arguments(): now we parse the command that prints all supported arguments");
+
+    if (argument_count != HELP_ARGUMENT_COUNT) {
+        LOG_WARN("Help arguments are unwanted because --help does not accept extra arguments");
+        return TALKSPHERE_FAILURE;
+    }
+
+    program_arguments->program_mode = PROGRAM_MODE_PRINT_HELP;
+    return TALKSPHERE_SUCCESS;
+}
+
+static int parse_home_arguments(
+    int argument_count,
+    char *argument_values[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_home_arguments(): now we parse the command that prints the app storage folder");
+
+    if (argument_count != HOME_ARGUMENT_COUNT
+        && argument_count != HOME_WITH_STORAGE_ARGUMENT_COUNT
+    ) {
+        LOG_WARN("Home arguments are unwanted because the command accepts only an optional storage directory");
+        return TALKSPHERE_FAILURE;
+    }
+
+    program_arguments->program_mode = PROGRAM_MODE_PRINT_HOME;
+
+    if (argument_count == HOME_WITH_STORAGE_ARGUMENT_COUNT) {
+        program_arguments->app_storage_directory_path =
+            argument_values[HOME_STORAGE_DIRECTORY_ARGUMENT_INDEX];
     }
 
     return TALKSPHERE_SUCCESS;
@@ -220,6 +336,29 @@ int parse_program_arguments(
             argument_values,
             program_arguments
         );
+    } else if (argument_count >= IDENTIFIER_ARGUMENT_COUNT
+        && argument_is_identifier_command(argument_values[IDENTIFIER_ARGUMENT_INDEX])
+    ) {
+        parse_result = parse_identifier_arguments(
+            argument_count,
+            argument_values,
+            program_arguments
+        );
+    } else if (argument_count >= HOME_ARGUMENT_COUNT
+        && argument_is_home_command(argument_values[HOME_ARGUMENT_INDEX])
+    ) {
+        parse_result = parse_home_arguments(
+            argument_count,
+            argument_values,
+            program_arguments
+        );
+    } else if (argument_count >= HELP_ARGUMENT_COUNT
+        && argument_is_help_command(argument_values[HELP_ARGUMENT_INDEX])
+    ) {
+        parse_result = parse_help_arguments(
+            argument_count,
+            program_arguments
+        );
     } else {
         parse_result = parse_server_arguments(
             argument_count,
@@ -229,7 +368,15 @@ int parse_program_arguments(
     }
 
     if (parse_result != TALKSPHERE_SUCCESS) {
-        print_usage(program_name);
+        print_usage(
+            stderr,
+            program_name
+        );
+    } else if (program_arguments->program_mode == PROGRAM_MODE_PRINT_HELP) {
+        print_usage(
+            stdout,
+            program_name
+        );
     }
 
     return parse_result;

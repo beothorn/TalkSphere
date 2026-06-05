@@ -6,6 +6,7 @@ failure_count=0
 
 all_test_paths=(
     "test/argumentParsing/program_arguments_test.c"
+    "test/argumentParsing/id_and_help_command_test.sh"
     "test/encryption/encryption_test.c"
     "test/files/app_files_test.c"
     "test/ledger/ledger_summary_test.sh"

@@ -6,7 +6,10 @@ This module validates the command-line interface for the Linux runtime.
 
 - Parse optional client and server ports.
 - Parse the optional application storage directory.
+- Detect the `--id` mode.
+- Detect the `--home` mode.
 - Detect the `--ledger-summary` mode.
+- Detect the `--help` mode.
 - Reject invalid ports, unsupported argument counts, and conflicting client/server ports.
 - Print usage text when the command shape is invalid.
 
