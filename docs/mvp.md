@@ -9,18 +9,166 @@ Bob send to Alice his unique id and the address for CentralMessageHub (www.isage
 Alice asks CentralMessageHub to list their services. She gets:  
 
 ```
-[
-  {"availability": "alwaysOn"},
-  {"reachableAt": ["www.isageek.com.br:9979"]},
-  {"operation":"buy", "creditType":"own", "price": 1, "type":"storage", "offerInfo":{"size": 100000, "period": 10, "maxRecoveryCalls": 1000}},
-  {"operation":"sell", "creditType":"own", "price": 1,"type":"storage", "offerInfo":{"size": 100000, "period": 30, "maxRecoveryCalls": 1000}},
-  {"operation":"sell", "creditType":"own", "price": 0.01,"type": "storeEncryptedPackage", "offerInfo":{"size": 1, "period": 10, "maxRecoveryCalls": 5}},
-  {"operation":"sell", "creditType":"own", "price": 0.00001,"type": "getCurrentTemperature"},
-  {"operation":"sell", "creditType":"own", "price": 0.01,"type": "searchEncryptedPackage"},
-  {"operation":"sell", "creditType":"own", "price": 0.01,"type": "getEncryptedPackage"},
-  {"operation":"sell", "creditType":"own", "price": 0.0001,"type": "creditsBalance"},
-  {"operation":"sell", "creditType":"own", "price": 0.001,"type": "lookupID"},
-]
+{
+  "availability": "alwaysOn",
+  "reachableAt": ["www.isageek.com.br:9979"],
+  "buy" : [
+    {
+      "service": "store", 
+      "credit":"own", 
+      "description": "store some data for a period of time",
+      "info": {
+        "pricePerByte": 0.00000001, 
+        "periodInDays": 10
+      },
+      "input": {
+        "chunkId": "string",
+        "data": "byteArray"
+      },
+      "output": {
+        "success": "bool"
+      }
+    },
+    {
+      "service": "storeRecover", 
+      "credit":"own", 
+      "description": "recover stored data",
+      "info": {
+        "pricePerByte": 0.0000000000000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    }
+  ],
+  "sell": [
+    {
+      "service": "store",
+      "credit": "own", 
+      "description": "store some data for a period of time",
+      "info": {
+        "pricePerByte": 0.00000001, 
+        "periodInDays": 30
+      },
+      "input": {
+        "chunkId": "string",
+        "data": "byteArray"
+      },
+      "output": {
+        "success": "bool"
+      }
+    },
+    {
+      "service": "storeRecover", 
+      "credit":"own", 
+      "description": "recover stored data",
+      "info": {
+        "pricePerByte": 0.0000000000000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    },
+    {
+      "service": "storeEncryptedPackage", 
+      "credit":"own", 
+      "price": "0.01",
+      "description": "store some data for a period of time that can be recovered by a different id",
+      "info":{
+        "pricePerByte": 0.00000001, 
+        "periodInDays": 10
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "chunkId": "string"
+      },
+      "output": {
+        "data": "byteArray"
+      }
+    },
+    {
+      "service": "searchEncryptedPackage", 
+      "credit":"own", 
+      "description": "Returns if there are pacckages for id in this server",
+      "info":{
+        "pricePerCall": 0.00000001
+      },
+      "preCondition": "idChallenge",
+      "input": {
+        "Id": "string"
+      },
+      "output": {
+        "packageList": "PackageInfoArray"
+      }
+    },
+    {
+      "service": "getEncryptedPackage", 
+      "credit":"own", 
+      "description": "Returns a package from package info",
+      "info":{
+        "pricePerCall": 0.0001
+      },
+      "input": {
+        "package": "packageInfo"
+      },
+      "output": {
+        "packageContents": "byteArray"
+      }
+    },
+    {
+      "service": "getCurrentTemperature", 
+      "credit":"own", 
+      "description": "returns the current temperature",
+      "info":{
+        "pricePerCall": 1
+      },
+      "input": {
+        "location": "string"
+      },
+      "output": {
+        "weatherInCelsius": "int"
+      }
+    },
+    {
+      "service": "creditsBalance", 
+      "credit":"own", 
+      "description": "returns the current credits balance",
+      "info":{
+        "pricePerCall": 0.000000000001
+      },
+      "input": {
+        "id": "string"
+      },
+      "output": {
+        "credits": "string"
+      }
+    },
+    {
+      "service": "lookupID", 
+      "credit":"own", 
+      "description": "returns the public info for this ID",
+      "info":{
+        "pricePerCall": 0.0001
+      },
+      "input": {
+        "id": "string"
+      },
+      "output": {
+        "info": "profileInfo"
+      }
+    }
+  ]
+}
+
+
 ```
 
 lookupID is the service that given an ID returns some profile info, including the public key for a user.  
