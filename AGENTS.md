@@ -19,6 +19,9 @@ server_file_descriptor = socket(
 );
 ```
 
+No magic numbers, replace all literal numbers with constants.  
+
+
 Prefer breaking down function instead of commenting.  
 Prefer to put functions related to the same responsability in a separate file.  
 Use folders to organize code, try to organize by domain instead of technology. Example:  
