@@ -55,6 +55,8 @@ source_files_for() {
             ;;
         test/sharedStorage/shared_storage_test.c)
             printf '%s\n' "src/sharedStorage/shared_storage.c"
+            printf '%s\n' "src/sharedStorage/fileSystem/shared_storage_file_system.c"
+            printf '%s\n' "src/sharedStorage/management/shared_storage_management.c"
             ;;
         *)
             printf 'Unknown C test source: %s\n' "$test_source_path" >&2
@@ -76,7 +78,7 @@ run_c_test() {
 
     mkdir -p "$test_build_directory"
 
-    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" $module_source_files -o "$test_binary_path"; then
+    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" $module_source_files -o "$test_binary_path" -ldl; then
         printf 'not ok - %s (compile failed)\n' "$test_source_path"
         failure_count=$((failure_count + 1))
         return

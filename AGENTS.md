@@ -42,6 +42,9 @@ network
 Keep in mind separation of responsibilities. Do not share data structures between unrelated domains.  
 For example, if socket has a struct package, it may be convenient to use package on encryption, but that would violate separation of responsibilities.  
 Prefer instead using many primitive arguments or a structure in a shared parent folder.  
+It is extremely important to not mix responsibilities, so each module can be understood and tested in isolation.  
+This also helps any implementation to deal with less code. Keep responsibilities contained.  
+This also applies inside modules. If it is possible to break responsibilities down into more folders, do it.  
 
 Rule of thumb, if include has a parent folder, it should not have a folder after it. Example:  
 Good:

@@ -1,5 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -Wpedantic -std=c11 -pthread -Isrc
+LDLIBS=-ldl
 SRC=$(shell find src -name "*.c")
 BUILD_DIRECTORY=build
 BIN=$(BUILD_DIRECTORY)/talksphere
@@ -7,7 +8,7 @@ BIN=$(BUILD_DIRECTORY)/talksphere
 all: $(BIN)
 
 $(BIN): $(SRC) | $(BUILD_DIRECTORY)
-	$(CC) $(CFLAGS) $(SRC) -o $(BIN)
+	$(CC) $(CFLAGS) $(SRC) -o $(BIN) $(LDLIBS)
 
 $(BUILD_DIRECTORY):
 	mkdir -p $(BUILD_DIRECTORY)
