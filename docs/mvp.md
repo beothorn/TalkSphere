@@ -1,5 +1,6 @@
-This is the basic scenario that must run.
+This is the basic scenarios that must run.
 
+1 
 Alice wants to send message to Bob
 Alice has no public IP, Bob has no public IP
 Bob told Alice that he has his connection data at CentralMessageHub.  
@@ -214,6 +215,18 @@ The MVP should prove one complete asynchronous message flow:
 6. Bob can answer with alternate hub contact data so Alice and Bob are not permanently dependent on CentralMessageHub.
 
 The MVP does not need to solve global decentralization yet. It should focus on a small set of reliable primitives: identity lookup, service discovery, credit accounting, encrypted package storage, encrypted package search, encrypted package retrieval, and storage challenge verification.
+
+2
+
+Alice puts a file public available for 1000 downloads using her credits. The file is spread through many nodes. 
+
+3
+
+A dashboard with public messages of selected people (social media) 
+
+4
+
+A personal web page but distributed 
 
 ## Architecture
 
