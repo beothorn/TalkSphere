@@ -6,8 +6,8 @@ TalkSphere is designed as a decentralized peer-to-peer system where peers exchan
 
 The current Linux implementation is a small command-line runtime organized by responsibility:
 
-- **Startup**: `main.c` connects the modules. It parses arguments, prepares local storage, optionally prints ledger totals, and starts networking.
-- **Argument parsing**: validates user input and chooses between server mode and ledger-summary mode.
+- **Startup**: `main.c` connects the modules. It parses commands, prepares local storage when needed, delegates existing domain operations, prints placeholders for missing command bodies, and starts networking for `run`.
+- **Argument parsing**: validates user input and maps domain commands such as `run`, `config`, `encryption`, `ledger`, `network`, `offerings`, and `share` into program modes.
 - **Files**: resolves and creates local storage, including the local identifier and ledger directory.
 - **Ledger**: records local credit balances as files and calculates owned/owed totals.
 - **Network**: runs a TCP listener and sends outbound TCP messages.
@@ -17,10 +17,10 @@ The current Linux implementation is a small command-line runtime organized by re
 ## Runtime flow
 
 1. The process starts in `main.c`.
-2. Program arguments are parsed into a mode and optional port/storage configuration.
-3. The storage path is resolved and required app files are created.
-4. In ledger-summary mode, the ledger module reads balances and prints owned/owed totals.
-5. In server mode, the network module listens for TCP messages.
+2. Program arguments are parsed into a command mode and optional command data such as ports, message text, or peer addresses.
+3. The storage path is resolved, and required app files are created only for commands that need local files.
+4. In `ledger credit_summary`, the ledger module reads balances and prints owned/owed totals.
+5. In `run`, the network module listens for TCP messages.
 6. Received messages are passed to the message parsing module.
 7. Message parsing updates the ledger or prints delivered message text depending on the message command.
 

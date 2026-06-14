@@ -4,7 +4,7 @@ This folder contains the Linux implementation of the TalkSphere command-line run
 
 ## Responsibilities
 
-- `main.c` wires startup together: it parses arguments, resolves storage, ensures local files exist, delegates ledger summaries when requested, and otherwise starts the socket channel.
+- `main.c` wires startup together: it parses commands, resolves storage, ensures local files exist when needed, delegates implemented domain commands, prints placeholders for missing command bodies, and starts the socket channel for `run`.
 - `argumentParsing` owns command-line parsing and validation.
 - `common` contains small shared contracts that are safe for unrelated modules to depend on.
 - `encryption` owns the future cryptographic boundary for key creation, encryption, and signing.
