@@ -30,6 +30,8 @@
 #define SQLITE_PARAMETER_CREDIT_COUNT 3
 #define SQLITE_COLUMN_OWNER_IDENTIFIER 0
 #define SQLITE_COLUMN_CREDIT_COUNT 1
+#define SQLITE_LIST_COLUMN_CODE 0
+#define SQLITE_LIST_COLUMN_CREDIT_COUNT 1
 #define SQLITE_TRANSIENT ((void (*)(void *))-1)
 
 typedef struct sqlite3 sqlite3;
@@ -659,6 +661,120 @@ int credit_withdraw_find_code(
         statement,
         SQLITE_COLUMN_CREDIT_COUNT
     );
+
+    int finalize_result = finalize_statement(statement);
+    int close_result = close_database(database);
+    if (finalize_result != TALKSPHERE_SUCCESS || close_result != TALKSPHERE_SUCCESS) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int read_credit_withdraw_entry_from_statement(
+    sqlite3_stmt *statement,
+    struct credit_withdraw_entry *credit_withdraw_entry
+) {
+    LOG_TRACE("read_credit_withdraw_entry_from_statement(): now we copy one listed credit withdraw code row into the shared entry shape");
+
+    const unsigned char *credit_code_text = sqlite_runtime.column_text(
+        statement,
+        SQLITE_LIST_COLUMN_CODE
+    );
+    if (credit_code_text == NULL) {
+        LOG_ERROR("Credit withdraw list row has no code id so it cannot be printed");
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (snprintf(
+            credit_withdraw_entry->credit_code_text,
+            sizeof(credit_withdraw_entry->credit_code_text),
+            "%s",
+            (const char *)credit_code_text
+        ) >= (int)sizeof(credit_withdraw_entry->credit_code_text)
+    ) {
+        LOG_ERROR("Credit withdraw list code id is too long to copy safely");
+        return TALKSPHERE_FAILURE;
+    }
+
+    credit_withdraw_entry->credit_count = (int)sqlite_runtime.column_int64(
+        statement,
+        SQLITE_LIST_COLUMN_CREDIT_COUNT
+    );
+
+    return TALKSPHERE_SUCCESS;
+}
+
+int credit_withdraw_list_codes(
+    const char *app_storage_directory_path,
+    credit_withdraw_entry_callback entry_callback,
+    void *callback_context
+) {
+    LOG_TRACE("credit_withdraw_list_codes(): now we list credit withdraw rows so the caller can decide how to present them");
+
+    if (entry_callback == NULL) {
+        LOG_WARN("Credit withdraw listing is unwanted because callers need a callback to receive rows");
+        return TALKSPHERE_FAILURE;
+    }
+
+    char database_file_path[PATH_MAX];
+    if (prepare_storage(
+            app_storage_directory_path,
+            database_file_path,
+            sizeof(database_file_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    sqlite3 *database = NULL;
+    sqlite3_stmt *statement = NULL;
+    if (open_database(
+            database_file_path,
+            &database
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (prepare_statement(
+            database,
+            "SELECT code, credit_count "
+            "FROM credit_withdraw_codes "
+            "ORDER BY code",
+            &statement
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        close_database(database);
+        return TALKSPHERE_FAILURE;
+    }
+
+    int step_result = sqlite_runtime.step(statement);
+    while (step_result == SQLITE_ROW) {
+        struct credit_withdraw_entry credit_withdraw_entry;
+        if (read_credit_withdraw_entry_from_statement(
+                statement,
+                &credit_withdraw_entry
+            ) != TALKSPHERE_SUCCESS
+            || entry_callback(
+                &credit_withdraw_entry,
+                callback_context
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            finalize_statement(statement);
+            close_database(database);
+            return TALKSPHERE_FAILURE;
+        }
+
+        step_result = sqlite_runtime.step(statement);
+    }
+
+    if (step_result != SQLITE_DONE) {
+        LOG_ERROR("Reading credit withdraw list rows failed before the query completed");
+        finalize_statement(statement);
+        close_database(database);
+        return TALKSPHERE_FAILURE;
+    }
 
     int finalize_result = finalize_statement(statement);
     int close_result = close_database(database);

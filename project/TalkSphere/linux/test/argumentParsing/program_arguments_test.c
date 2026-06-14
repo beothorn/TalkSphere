@@ -446,6 +446,29 @@ static int test_credit_remove_arguments(void) {
         : TALKSPHERE_FAILURE;
 }
 
+static int test_credit_withadraw_list_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "credit",
+        "withadraw",
+        "list"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_FOUR_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_LIST_CREDIT_WITHDRAW_CODES
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
 static int test_credit_add_rejects_invalid_count(void) {
     char *argument_values[] = {
         "talksphere",
@@ -594,6 +617,10 @@ int main(void) {
 
     if (test_credit_add_rejects_invalid_count() != TALKSPHERE_SUCCESS) {
         return 19;
+    }
+
+    if (test_credit_withadraw_list_arguments() != TALKSPHERE_SUCCESS) {
+        return 20;
     }
 
     return 0;

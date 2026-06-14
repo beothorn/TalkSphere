@@ -31,6 +31,7 @@
 #define CREDIT_CHILD_ARGUMENT_OFFSET 1
 #define CREDIT_COUNT_ARGUMENT_OFFSET 2
 #define CREDIT_CODE_ARGUMENT_OFFSET 3
+#define CREDIT_WITHDRAW_CHILD_ARGUMENT_OFFSET 2
 #define COMMAND_WITH_NO_CHILD_COUNT 1
 #define COMMAND_WITH_ONE_CHILD_COUNT 2
 #define COMMAND_WITH_TWO_CHILDREN_COUNT 3
@@ -52,6 +53,8 @@
 #define MESSAGE_COMMAND_TEXT "message"
 #define SHARE_COMMAND_TEXT "share"
 #define CREDIT_COMMAND_TEXT "credit"
+#define CREDIT_WITHDRAW_COMMAND_TEXT "withdraw"
+#define CREDIT_WITHDRAW_MISSPELLED_COMMAND_TEXT "withadraw"
 #define GET_COMMAND_TEXT "get"
 #define HOME_COMMAND_TEXT "home"
 #define CREATE_COMMAND_TEXT "create"
@@ -66,6 +69,7 @@
 #define LOCAL_COMMAND_TEXT "local"
 #define REMOTE_COMMAND_TEXT "remote"
 #define LIST_COMMAND_TEXT "ls"
+#define LIST_WORD_COMMAND_TEXT "list"
 #define PORT_SHORT_ARGUMENT_TEXT "-p"
 #define HELP_LONG_ARGUMENT_TEXT "--help"
 #define HELP_WORD_ARGUMENT_TEXT "help"
@@ -294,7 +298,10 @@ static void print_credit_help(
         "  %s [--dry-run|d] credit add <credit_count> <code>\n"
         "      Store a withdraw code that can credit this local id in the future.\n"
         "  %s [--dry-run|d] credit remove <code>\n"
-        "      Remove a withdraw code from the local home folder.\n",
+        "      Remove a withdraw code from the local home folder.\n"
+        "  %s [--dry-run|d] credit withadraw list\n"
+        "      List credit counts and owner ids from withdraw codes.\n",
+        program_name,
         program_name,
         program_name
     );
@@ -887,6 +894,28 @@ static int parse_credit_command(
         return TALKSPHERE_SUCCESS;
     }
 
+    if (command_argument_count == COMMAND_WITH_TWO_CHILDREN_COUNT
+        && (argument_text_is(
+                command_arguments[CREDIT_CHILD_ARGUMENT_OFFSET],
+                CREDIT_WITHDRAW_COMMAND_TEXT
+            )
+            || argument_text_is(
+                command_arguments[CREDIT_CHILD_ARGUMENT_OFFSET],
+                CREDIT_WITHDRAW_MISSPELLED_COMMAND_TEXT
+            ))
+        && (argument_text_is(
+                command_arguments[CREDIT_WITHDRAW_CHILD_ARGUMENT_OFFSET],
+                LIST_COMMAND_TEXT
+            )
+            || argument_text_is(
+                command_arguments[CREDIT_WITHDRAW_CHILD_ARGUMENT_OFFSET],
+                LIST_WORD_COMMAND_TEXT
+            ))
+    ) {
+        program_arguments->program_mode = PROGRAM_MODE_LIST_CREDIT_WITHDRAW_CODES;
+        return TALKSPHERE_SUCCESS;
+    }
+
     LOG_WARN("Credit arguments are unwanted because the command shape is not supported");
     return TALKSPHERE_FAILURE;
 }
@@ -1077,6 +1106,7 @@ int parse_program_arguments(
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_NETWORK_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_OFFERINGS_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_SHARE_HELP
+        || program_arguments->program_mode == PROGRAM_MODE_PRINT_CREDIT_HELP
     ) {
         print_help_for_mode(
             stdout,

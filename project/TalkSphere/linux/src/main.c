@@ -210,7 +210,8 @@ static int command_needs_app_files(
         || program_mode == PROGRAM_MODE_SIGN_MESSAGE
         || program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS
         || program_mode == PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE
-        || program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE;
+        || program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE
+        || program_mode == PROGRAM_MODE_LIST_CREDIT_WITHDRAW_CODES;
 }
 
 static int print_dry_run(
@@ -312,6 +313,11 @@ static int print_dry_run(
         printf(
             "Would remove credit withdraw code %s from %s\n",
             program_arguments->credit_code_text,
+            resolved_storage_directory_path
+        );
+    } else if (program_arguments->program_mode == PROGRAM_MODE_LIST_CREDIT_WITHDRAW_CODES) {
+        printf(
+            "Would list credit withdraw codes from %s\n",
             resolved_storage_directory_path
         );
     }
@@ -572,6 +578,33 @@ static int remove_credit_withdraw_code(
     return TALKSPHERE_SUCCESS;
 }
 
+static int print_credit_withdraw_entry(
+    const struct credit_withdraw_entry *credit_withdraw_entry,
+    void *callback_context
+) {
+    LOG_TRACE("print_credit_withdraw_entry(): now we print one credit withdraw row for the list command");
+
+    (void)callback_context;
+    printf(
+        "%d %s\n",
+        credit_withdraw_entry->credit_count,
+        credit_withdraw_entry->credit_code_text
+    );
+    return TALKSPHERE_SUCCESS;
+}
+
+static int list_credit_withdraw_codes(
+    const char *resolved_storage_directory_path
+) {
+    LOG_TRACE("list_credit_withdraw_codes(): now we print credits and ids from stored credit withdraw codes");
+
+    return credit_withdraw_list_codes(
+        resolved_storage_directory_path,
+        print_credit_withdraw_entry,
+        NULL
+    );
+}
+
 static int print_placeholder(
     const char *placeholder_text
 ) {
@@ -701,6 +734,10 @@ static int run_command(
             resolved_storage_directory_path,
             program_arguments->credit_code_text
         );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_LIST_CREDIT_WITHDRAW_CODES) {
+        return list_credit_withdraw_codes(resolved_storage_directory_path);
     }
 
     return TALKSPHERE_SUCCESS;
