@@ -2,6 +2,7 @@
 
 #include "logging.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +28,9 @@
 #define TALK_MESSAGE_ARGUMENT_OFFSET 4
 #define SHARE_SCOPE_ARGUMENT_OFFSET 1
 #define SHARE_CHILD_ARGUMENT_OFFSET 2
+#define CREDIT_CHILD_ARGUMENT_OFFSET 1
+#define CREDIT_COUNT_ARGUMENT_OFFSET 2
+#define CREDIT_CODE_ARGUMENT_OFFSET 3
 #define COMMAND_WITH_NO_CHILD_COUNT 1
 #define COMMAND_WITH_ONE_CHILD_COUNT 2
 #define COMMAND_WITH_TWO_CHILDREN_COUNT 3
@@ -47,6 +51,7 @@
 #define TALK_COMMAND_TEXT "talk"
 #define MESSAGE_COMMAND_TEXT "message"
 #define SHARE_COMMAND_TEXT "share"
+#define CREDIT_COMMAND_TEXT "credit"
 #define GET_COMMAND_TEXT "get"
 #define HOME_COMMAND_TEXT "home"
 #define CREATE_COMMAND_TEXT "create"
@@ -146,7 +151,9 @@ static void print_main_help(
         "  talk -p <client_port> message \"message\"\n"
         "      Ask a running local instance to send a message to its connected peer.\n"
         "  share [--help|help|h]\n"
-        "      Show shared storage commands.\n\n"
+        "      Show shared storage commands.\n"
+        "  credit [--help|help|h]\n"
+        "      Show credit withdrawal commands.\n\n"
         "Dry run:\n"
         "  Add --dry-run or d before the command to print what would happen.\n",
         program_name,
@@ -274,6 +281,25 @@ static void print_share_help(
     );
 }
 
+static void print_credit_help(
+    FILE *output_file,
+    const char *program_name
+) {
+    LOG_TRACE("print_credit_help(): now we print the credit withdrawal command help");
+
+    fprintf(
+        output_file,
+        "Credit commands\n\n"
+        "Usage:\n"
+        "  %s [--dry-run|d] credit add <credit_count> <code>\n"
+        "      Store a withdraw code that can credit this local id in the future.\n"
+        "  %s [--dry-run|d] credit remove <code>\n"
+        "      Remove a withdraw code from the local home folder.\n",
+        program_name,
+        program_name
+    );
+}
+
 static void print_help_for_mode(
     FILE *output_file,
     const char *program_name,
@@ -308,6 +334,11 @@ static void print_help_for_mode(
         );
     } else if (program_mode == PROGRAM_MODE_PRINT_SHARE_HELP) {
         print_share_help(
+            output_file,
+            program_name
+        );
+    } else if (program_mode == PROGRAM_MODE_PRINT_CREDIT_HELP) {
+        print_credit_help(
             output_file,
             program_name
         );
@@ -357,6 +388,41 @@ static int parse_port(
     return TALKSPHERE_SUCCESS;
 }
 
+static int parse_credit_count(
+    const char *credit_count_text,
+    int *credit_count
+) {
+    LOG_TRACE("parse_credit_count(): now we validate that the credit amount is a positive integer");
+    LOG_DEBUG(
+        "Parsing credit count from text %s",
+        credit_count_text
+    );
+
+    char *end_character = NULL;
+    long credit_count_value = strtol(
+        credit_count_text,
+        &end_character,
+        DECIMAL_BASE
+    );
+
+    if (credit_count_text[0] == STRING_TERMINATOR
+        || *end_character != STRING_TERMINATOR
+        || credit_count_value <= 0
+        || credit_count_value > INT_MAX
+    ) {
+        LOG_WARN("Credit count is unwanted because it must be a positive integer that fits in an int");
+        fprintf(
+            stderr,
+            "Invalid credit count: %s\n",
+            credit_count_text
+        );
+        return TALKSPHERE_FAILURE;
+    }
+
+    *credit_count = (int)credit_count_value;
+    return TALKSPHERE_SUCCESS;
+}
+
 static int validate_different_ports(
     const struct program_arguments *program_arguments
 ) {
@@ -386,6 +452,8 @@ static void initialize_program_arguments(
     program_arguments->message_text = NULL;
     program_arguments->network_address_text = NULL;
     program_arguments->offering_text = NULL;
+    program_arguments->credit_code_text = NULL;
+    program_arguments->credit_count = 0;
     program_arguments->dry_run_is_enabled = 0;
     program_arguments->program_mode = PROGRAM_MODE_PRINT_MAIN_HELP;
 }
@@ -774,6 +842,55 @@ static int parse_share_command(
     return TALKSPHERE_FAILURE;
 }
 
+static int parse_credit_command(
+    int command_argument_count,
+    char *command_arguments[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_credit_command(): now we parse credit withdraw preparation commands");
+
+    if (command_argument_count == COMMAND_WITH_NO_CHILD_COUNT
+        || (command_argument_count == COMMAND_WITH_ONE_CHILD_COUNT
+            && argument_is_help(command_arguments[CREDIT_CHILD_ARGUMENT_OFFSET]))
+    ) {
+        program_arguments->program_mode = PROGRAM_MODE_PRINT_CREDIT_HELP;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[CREDIT_CHILD_ARGUMENT_OFFSET],
+            ADD_COMMAND_TEXT
+        )
+    ) {
+        if (parse_credit_count(
+                command_arguments[CREDIT_COUNT_ARGUMENT_OFFSET],
+                &program_arguments->credit_count
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        program_arguments->credit_code_text = command_arguments[CREDIT_CODE_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count == COMMAND_WITH_TWO_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[CREDIT_CHILD_ARGUMENT_OFFSET],
+            REMOVE_COMMAND_TEXT
+        )
+    ) {
+        program_arguments->credit_code_text = command_arguments[CREDIT_COUNT_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    LOG_WARN("Credit arguments are unwanted because the command shape is not supported");
+    return TALKSPHERE_FAILURE;
+}
+
 static int parse_command(
     int command_argument_count,
     char *command_arguments[],
@@ -895,6 +1012,18 @@ static int parse_command(
         )
     ) {
         return parse_share_command(
+            command_argument_count,
+            command_arguments,
+            program_arguments
+        );
+    }
+
+    if (argument_text_is(
+            command_arguments[0],
+            CREDIT_COMMAND_TEXT
+        )
+    ) {
+        return parse_credit_command(
             command_argument_count,
             command_arguments,
             program_arguments

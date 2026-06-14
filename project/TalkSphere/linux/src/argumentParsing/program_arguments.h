@@ -15,6 +15,7 @@ enum program_mode {
     PROGRAM_MODE_PRINT_NETWORK_HELP,
     PROGRAM_MODE_PRINT_OFFERINGS_HELP,
     PROGRAM_MODE_PRINT_SHARE_HELP,
+    PROGRAM_MODE_PRINT_CREDIT_HELP,
     PROGRAM_MODE_PRINT_LEDGER_SUMMARY,
     PROGRAM_MODE_PRINT_HOME,
     PROGRAM_MODE_CREATE_ENCRYPTION_KEYS,
@@ -30,7 +31,9 @@ enum program_mode {
     PROGRAM_MODE_EDIT_OFFERING,
     PROGRAM_MODE_REMOVE_OFFERING,
     PROGRAM_MODE_LIST_LOCAL_SHARED_STORAGE,
-    PROGRAM_MODE_LIST_REMOTE_SHARED_STORAGE
+    PROGRAM_MODE_LIST_REMOTE_SHARED_STORAGE,
+    PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE,
+    PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE
 };
 
 struct program_arguments {
@@ -41,6 +44,8 @@ struct program_arguments {
     const char *message_text;
     const char *network_address_text;
     const char *offering_text;
+    const char *credit_code_text;
+    int credit_count;
     int dry_run_is_enabled;
     enum program_mode program_mode;
 };

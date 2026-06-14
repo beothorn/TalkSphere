@@ -387,6 +387,84 @@ static int test_share_remote_list_arguments(void) {
         : TALKSPHERE_FAILURE;
 }
 
+static int test_credit_add_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "credit",
+        "add",
+        "1",
+        "1234"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_RUN_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.credit_count != 1) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.credit_code_text != argument_values[4]) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_credit_remove_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "credit",
+        "remove",
+        "1234"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_FOUR_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.credit_code_text != argument_values[3]) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_credit_add_rejects_invalid_count(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "credit",
+        "add",
+        "0",
+        "1234"
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_RUN_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
 static int test_invalid_run_port(void) {
     char *argument_values[] = {
         "talksphere",
@@ -504,6 +582,18 @@ int main(void) {
 
     if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
         return 16;
+    }
+
+    if (test_credit_add_arguments() != TALKSPHERE_SUCCESS) {
+        return 17;
+    }
+
+    if (test_credit_remove_arguments() != TALKSPHERE_SUCCESS) {
+        return 18;
+    }
+
+    if (test_credit_add_rejects_invalid_count() != TALKSPHERE_SUCCESS) {
+        return 19;
     }
 
     return 0;

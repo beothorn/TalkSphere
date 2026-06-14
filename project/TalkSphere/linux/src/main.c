@@ -1,6 +1,7 @@
 #include "logging.h"
 #include "argumentParsing/program_arguments.h"
 #include "common/result.h"
+#include "creditWithdraw/credit_withdraw.h"
 #include "encryption/encryption.h"
 #include "files/app_files.h"
 #include "ledger/ledger_summary.h"
@@ -207,7 +208,9 @@ static int command_needs_app_files(
         || program_mode == PROGRAM_MODE_RECREATE_ENCRYPTION_KEYS
         || program_mode == PROGRAM_MODE_ENCRYPT_MESSAGE
         || program_mode == PROGRAM_MODE_SIGN_MESSAGE
-        || program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS;
+        || program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS
+        || program_mode == PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE
+        || program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE;
 }
 
 static int print_dry_run(
@@ -298,6 +301,19 @@ static int print_dry_run(
         printf("Would list local shared storage metadata\n");
     } else if (program_arguments->program_mode == PROGRAM_MODE_LIST_REMOTE_SHARED_STORAGE) {
         printf("Would list remote shared storage metadata\n");
+    } else if (program_arguments->program_mode == PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE) {
+        printf(
+            "Would add %d credit withdraw code %s in %s\n",
+            program_arguments->credit_count,
+            program_arguments->credit_code_text,
+            resolved_storage_directory_path
+        );
+    } else if (program_arguments->program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE) {
+        printf(
+            "Would remove credit withdraw code %s from %s\n",
+            program_arguments->credit_code_text,
+            resolved_storage_directory_path
+        );
     }
 
     return TALKSPHERE_SUCCESS;
@@ -500,6 +516,62 @@ static int send_connected_talksphere_message(
     );
 }
 
+static int add_credit_withdraw_code(
+    const char *resolved_storage_directory_path,
+    int credit_count,
+    const char *credit_code_text
+) {
+    LOG_TRACE("add_credit_withdraw_code(): now we store a credit withdraw code for the local id");
+
+    char local_identifier_text[IDENTIFIER_TEXT_SIZE];
+    if (read_local_identifier(
+            resolved_storage_directory_path,
+            local_identifier_text,
+            sizeof(local_identifier_text)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (credit_withdraw_add_code(
+            resolved_storage_directory_path,
+            local_identifier_text,
+            credit_count,
+            credit_code_text
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    printf(
+        "Stored %d credit for code %s\n",
+        credit_count,
+        credit_code_text
+    );
+    return TALKSPHERE_SUCCESS;
+}
+
+static int remove_credit_withdraw_code(
+    const char *resolved_storage_directory_path,
+    const char *credit_code_text
+) {
+    LOG_TRACE("remove_credit_withdraw_code(): now we remove a credit withdraw code from local storage");
+
+    if (credit_withdraw_remove_code(
+            resolved_storage_directory_path,
+            credit_code_text
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    printf(
+        "Removed credit code %s\n",
+        credit_code_text
+    );
+    return TALKSPHERE_SUCCESS;
+}
+
 static int print_placeholder(
     const char *placeholder_text
 ) {
@@ -616,6 +688,21 @@ static int run_command(
         return print_placeholder("remote shared storage listing is not implemented yet");
     }
 
+    if (program_arguments->program_mode == PROGRAM_MODE_ADD_CREDIT_WITHDRAW_CODE) {
+        return add_credit_withdraw_code(
+            resolved_storage_directory_path,
+            program_arguments->credit_count,
+            program_arguments->credit_code_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_REMOVE_CREDIT_WITHDRAW_CODE) {
+        return remove_credit_withdraw_code(
+            resolved_storage_directory_path,
+            program_arguments->credit_code_text
+        );
+    }
+
     return TALKSPHERE_SUCCESS;
 }
 
@@ -642,6 +729,7 @@ int main(
         || program_arguments.program_mode == PROGRAM_MODE_PRINT_NETWORK_HELP
         || program_arguments.program_mode == PROGRAM_MODE_PRINT_OFFERINGS_HELP
         || program_arguments.program_mode == PROGRAM_MODE_PRINT_SHARE_HELP
+        || program_arguments.program_mode == PROGRAM_MODE_PRINT_CREDIT_HELP
     ) {
         return TALKSPHERE_SUCCESS;
     }
