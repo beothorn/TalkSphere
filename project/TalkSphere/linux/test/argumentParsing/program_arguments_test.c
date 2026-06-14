@@ -2,14 +2,19 @@
 #include "common/result.h"
 
 #include <stddef.h>
+#include <string.h>
 
 #define TEST_RUN_ARGUMENT_COUNT 5
 #define TEST_DRY_RUN_ARGUMENT_COUNT 4
 #define TEST_TWO_ARGUMENT_COUNT 2
 #define TEST_THREE_ARGUMENT_COUNT 3
 #define TEST_FOUR_ARGUMENT_COUNT 4
+#define TEST_SIX_ARGUMENT_COUNT 6
+#define TEST_TALK_MESSAGE_TEXT_ARGUMENT_INDEX 5
 #define EXPECTED_LISTEN_PORT 9001
 #define EXPECTED_PEER_PORT 9002
+#define EXPECTED_LOCAL_CLIENT_PORT 8899
+#define EXPECTED_MESSAGE_TEXT "hello world"
 
 static int assert_run_arguments(
     struct program_arguments *program_arguments,
@@ -271,6 +276,94 @@ static int test_offerings_add_arguments(void) {
         : TALKSPHERE_FAILURE;
 }
 
+static int test_talk_offerings_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "talk",
+        "-p",
+        "8899",
+        "offerings"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_RUN_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.local_client_port != EXPECTED_LOCAL_CLIENT_PORT) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_TALK_PRINT_REMOTE_OFFERINGS
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_talk_offerings_rejects_invalid_port(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "talk",
+        "-p",
+        "bad",
+        "offerings"
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_RUN_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_talk_message_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "talk",
+        "-p",
+        "8899",
+        "message",
+        "hello world"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_SIX_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.local_client_port != EXPECTED_LOCAL_CLIENT_PORT) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.message_text != argument_values[TEST_TALK_MESSAGE_TEXT_ARGUMENT_INDEX]) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (strcmp(
+            program_arguments.message_text,
+            EXPECTED_MESSAGE_TEXT
+        ) != 0
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_TALK_SEND_MESSAGE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
 static int test_share_remote_list_arguments(void) {
     char *argument_values[] = {
         "talksphere",
@@ -389,16 +482,28 @@ int main(void) {
         return 10;
     }
 
-    if (test_invalid_run_port() != TALKSPHERE_SUCCESS) {
+    if (test_talk_offerings_arguments() != TALKSPHERE_SUCCESS) {
         return 11;
     }
 
-    if (test_equal_ports() != TALKSPHERE_SUCCESS) {
+    if (test_talk_offerings_rejects_invalid_port() != TALKSPHERE_SUCCESS) {
         return 12;
     }
 
-    if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_talk_message_arguments() != TALKSPHERE_SUCCESS) {
         return 13;
+    }
+
+    if (test_invalid_run_port() != TALKSPHERE_SUCCESS) {
+        return 14;
+    }
+
+    if (test_equal_ports() != TALKSPHERE_SUCCESS) {
+        return 15;
+    }
+
+    if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
+        return 16;
     }
 
     return 0;

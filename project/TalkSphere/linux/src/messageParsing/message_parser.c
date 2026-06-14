@@ -15,7 +15,12 @@
 #define PAY_PREFIX "PAY:"
 #define CREDITS_PREFIX "CREDITS:"
 #define LIST_OFFERINGS_COMMAND "LIST_OFFERINGS"
+#define FETCH_CONNECTED_PEER_OFFERINGS_COMMAND "FETCH_CONNECTED_PEER_OFFERINGS"
+#define SEND_CONNECTED_PEER_MESSAGE_PREFIX "SEND_CONNECTED_PEER_MESSAGE:"
+#define LOCALHOST_ADDRESS_TEXT "127.0.0.1"
+#define SUCCESS_RESPONSE_TEXT "OK"
 #define IDENTIFIER_SIZE 256
+#define PEER_MESSAGE_TEXT_SIZE 2048
 
 struct connect_instruction {
     char target_host[INET_ADDRSTRLEN];
@@ -79,6 +84,48 @@ static int handle_connect_instruction(
     return TALKSPHERE_SUCCESS;
 }
 
+static int build_peer_message_text(
+    const char *message_text,
+    char *peer_message_text,
+    size_t peer_message_text_size
+) {
+    LOG_TRACE("build_peer_message_text(): now we translate a local talk command into the peer MESSAGE protocol");
+
+    if (snprintf(
+            peer_message_text,
+            peer_message_text_size,
+            "%s%s",
+            MESSAGE_PREFIX,
+            message_text
+        ) >= (int)peer_message_text_size
+    ) {
+        LOG_WARN("The message is unwanted because it is too large for the peer socket protocol buffer");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int write_success_response(
+    char *response_text,
+    size_t response_text_size
+) {
+    LOG_TRACE("write_success_response(): now we return a small confirmation to the local CLI command");
+
+    if (snprintf(
+            response_text,
+            response_text_size,
+            "%s",
+            SUCCESS_RESPONSE_TEXT
+        ) >= (int)response_text_size
+    ) {
+        LOG_ERROR("The success response buffer is too small so the local CLI cannot know the command completed");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
 int process_received_message(
     const char *message_text,
     const struct message_processing_dependencies *message_processing_dependencies,
@@ -96,6 +143,62 @@ int process_received_message(
 
         return read_local_offerings(
             message_processing_dependencies->app_storage_directory_path,
+            response_text,
+            response_text_size
+        );
+    }
+
+    if (strcmp(message_text, FETCH_CONNECTED_PEER_OFFERINGS_COMMAND) == 0) {
+        LOG_TRACE("process_received_message(): now we ask the configured peer for offerings and return them to the local client command");
+
+        if (message_processing_dependencies->peer_port == message_processing_dependencies->listening_port) {
+            LOG_WARN("The peer port is unwanted because forwarding offerings to ourselves would create a self-loop");
+            return TALKSPHERE_FAILURE;
+        }
+
+        return message_processing_dependencies->send_message_to_endpoint_with_response(
+            LOCALHOST_ADDRESS_TEXT,
+            message_processing_dependencies->peer_port,
+            LIST_OFFERINGS_COMMAND,
+            response_text,
+            response_text_size
+        );
+    }
+
+    if (strncmp(
+            message_text,
+            SEND_CONNECTED_PEER_MESSAGE_PREFIX,
+            strlen(SEND_CONNECTED_PEER_MESSAGE_PREFIX)
+        ) == 0
+    ) {
+        LOG_TRACE("process_received_message(): now we ask the configured peer to receive a user message");
+
+        if (message_processing_dependencies->peer_port == message_processing_dependencies->listening_port) {
+            LOG_WARN("The peer port is unwanted because forwarding a message to ourselves would create a self-loop");
+            return TALKSPHERE_FAILURE;
+        }
+
+        const char *peer_message_body_text = message_text + strlen(SEND_CONNECTED_PEER_MESSAGE_PREFIX);
+        char peer_message_text[PEER_MESSAGE_TEXT_SIZE];
+        if (build_peer_message_text(
+                peer_message_body_text,
+                peer_message_text,
+                sizeof(peer_message_text)
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        if (message_processing_dependencies->send_message_to_endpoint(
+                LOCALHOST_ADDRESS_TEXT,
+                message_processing_dependencies->peer_port,
+                peer_message_text
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        return write_success_response(
             response_text,
             response_text_size
         );

@@ -10,7 +10,7 @@ This module validates the command-line interface for the Linux runtime.
 - Parse `config get home` and `files home`.
 - Parse encryption commands and encryption-specific help.
 - Parse ledger commands and ledger-specific help.
-- Parse network, offerings, and shared-storage command shapes.
+- Parse network, offerings, local talk, and shared-storage command shapes.
 - Reject invalid ports, unsupported argument counts, and conflicting listen/peer ports.
 - Print help text when the command shape is invalid or when help is requested.
 
@@ -34,3 +34,12 @@ build/talksphere run <listen_port> <peer_port> [home_folder]
 ```
 
 Two local instances should use different `listen_port` values and different `home_folder` values so their local identities, offerings, and ledgers stay separate.
+
+The `talk` command accepts a local client port and a child command:
+
+```bash
+build/talksphere talk -p <client_port> offerings
+build/talksphere talk -p <client_port> message "message"
+```
+
+This shape talks to an already-running local instance instead of reading local files directly.

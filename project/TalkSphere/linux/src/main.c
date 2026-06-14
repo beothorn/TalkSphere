@@ -263,6 +263,17 @@ static int print_dry_run(
             "Would print offerings from peer %s\n",
             program_arguments->network_address_text
         );
+    } else if (program_arguments->program_mode == PROGRAM_MODE_TALK_PRINT_REMOTE_OFFERINGS) {
+        printf(
+            "Would ask local TalkSphere client port %d for connected peer offerings\n",
+            program_arguments->local_client_port
+        );
+    } else if (program_arguments->program_mode == PROGRAM_MODE_TALK_SEND_MESSAGE) {
+        printf(
+            "Would ask local TalkSphere client port %d to send message: %s\n",
+            program_arguments->local_client_port,
+            program_arguments->message_text
+        );
     } else if (program_arguments->program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS) {
         printf(
             "Would print local offerings from %s\n",
@@ -455,6 +466,40 @@ static int print_local_offerings(
     return TALKSPHERE_SUCCESS;
 }
 
+static int print_connected_talksphere_offerings(
+    int local_client_port
+) {
+    LOG_TRACE("print_connected_talksphere_offerings(): now we ask a running local instance to fetch its connected peer offerings");
+
+    char offerings_text[OFFERINGS_TEXT_SIZE];
+    if (request_remote_offerings_through_client_port(
+            local_client_port,
+            offerings_text,
+            sizeof(offerings_text)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    printf(
+        "%s",
+        offerings_text
+    );
+    return TALKSPHERE_SUCCESS;
+}
+
+static int send_connected_talksphere_message(
+    int local_client_port,
+    const char *message_text
+) {
+    LOG_TRACE("send_connected_talksphere_message(): now we ask a running local instance to send a message to its connected peer");
+
+    return request_message_send_through_client_port(
+        local_client_port,
+        message_text
+    );
+}
+
 static int print_placeholder(
     const char *placeholder_text
 ) {
@@ -538,6 +583,17 @@ static int run_command(
 
     if (program_arguments->program_mode == PROGRAM_MODE_PRINT_REMOTE_OFFERINGS) {
         return print_placeholder("remote offerings lookup is not implemented yet");
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_TALK_PRINT_REMOTE_OFFERINGS) {
+        return print_connected_talksphere_offerings(program_arguments->local_client_port);
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_TALK_SEND_MESSAGE) {
+        return send_connected_talksphere_message(
+            program_arguments->local_client_port,
+            program_arguments->message_text
+        );
     }
 
     if (program_arguments->program_mode == PROGRAM_MODE_ADD_OFFERING) {

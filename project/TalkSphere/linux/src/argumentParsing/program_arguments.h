@@ -23,6 +23,8 @@ enum program_mode {
     PROGRAM_MODE_SIGN_MESSAGE,
     PROGRAM_MODE_PING_NETWORK_PEER,
     PROGRAM_MODE_PRINT_REMOTE_OFFERINGS,
+    PROGRAM_MODE_TALK_PRINT_REMOTE_OFFERINGS,
+    PROGRAM_MODE_TALK_SEND_MESSAGE,
     PROGRAM_MODE_PRINT_LOCAL_OFFERINGS,
     PROGRAM_MODE_ADD_OFFERING,
     PROGRAM_MODE_EDIT_OFFERING,
@@ -34,6 +36,7 @@ enum program_mode {
 struct program_arguments {
     int listen_port;
     int peer_port;
+    int local_client_port;
     const char *app_storage_directory_path;
     const char *message_text;
     const char *network_address_text;

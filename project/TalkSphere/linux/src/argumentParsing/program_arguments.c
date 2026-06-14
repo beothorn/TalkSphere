@@ -21,12 +21,17 @@
 #define NETWORK_ADDRESS_ARGUMENT_OFFSET 2
 #define OFFERINGS_CHILD_ARGUMENT_OFFSET 1
 #define OFFERINGS_VALUE_ARGUMENT_OFFSET 2
+#define TALK_PORT_FLAG_ARGUMENT_OFFSET 1
+#define TALK_PORT_VALUE_ARGUMENT_OFFSET 2
+#define TALK_CHILD_ARGUMENT_OFFSET 3
+#define TALK_MESSAGE_ARGUMENT_OFFSET 4
 #define SHARE_SCOPE_ARGUMENT_OFFSET 1
 #define SHARE_CHILD_ARGUMENT_OFFSET 2
 #define COMMAND_WITH_NO_CHILD_COUNT 1
 #define COMMAND_WITH_ONE_CHILD_COUNT 2
 #define COMMAND_WITH_TWO_CHILDREN_COUNT 3
 #define COMMAND_WITH_THREE_CHILDREN_COUNT 4
+#define COMMAND_WITH_FOUR_CHILDREN_COUNT 5
 #define DECIMAL_BASE 10
 #define MINIMUM_PORT 1
 #define MAXIMUM_PORT 65535
@@ -39,6 +44,8 @@
 #define LEDGER_COMMAND_TEXT "ledger"
 #define NETWORK_COMMAND_TEXT "network"
 #define OFFERINGS_COMMAND_TEXT "offerings"
+#define TALK_COMMAND_TEXT "talk"
+#define MESSAGE_COMMAND_TEXT "message"
 #define SHARE_COMMAND_TEXT "share"
 #define GET_COMMAND_TEXT "get"
 #define HOME_COMMAND_TEXT "home"
@@ -54,6 +61,7 @@
 #define LOCAL_COMMAND_TEXT "local"
 #define REMOTE_COMMAND_TEXT "remote"
 #define LIST_COMMAND_TEXT "ls"
+#define PORT_SHORT_ARGUMENT_TEXT "-p"
 #define HELP_LONG_ARGUMENT_TEXT "--help"
 #define HELP_WORD_ARGUMENT_TEXT "help"
 #define HELP_SHORT_ARGUMENT_TEXT "h"
@@ -133,6 +141,10 @@ static void print_main_help(
         "      Show network commands.\n"
         "  offerings [--help|help|h]\n"
         "      Show offering commands.\n"
+        "  talk -p <client_port> offerings\n"
+        "      Ask a running local instance to fetch its connected peer offerings.\n"
+        "  talk -p <client_port> message \"message\"\n"
+        "      Ask a running local instance to send a message to its connected peer.\n"
         "  share [--help|help|h]\n"
         "      Show shared storage commands.\n\n"
         "Dry run:\n"
@@ -369,6 +381,7 @@ static void initialize_program_arguments(
 
     program_arguments->listen_port = DEFAULT_SERVER_PORT;
     program_arguments->peer_port = DEFAULT_CLIENT_PORT;
+    program_arguments->local_client_port = DEFAULT_CLIENT_PORT;
     program_arguments->app_storage_directory_path = NULL;
     program_arguments->message_text = NULL;
     program_arguments->network_address_text = NULL;
@@ -656,6 +669,64 @@ static int parse_offerings_command(
     return TALKSPHERE_FAILURE;
 }
 
+static int parse_talk_command(
+    int command_argument_count,
+    char *command_arguments[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE("parse_talk_command(): now we parse commands that talk to an already running local instance");
+
+    if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[TALK_PORT_FLAG_ARGUMENT_OFFSET],
+            PORT_SHORT_ARGUMENT_TEXT
+        )
+        && argument_text_is(
+            command_arguments[TALK_CHILD_ARGUMENT_OFFSET],
+            OFFERINGS_COMMAND_TEXT
+        )
+    ) {
+        if (parse_port(
+                command_arguments[TALK_PORT_VALUE_ARGUMENT_OFFSET],
+                "client",
+                &program_arguments->local_client_port
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        program_arguments->program_mode = PROGRAM_MODE_TALK_PRINT_REMOTE_OFFERINGS;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count == COMMAND_WITH_FOUR_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[TALK_PORT_FLAG_ARGUMENT_OFFSET],
+            PORT_SHORT_ARGUMENT_TEXT
+        )
+        && argument_text_is(
+            command_arguments[TALK_CHILD_ARGUMENT_OFFSET],
+            MESSAGE_COMMAND_TEXT
+        )
+    ) {
+        if (parse_port(
+                command_arguments[TALK_PORT_VALUE_ARGUMENT_OFFSET],
+                "client",
+                &program_arguments->local_client_port
+            ) != TALKSPHERE_SUCCESS
+        ) {
+            return TALKSPHERE_FAILURE;
+        }
+
+        program_arguments->message_text = command_arguments[TALK_MESSAGE_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_TALK_SEND_MESSAGE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    LOG_WARN("Talk arguments are unwanted because this command only supports -p <client_port> offerings or -p <client_port> message");
+    return TALKSPHERE_FAILURE;
+}
+
 static int parse_share_command(
     int command_argument_count,
     char *command_arguments[],
@@ -800,6 +871,18 @@ static int parse_command(
         )
     ) {
         return parse_offerings_command(
+            command_argument_count,
+            command_arguments,
+            program_arguments
+        );
+    }
+
+    if (argument_text_is(
+            command_arguments[0],
+            TALK_COMMAND_TEXT
+        )
+    ) {
+        return parse_talk_command(
             command_argument_count,
             command_arguments,
             program_arguments

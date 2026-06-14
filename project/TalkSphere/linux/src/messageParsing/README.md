@@ -7,6 +7,9 @@ This module owns interpretation of incoming protocol text.
 - Parse received message text.
 - Handle payment messages.
 - Handle user message delivery.
+- Return local offerings when peers request `LIST_OFFERINGS`.
+- Forward local client offering requests to the configured connected peer.
+- Forward local client message requests to the configured connected peer.
 - Coordinate ledger updates required by message actions.
 - Delegate outbound sending through injected message-processing dependencies.
 

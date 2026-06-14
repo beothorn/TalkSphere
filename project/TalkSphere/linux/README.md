@@ -31,6 +31,8 @@ build/talksphere encryption [--help|help|h]
 build/talksphere ledger [--help|help|h]
 build/talksphere network [--help|help|h]
 build/talksphere offerings [--help|help|h]
+build/talksphere talk -p <client_port> offerings
+build/talksphere talk -p <client_port> message "message"
 build/talksphere share [--help|help|h]
 ```
 
@@ -66,6 +68,22 @@ Print local offerings:
 ```bash
 build/talksphere offerings get
 ```
+
+Ask a running local instance to fetch offerings from its configured peer:
+
+```bash
+build/talksphere talk -p <client_port> offerings
+```
+
+This command connects to the local instance listening on `<client_port>`. That instance calls the peer port it was started with, requests `LIST_OFFERINGS`, returns the peer offerings to the CLI, and the CLI prints them.
+
+Ask a running local instance to send a message to its configured peer:
+
+```bash
+build/talksphere talk -p <client_port> message "hello world"
+```
+
+This command connects to the local instance listening on `<client_port>`. That instance sends `MESSAGE:hello world` to the peer port it was started with.
 
 Create placeholder encryption key files:
 
@@ -147,45 +165,42 @@ cat /tmp/talksphere-demo/bob/id
   - When received, the instance prints `<text>`.
 - `LIST_OFFERINGS`
   - When received, the instance returns the current JSON string from its own `offerings` file.
+- `FETCH_CONNECTED_PEER_OFFERINGS`
+  - When received by a local instance, it asks the configured peer port for `LIST_OFFERINGS` and returns that response.
+- `SEND_CONNECTED_PEER_MESSAGE:<text>`
+  - When received by a local instance, it sends `MESSAGE:<text>` to the configured peer port and returns `OK`.
 
-## Step-by-step Demo With Two Instances And nc
+## Step-by-step Demo With Two Instances
 
 Terminal 1:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/instance1
-build/talksphere run 8734 8999 /tmp/talksphere-demo/instance1
+build/talksphere run 8899 9900 /tmp/talksphere-demo/instance1
 ```
 
 Terminal 2:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/instance2
-build/talksphere run 8735 9898 /tmp/talksphere-demo/instance2
+build/talksphere run 9900 8899 /tmp/talksphere-demo/instance2
 ```
 
-Terminal 3, listen for the callback hello on port 8999:
+Terminal 3:
 
 ```bash
-nc -l 8999
+build/talksphere talk -p 8899 offerings
 ```
 
-Terminal 4, send connect command to instance 1:
+Expected result: the command prints the offerings file from instance 2.
+
+To send a message from instance 1 to instance 2:
 
 ```bash
-printf 'CONNECT:localhost:8735,FROM:localhost:8999' | nc -N localhost 8734
+build/talksphere talk -p 8899 message "hello world"
 ```
 
-Expected result:
-
-- Terminal 2 prints `Hello`, because instance 2 received `MESSAGE:Hello`.
-- Terminal 3 receives `MESSAGE:Hello`, because instance 1 used the callback path.
-
-To ask instance 2 for its current offerings:
-
-```bash
-printf 'LIST_OFFERINGS' | nc -N localhost 8735
-```
+Expected result: instance 2 receives `hello world`. Message delivery spends one credit from the receiving instance identifier, so the peer needs credit before a message can be accepted.
 
 ## Tests
 
@@ -219,4 +234,3 @@ bash test/run_tests.sh test/network/socket_channel_test.sh
 The runner compiles C tests into `build/test`.
 
 To add a test, create it beside the module it covers, then add the path and source mapping to `test/run_tests.sh`.
-

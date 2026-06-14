@@ -27,6 +27,10 @@
 #define SEND_FLAGS 0
 #define INVALID_INET_PTON_RESULT 0
 #define DEFAULT_CONNECT_HOST "127.0.0.1"
+#define FETCH_CONNECTED_PEER_OFFERINGS_COMMAND "FETCH_CONNECTED_PEER_OFFERINGS"
+#define SEND_CONNECTED_PEER_MESSAGE_PREFIX "SEND_CONNECTED_PEER_MESSAGE:"
+#define SUCCESS_RESPONSE_TEXT "OK"
+#define LOCAL_CONTROL_MESSAGE_SIZE 2048
 
 static int configure_reusable_socket(
     int socket_file_descriptor
@@ -99,12 +103,39 @@ static int create_tcp_socket(void) {
     return socket_file_descriptor;
 }
 
-static int send_message_to_endpoint(
-    const char *remote_host,
-    int remote_port,
+static int send_all_socket_text(
+    int socket_file_descriptor,
     const char *message_text
 ) {
-    LOG_TRACE("send_message_to_endpoint(): now we open an outgoing connection and send a single message");
+    LOG_TRACE("send_all_socket_text(): now we write a complete text message to a connected socket");
+
+    size_t message_length = strlen(message_text);
+    size_t sent_total_count = 0;
+    while (sent_total_count < message_length) {
+        ssize_t sent_bytes_count = send(
+            socket_file_descriptor,
+            message_text + sent_total_count,
+            message_length - sent_total_count,
+            SEND_FLAGS
+        );
+
+        if (sent_bytes_count <= 0) {
+            LOG_ERROR("Sending socket text failed so the remote endpoint cannot process the full command");
+            return TALKSPHERE_FAILURE;
+        }
+
+        sent_total_count += (size_t)sent_bytes_count;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int connect_to_endpoint(
+    const char *remote_host,
+    int remote_port,
+    int *connected_socket_file_descriptor
+) {
+    LOG_TRACE("connect_to_endpoint(): now we open a TCP connection to the requested endpoint");
 
     int client_file_descriptor = create_tcp_socket();
     if (client_file_descriptor == SOCKET_NOT_CREATED_YET) {
@@ -112,7 +143,12 @@ static int send_message_to_endpoint(
     }
 
     struct sockaddr_in remote_address;
-    if (build_remote_address(&remote_address, remote_host, remote_port) != TALKSPHERE_SUCCESS) {
+    if (build_remote_address(
+            &remote_address,
+            remote_host,
+            remote_port
+        ) != TALKSPHERE_SUCCESS
+    ) {
         close(client_file_descriptor);
         return TALKSPHERE_FAILURE;
     }
@@ -123,23 +159,124 @@ static int send_message_to_endpoint(
             sizeof(remote_address)
         ) == SYSTEM_CALL_FAILED
     ) {
+        LOG_WARN("Connecting to the endpoint failed so the command cannot reach the requested TalkSphere instance");
         close(client_file_descriptor);
         return TALKSPHERE_FAILURE;
     }
 
-    size_t message_length = strlen(message_text);
-    ssize_t sent_bytes_count = send(
-        client_file_descriptor,
-        message_text,
-        message_length,
-        SEND_FLAGS
-    );
+    *connected_socket_file_descriptor = client_file_descriptor;
+    return TALKSPHERE_SUCCESS;
+}
 
+static int receive_socket_response(
+    int socket_file_descriptor,
+    char *response_text,
+    size_t response_text_size
+) {
+    LOG_TRACE("receive_socket_response(): now we read a complete response from the connected socket");
+
+    if (response_text == NULL || response_text_size == 0) {
+        LOG_WARN("The response buffer is unwanted because a socket response needs writable storage");
+        return TALKSPHERE_FAILURE;
+    }
+
+    size_t received_total_count = 0;
+    while (received_total_count < response_text_size - RECEIVE_BUFFER_TERMINATOR_SPACE) {
+        ssize_t received_bytes_count = recv(
+            socket_file_descriptor,
+            response_text + received_total_count,
+            response_text_size - received_total_count - RECEIVE_BUFFER_TERMINATOR_SPACE,
+            RECEIVE_FLAGS
+        );
+
+        if (received_bytes_count == SYSTEM_CALL_FAILED) {
+            LOG_ERROR("Receiving the socket response failed so the command result cannot be trusted");
+            return TALKSPHERE_FAILURE;
+        }
+
+        if (received_bytes_count == 0) {
+            response_text[received_total_count] = STRING_TERMINATOR;
+            return TALKSPHERE_SUCCESS;
+        }
+
+        received_total_count += (size_t)received_bytes_count;
+    }
+
+    response_text[received_total_count] = STRING_TERMINATOR;
+    LOG_WARN("The socket response is unwanted because it is larger than the response buffer");
+    return TALKSPHERE_FAILURE;
+}
+
+static int send_message_to_endpoint(
+    const char *remote_host,
+    int remote_port,
+    const char *message_text
+) {
+    LOG_TRACE("send_message_to_endpoint(): now we open an outgoing connection and send a single message");
+
+    int client_file_descriptor = SOCKET_NOT_CREATED_YET;
+    if (connect_to_endpoint(
+            remote_host,
+            remote_port,
+            &client_file_descriptor
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    int send_result = send_all_socket_text(
+        client_file_descriptor,
+        message_text
+    );
     close(client_file_descriptor);
 
-    return sent_bytes_count == (ssize_t)message_length
-        ? TALKSPHERE_SUCCESS
-        : TALKSPHERE_FAILURE;
+    return send_result;
+}
+
+static int send_message_to_endpoint_with_response(
+    const char *remote_host,
+    int remote_port,
+    const char *message_text,
+    char *response_text,
+    size_t response_text_size
+) {
+    LOG_TRACE("send_message_to_endpoint_with_response(): now we send a command and wait for the endpoint response");
+
+    int client_file_descriptor = SOCKET_NOT_CREATED_YET;
+    if (connect_to_endpoint(
+            remote_host,
+            remote_port,
+            &client_file_descriptor
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (send_all_socket_text(
+            client_file_descriptor,
+            message_text
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        close(client_file_descriptor);
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (shutdown(
+            client_file_descriptor,
+            SHUT_WR
+        ) == SYSTEM_CALL_FAILED
+    ) {
+        LOG_WARN("Shutting down the socket write side failed so the peer may wait longer before answering");
+    }
+
+    int receive_result = receive_socket_response(
+        client_file_descriptor,
+        response_text,
+        response_text_size
+    );
+    close(client_file_descriptor);
+
+    return receive_result;
 }
 
 static int send_response_to_connected_client(
@@ -148,22 +285,95 @@ static int send_response_to_connected_client(
 ) {
     LOG_TRACE("send_response_to_connected_client(): now we return a command response on the accepted socket connection");
 
-    size_t response_text_length = strlen(response_text);
-    size_t sent_total_count = 0;
-    while (sent_total_count < response_text_length) {
-        ssize_t sent_bytes_count = send(
-            connected_client_file_descriptor,
-            response_text + sent_total_count,
-            response_text_length - sent_total_count,
-            SEND_FLAGS
-        );
+    return send_all_socket_text(
+        connected_client_file_descriptor,
+        response_text
+    );
+}
 
-        if (sent_bytes_count <= 0) {
-            LOG_ERROR("Sending the socket response failed so the connected peer cannot receive the command result");
-            return TALKSPHERE_FAILURE;
-        }
+int request_remote_offerings_through_client_port(
+    int local_client_port,
+    char *offerings_text,
+    size_t offerings_text_size
+) {
+    LOG_TRACE("request_remote_offerings_through_client_port(): now the CLI asks the local instance to fetch peer offerings");
 
-        sent_total_count += (size_t)sent_bytes_count;
+    if (send_message_to_endpoint_with_response(
+            DEFAULT_CONNECT_HOST,
+            local_client_port,
+            FETCH_CONNECTED_PEER_OFFERINGS_COMMAND,
+            offerings_text,
+            offerings_text_size
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (offerings_text[0] == STRING_TERMINATOR) {
+        LOG_WARN("The offerings response is unwanted because the local instance returned no peer offerings");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+static int build_send_connected_peer_message(
+    const char *message_text,
+    char *local_control_message_text,
+    size_t local_control_message_text_size
+) {
+    LOG_TRACE("build_send_connected_peer_message(): now we build the local control message that asks the instance to forward user text");
+
+    if (snprintf(
+            local_control_message_text,
+            local_control_message_text_size,
+            "%s%s",
+            SEND_CONNECTED_PEER_MESSAGE_PREFIX,
+            message_text
+        ) >= (int)local_control_message_text_size
+    ) {
+        LOG_WARN("The message is unwanted because it is too large for the local control socket command");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
+int request_message_send_through_client_port(
+    int local_client_port,
+    const char *message_text
+) {
+    LOG_TRACE("request_message_send_through_client_port(): now the CLI asks the local instance to forward a message to its peer");
+
+    char local_control_message_text[LOCAL_CONTROL_MESSAGE_SIZE];
+    if (build_send_connected_peer_message(
+            message_text,
+            local_control_message_text,
+            sizeof(local_control_message_text)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    char response_text[BUFFER_SIZE];
+    if (send_message_to_endpoint_with_response(
+            DEFAULT_CONNECT_HOST,
+            local_client_port,
+            local_control_message_text,
+            response_text,
+            sizeof(response_text)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (strcmp(
+            response_text,
+            SUCCESS_RESPONSE_TEXT
+        ) != 0
+    ) {
+        LOG_WARN("The message forwarding response is unwanted because the local instance did not confirm success");
+        return TALKSPHERE_FAILURE;
     }
 
     return TALKSPHERE_SUCCESS;
@@ -176,11 +386,11 @@ int run_socket_channel(
 ) {
     LOG_TRACE("run_socket_channel(): now we run one server instance and process incoming connections forever");
 
-    (void)server_port;
-
     struct message_processing_dependencies message_processing_dependencies;
     message_processing_dependencies.send_message_to_endpoint = send_message_to_endpoint;
+    message_processing_dependencies.send_message_to_endpoint_with_response = send_message_to_endpoint_with_response;
     message_processing_dependencies.listening_port = client_port;
+    message_processing_dependencies.peer_port = server_port;
     message_processing_dependencies.app_storage_directory_path = app_storage_directory_path;
 
     int server_file_descriptor = create_tcp_socket();

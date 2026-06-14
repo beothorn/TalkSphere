@@ -9,7 +9,15 @@ struct message_processing_dependencies {
         int remote_port,
         const char *message_text
     );
+    int (*send_message_to_endpoint_with_response)(
+        const char *remote_host,
+        int remote_port,
+        const char *message_text,
+        char *response_text,
+        size_t response_text_size
+    );
     int listening_port;
+    int peer_port;
     const char *app_storage_directory_path;
 };
 
