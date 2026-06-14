@@ -1,20 +1,18 @@
+for instance 2
+add a credit for id 123456
+
 for instance 1
 set availability alwaysOn
 set reachableAt www.example.com:9999
 run instance 1
-add service
+add service sell
 ```
 {
-  "service": "store", 
+  "service": "creditWithdraw", 
   "credit":"own", 
-  "description": "store some data for a period of time",
-  "info": {
-    "pricePerByte": 0.00000001, 
-    "periodInDays": 10
-  },
+  "description": "given a code, withadraw credits",
   "input": {
-    "chunkId": "string",
-    "data": "byteArray"
+    "code": "string"
   },
   "output": {
     "success": "bool"
@@ -23,25 +21,20 @@ add service
 ```
 run instance 2
 
-connect to instance 1
+connect instance 1 to instance 2
 asks for offerings
 get
 ```
 {
   "availability": "alwaysOn",
   "reachableAt": ["www.isageek.com.br:9979"],
-  "buy" : [
+  "sell" : [
     {
-      "service": "store", 
+      "service": "creditWithdraw", 
       "credit":"own", 
-      "description": "store some data for a period of time",
-      "info": {
-        "pricePerByte": 0.00000001, 
-        "periodInDays": 10
-      },
+      "description": "given a code, withadraw credits",
       "input": {
-        "chunkId": "string",
-        "data": "byteArray"
+        "code": "string"
       },
       "output": {
         "success": "bool"
@@ -50,3 +43,7 @@ get
   ]
 }
 ```
+
+ask for credits with id 123456  
+get credits  
+
