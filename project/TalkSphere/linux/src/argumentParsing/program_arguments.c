@@ -9,7 +9,8 @@
 
 #define PROGRAM_NAME_ARGUMENT_INDEX 0
 #define FIRST_COMMAND_ARGUMENT_INDEX 1
-#define FIRST_ARGUMENT_AFTER_DRY_RUN_INDEX 2
+#define NEXT_ARGUMENT_OFFSET 1
+#define GLOBAL_OPTION_WITH_VALUE_ARGUMENT_COUNT 2
 #define RUN_LISTEN_PORT_ARGUMENT_OFFSET 1
 #define RUN_PEER_PORT_ARGUMENT_OFFSET 2
 #define RUN_HOME_FOLDER_ARGUMENT_OFFSET 3
@@ -76,6 +77,8 @@
 #define HELP_SHORT_ARGUMENT_TEXT "h"
 #define DRY_RUN_LONG_ARGUMENT_TEXT "--dry-run"
 #define DRY_RUN_SHORT_ARGUMENT_TEXT "d"
+#define DIRECTORY_HOME_SHORT_ARGUMENT_TEXT "-d"
+#define DIRECTORY_HOME_LONG_ARGUMENT_TEXT "--directory-home"
 
 static int argument_text_is(
     const char *argument_text,
@@ -123,6 +126,21 @@ static int argument_is_dry_run(
         );
 }
 
+static int argument_is_directory_home(
+    const char *argument_text
+) {
+    LOG_TRACE("argument_is_directory_home(): now we check whether this command word sets the home folder");
+
+    return argument_text_is(
+        argument_text,
+        DIRECTORY_HOME_SHORT_ARGUMENT_TEXT
+    )
+        || argument_text_is(
+            argument_text,
+            DIRECTORY_HOME_LONG_ARGUMENT_TEXT
+        );
+}
+
 static void print_main_help(
     FILE *output_file,
     const char *program_name
@@ -133,10 +151,10 @@ static void print_main_help(
         output_file,
         "TalkSphere command line\n\n"
         "Usage:\n"
-        "  %s [--dry-run|d] <command> [arguments]\n"
+        "  %s [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]\n"
         "  %s [--help|help|h]\n\n"
         "Commands:\n"
-        "  run <listen_port> <peer_port> [home_folder]\n"
+        "  run <listen_port> <peer_port>\n"
         "      Start the TalkSphere socket service and connect to the peer port.\n"
         "  config get home\n"
         "      Print the resolved home folder.\n"
@@ -1063,6 +1081,46 @@ static int parse_command(
     return TALKSPHERE_FAILURE;
 }
 
+static int parse_global_options(
+    int argument_count,
+    char *argument_values[],
+    struct program_arguments *program_arguments,
+    int *first_command_argument_index
+) {
+    LOG_TRACE("parse_global_options(): now we consume command-line options that apply to every command");
+
+    int argument_index = FIRST_COMMAND_ARGUMENT_INDEX;
+    while (argument_index < argument_count) {
+        const char *argument_text = argument_values[argument_index];
+
+        if (argument_is_dry_run(argument_text)) {
+            program_arguments->dry_run_is_enabled = 1;
+            argument_index += NEXT_ARGUMENT_OFFSET;
+        } else if (argument_is_directory_home(argument_text)) {
+            int directory_home_argument_index = argument_index + NEXT_ARGUMENT_OFFSET;
+            if (directory_home_argument_index >= argument_count) {
+                LOG_WARN("Directory home arguments are unwanted because the option needs a folder path");
+                fprintf(
+                    stderr,
+                    "Missing home folder after %s\n",
+                    argument_text
+                );
+                return TALKSPHERE_FAILURE;
+            }
+
+            program_arguments->app_storage_directory_path =
+                argument_values[directory_home_argument_index];
+            argument_index += GLOBAL_OPTION_WITH_VALUE_ARGUMENT_COUNT;
+        } else {
+            *first_command_argument_index = argument_index;
+            return TALKSPHERE_SUCCESS;
+        }
+    }
+
+    *first_command_argument_index = argument_index;
+    return TALKSPHERE_SUCCESS;
+}
+
 int parse_program_arguments(
     int argument_count,
     char *argument_values[],
@@ -1078,11 +1136,18 @@ int parse_program_arguments(
     initialize_program_arguments(program_arguments);
 
     int first_command_argument_index = FIRST_COMMAND_ARGUMENT_INDEX;
-    if (argument_count > FIRST_COMMAND_ARGUMENT_INDEX
-        && argument_is_dry_run(argument_values[FIRST_COMMAND_ARGUMENT_INDEX])
+    if (parse_global_options(
+            argument_count,
+            argument_values,
+            program_arguments,
+            &first_command_argument_index
+        ) != TALKSPHERE_SUCCESS
     ) {
-        program_arguments->dry_run_is_enabled = 1;
-        first_command_argument_index = FIRST_ARGUMENT_AFTER_DRY_RUN_INDEX;
+        print_main_help(
+            stderr,
+            program_name
+        );
+        return TALKSPHERE_FAILURE;
     }
 
     int command_argument_count = argument_count - first_command_argument_index;

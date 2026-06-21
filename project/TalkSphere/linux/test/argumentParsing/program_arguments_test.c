@@ -15,6 +15,7 @@
 #define EXPECTED_PEER_PORT 9002
 #define EXPECTED_LOCAL_CLIENT_PORT 8899
 #define EXPECTED_MESSAGE_TEXT "hello world"
+#define EXPECTED_HOME_DIRECTORY_PATH "/tmp/talksphere-directory-home-test"
 
 static int assert_run_arguments(
     struct program_arguments *program_arguments,
@@ -80,6 +81,34 @@ static int test_run_arguments(void) {
     );
 }
 
+static int test_global_directory_home_run_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "-d",
+        EXPECTED_HOME_DIRECTORY_PATH,
+        "run",
+        "9001",
+        "9002"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_SIX_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return assert_run_arguments(
+        &program_arguments,
+        EXPECTED_LISTEN_PORT,
+        EXPECTED_PEER_PORT,
+        argument_values[2]
+    );
+}
+
 static int test_dry_run_config_home_arguments(void) {
     char *argument_values[] = {
         "talksphere",
@@ -104,6 +133,50 @@ static int test_dry_run_config_home_arguments(void) {
     }
 
     return program_arguments.program_mode == PROGRAM_MODE_PRINT_HOME
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_global_directory_home_offerings_get_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "--directory-home",
+        EXPECTED_HOME_DIRECTORY_PATH,
+        "offerings",
+        "get"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_RUN_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.app_storage_directory_path != argument_values[2]) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_directory_home_rejects_missing_path(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "-d"
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_TWO_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
         ? TALKSPHERE_SUCCESS
         : TALKSPHERE_FAILURE;
 }
@@ -547,80 +620,92 @@ int main(void) {
         return 1;
     }
 
-    if (test_dry_run_config_home_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_global_directory_home_run_arguments() != TALKSPHERE_SUCCESS) {
         return 2;
     }
 
-    if (test_files_home_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_dry_run_config_home_arguments() != TALKSPHERE_SUCCESS) {
         return 3;
     }
 
-    if (test_encryption_help_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_global_directory_home_offerings_get_arguments() != TALKSPHERE_SUCCESS) {
         return 4;
     }
 
-    if (test_encryption_create_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_directory_home_rejects_missing_path() != TALKSPHERE_SUCCESS) {
         return 5;
     }
 
-    if (test_encryption_message_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_files_home_arguments() != TALKSPHERE_SUCCESS) {
         return 6;
     }
 
-    if (test_ledger_summary_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_encryption_help_arguments() != TALKSPHERE_SUCCESS) {
         return 7;
     }
 
-    if (test_network_ping_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_encryption_create_arguments() != TALKSPHERE_SUCCESS) {
         return 8;
     }
 
-    if (test_offerings_add_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_encryption_message_arguments() != TALKSPHERE_SUCCESS) {
         return 9;
     }
 
-    if (test_share_remote_list_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_ledger_summary_arguments() != TALKSPHERE_SUCCESS) {
         return 10;
     }
 
-    if (test_talk_offerings_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_network_ping_arguments() != TALKSPHERE_SUCCESS) {
         return 11;
     }
 
-    if (test_talk_offerings_rejects_invalid_port() != TALKSPHERE_SUCCESS) {
+    if (test_offerings_add_arguments() != TALKSPHERE_SUCCESS) {
         return 12;
     }
 
-    if (test_talk_message_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_share_remote_list_arguments() != TALKSPHERE_SUCCESS) {
         return 13;
     }
 
-    if (test_invalid_run_port() != TALKSPHERE_SUCCESS) {
+    if (test_talk_offerings_arguments() != TALKSPHERE_SUCCESS) {
         return 14;
     }
 
-    if (test_equal_ports() != TALKSPHERE_SUCCESS) {
+    if (test_talk_offerings_rejects_invalid_port() != TALKSPHERE_SUCCESS) {
         return 15;
     }
 
-    if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_talk_message_arguments() != TALKSPHERE_SUCCESS) {
         return 16;
     }
 
-    if (test_credit_add_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_invalid_run_port() != TALKSPHERE_SUCCESS) {
         return 17;
     }
 
-    if (test_credit_remove_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_equal_ports() != TALKSPHERE_SUCCESS) {
         return 18;
     }
 
-    if (test_credit_add_rejects_invalid_count() != TALKSPHERE_SUCCESS) {
+    if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
         return 19;
     }
 
-    if (test_credit_withadraw_list_arguments() != TALKSPHERE_SUCCESS) {
+    if (test_credit_add_arguments() != TALKSPHERE_SUCCESS) {
         return 20;
+    }
+
+    if (test_credit_remove_arguments() != TALKSPHERE_SUCCESS) {
+        return 21;
+    }
+
+    if (test_credit_add_rejects_invalid_count() != TALKSPHERE_SUCCESS) {
+        return 22;
+    }
+
+    if (test_credit_withadraw_list_arguments() != TALKSPHERE_SUCCESS) {
+        return 23;
     }
 
     return 0;

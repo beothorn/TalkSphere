@@ -5,8 +5,9 @@ This module validates the command-line interface for the Linux runtime.
 ## Responsibilities
 
 - Parse the global dry-run flag, `--dry-run` or `d`.
+- Parse the global home directory override, `-d <home_folder>` or `--directory-home <home_folder>`.
 - Parse main help, `--help`, `help`, or `h`.
-- Parse `run <listen_port> <peer_port> [home_folder]`.
+- Parse `run <listen_port> <peer_port>`.
 - Parse `config get home` and `files home`.
 - Parse encryption commands and encryption-specific help.
 - Parse ledger commands and ledger-specific help.
@@ -20,17 +21,21 @@ This module should only decide what the user asked the program to do. It should 
 
 ## Command Shape
 
-The command line accepts a global dry-run flag followed by a domain command:
+The command line accepts global options followed by a domain command:
 
 ```bash
-build/talksphere [--dry-run|d] <command> [arguments]
+build/talksphere [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]
 build/talksphere [--help|help|h]
 ```
 
-The `run` command accepts ports and an optional home folder:
+If no home folder is passed, the application uses its default storage resolution. If `-d` or `--directory-home` is passed, every command uses that folder instead:
 
 ```bash
-build/talksphere run <listen_port> <peer_port> [home_folder]
+build/talksphere run <listen_port> <peer_port>
+build/talksphere -d /tmp/Alice run <listen_port> <peer_port>
+build/talksphere --directory-home /tmp/Alice run <listen_port> <peer_port>
+build/talksphere offerings get
+build/talksphere -d /tmp/Alice offerings get
 ```
 
 Two local instances should use different `listen_port` values and different `home_folder` values so their local identities, offerings, and ledgers stay separate.

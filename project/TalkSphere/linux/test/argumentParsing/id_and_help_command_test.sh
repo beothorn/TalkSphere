@@ -11,7 +11,8 @@ if ! help_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --help 2>&1)"; then
     exit 1
 fi
 
-if [[ "$help_output" != *"run <listen_port> <peer_port> [home_folder]"*
+if [[ "$help_output" != *"[-d|--directory-home <home_folder>] <command> [arguments]"*
+    || "$help_output" != *"run <listen_port> <peer_port>"*
     || "$help_output" != *"config get home"*
     || "$help_output" != *"encryption [--help|help|h]"*
     || "$help_output" != *"share [--help|help|h]"*
@@ -60,7 +61,20 @@ if [[ -e "$home_output" ]]; then
     exit 1
 fi
 
-if ! dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run run 9001 9002 "$app_directory_path" 2>&1)"; then
+if ! directory_home_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$app_directory_path" config get home 2>&1)"; then
+    printf 'not ok - %s (directory home command failed)\n%s\n' "$test_name" "$directory_home_output"
+    exit 1
+fi
+
+if [[ "$directory_home_output" != "$app_directory_path" ]]; then
+    printf 'not ok - %s (directory home output was unexpected)\nprinted: %s\nexpected: %s\n' \
+        "$test_name" \
+        "$directory_home_output" \
+        "$app_directory_path"
+    exit 1
+fi
+
+if ! dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run -d "$app_directory_path" run 9001 9002 2>&1)"; then
     printf 'not ok - %s (dry run command failed)\n%s\n' "$test_name" "$dry_run_output"
     exit 1
 fi
