@@ -1,7 +1,5 @@
-for instance 2
-add a credit for id 123456
-
 for instance 1
+add a credit for id 123456
 set availability alwaysOn
 set reachableAt www.example.com:9999
 run instance 1

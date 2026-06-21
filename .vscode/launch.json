@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug TalkSphere",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/project/TalkSphere/linux/build/debug/talksphere",
+            "args": ["--help"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/project/TalkSphere/linux",
+            "environment": [
+                {
+                    "name": "TALKSPHERE_LOG_LEVEL",
+                    "value": "trace"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "Build TalkSphere Debug",
+            "setupCommands": [
+                {
+                    "description": "Enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
