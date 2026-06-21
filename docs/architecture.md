@@ -4,7 +4,7 @@ TalkSphere is designed as a decentralized peer-to-peer system where peers exchan
 
 ## Current Linux runtime
 
-The current Linux implementation is a small command-line runtime organized by responsibility:
+The current Linux implementation is a small command-line runtime organized by responsibility. Each responsibility is isolated as much as possible:
 
 - **Startup**: `main.c` connects the modules. It parses commands, prepares local storage when needed, delegates existing domain operations, prints placeholders for missing command bodies, and starts networking for `run`.
 - **Argument parsing**: validates user input and maps domain commands such as `run`, `config`, `encryption`, `ledger`, `network`, `offerings`, and `share` into program modes.

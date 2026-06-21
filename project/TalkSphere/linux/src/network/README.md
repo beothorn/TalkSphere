@@ -10,6 +10,7 @@ This module owns the Linux TCP socket channel.
 - Read received bytes into message text.
 - Send outgoing message text to remote endpoints.
 - Send command text to a local instance and collect its response for CLI commands.
+- Own network command behavior in `network_application.c`.
 - Delegate parsed message behavior to the message parsing module.
 
 ## Boundaries

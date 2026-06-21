@@ -8,7 +8,7 @@ This module owns TalkSphere credit accounting for the Linux runtime.
 - Add credits when a peer pays the local identity.
 - Spend credits when the local identity consumes a paid action.
 - Summarize owned and owed credits.
-- Print the ledger summary display requested by the command line entrypoint.
+- Own ledger command behavior in `ledger_application.c`.
 
 ## Boundaries
 

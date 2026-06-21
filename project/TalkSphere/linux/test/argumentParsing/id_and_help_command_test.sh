@@ -75,6 +75,59 @@ if [[ -e "$app_directory_path" ]]; then
     exit 1
 fi
 
+if ! encryption_dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run encryption sign_message hello 2>&1)"; then
+    printf 'not ok - %s (encryption dry run command failed)\n%s\n' "$test_name" "$encryption_dry_run_output"
+    exit 1
+fi
+
+if [[ "$encryption_dry_run_output" != "Would sign message: hello" ]]; then
+    printf 'not ok - %s (encryption dry run output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$encryption_dry_run_output"
+    exit 1
+fi
+
+if ! offerings_dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run offerings add coffee 2>&1)"; then
+    printf 'not ok - %s (offerings dry run command failed)\n%s\n' "$test_name" "$offerings_dry_run_output"
+    exit 1
+fi
+
+if [[ "$offerings_dry_run_output" != "Would add offering: coffee" ]]; then
+    printf 'not ok - %s (offerings dry run output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$offerings_dry_run_output"
+    exit 1
+fi
+
+if ! share_dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run share local ls 2>&1)"; then
+    printf 'not ok - %s (share dry run command failed)\n%s\n' "$test_name" "$share_dry_run_output"
+    exit 1
+fi
+
+if [[ "$share_dry_run_output" != "Would list local shared storage metadata" ]]; then
+    printf 'not ok - %s (share dry run output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$share_dry_run_output"
+    exit 1
+fi
+
+if ! credit_dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root" "$binary_path" --dry-run credit add 7 gift-code 2>&1)"; then
+    printf 'not ok - %s (credit dry run command failed)\n%s\n' "$test_name" "$credit_dry_run_output"
+    exit 1
+fi
+
+if [[ "$credit_dry_run_output" != "Would add 7 credit withdraw code gift-code in $temporary_root/talksphere" ]]; then
+    printf 'not ok - %s (credit dry run output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$credit_dry_run_output"
+    exit 1
+fi
+
+if [[ -e "$app_directory_path" ]]; then
+    printf 'not ok - %s (module dry runs unexpectedly created storage)\n' "$test_name"
+    exit 1
+fi
+
 if ! create_output="$(TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root" "$binary_path" encryption create 2>&1)"; then
     printf 'not ok - %s (encryption create command failed)\n%s\n' "$test_name" "$create_output"
     exit 1
@@ -105,5 +158,17 @@ fi
 
 if [[ "$placeholder_output" != "network ping is not implemented yet" ]]; then
     printf 'not ok - %s (placeholder output was unexpected)\n%s\n' "$test_name" "$placeholder_output"
+    exit 1
+fi
+
+if ! offerings_placeholder_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" offerings add coffee 2>&1)"; then
+    printf 'not ok - %s (offerings placeholder failed)\n%s\n' "$test_name" "$offerings_placeholder_output"
+    exit 1
+fi
+
+if [[ "$offerings_placeholder_output" != "offering add is not implemented yet" ]]; then
+    printf 'not ok - %s (offerings placeholder output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$offerings_placeholder_output"
     exit 1
 fi

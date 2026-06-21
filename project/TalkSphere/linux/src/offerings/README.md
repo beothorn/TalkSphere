@@ -7,6 +7,7 @@ This module owns reading the local offerings document.
 - Load the local offerings text from the app storage directory.
 - Return the offerings text as an opaque protocol document.
 - Fail when the caller gives no output buffer or when the buffer cannot hold the whole document.
+- Own offerings command behavior in `offerings_application.c`.
 
 ## Current default document
 

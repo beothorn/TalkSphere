@@ -1,0 +1,12 @@
+#ifndef TALKSPHERE_SHARED_STORAGE_APPLICATION_H
+#define TALKSPHERE_SHARED_STORAGE_APPLICATION_H
+
+int shared_storage_application_print_local_list_dry_run(void);
+
+int shared_storage_application_print_remote_list_dry_run(void);
+
+int shared_storage_application_print_local_list_placeholder(void);
+
+int shared_storage_application_print_remote_list_placeholder(void);
+
+#endif

@@ -7,6 +7,7 @@ This module owns the cryptographic boundary for TalkSphere.
 - Create encryption key material.
 - Encrypt message bytes for a recipient.
 - Sign message bytes for sender authenticity.
+- Own encryption command behavior in `encryption_application.c`.
 
 ## Current state
 

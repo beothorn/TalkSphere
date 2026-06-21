@@ -12,6 +12,7 @@ The integration with peers is intentionally not here yet. This code prepares the
 - Force delete one entry by removing its file first and then removing its metadata.
 - Clean up expired entries by deleting expired files and then deleting expired metadata.
 - Run read-only SQL queries against the file manager metadata so future integration code can inspect the storage state.
+- Own shared-storage command behavior in `shared_storage_application.c`.
 
 ## Public API
 
