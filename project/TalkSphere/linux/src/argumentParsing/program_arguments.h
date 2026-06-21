@@ -14,10 +14,15 @@ enum program_mode {
     PROGRAM_MODE_PRINT_LEDGER_HELP,
     PROGRAM_MODE_PRINT_NETWORK_HELP,
     PROGRAM_MODE_PRINT_OFFERINGS_HELP,
+    PROGRAM_MODE_PRINT_TALK_HELP,
     PROGRAM_MODE_PRINT_SHARE_HELP,
     PROGRAM_MODE_PRINT_CREDIT_HELP,
     PROGRAM_MODE_PRINT_LEDGER_SUMMARY,
     PROGRAM_MODE_PRINT_HOME,
+    PROGRAM_MODE_GET_CONFIG_VALUE,
+    PROGRAM_MODE_SET_CONFIG_VALUE,
+    PROGRAM_MODE_ADD_CONFIG_VALUE,
+    PROGRAM_MODE_REMOVE_CONFIG_VALUE,
     PROGRAM_MODE_CREATE_ENCRYPTION_KEYS,
     PROGRAM_MODE_RECREATE_ENCRYPTION_KEYS,
     PROGRAM_MODE_ENCRYPT_MESSAGE,
@@ -45,6 +50,8 @@ struct program_arguments {
     const char *message_text;
     const char *network_address_text;
     const char *offering_text;
+    const char *config_key_text;
+    const char *config_value_text;
     const char *credit_code_text;
     int credit_count;
     int dry_run_is_enabled;

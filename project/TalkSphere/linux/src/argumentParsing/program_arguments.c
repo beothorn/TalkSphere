@@ -16,6 +16,7 @@
 #define RUN_HOME_FOLDER_ARGUMENT_OFFSET 3
 #define CONFIG_FIRST_CHILD_ARGUMENT_OFFSET 1
 #define CONFIG_SECOND_CHILD_ARGUMENT_OFFSET 2
+#define CONFIG_THIRD_CHILD_ARGUMENT_OFFSET 3
 #define ENCRYPTION_CHILD_ARGUMENT_OFFSET 1
 #define ENCRYPTION_MESSAGE_ARGUMENT_OFFSET 2
 #define LEDGER_CHILD_ARGUMENT_OFFSET 1
@@ -57,6 +58,7 @@
 #define CREDIT_WITHDRAW_COMMAND_TEXT "withdraw"
 #define CREDIT_WITHDRAW_MISSPELLED_COMMAND_TEXT "withadraw"
 #define GET_COMMAND_TEXT "get"
+#define SET_COMMAND_TEXT "set"
 #define HOME_COMMAND_TEXT "home"
 #define CREATE_COMMAND_TEXT "create"
 #define RECREATE_COMMAND_TEXT "recreate"
@@ -154,28 +156,26 @@ static void print_main_help(
         "  %s [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]\n"
         "  %s [--help|help|h]\n\n"
         "Commands:\n"
-        "  run <listen_port> <peer_port>\n"
+        "  run\n"
         "      Start the TalkSphere socket service and connect to the peer port.\n"
-        "  config get home\n"
-        "      Print the resolved home folder.\n"
-        "  encryption [--help|help|h]\n"
-        "      Show encryption commands.\n"
-        "  files home\n"
-        "      Print the resolved home folder.\n"
-        "  ledger [--help|help|h]\n"
-        "      Show ledger commands.\n"
-        "  network [--help|help|h]\n"
-        "      Show network commands.\n"
-        "  offerings [--help|help|h]\n"
-        "      Show offering commands.\n"
-        "  talk -p <client_port> offerings\n"
-        "      Ask a running local instance to fetch its connected peer offerings.\n"
-        "  talk -p <client_port> message \"message\"\n"
-        "      Ask a running local instance to send a message to its connected peer.\n"
-        "  share [--help|help|h]\n"
-        "      Show shared storage commands.\n"
-        "  credit [--help|help|h]\n"
-        "      Show credit withdrawal commands.\n\n"
+        "  config\n"
+        "      Manage configurations.\n"
+        "  encryption\n"
+        "      Manage encryption keys and messages.\n"
+        "  files\n"
+        "      Inspect application files.\n"
+        "  ledger\n"
+        "      Inspect credit ledger data.\n"
+        "  network\n"
+        "      Interact with remote TalkSphere nodes.\n"
+        "  offerings\n"
+        "      Manage and inspect offerings.\n"
+        "  talk\n"
+        "      Send commands to another TalkSphere.\n"
+        "  share\n"
+        "      Manage shared storage.\n"
+        "  credit\n"
+        "      Manage credit withdrawal codes.\n\n"
         "Dry run:\n"
         "  Add --dry-run or d before the command to print what would happen.\n",
         program_name,
@@ -235,7 +235,38 @@ static void print_config_help(
         "Config commands\n\n"
         "Usage:\n"
         "  %s [--dry-run|d] config get home\n"
-        "      Print the resolved home folder.\n",
+        "      Print the resolved home folder.\n"
+        "  %s [--dry-run|d] config get availability\n"
+        "      Print the configured availability value.\n"
+        "  %s [--dry-run|d] config set availability <value>\n"
+        "      Set when this node should advertise itself as available.\n"
+        "  %s [--dry-run|d] config add reachableAt <host:port>\n"
+        "      Add an address where this node can be reached.\n"
+        "  %s [--dry-run|d] config remove reachableAt <host:port>\n"
+        "      Remove an address where this node can be reached.\n",
+        program_name,
+        program_name,
+        program_name,
+        program_name,
+        program_name
+    );
+}
+
+static void print_talk_help(
+    FILE *output_file,
+    const char *program_name
+) {
+    LOG_TRACE("print_talk_help(): now we print the talk command help");
+
+    fprintf(
+        output_file,
+        "Talk commands\n\n"
+        "Usage:\n"
+        "  %s [--dry-run|d] talk -p <client_port> offerings\n"
+        "      Ask a running local instance to fetch its connected peer offerings.\n"
+        "  %s [--dry-run|d] talk -p <client_port> message \"message\"\n"
+        "      Ask a running local instance to send a message to its connected peer.\n",
+        program_name,
         program_name
     );
 }
@@ -354,6 +385,11 @@ static void print_help_for_mode(
         );
     } else if (program_mode == PROGRAM_MODE_PRINT_OFFERINGS_HELP) {
         print_offerings_help(
+            output_file,
+            program_name
+        );
+    } else if (program_mode == PROGRAM_MODE_PRINT_TALK_HELP) {
+        print_talk_help(
             output_file,
             program_name
         );
@@ -477,6 +513,8 @@ static void initialize_program_arguments(
     program_arguments->message_text = NULL;
     program_arguments->network_address_text = NULL;
     program_arguments->offering_text = NULL;
+    program_arguments->config_key_text = NULL;
+    program_arguments->config_value_text = NULL;
     program_arguments->credit_code_text = NULL;
     program_arguments->credit_count = 0;
     program_arguments->dry_run_is_enabled = 0;
@@ -540,16 +578,58 @@ static int parse_config_command(
             command_arguments[CONFIG_FIRST_CHILD_ARGUMENT_OFFSET],
             GET_COMMAND_TEXT
         )
-        && argument_text_is(
-            command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET],
-            HOME_COMMAND_TEXT
-        )
     ) {
-        program_arguments->program_mode = PROGRAM_MODE_PRINT_HOME;
+        if (argument_text_is(
+                command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET],
+                HOME_COMMAND_TEXT
+            )
+        ) {
+            program_arguments->program_mode = PROGRAM_MODE_PRINT_HOME;
+            return TALKSPHERE_SUCCESS;
+        }
+
+        program_arguments->config_key_text = command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_GET_CONFIG_VALUE;
         return TALKSPHERE_SUCCESS;
     }
 
-    LOG_WARN("Config arguments are unwanted because this command only supports get home");
+    if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[CONFIG_FIRST_CHILD_ARGUMENT_OFFSET],
+            SET_COMMAND_TEXT
+        )
+    ) {
+        program_arguments->config_key_text = command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET];
+        program_arguments->config_value_text = command_arguments[CONFIG_THIRD_CHILD_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_SET_CONFIG_VALUE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[CONFIG_FIRST_CHILD_ARGUMENT_OFFSET],
+            ADD_COMMAND_TEXT
+        )
+    ) {
+        program_arguments->config_key_text = command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET];
+        program_arguments->config_value_text = command_arguments[CONFIG_THIRD_CHILD_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_ADD_CONFIG_VALUE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
+        && argument_text_is(
+            command_arguments[CONFIG_FIRST_CHILD_ARGUMENT_OFFSET],
+            REMOVE_COMMAND_TEXT
+        )
+    ) {
+        program_arguments->config_key_text = command_arguments[CONFIG_SECOND_CHILD_ARGUMENT_OFFSET];
+        program_arguments->config_value_text = command_arguments[CONFIG_THIRD_CHILD_ARGUMENT_OFFSET];
+        program_arguments->program_mode = PROGRAM_MODE_REMOVE_CONFIG_VALUE;
+        return TALKSPHERE_SUCCESS;
+    }
+
+    LOG_WARN("Config arguments are unwanted because this command only supports get home, set, add, and remove");
     return TALKSPHERE_FAILURE;
 }
 
@@ -768,6 +848,14 @@ static int parse_talk_command(
     struct program_arguments *program_arguments
 ) {
     LOG_TRACE("parse_talk_command(): now we parse commands that talk to an already running local instance");
+
+    if (command_argument_count == COMMAND_WITH_NO_CHILD_COUNT
+        || (command_argument_count == COMMAND_WITH_ONE_CHILD_COUNT
+            && argument_is_help(command_arguments[TALK_PORT_FLAG_ARGUMENT_OFFSET]))
+    ) {
+        program_arguments->program_mode = PROGRAM_MODE_PRINT_TALK_HELP;
+        return TALKSPHERE_SUCCESS;
+    }
 
     if (command_argument_count == COMMAND_WITH_THREE_CHILDREN_COUNT
         && argument_text_is(
@@ -1170,6 +1258,7 @@ int parse_program_arguments(
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_LEDGER_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_NETWORK_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_OFFERINGS_HELP
+        || program_arguments->program_mode == PROGRAM_MODE_PRINT_TALK_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_SHARE_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_CREDIT_HELP
     ) {

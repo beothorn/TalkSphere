@@ -12,12 +12,12 @@ if ! help_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --help 2>&1)"; then
 fi
 
 if [[ "$help_output" != *"[-d|--directory-home <home_folder>] <command> [arguments]"*
-    || "$help_output" != *"run <listen_port> <peer_port>"*
-    || "$help_output" != *"config get home"*
-    || "$help_output" != *"encryption [--help|help|h]"*
-    || "$help_output" != *"share [--help|help|h]"*
+    || "$help_output" != *"  config"$'\n'"      Manage configurations."*
+    || "$help_output" != *"  talk"$'\n'"      Send commands to another TalkSphere."*
+    || "$help_output" == *"config get home"*
+    || "$help_output" == *"talk -p <client_port> offerings"*
 ]]; then
-    printf 'not ok - %s (help did not list expected commands)\n%s\n' "$test_name" "$help_output"
+    printf 'not ok - %s (main help did not use command-family summaries)\n%s\n' "$test_name" "$help_output"
     exit 1
 fi
 
@@ -39,6 +39,36 @@ if [[ "$encryption_help_output" != *"encryption create"*
     printf 'not ok - %s (encryption help did not list expected commands)\n%s\n' \
         "$test_name" \
         "$encryption_help_output"
+    exit 1
+fi
+
+if ! config_help_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" config h 2>&1)"; then
+    printf 'not ok - %s (config help command failed)\n%s\n' "$test_name" "$config_help_output"
+    exit 1
+fi
+
+if [[ "$config_help_output" != *"config get availability"*
+    || "$config_help_output" != *"config set availability"*
+    || "$config_help_output" != *"config add reachableAt"*
+    || "$config_help_output" != *"config remove reachableAt"*
+]]; then
+    printf 'not ok - %s (config help did not list expected commands)\n%s\n' \
+        "$test_name" \
+        "$config_help_output"
+    exit 1
+fi
+
+if ! talk_help_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" talk h 2>&1)"; then
+    printf 'not ok - %s (talk help command failed)\n%s\n' "$test_name" "$talk_help_output"
+    exit 1
+fi
+
+if [[ "$talk_help_output" != *"talk -p <client_port> offerings"*
+    || "$talk_help_output" != *"talk -p <client_port> message"*
+]]; then
+    printf 'not ok - %s (talk help did not list expected commands)\n%s\n' \
+        "$test_name" \
+        "$talk_help_output"
     exit 1
 fi
 
@@ -86,6 +116,56 @@ fi
 
 if [[ -e "$app_directory_path" ]]; then
     printf 'not ok - %s (dry run unexpectedly created storage)\n' "$test_name"
+    exit 1
+fi
+
+if ! config_set_output="$(TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root" "$binary_path" config set availability alwaysOn 2>&1)"; then
+    printf 'not ok - %s (config set command failed)\n%s\n' "$test_name" "$config_set_output"
+    exit 1
+fi
+
+default_config_path="$temporary_root/talksphere/config"
+if [[ "$config_set_output" != "Config availability set to alwaysOn"
+    || "$(cat "$default_config_path")" != "availability=alwaysOn"
+]]; then
+    printf 'not ok - %s (config set output or file was unexpected)\n%s\n' \
+        "$test_name" \
+        "$config_set_output"
+    exit 1
+fi
+
+if ! config_get_output="$(TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_root" "$binary_path" config get availability 2>&1)"; then
+    printf 'not ok - %s (config get availability command failed)\n%s\n' "$test_name" "$config_get_output"
+    exit 1
+fi
+
+if [[ "$config_get_output" != "alwaysOn" ]]; then
+    printf 'not ok - %s (config get availability output was unexpected)\n%s\n' \
+        "$test_name" \
+        "$config_get_output"
+    exit 1
+fi
+
+custom_config_home_path="$temporary_root/config-home"
+if ! config_add_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$custom_config_home_path" config add reachableAt "www.example.com:9999" 2>&1)"; then
+    printf 'not ok - %s (config add command failed)\n%s\n' "$test_name" "$config_add_output"
+    exit 1
+fi
+
+if ! config_remove_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$custom_config_home_path" config remove reachableAt "www.example.com:9999" 2>&1)"; then
+    printf 'not ok - %s (config remove command failed)\n%s\n' "$test_name" "$config_remove_output"
+    exit 1
+fi
+
+custom_config_path="$custom_config_home_path/config"
+if [[ "$config_add_output" != "Config reachableAt added www.example.com:9999"
+    || "$config_remove_output" != "Config reachableAt removed www.example.com:9999"
+    || -s "$custom_config_path"
+]]; then
+    printf 'not ok - %s (config add/remove output or file was unexpected)\nadd: %s\nremove: %s\n' \
+        "$test_name" \
+        "$config_add_output" \
+        "$config_remove_output"
     exit 1
 fi
 

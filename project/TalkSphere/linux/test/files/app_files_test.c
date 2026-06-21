@@ -126,6 +126,7 @@ int main(void) {
     char ledger_directory_path[PATH_TEXT_SIZE];
     char identifier_file_path[PATH_TEXT_SIZE];
     char offerings_file_path[PATH_TEXT_SIZE];
+    char config_file_path[PATH_TEXT_SIZE];
     char identifier_text[IDENTIFIER_TEXT_SIZE];
 
     if (snprintf(
@@ -190,12 +191,23 @@ int main(void) {
         return 6;
     }
 
+    if (build_path(
+            app_storage_directory_path,
+            "config",
+            config_file_path,
+            sizeof(config_file_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return 7;
+    }
+
     if (!path_exists(app_storage_directory_path)
         || !path_exists(ledger_directory_path)
         || !path_exists(identifier_file_path)
         || !path_exists(offerings_file_path)
+        || !path_exists(config_file_path)
     ) {
-        return 7;
+        return 8;
     }
 
     if (read_local_identifier(
@@ -204,15 +216,15 @@ int main(void) {
             sizeof(identifier_text)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 8;
-    }
-
-    if (!identifier_has_expected_shape(identifier_text)) {
         return 9;
     }
 
-    if (offerings_have_expected_defaults(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+    if (!identifier_has_expected_shape(identifier_text)) {
         return 10;
+    }
+
+    if (offerings_have_expected_defaults(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+        return 11;
     }
 
     return 0;

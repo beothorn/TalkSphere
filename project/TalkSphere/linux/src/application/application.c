@@ -2,6 +2,7 @@
 
 #include "argumentParsing/program_arguments.h"
 #include "common/result.h"
+#include "config/config_application.h"
 #include "creditWithdraw/credit_withdraw_application.h"
 #include "encryption/encryption_application.h"
 #include "files/app_files.h"
@@ -24,6 +25,10 @@ static int command_needs_app_files(
     LOG_TRACE("command_needs_app_files(): now we decide whether the command needs home files before it runs");
 
     return program_mode == PROGRAM_MODE_RUN_SERVER
+        || program_mode == PROGRAM_MODE_GET_CONFIG_VALUE
+        || program_mode == PROGRAM_MODE_SET_CONFIG_VALUE
+        || program_mode == PROGRAM_MODE_ADD_CONFIG_VALUE
+        || program_mode == PROGRAM_MODE_REMOVE_CONFIG_VALUE
         || program_mode == PROGRAM_MODE_PRINT_LEDGER_SUMMARY
         || program_mode == PROGRAM_MODE_CREATE_ENCRYPTION_KEYS
         || program_mode == PROGRAM_MODE_RECREATE_ENCRYPTION_KEYS
@@ -46,6 +51,7 @@ static int program_mode_is_help(
         || program_mode == PROGRAM_MODE_PRINT_LEDGER_HELP
         || program_mode == PROGRAM_MODE_PRINT_NETWORK_HELP
         || program_mode == PROGRAM_MODE_PRINT_OFFERINGS_HELP
+        || program_mode == PROGRAM_MODE_PRINT_TALK_HELP
         || program_mode == PROGRAM_MODE_PRINT_SHARE_HELP
         || program_mode == PROGRAM_MODE_PRINT_CREDIT_HELP;
 }
@@ -70,6 +76,37 @@ static int print_dry_run(
 
     if (program_arguments->program_mode == PROGRAM_MODE_CREATE_ENCRYPTION_KEYS) {
         return encryption_application_print_create_keys_dry_run(resolved_storage_directory_path);
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_GET_CONFIG_VALUE) {
+        return config_application_print_get_dry_run(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_SET_CONFIG_VALUE) {
+        return config_application_print_set_dry_run(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_ADD_CONFIG_VALUE) {
+        return config_application_print_add_dry_run(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_REMOVE_CONFIG_VALUE) {
+        return config_application_print_remove_dry_run(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
     }
 
     if (program_arguments->program_mode == PROGRAM_MODE_RECREATE_ENCRYPTION_KEYS) {
@@ -165,6 +202,37 @@ static int run_command(
 
     if (program_arguments->program_mode == PROGRAM_MODE_CREATE_ENCRYPTION_KEYS) {
         return encryption_application_create_keys(resolved_storage_directory_path);
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_GET_CONFIG_VALUE) {
+        return config_application_get_value(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_SET_CONFIG_VALUE) {
+        return config_application_set_value(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_ADD_CONFIG_VALUE) {
+        return config_application_add_value(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_REMOVE_CONFIG_VALUE) {
+        return config_application_remove_value(
+            resolved_storage_directory_path,
+            program_arguments->config_key_text,
+            program_arguments->config_value_text
+        );
     }
 
     if (program_arguments->program_mode == PROGRAM_MODE_RECREATE_ENCRYPTION_KEYS) {

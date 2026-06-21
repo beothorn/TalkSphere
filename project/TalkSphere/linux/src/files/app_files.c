@@ -217,6 +217,28 @@ static int build_offerings_file_path(
     return TALKSPHERE_SUCCESS;
 }
 
+static int build_config_file_path(
+    const char *app_directory_path,
+    char *config_file_path,
+    size_t config_file_path_size
+) {
+    LOG_TRACE("build_config_file_path(): now we compute where the local config document lives");
+
+    if (snprintf(
+            config_file_path,
+            config_file_path_size,
+            "%s/%s",
+            app_directory_path,
+            TALKSPHERE_CONFIG_FILE_NAME
+        ) >= (int)config_file_path_size
+    ) {
+        LOG_ERROR("The config file path is too long so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    return TALKSPHERE_SUCCESS;
+}
+
 static int ensure_identifier_file(
     const char *app_directory_path
 ) {
@@ -411,6 +433,41 @@ static int ensure_offerings_file(
     return TALKSPHERE_SUCCESS;
 }
 
+static int ensure_config_file(
+    const char *app_directory_path
+) {
+    LOG_TRACE("ensure_config_file(): now we create the local config document if it does not exist yet");
+
+    char config_file_path[PATH_MAX];
+    if (build_config_file_path(
+            app_directory_path,
+            config_file_path,
+            sizeof(config_file_path)
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    int config_file_descriptor = open(
+        config_file_path,
+        O_WRONLY | O_CREAT | O_EXCL,
+        0600
+    );
+
+    if (config_file_descriptor < 0) {
+        if (errno == EEXIST) {
+            return TALKSPHERE_SUCCESS;
+        }
+
+        LOG_ERROR("Opening the config file failed so startup cannot continue");
+        return TALKSPHERE_FAILURE;
+    }
+
+    close(config_file_descriptor);
+    LOG_INFO("A local config document was created");
+    return TALKSPHERE_SUCCESS;
+}
+
 int ensure_app_files(
     const char *app_storage_directory_path
 ) {
@@ -435,6 +492,10 @@ int ensure_app_files(
     }
 
     if (ensure_offerings_file(resolved_directory_path) != TALKSPHERE_SUCCESS) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (ensure_config_file(resolved_directory_path) != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 
