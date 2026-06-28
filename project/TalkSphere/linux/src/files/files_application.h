@@ -9,4 +9,8 @@ int files_application_print_home_dry_run(
     const char *resolved_storage_directory_path
 );
 
+int files_application_print_start_dry_run(
+    const char *resolved_storage_directory_path
+);
+
 #endif

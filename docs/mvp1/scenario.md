@@ -1,4 +1,6 @@
 for instance 1
+start an instance at a folder:
+`talksphere --home /tmp/Alice start`
 add a credit for id 123456
 set availability alwaysOn
 set reachableAt www.example.com:9999
@@ -44,4 +46,3 @@ get
 
 ask for credits with id 123456  
 get credits  
-

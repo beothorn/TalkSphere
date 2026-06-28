@@ -9,6 +9,7 @@ This module owns local application file and directory setup.
 - Create the ledger directory when it is missing.
 - Create and read the local identifier file.
 - Create the default local offerings file when it is missing.
+- Support `start` by creating the home files without starting networking.
 - Own file command behavior in `files_application.c`.
 
 ## Boundaries

@@ -25,6 +25,7 @@ static int command_needs_app_files(
     LOG_TRACE("command_needs_app_files(): now we decide whether the command needs home files before it runs");
 
     return program_mode == PROGRAM_MODE_RUN_SERVER
+        || program_mode == PROGRAM_MODE_START_HOME
         || program_mode == PROGRAM_MODE_GET_CONFIG_VALUE
         || program_mode == PROGRAM_MODE_SET_CONFIG_VALUE
         || program_mode == PROGRAM_MODE_ADD_CONFIG_VALUE
@@ -46,6 +47,7 @@ static int program_mode_is_help(
     LOG_TRACE("program_mode_is_help(): now we decide whether parsing already printed a help document");
 
     return program_mode == PROGRAM_MODE_PRINT_MAIN_HELP
+        || program_mode == PROGRAM_MODE_PRINT_RUN_HELP
         || program_mode == PROGRAM_MODE_PRINT_CONFIG_HELP
         || program_mode == PROGRAM_MODE_PRINT_ENCRYPTION_HELP
         || program_mode == PROGRAM_MODE_PRINT_LEDGER_HELP
@@ -68,6 +70,10 @@ static int print_dry_run(
             program_arguments->peer_port,
             resolved_storage_directory_path
         );
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_START_HOME) {
+        return files_application_print_start_dry_run(resolved_storage_directory_path);
     }
 
     if (program_arguments->program_mode == PROGRAM_MODE_PRINT_HOME) {
@@ -203,6 +209,11 @@ static int run_command(
 
     if (program_arguments->program_mode == PROGRAM_MODE_PRINT_HOME) {
         return files_application_print_home(resolved_storage_directory_path);
+    }
+
+    if (program_arguments->program_mode == PROGRAM_MODE_START_HOME) {
+        LOG_TRACE("<run_command(): home files were prepared so start can finish without running networking");
+        return TALKSPHERE_SUCCESS;
     }
 
     if (program_arguments->program_mode == PROGRAM_MODE_CREATE_ENCRYPTION_KEYS) {

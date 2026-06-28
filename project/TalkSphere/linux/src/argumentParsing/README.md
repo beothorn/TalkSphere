@@ -7,6 +7,7 @@ This module validates the command-line interface for the Linux runtime.
 - Parse the global dry-run flag, `--dry-run`.
 - Parse the global home directory override, `--home <home_folder>`.
 - Parse main help, `--help`, `help`, or `h`.
+- Parse `start`.
 - Parse `run <listen_port> <peer_port>`.
 - Parse `config get home` and `files home`.
 - Parse encryption commands and encryption-specific help.
@@ -31,6 +32,8 @@ talksphere [--help|help|h]
 If no home folder is passed, the application uses its default storage resolution. If `--home` is passed, every command uses that folder instead:
 
 ```bash
+talksphere start
+talksphere --home /tmp/Alice start
 talksphere run <listen_port> <peer_port>
 talksphere --home /tmp/Alice run <listen_port> <peer_port>
 talksphere offerings get

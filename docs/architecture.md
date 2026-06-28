@@ -6,8 +6,8 @@ TalkSphere is designed as a decentralized peer-to-peer system where peers exchan
 
 The current Linux implementation is a small command-line runtime organized by responsibility. Each responsibility is isolated as much as possible:
 
-- **Startup**: `main.c` connects the modules. It parses commands, prepares local storage when needed, delegates existing domain operations, prints placeholders for missing command bodies, and starts networking for `run`.
-- **Argument parsing**: validates user input and maps domain commands such as `run`, `config`, `encryption`, `ledger`, `network`, `offerings`, and `share` into program modes.
+- **Startup**: `main.c` connects the modules. It parses commands, prepares local storage when needed, delegates existing domain operations, prints placeholders for missing command bodies, creates storage-only homes for `start`, and starts networking for `run`.
+- **Argument parsing**: validates user input and maps domain commands such as `start`, `run`, `config`, `encryption`, `ledger`, `network`, `offerings`, and `share` into program modes.
 - **Files**: resolves and creates local storage, including the local identifier and ledger directory.
 - **Ledger**: records local credit balances as files and calculates owned/owed totals.
 - **Network**: runs a TCP listener and sends outbound TCP messages.
@@ -20,7 +20,7 @@ The current Linux implementation is a small command-line runtime organized by re
 2. Program arguments are parsed into a command mode and optional command data such as ports, message text, or peer addresses.
 3. The storage path is resolved, and required app files are created only for commands that need local files.
 4. In `ledger credit_summary`, the ledger module reads balances and prints owned/owed totals.
-5. In `run`, the network module listens for TCP messages.
+5. In `start`, the process exits after storage preparation. In `run`, the network module listens for TCP messages.
 6. Received messages are passed to the message parsing module.
 7. Message parsing updates the ledger or prints delivered message text depending on the message command.
 

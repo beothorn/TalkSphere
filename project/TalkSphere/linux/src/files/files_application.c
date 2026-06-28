@@ -29,3 +29,17 @@ int files_application_print_home_dry_run(
     );
     return TALKSPHERE_SUCCESS;
 }
+
+int files_application_print_start_dry_run(
+    const char *resolved_storage_directory_path
+) {
+    LOG_TRACE(">files_application_print_start_dry_run(): now we describe home creation without changing state");
+
+    printf(
+        "Would create TalkSphere home files in %s\n",
+        resolved_storage_directory_path
+    );
+
+    LOG_TRACE("<files_application_print_start_dry_run(): finished describing home creation");
+    return TALKSPHERE_SUCCESS;
+}

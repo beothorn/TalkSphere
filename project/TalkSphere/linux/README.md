@@ -19,6 +19,7 @@ Main commands:
 
 ```bash
 talksphere run <listen_port> <peer_port>  
+talksphere start
 talksphere config get home
 talksphere files home
 talksphere encryption [--help|help|h]
@@ -42,6 +43,18 @@ talksphere run <listen_port> <peer_port>
 
 - `listen_port`: the TCP port where this TalkSphere instance listens.
 - `peer_port`: stored in runtime configuration for peer-oriented flows and kept different from `listen_port`.  
+
+Create the home files without starting a server:
+
+```bash
+talksphere --home ~/dev/talksphere_sandbox/Alice start
+```
+
+This creates the home folder, local identifier, offerings file, config file, and ledger directory. When a new identifier is created, the command prints:
+
+```text
+A new identifier was created: <identifier>
+```
 
 Print the resolved home folder:
 
@@ -119,14 +132,14 @@ Use different ports and different home folders:
 Terminal 1:
 
 ```bash
-mkdir -p /tmp/talksphere-demo/alice
+build/talksphere --home /tmp/talksphere-demo/alice start
 build/talksphere --home /tmp/talksphere-demo/alice run 9101 9102
 ```
 
 Terminal 2:
 
 ```bash
-mkdir -p /tmp/talksphere-demo/bob
+build/talksphere --home /tmp/talksphere-demo/bob start
 build/talksphere --home /tmp/talksphere-demo/bob run 9201 9202
 ```
 

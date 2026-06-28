@@ -112,6 +112,50 @@ static int test_global_directory_home_run_arguments(void) {
     );
 }
 
+static int test_global_directory_home_start_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "--home",
+        EXPECTED_HOME_DIRECTORY_PATH,
+        "start"
+    };
+    struct program_arguments program_arguments;
+
+    if (parse_arguments_for_test(
+            TEST_FOUR_ARGUMENT_COUNT,
+            argument_values,
+            &program_arguments
+        ) != TALKSPHERE_SUCCESS
+    ) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    if (program_arguments.app_storage_directory_path != argument_values[2]) {
+        return TALKSPHERE_FAILURE;
+    }
+
+    return program_arguments.program_mode == PROGRAM_MODE_START_HOME
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_start_rejects_extra_arguments(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "start",
+        "extra"
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_THREE_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
 static int test_dry_run_config_home_arguments(void) {
     char *argument_values[] = {
         "talksphere",
@@ -843,6 +887,8 @@ int main(void) {
     const struct test_case test_cases[] = {
         TEST_CASE(test_run_arguments),
         TEST_CASE(test_global_directory_home_run_arguments),
+        TEST_CASE(test_global_directory_home_start_arguments),
+        TEST_CASE(test_start_rejects_extra_arguments),
         TEST_CASE(test_dry_run_config_home_arguments),
         TEST_CASE(test_dry_run_rejects_short_argument),
         TEST_CASE(test_run_rejects_positional_home_argument),

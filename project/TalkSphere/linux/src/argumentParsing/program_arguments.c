@@ -14,6 +14,7 @@
 #define RUN_LISTEN_PORT_ARGUMENT_OFFSET 1
 #define RUN_PEER_PORT_ARGUMENT_OFFSET 2
 #define RUN_HOME_FOLDER_ARGUMENT_OFFSET 3
+#define START_HELP_ARGUMENT_OFFSET 1
 #define CONFIG_FIRST_CHILD_ARGUMENT_OFFSET 1
 #define CONFIG_SECOND_CHILD_ARGUMENT_OFFSET 2
 #define CONFIG_THIRD_CHILD_ARGUMENT_OFFSET 3
@@ -45,6 +46,7 @@
 #define STRING_TERMINATOR '\0'
 
 #define RUN_COMMAND_TEXT "run"
+#define START_COMMAND_TEXT "start"
 #define CONFIG_COMMAND_TEXT "config"
 #define ENCRYPTION_COMMAND_TEXT "encryption"
 #define FILES_COMMAND_TEXT "files"
@@ -162,6 +164,8 @@ static void print_main_help(
         "      Display this help message.\n"
         "  run\n"
         "      Start the TalkSphere socket service and connect to the peer port.\n"
+        "  start\n"
+        "      Create the TalkSphere home files without starting the socket service.\n"
         "  config\n"
         "      Manage configurations.\n"
         "  encryption\n"
@@ -592,6 +596,32 @@ static int parse_run_command(
 
     program_arguments->program_mode = PROGRAM_MODE_RUN_SERVER;
     return validate_different_ports(program_arguments);
+}
+
+static int parse_start_command(
+    int command_argument_count,
+    char *command_arguments[],
+    struct program_arguments *program_arguments
+) {
+    LOG_TRACE(">parse_start_command(): now we parse the command that creates the home files without starting networking");
+
+    if (command_argument_count == COMMAND_WITH_ONE_CHILD_COUNT
+        && argument_is_help(command_arguments[START_HELP_ARGUMENT_OFFSET])
+    ) {
+        program_arguments->program_mode = PROGRAM_MODE_PRINT_MAIN_HELP;
+        LOG_TRACE("<parse_start_command(): parsed start help as main help because start has no child commands");
+        return TALKSPHERE_SUCCESS;
+    }
+
+    if (command_argument_count != COMMAND_WITH_NO_CHILD_COUNT) {
+        LOG_WARN("Start arguments are unwanted because start only creates the selected home folder");
+        LOG_TRACE("<parse_start_command(): failed to parse start command because the argument count is invalid");
+        return TALKSPHERE_FAILURE;
+    }
+
+    program_arguments->program_mode = PROGRAM_MODE_START_HOME;
+    LOG_TRACE("<parse_start_command(): parsed start command successfully");
+    return TALKSPHERE_SUCCESS;
 }
 
 static int parse_config_command(
@@ -1095,6 +1125,18 @@ static int parse_command(
 
     if (argument_text_is(
             command_arguments[0],
+            START_COMMAND_TEXT
+        )
+    ) {
+        return parse_start_command(
+            command_argument_count,
+            command_arguments,
+            program_arguments
+        );
+    }
+
+    if (argument_text_is(
+            command_arguments[0],
             CONFIG_COMMAND_TEXT
         )
     ) {
@@ -1236,6 +1278,7 @@ static int parse_global_options(
                     "Missing home folder after %s\n",
                     argument_text
                 );
+                LOG_TRACE("<parse_global_options(): failed to parse global options because the home folder path is missing");
                 return TALKSPHERE_FAILURE;
             }
 
@@ -1244,11 +1287,13 @@ static int parse_global_options(
             argument_index += GLOBAL_OPTION_WITH_VALUE_ARGUMENT_COUNT;
         } else {
             *first_command_argument_index = argument_index;
+            LOG_TRACE("<parse_global_options(): finished parsing global options");
             return TALKSPHERE_SUCCESS;
         }
     }
 
     *first_command_argument_index = argument_index;
+    LOG_TRACE("<parse_global_options(): finished parsing global options");
     return TALKSPHERE_SUCCESS;
 }
 

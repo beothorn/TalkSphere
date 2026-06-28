@@ -13,6 +13,7 @@ fi
 
 if [[ "$help_output" != *"$binary_path <command> [arguments]"*
     || "$help_output" != *"  config"$'\n'"      Manage configurations."*
+    || "$help_output" != *"  start"$'\n'"      Create the TalkSphere home files without starting the socket service."*
     || "$help_output" != *"  talk"$'\n'"      Send commands to another TalkSphere."*
     || "$help_output" != *"Add --home before the command to set the home folder."*
     || "$help_output" == *"--directory-home"*
@@ -128,7 +129,8 @@ if ! config_set_output="$(TALKSPHERE_LOG_LEVEL=warn XDG_DATA_HOME="$temporary_ro
 fi
 
 default_config_path="$temporary_root/talksphere/config"
-if [[ "$config_set_output" != "Config availability set to alwaysOn"
+config_set_status_line="${config_set_output##*$'\n'}"
+if [[ "$config_set_status_line" != "Config availability set to alwaysOn"
     || "$(cat "$default_config_path")" != "availability=alwaysOn"
 ]]; then
     printf 'not ok - %s (config set output or file was unexpected)\n%s\n' \
@@ -161,8 +163,10 @@ if ! config_remove_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$c
 fi
 
 custom_config_path="$custom_config_home_path/config"
-if [[ "$config_add_output" != "Config reachableAt added www.example.com:9999"
-    || "$config_remove_output" != "Config reachableAt removed www.example.com:9999"
+config_add_status_line="${config_add_output##*$'\n'}"
+config_remove_status_line="${config_remove_output##*$'\n'}"
+if [[ "$config_add_status_line" != "Config reachableAt added www.example.com:9999"
+    || "$config_remove_status_line" != "Config reachableAt removed www.example.com:9999"
     || -s "$custom_config_path"
 ]]; then
     printf 'not ok - %s (config add/remove output or file was unexpected)\nadd: %s\nremove: %s\n' \
@@ -222,6 +226,37 @@ fi
 
 if [[ -e "$app_directory_path" ]]; then
     printf 'not ok - %s (module dry runs unexpectedly created storage)\n' "$test_name"
+    exit 1
+fi
+
+start_home_path="$temporary_root/start-home"
+if ! start_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$start_home_path" start 2>&1)"; then
+    printf 'not ok - %s (start command failed)\n%s\n' "$test_name" "$start_output"
+    exit 1
+fi
+
+if [[ "$start_output" != "A new identifier was created: "* ]]; then
+    printf 'not ok - %s (start output was unexpected)\n%s\n' "$test_name" "$start_output"
+    exit 1
+fi
+
+created_identifier_text="${start_output#A new identifier was created: }"
+if [[ "$(cat "$start_home_path/id")" != "$created_identifier_text"
+    || ! -f "$start_home_path/offerings"
+    || ! -f "$start_home_path/config"
+    || ! -d "$start_home_path/ledger"
+]]; then
+    printf 'not ok - %s (start did not create expected home files)\n%s\n' "$test_name" "$start_home_path"
+    exit 1
+fi
+
+if ! start_again_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$start_home_path" start 2>&1)"; then
+    printf 'not ok - %s (start command failed on existing home)\n%s\n' "$test_name" "$start_again_output"
+    exit 1
+fi
+
+if [[ -n "$start_again_output" ]]; then
+    printf 'not ok - %s (start should not create a new identifier for existing home)\n%s\n' "$test_name" "$start_again_output"
     exit 1
 fi
 
