@@ -1,12 +1,37 @@
-for instance 1
 start an instance at a folder:
 `talksphere --home /tmp/Alice start`
-add a credit for id 123456
-set availability alwaysOn
-set reachableAt www.example.com:9999
-run instance 1
-add service sell
+(NOT IMPLEMENETD, DEFAUL IS NOT EMPTY)  
 ```
+talksphere --home /tmp/Alice  offerings get
+{
+}
+``` 
+add a credit for id 12321
+`talksphere --home /tmp/Alice credit add 99 12321`
+get availability  
+```
+talksphere --home /tmp/Alice config get availability
+Config availability is not set
+```
+set availability alwaysOn
+```
+talksphere --home /tmp/Alice config set availability alwaysOn
+Config availability set to alwaysOn
+```
+get reachableAt (NOT IMPLEMENTED)  
+```
+talksphere --home /tmp/Alice config get reachableAt
+Config reachableAt is not set
+```
+set availability alwaysOn (NOT IMPLEMENTED)  
+```
+talksphere --home /tmp/Alice config set reachableAt www.example.com:9999
+Config reachableAt set to alwaysOn
+```
+
+add service sell (NOT IMPLEMENTED)
+```
+talksphere --home /tmp/Alice  offerings add 
 {
   "service": "creditWithdraw", 
   "credit":"own", 
@@ -19,30 +44,18 @@ add service sell
   }
 }
 ```
-run instance 2
+`talksphere --home /tmp/Bob start`
 
-connect instance 1 to instance 2
+`talksphere --home /tmp/Alice run 9790 9791`
+`talksphere --home /tmp/Bob run 9690 9691`
+
 asks for offerings
-get
-```
-{
-  "availability": "alwaysOn",
-  "reachableAt": ["www.isageek.com.br:9979"],
-  "sell" : [
-    {
-      "service": "creditWithdraw", 
-      "credit":"own", 
-      "description": "given a code, withadraw credits",
-      "input": {
-        "code": "string"
-      },
-      "output": {
-        "success": "bool"
-      }
-    }   
-  ]
-}
-```
 
-ask for credits with id 123456  
-get credits  
+`talksphere --home /tmp/Bob talk localhost:9790 GET_OFFERINGS`
+
+ask for credits with id 12321  
+
+`talksphere --home /tmp/Bob talk localhost:9790 GET_CREDITS 12321`
+
+
+
