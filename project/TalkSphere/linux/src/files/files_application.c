@@ -8,12 +8,13 @@
 int files_application_print_home(
     const char *resolved_storage_directory_path
 ) {
-    LOG_TRACE("files_application_print_home(): now we print the resolved storage home folder");
+    LOG_TRACE(">files_application_print_home(): now we print the resolved storage home folder");
 
     printf(
         "%s\n",
         resolved_storage_directory_path
     );
+    LOG_TRACE("<files_application_print_home(): finished printing home folder");
     return TALKSPHERE_SUCCESS;
 }
 

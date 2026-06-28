@@ -190,11 +190,16 @@ static int print_dry_run(
     return TALKSPHERE_SUCCESS;
 }
 
+/*
+ * Runs the specified command based on the parsed program arguments.
+ * Here we dispatch the command to the appropriate module application for execution.
+ * Mostly, debugging starts here.
+ */
 static int run_command(
     const struct program_arguments *program_arguments,
     const char *resolved_storage_directory_path
 ) {
-    LOG_TRACE("run_command(): now we dispatch the parsed command to the owning module application");
+    LOG_TRACE(">run_command(): now we dispatch the parsed command to the owning module application");
 
     if (program_arguments->program_mode == PROGRAM_MODE_PRINT_HOME) {
         return files_application_print_home(resolved_storage_directory_path);

@@ -82,7 +82,7 @@ static int build_default_app_directory_path(
     char *app_directory_path,
     size_t app_directory_path_size
 ) {
-    LOG_TRACE("build_default_app_directory_path(): now we compute the default Linux application directory");
+    LOG_TRACE(">build_default_app_directory_path(): now we compute the default Linux application directory");
 
     const char *xdg_data_home = getenv("XDG_DATA_HOME");
     const char *home_directory = getenv("HOME");
@@ -97,13 +97,16 @@ static int build_default_app_directory_path(
             ) >= (int)app_directory_path_size
         ) {
             LOG_ERROR("The app directory path is too long when using XDG_DATA_HOME");
+            LOG_TRACE("<build_default_app_directory_path(): failed to compute default app directory path");
             return TALKSPHERE_FAILURE;
         }
+        LOG_TRACE("<build_default_app_directory_path(): successfully computed default app directory path");
         return TALKSPHERE_SUCCESS;
     }
 
     if (home_directory == NULL || home_directory[0] == '\0') {
         LOG_ERROR("HOME is not available so we cannot resolve the Linux application files directory");
+        LOG_TRACE("<build_default_app_directory_path(): failed to compute default app directory path");
         return TALKSPHERE_FAILURE;
     }
 
@@ -116,9 +119,11 @@ static int build_default_app_directory_path(
         ) >= (int)app_directory_path_size
     ) {
         LOG_ERROR("The app directory path is too long when using HOME fallback");
+        LOG_TRACE("<build_default_app_directory_path(): failed to compute default app directory path");
         return TALKSPHERE_FAILURE;
     }
 
+    LOG_TRACE("<build_default_app_directory_path(): successfully computed default app directory path");
     return TALKSPHERE_SUCCESS;
 }
 
@@ -127,7 +132,7 @@ int resolve_app_storage_directory_path(
     char *resolved_directory_path,
     size_t resolved_directory_path_size
 ) {
-    LOG_TRACE("resolve_app_storage_directory_path(): now we resolve the storage directory based on arguments");
+    LOG_TRACE(">resolve_app_storage_directory_path(): now we resolve the storage directory based on arguments");
 
     if (app_storage_directory_path != NULL && app_storage_directory_path[0] != '\0') {
         if (snprintf(
@@ -138,8 +143,10 @@ int resolve_app_storage_directory_path(
             ) >= (int)resolved_directory_path_size
         ) {
             LOG_ERROR("The custom app storage directory path is too long");
+            LOG_TRACE("<resolve_app_storage_directory_path(): failed to resolve storage directory path");
             return TALKSPHERE_FAILURE;
         }
+        LOG_TRACE("<resolve_app_storage_directory_path(): successfully resolved storage directory path");
         return TALKSPHERE_SUCCESS;
     }
 
@@ -178,7 +185,7 @@ static int build_identifier_file_path(
     char *identifier_file_path,
     size_t identifier_file_path_size
 ) {
-    LOG_TRACE("build_identifier_file_path(): now we compute the identifier file path");
+    LOG_TRACE(">build_identifier_file_path(): now we compute the identifier file path");
 
     if (snprintf(
             identifier_file_path,
@@ -189,9 +196,11 @@ static int build_identifier_file_path(
         ) >= (int)identifier_file_path_size
     ) {
         LOG_ERROR("The identifier file path is too long so startup cannot continue");
+        LOG_TRACE("<build_identifier_file_path(): failed to compute identifier file path");
         return TALKSPHERE_FAILURE;
     }
 
+    LOG_TRACE("<build_identifier_file_path(): successfully computed identifier file path");
     return TALKSPHERE_SUCCESS;
 }
 
@@ -200,7 +209,7 @@ static int build_offerings_file_path(
     char *offerings_file_path,
     size_t offerings_file_path_size
 ) {
-    LOG_TRACE("build_offerings_file_path(): now we compute where the local offerings document lives");
+    LOG_TRACE(">build_offerings_file_path(): now we compute where the local offerings document lives");
 
     if (snprintf(
             offerings_file_path,
@@ -211,9 +220,11 @@ static int build_offerings_file_path(
         ) >= (int)offerings_file_path_size
     ) {
         LOG_ERROR("The offerings file path is too long so startup cannot continue");
+        LOG_TRACE("<build_offerings_file_path(): failed to compute offerings file path");
         return TALKSPHERE_FAILURE;
     }
 
+    LOG_TRACE("<build_offerings_file_path(): successfully computed offerings file path");
     return TALKSPHERE_SUCCESS;
 }
 
@@ -222,7 +233,7 @@ static int build_config_file_path(
     char *config_file_path,
     size_t config_file_path_size
 ) {
-    LOG_TRACE("build_config_file_path(): now we compute where the local config document lives");
+    LOG_TRACE(">build_config_file_path(): now we compute where the local config document lives");
 
     if (snprintf(
             config_file_path,
@@ -233,16 +244,18 @@ static int build_config_file_path(
         ) >= (int)config_file_path_size
     ) {
         LOG_ERROR("The config file path is too long so startup cannot continue");
+        LOG_TRACE("<build_config_file_path(): failed to compute config file path");
         return TALKSPHERE_FAILURE;
     }
 
+    LOG_TRACE("<build_config_file_path(): successfully computed config file path");
     return TALKSPHERE_SUCCESS;
 }
 
 static int ensure_identifier_file(
     const char *app_directory_path
 ) {
-    LOG_TRACE("ensure_identifier_file(): now we create the installation identifier if it does not exist yet");
+    LOG_TRACE(">ensure_identifier_file(): now we create the installation identifier if it does not exist yet");
 
     char identifier_file_path[PATH_MAX];
     if (build_identifier_file_path(
@@ -251,6 +264,7 @@ static int ensure_identifier_file(
             sizeof(identifier_file_path)
         ) != TALKSPHERE_SUCCESS
     ) {
+        LOG_TRACE("<ensure_identifier_file(): failed to build identifier file path");
         return TALKSPHERE_FAILURE;
     }
 
@@ -262,9 +276,11 @@ static int ensure_identifier_file(
 
     if (identifier_file_descriptor < 0) {
         if (errno == EEXIST) {
+            LOG_TRACE("<ensure_identifier_file(): identifier file already exists");
             return TALKSPHERE_SUCCESS;
         }
 
+        LOG_TRACE("<ensure_identifier_file(): failed to open identifier file");
         LOG_ERROR("Opening the identifier file failed so startup cannot continue");
         return TALKSPHERE_FAILURE;
     }
@@ -274,6 +290,7 @@ static int ensure_identifier_file(
     if (random_bytes_read_count != (ssize_t)sizeof(random_bytes)) {
         LOG_ERROR("Cryptographic random generation failed so identifier creation cannot continue");
         close(identifier_file_descriptor);
+        LOG_TRACE("<ensure_identifier_file(): failed to generate random bytes");
         return TALKSPHERE_FAILURE;
     }
 
@@ -291,10 +308,19 @@ static int ensure_identifier_file(
 
     if (written_bytes_count != (ssize_t)encoded_identifier_length) {
         LOG_ERROR("Writing the identifier failed so startup cannot continue");
+        LOG_TRACE("<ensure_identifier_file(): failed to write identifier to file");
         return TALKSPHERE_FAILURE;
     }
 
     LOG_INFO("A new installation identifier was created");
+
+    printf(
+        "A new identifier was created: %s\n",
+        encoded_identifier
+    );
+
+
+    LOG_TRACE("<ensure_identifier_file(): successfully created identifier file");
     return TALKSPHERE_SUCCESS;
 }
 
