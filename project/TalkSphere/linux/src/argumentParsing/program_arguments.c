@@ -202,13 +202,13 @@ static void print_encryption_help(
         output_file,
         "Encryption commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] encryption create\n"
+        "  %s encryption create\n"
         "      Create encryption keys in the home folder and fail if they already exist.\n"
-        "  %s [--dry-run] encryption recreate\n"
+        "  %s encryption recreate\n"
         "      Replace encryption keys in the home folder and fail if they do not exist.\n"
-        "  %s [--dry-run] encryption encrypt_message \"message\"\n"
+        "  %s encryption encrypt_message \"message\"\n"
         "      Print the encrypted message to stdout.\n"
-        "  %s [--dry-run] encryption sign_message \"message\"\n"
+        "  %s encryption sign_message \"message\"\n"
         "      Print the message signature to stdout.\n",
         program_name,
         program_name,
@@ -227,7 +227,7 @@ static void print_ledger_help(
         output_file,
         "Ledger commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] ledger credit_summary\n"
+        "  %s ledger credit_summary\n"
         "      Print credit totals from the local ledger.\n",
         program_name
     );
@@ -259,15 +259,15 @@ static void print_config_help(
         output_file,
         "Config commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] config get home\n"
+        "  %s config get home\n"
         "      Print the resolved home folder.\n"
-        "  %s [--dry-run] config get availability\n"
+        "  %s config get availability\n"
         "      Print the configured availability value.\n"
-        "  %s [--dry-run] config set availability <value>\n"
+        "  %s config set availability <value>\n"
         "      Set when this node should advertise itself as available.\n"
-        "  %s [--dry-run] config add reachableAt <host:port>\n"
+        "  %s config add reachableAt <host:port>\n"
         "      Add an address where this node can be reached.\n"
-        "  %s [--dry-run] config remove reachableAt <host:port>\n"
+        "  %s config remove reachableAt <host:port>\n"
         "      Remove an address where this node can be reached.\n",
         program_name,
         program_name,
@@ -287,9 +287,9 @@ static void print_talk_help(
         output_file,
         "Talk commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] talk -p <client_port> offerings\n"
+        "  %s talk -p <client_port> offerings\n"
         "      Ask a running local instance to fetch its connected peer offerings.\n"
-        "  %s [--dry-run] talk -p <client_port> message \"message\"\n"
+        "  %s talk -p <client_port> message \"message\"\n"
         "      Ask a running local instance to send a message to its connected peer.\n",
         program_name,
         program_name
@@ -306,7 +306,7 @@ static void print_network_help(
         output_file,
         "Network commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] network ping <ip:port>\n"
+        "  %s network ping <ip:port>\n"
         "      Send a TalkSphere ping to check whether a peer is reachable.\n",
         program_name
     );
@@ -322,15 +322,15 @@ static void print_offerings_help(
         output_file,
         "Offerings commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] offerings <ip:port>\n"
+        "  %s offerings <ip:port>\n"
         "      Print offerings exposed by a remote peer.\n"
-        "  %s [--dry-run] offerings get\n"
+        "  %s offerings get\n"
         "      Print local offerings.\n"
-        "  %s [--dry-run] offerings add <offering options>\n"
+        "  %s offerings add <offering options>\n"
         "      Add a local offering.\n"
-        "  %s [--dry-run] offerings edit <offering options>\n"
+        "  %s offerings edit <offering options>\n"
         "      Edit a local offering.\n"
-        "  %s [--dry-run] offerings remove <offering>\n"
+        "  %s offerings remove <offering>\n"
         "      Remove a local offering.\n",
         program_name,
         program_name,
@@ -350,9 +350,9 @@ static void print_share_help(
         output_file,
         "Shared storage commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] share local ls\n"
+        "  %s share local ls\n"
         "      List local shared files with metadata.\n"
-        "  %s [--dry-run] share remote ls\n"
+        "  %s share remote ls\n"
         "      List remote shared files with metadata.\n",
         program_name,
         program_name
@@ -369,11 +369,11 @@ static void print_credit_help(
         output_file,
         "Credit commands\n\n"
         "Usage:\n"
-        "  %s [--dry-run] credit add <credit_count> <code>\n"
+        "  %s credit add <credit_count> <code>\n"
         "      Store a withdraw code that can credit this local id in the future.\n"
-        "  %s [--dry-run] credit remove <code>\n"
+        "  %s credit remove <code>\n"
         "      Remove a withdraw code from the local home folder.\n"
-        "  %s [--dry-run] credit withadraw list\n"
+        "  %s credit withadraw list\n"
         "      List credit counts and owner ids from withdraw codes.\n",
         program_name,
         program_name,
