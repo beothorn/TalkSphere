@@ -1,78 +1,71 @@
-# TalkSphere (Linux Prototype)
+# TalkSphere CLI
 
-This prototype runs one TalkSphere command-line runtime per process. Today the most complete runtime path is the TCP socket server, and the newer domain commands expose existing functions plus placeholders for features that are still being built.
+This is a CLI implementation of the talksphere
 
 ## Build
 
 ```bash
-make
+make clean all
 ```
 
 The built binary is `build/talksphere`.
 
 ## Command Line
 
-General shape:
-
-```bash
-build/talksphere [--dry-run|d] <command> [arguments]
-build/talksphere [--help|help|h]
-```
-
-`--dry-run` or `d` must appear before the command. It prints what TalkSphere would do instead of running the command.
+`--dry-run` must appear before the command. It prints what TalkSphere would do instead of running the command.
+`--home` must appear before the command. It changes the folder where configurations are.
 
 Main commands:
 
 ```bash
-build/talksphere run <listen_port> <peer_port> [home_folder]
-build/talksphere config get home
-build/talksphere files home
-build/talksphere encryption [--help|help|h]
-build/talksphere ledger [--help|help|h]
-build/talksphere network [--help|help|h]
-build/talksphere offerings [--help|help|h]
-build/talksphere talk -p <client_port> offerings
-build/talksphere talk -p <client_port> message "message"
-build/talksphere share [--help|help|h]
+talksphere run <listen_port> <peer_port>  
+talksphere config get home
+talksphere files home
+talksphere encryption [--help|help|h]
+talksphere ledger [--help|help|h]
+talksphere network [--help|help|h]
+talksphere offerings [--help|help|h]
+talksphere talk -p <client_port> offerings
+talksphere talk -p <client_port> message "message"
+talksphere share [--help|help|h]
 ```
 
-The home folder defaults to `$XDG_DATA_HOME/talksphere` or `$HOME/.local/share/talksphere`. The `run` command also accepts `[home_folder]`, which is useful when running multiple local instances.
+The home folder defaults to `$XDG_DATA_HOME/talksphere` or `$HOME/.local/share/talksphere`.  
 
 ## Existing Commands
 
 Run a server:
 
 ```bash
-build/talksphere run <listen_port> <peer_port> [home_folder]
+talksphere run <listen_port> <peer_port>
 ```
 
 - `listen_port`: the TCP port where this TalkSphere instance listens.
-- `peer_port`: stored in runtime configuration for peer-oriented flows and kept different from `listen_port`.
-- `home_folder`: optional storage folder for this instance.
+- `peer_port`: stored in runtime configuration for peer-oriented flows and kept different from `listen_port`.  
 
 Print the resolved home folder:
 
 ```bash
-build/talksphere config get home
-build/talksphere files home
+talksphere config get home
+talksphere files home
 ```
 
 Print local ledger totals:
 
 ```bash
-build/talksphere ledger credit_summary
+talksphere ledger credit_summary
 ```
 
 Print local offerings:
 
 ```bash
-build/talksphere offerings get
+talksphere offerings get
 ```
 
 Ask a running local instance to fetch offerings from its configured peer:
 
 ```bash
-build/talksphere talk -p <client_port> offerings
+talksphere talk -p <client_port> offerings
 ```
 
 This command connects to the local instance listening on `<client_port>`. That instance calls the peer port it was started with, requests `LIST_OFFERINGS`, returns the peer offerings to the CLI, and the CLI prints them.
@@ -80,7 +73,7 @@ This command connects to the local instance listening on `<client_port>`. That i
 Ask a running local instance to send a message to its configured peer:
 
 ```bash
-build/talksphere talk -p <client_port> message "hello world"
+talksphere talk -p <client_port> message "hello world"
 ```
 
 This command connects to the local instance listening on `<client_port>`. That instance sends `MESSAGE:hello world` to the peer port it was started with.
@@ -88,8 +81,8 @@ This command connects to the local instance listening on `<client_port>`. That i
 Create placeholder encryption key files:
 
 ```bash
-build/talksphere encryption create
-build/talksphere encryption recreate
+talksphere encryption create
+talksphere encryption recreate
 ```
 
 The encryption module is still a placeholder, so these files are currently empty. `create` fails when key files already exist. `recreate` fails when key files do not exist.
@@ -97,8 +90,8 @@ The encryption module is still a placeholder, so these files are currently empty
 Call the placeholder encryption functions:
 
 ```bash
-build/talksphere encryption encrypt_message "message"
-build/talksphere encryption sign_message "message"
+talksphere encryption encrypt_message "message"
+talksphere encryption sign_message "message"
 ```
 
 These commands currently print empty outputs until real encryption and signing are implemented.
@@ -108,13 +101,13 @@ These commands currently print empty outputs until real encryption and signing a
 These commands parse and return a clear placeholder message, but the feature body is not implemented yet:
 
 ```bash
-build/talksphere network ping <ip:port>
-build/talksphere offerings <ip:port>
-build/talksphere offerings add <offering options>
-build/talksphere offerings edit <offering options>
-build/talksphere offerings remove <offering>
-build/talksphere share local ls
-build/talksphere share remote ls
+talksphere network ping <ip:port>
+talksphere offerings <ip:port>
+talksphere offerings add <offering options>
+talksphere offerings edit <offering options>
+talksphere offerings remove <offering>
+talksphere share local ls
+talksphere share remote ls
 ```
 
 See `tasks/04/todo.md` for the current missing-functionality list.

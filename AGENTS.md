@@ -97,6 +97,11 @@ Those are examples, feel free to vary on this:
 And so on...
 
 Always add logs, always add a trace log at the start of a function.  
+The trace should be ate the function start (first line) and at every return.  
+On start the patter is:  
+`LOG_TRACE(">function_name(): function explanation");`  
+and on every return:  
+`LOG_TRACE("<function_name(): function return explanation");`  
 Add only few info logs, only for important events or big logic branching.  
 
 For all else, follow the decision chain:

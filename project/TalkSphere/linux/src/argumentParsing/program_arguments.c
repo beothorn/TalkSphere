@@ -78,28 +78,30 @@
 #define HELP_WORD_ARGUMENT_TEXT "help"
 #define HELP_SHORT_ARGUMENT_TEXT "h"
 #define DRY_RUN_LONG_ARGUMENT_TEXT "--dry-run"
-#define DRY_RUN_SHORT_ARGUMENT_TEXT "d"
-#define DIRECTORY_HOME_SHORT_ARGUMENT_TEXT "-d"
-#define DIRECTORY_HOME_LONG_ARGUMENT_TEXT "--directory-home"
+#define DIRECTORY_HOME_LONG_ARGUMENT_TEXT "--home"
 
 static int argument_text_is(
     const char *argument_text,
     const char *expected_argument_text
 ) {
-    LOG_TRACE("argument_text_is(): now we compare a command line word with an expected command word");
+    LOG_TRACE(">argument_text_is(): now we compare a command line word with an expected command word");
 
-    return strcmp(
+    int result = strcmp(
         argument_text,
         expected_argument_text
     ) == 0;
+    
+    LOG_TRACE("<argument_text_is(): command word %s is %s the expected command word %s", argument_text, result ? "equal to" : "different from", expected_argument_text);
+
+    return result;
 }
 
 static int argument_is_help(
     const char *argument_text
 ) {
-    LOG_TRACE("argument_is_help(): now we check whether this command word asks for help");
+    LOG_TRACE(">argument_is_help(): now we check whether this command word asks for help");
 
-    return argument_text_is(
+    int result = argument_text_is(
         argument_text,
         HELP_LONG_ARGUMENT_TEXT
     )
@@ -111,36 +113,37 @@ static int argument_is_help(
             argument_text,
             HELP_SHORT_ARGUMENT_TEXT
         );
+
+    LOG_TRACE("<argument_is_help(): command word %s help is %s", argument_text, result ? "enabled" : "disabled");
+    return result;
 }
 
 static int argument_is_dry_run(
     const char *argument_text
 ) {
-    LOG_TRACE("argument_is_dry_run(): now we check whether this command word asks to print the operation");
+    LOG_TRACE(">argument_is_dry_run(): now we check whether this command word asks to print the operation");
 
-    return argument_text_is(
+    int result = argument_text_is(
         argument_text,
         DRY_RUN_LONG_ARGUMENT_TEXT
-    )
-        || argument_text_is(
-            argument_text,
-            DRY_RUN_SHORT_ARGUMENT_TEXT
-        );
+    );
+
+    LOG_TRACE("<argument_is_dry_run(): command word %s dry-run is %s", argument_text, result ? "enabled" : "disabled");
+    return result;
 }
 
 static int argument_is_directory_home(
     const char *argument_text
 ) {
-    LOG_TRACE("argument_is_directory_home(): now we check whether this command word sets the home folder");
+    LOG_TRACE(">argument_is_directory_home(): now we check whether this command word sets the home folder");
 
-    return argument_text_is(
+    int result = argument_text_is(
         argument_text,
-        DIRECTORY_HOME_SHORT_ARGUMENT_TEXT
-    )
-        || argument_text_is(
-            argument_text,
-            DIRECTORY_HOME_LONG_ARGUMENT_TEXT
-        );
+        DIRECTORY_HOME_LONG_ARGUMENT_TEXT
+    );
+
+    LOG_TRACE("<argument_is_directory_home(): command word %s directory-home is %s", argument_text, result ? "enabled" : "disabled");
+    return result;
 }
 
 static void print_main_help(
@@ -153,9 +156,10 @@ static void print_main_help(
         output_file,
         "TalkSphere command line\n\n"
         "Usage:\n"
-        "  %s [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]\n"
-        "  %s [--help|help|h]\n\n"
+        "  %s <command> [arguments]\n"
         "Commands:\n"
+        "  help\n"
+        "      Display this help message.\n"
         "  run\n"
         "      Start the TalkSphere socket service and connect to the peer port.\n"
         "  config\n"
@@ -177,8 +181,9 @@ static void print_main_help(
         "  credit\n"
         "      Manage credit withdrawal codes.\n\n"
         "Dry run:\n"
-        "  Add --dry-run or d before the command to print what would happen.\n",
-        program_name,
+        "  Add --dry-run or d before the command to print what would happen.\n"
+        "Directory home:\n"
+        "  Add --directory-home or d before the command to set the home folder.\n",
         program_name
     );
 }
@@ -220,6 +225,22 @@ static void print_ledger_help(
         "Usage:\n"
         "  %s [--dry-run|d] ledger credit_summary\n"
         "      Print credit totals from the local ledger.\n",
+        program_name
+    );
+}
+
+static void print_run_help(
+    FILE *output_file,
+    const char *program_name
+) {
+    LOG_TRACE("print_run_help(): now we print the run command help");
+
+    fprintf(
+        output_file,
+        "Run commands\n\n"
+        "Usage:\n"
+        "  %s [server_port] [command_port]\n"
+        "      Run the TalkSphere service in the given port .\n",
         program_name
     );
 }
@@ -363,7 +384,12 @@ static void print_help_for_mode(
 ) {
     LOG_TRACE("print_help_for_mode(): now we route help output to the requested command family");
 
-    if (program_mode == PROGRAM_MODE_PRINT_CONFIG_HELP) {
+    if (program_mode == PROGRAM_MODE_PRINT_RUN_HELP) {
+        print_run_help(
+            output_file,
+            program_name
+        );
+    } else if (program_mode == PROGRAM_MODE_PRINT_CONFIG_HELP) {
         print_config_help(
             output_file,
             program_name
@@ -504,7 +530,7 @@ static int validate_different_ports(
 static void initialize_program_arguments(
     struct program_arguments *program_arguments
 ) {
-    LOG_TRACE("initialize_program_arguments(): now we set command defaults before applying user arguments");
+    LOG_TRACE(">initialize_program_arguments(): now we set command defaults before applying user arguments");
 
     program_arguments->listen_port = DEFAULT_SERVER_PORT;
     program_arguments->peer_port = DEFAULT_CLIENT_PORT;
@@ -519,6 +545,8 @@ static void initialize_program_arguments(
     program_arguments->credit_count = 0;
     program_arguments->dry_run_is_enabled = 0;
     program_arguments->program_mode = PROGRAM_MODE_PRINT_MAIN_HELP;
+
+    LOG_TRACE("<initialize_program_arguments(): initialized program arguments with default values");
 }
 
 static int parse_run_command(
@@ -526,12 +554,20 @@ static int parse_run_command(
     char *command_arguments[],
     struct program_arguments *program_arguments
 ) {
-    LOG_TRACE("parse_run_command(): now we parse the command that starts the TalkSphere service");
+    LOG_TRACE(">parse_run_command(): now we parse the command that starts the TalkSphere service");
+
+    if(command_argument_count == COMMAND_WITH_NO_CHILD_COUNT
+        || (command_argument_count == COMMAND_WITH_ONE_CHILD_COUNT
+            && argument_is_help(command_arguments[RUN_LISTEN_PORT_ARGUMENT_OFFSET]))
+    ) {
+        program_arguments->program_mode = PROGRAM_MODE_PRINT_RUN_HELP;
+        return TALKSPHERE_SUCCESS;
+    }
 
     if (command_argument_count != COMMAND_WITH_TWO_CHILDREN_COUNT
-        && command_argument_count != COMMAND_WITH_THREE_CHILDREN_COUNT
     ) {
-        LOG_WARN("Run arguments are unwanted because run needs a listen port, a peer port, and optional home folder");
+        LOG_WARN("Run arguments are incorrect. Expected is talksphere run <listen_port> <peer_port> or talksphere run default");
+        LOG_TRACE(">parse_run_command(): failed to parse run command because the argument count is invalid");
         return TALKSPHERE_FAILURE;
     }
 
@@ -1165,7 +1201,14 @@ static int parse_command(
         );
     }
 
-    LOG_WARN("The command is unwanted because TalkSphere does not know that command family");
+    LOG_WARN("TalkSphere does not know that command");
+
+    fprintf(
+        stderr,
+        "Unknown command: %s\n",
+        command_arguments[0]
+    );
+
     return TALKSPHERE_FAILURE;
 }
 
@@ -1175,7 +1218,7 @@ static int parse_global_options(
     struct program_arguments *program_arguments,
     int *first_command_argument_index
 ) {
-    LOG_TRACE("parse_global_options(): now we consume command-line options that apply to every command");
+    LOG_TRACE(">parse_global_options(): now we consume command-line options that apply to every command");
 
     int argument_index = FIRST_COMMAND_ARGUMENT_INDEX;
     while (argument_index < argument_count) {
@@ -1214,7 +1257,7 @@ int parse_program_arguments(
     char *argument_values[],
     struct program_arguments *program_arguments
 ) {
-    LOG_TRACE("parse_program_arguments(): now we turn process arguments into a command that main can execute");
+    LOG_TRACE(">parse_program_arguments(): now we turn process arguments into a command that main can execute");
     LOG_DEBUG(
         "Received %d program arguments",
         argument_count
@@ -1235,6 +1278,7 @@ int parse_program_arguments(
             stderr,
             program_name
         );
+        LOG_TRACE("<parse_program_arguments(): failed to parse global options");
         return TALKSPHERE_FAILURE;
     }
 
@@ -1253,6 +1297,7 @@ int parse_program_arguments(
             program_name
         );
     } else if (program_arguments->program_mode == PROGRAM_MODE_PRINT_MAIN_HELP
+        || program_arguments->program_mode == PROGRAM_MODE_PRINT_RUN_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_CONFIG_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_ENCRYPTION_HELP
         || program_arguments->program_mode == PROGRAM_MODE_PRINT_LEDGER_HELP
@@ -1269,5 +1314,6 @@ int parse_program_arguments(
         );
     }
 
+    LOG_TRACE("<parse_program_arguments(): parsed succcessfully");
     return parse_result;
 }

@@ -24,18 +24,18 @@ This module should only decide what the user asked the program to do. It should 
 The command line accepts global options followed by a domain command:
 
 ```bash
-build/talksphere [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]
-build/talksphere [--help|help|h]
+talksphere [--dry-run|d] [-d|--directory-home <home_folder>] <command> [arguments]
+talksphere [--help|help|h]
 ```
 
 If no home folder is passed, the application uses its default storage resolution. If `-d` or `--directory-home` is passed, every command uses that folder instead:
 
 ```bash
-build/talksphere run <listen_port> <peer_port>
-build/talksphere -d /tmp/Alice run <listen_port> <peer_port>
-build/talksphere --directory-home /tmp/Alice run <listen_port> <peer_port>
-build/talksphere offerings get
-build/talksphere -d /tmp/Alice offerings get
+talksphere run <listen_port> <peer_port>
+talksphere -d /tmp/Alice run <listen_port> <peer_port>
+talksphere --directory-home /tmp/Alice run <listen_port> <peer_port>
+talksphere offerings get
+talksphere -d /tmp/Alice offerings get
 ```
 
 Two local instances should use different `listen_port` values and different `home_folder` values so their local identities, offerings, and ledgers stay separate.
@@ -43,8 +43,8 @@ Two local instances should use different `listen_port` values and different `hom
 The `talk` command accepts a local client port and a child command:
 
 ```bash
-build/talksphere talk -p <client_port> offerings
-build/talksphere talk -p <client_port> message "message"
+talksphere talk -p <client_port> offerings
+talksphere talk -p <client_port> message "message"
 ```
 
 This shape talks to an already-running local instance instead of reading local files directly.

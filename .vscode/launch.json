@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/project/TalkSphere/linux/build/debug/talksphere",
-            "args": ["--help"],
+            "args": ["run"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/project/TalkSphere/linux",
             "environment": [

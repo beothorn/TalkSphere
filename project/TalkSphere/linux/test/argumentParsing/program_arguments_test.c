@@ -212,7 +212,7 @@ static int test_config_get_availability_arguments(void) {
 static int test_global_directory_home_config_set_arguments(void) {
     char *argument_values[] = {
         "talksphere",
-        "-d",
+        "--home",
         EXPECTED_HOME_DIRECTORY_PATH,
         "config",
         "set",
@@ -320,7 +320,7 @@ static int test_config_set_rejects_missing_value(void) {
 static int test_global_directory_home_offerings_get_arguments(void) {
     char *argument_values[] = {
         "talksphere",
-        "--directory-home",
+        "--home",
         EXPECTED_HOME_DIRECTORY_PATH,
         "offerings",
         "get"
@@ -341,22 +341,6 @@ static int test_global_directory_home_offerings_get_arguments(void) {
     }
 
     return program_arguments.program_mode == PROGRAM_MODE_PRINT_LOCAL_OFFERINGS
-        ? TALKSPHERE_SUCCESS
-        : TALKSPHERE_FAILURE;
-}
-
-static int test_directory_home_rejects_missing_path(void) {
-    char *argument_values[] = {
-        "talksphere",
-        "-d"
-    };
-    struct program_arguments program_arguments;
-
-    return parse_arguments_for_test(
-        TEST_TWO_ARGUMENT_COUNT,
-        argument_values,
-        &program_arguments
-    ) == TALKSPHERE_FAILURE
         ? TALKSPHERE_SUCCESS
         : TALKSPHERE_FAILURE;
 }
@@ -856,10 +840,6 @@ int main(void) {
 
     if (test_config_set_rejects_missing_value() != TALKSPHERE_SUCCESS) {
         return 10;
-    }
-
-    if (test_directory_home_rejects_missing_path() != TALKSPHERE_SUCCESS) {
-        return 11;
     }
 
     if (test_files_home_arguments() != TALKSPHERE_SUCCESS) {

@@ -14,7 +14,8 @@ enum talksphere_log_level {
     INFO,
     WARN,
     ERROR,
-    FATAL
+    FATAL,
+    NONE
 };
 
 /*
@@ -24,6 +25,8 @@ static inline const char *talksphere_log_level_name(
     enum talksphere_log_level log_level
 ) {
     switch (log_level) {
+        case NONE:
+            return "none";
         case TRACE:
             return "trace";
         case DEBUG:
@@ -55,7 +58,7 @@ static inline enum talksphere_log_level talksphere_configured_log_level(void) {
     const char *configured_log_level = getenv(TALKSPHERE_LOG_LEVEL_ENVIRONMENT_VARIABLE);
 
     if (configured_log_level == NULL) {
-        return INFO;
+        return NONE;
     }
 
     if (talksphere_strings_are_equal(

@@ -328,7 +328,11 @@ int run_talksphere_application(
     int argument_count,
     char *argument_values[]
 ) {
-    LOG_TRACE("run_talksphere_application(): now we parse startup input and delegate the selected command");
+    LOG_TRACE(">run_talksphere_application(): now we parse startup input and delegate the selected command");
+    LOG_DEBUG(
+        "Received %d program arguments",
+        argument_count
+    );
 
     struct program_arguments program_arguments;
     if (parse_program_arguments(
@@ -337,10 +341,12 @@ int run_talksphere_application(
             &program_arguments
         ) != TALKSPHERE_SUCCESS
     ) {
+        LOG_TRACE("<run_talksphere_application(): command failed");
         return TALKSPHERE_FAILURE;
     }
 
     if (program_mode_is_help(program_arguments.program_mode)) {
+        LOG_TRACE("<run_talksphere_application(): command failed");
         return TALKSPHERE_SUCCESS;
     }
 
