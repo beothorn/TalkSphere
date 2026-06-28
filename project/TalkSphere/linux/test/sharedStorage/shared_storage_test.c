@@ -1,5 +1,6 @@
 #include "sharedStorage/shared_storage.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -7,7 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define TEST_SUCCESS 0
 #define STORE_AND_RECOVER_STORE_FAILED 10
 #define STORE_AND_RECOVER_RECOVER_FAILED 11
 #define STORE_AND_RECOVER_BYTE_COUNT_MISMATCH 12
@@ -47,6 +47,8 @@ struct query_count_context {
     int row_count;
     int stored_file_count;
 };
+
+static char *test_app_storage_directory_path;
 
 static int count_query_rows(
     int column_count,
@@ -315,70 +317,55 @@ static int test_invalid_inputs(
     return TEST_SUCCESS;
 }
 
-static int run_test_result(
-    int test_result
-) {
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
+static int test_prepare_shared_storage_path(void) {
+    if (snprintf(
+            test_app_storage_directory_path,
+            APP_STORAGE_DIRECTORY_PATH_SIZE,
+            "/tmp/talksphere-shared-storage-test-%ld",
+            (long)getpid()
+        ) >= APP_STORAGE_DIRECTORY_PATH_SIZE
+    ) {
+        return APP_STORAGE_PATH_TOO_LONG;
     }
 
     return TEST_SUCCESS;
 }
 
-int main(void) {
-    char app_storage_directory_path[APP_STORAGE_DIRECTORY_PATH_SIZE];
-    if (snprintf(
-            app_storage_directory_path,
-            sizeof(app_storage_directory_path),
-            "/tmp/talksphere-shared-storage-test-%ld",
-            (long)getpid()
-        ) >= (int)sizeof(app_storage_directory_path)
-    ) {
-        return APP_STORAGE_PATH_TOO_LONG;
-    }
+static int test_store_and_recover_data_case(void) {
+    return test_store_and_recover_data(test_app_storage_directory_path);
+}
 
-    int test_result = TEST_SUCCESS;
+static int test_recover_rejects_wrong_owner_case(void) {
+    return test_recover_rejects_wrong_owner(test_app_storage_directory_path);
+}
 
-    test_result = run_test_result(test_store_and_recover_data(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
+static int test_query_file_manager_data_case(void) {
+    return test_query_file_manager_data(test_app_storage_directory_path);
+}
 
-    test_result = run_test_result(test_recover_rejects_wrong_owner(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
+static int test_force_delete_entry_case(void) {
+    return test_force_delete_entry(test_app_storage_directory_path);
+}
 
-    test_result = run_test_result(test_query_file_manager_data(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
+static int test_cleanup_expired_entries_case(void) {
+    return test_cleanup_expired_entries(test_app_storage_directory_path);
+}
 
-    test_result = run_test_result(test_force_delete_entry(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
+static int test_invalid_inputs_case(void) {
+    return test_invalid_inputs(test_app_storage_directory_path);
+}
 
-    test_result = run_test_result(test_cleanup_expired_entries(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    test_result = run_test_result(test_invalid_inputs(app_storage_directory_path));
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    if (shared_storage_share_available_storage(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+static int test_placeholder_operations(void) {
+    if (shared_storage_share_available_storage(test_app_storage_directory_path) != TALKSPHERE_SUCCESS) {
         return PLACEHOLDER_SHARE_AVAILABLE_STORAGE_FAILED;
     }
 
-    if (shared_storage_recover_sold_storage(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+    if (shared_storage_recover_sold_storage(test_app_storage_directory_path) != TALKSPHERE_SUCCESS) {
         return PLACEHOLDER_RECOVER_SOLD_STORAGE_FAILED;
     }
 
     if (shared_storage_clear_aged_storage(
-            app_storage_directory_path,
+            test_app_storage_directory_path,
             PLACEHOLDER_MAXIMUM_STORAGE_AGE_SECONDS
         ) != TALKSPHERE_SUCCESS
     ) {
@@ -386,4 +373,25 @@ int main(void) {
     }
 
     return TEST_SUCCESS;
+}
+
+int main(void) {
+    char app_storage_directory_path[APP_STORAGE_DIRECTORY_PATH_SIZE];
+    test_app_storage_directory_path = app_storage_directory_path;
+
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_prepare_shared_storage_path),
+        TEST_CASE(test_store_and_recover_data_case),
+        TEST_CASE(test_recover_rejects_wrong_owner_case),
+        TEST_CASE(test_query_file_manager_data_case),
+        TEST_CASE(test_force_delete_entry_case),
+        TEST_CASE(test_cleanup_expired_entries_case),
+        TEST_CASE(test_invalid_inputs_case),
+        TEST_CASE(test_placeholder_operations)
+    };
+
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

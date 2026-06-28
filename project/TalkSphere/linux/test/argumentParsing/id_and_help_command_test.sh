@@ -11,9 +11,12 @@ if ! help_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --help 2>&1)"; then
     exit 1
 fi
 
-if [[ "$help_output" != *"[-d|--directory-home <home_folder>] <command> [arguments]"*
+if [[ "$help_output" != *"$binary_path <command> [arguments]"*
     || "$help_output" != *"  config"$'\n'"      Manage configurations."*
     || "$help_output" != *"  talk"$'\n'"      Send commands to another TalkSphere."*
+    || "$help_output" != *"Add --home before the command to set the home folder."*
+    || "$help_output" == *"--directory-home"*
+    || "$help_output" == *" or d "*
     || "$help_output" == *"config get home"*
     || "$help_output" == *"talk -p <client_port> offerings"*
 ]]; then
@@ -91,7 +94,7 @@ if [[ -e "$home_output" ]]; then
     exit 1
 fi
 
-if ! directory_home_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$app_directory_path" config get home 2>&1)"; then
+if ! directory_home_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$app_directory_path" config get home 2>&1)"; then
     printf 'not ok - %s (directory home command failed)\n%s\n' "$test_name" "$directory_home_output"
     exit 1
 fi
@@ -104,7 +107,7 @@ if [[ "$directory_home_output" != "$app_directory_path" ]]; then
     exit 1
 fi
 
-if ! dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run -d "$app_directory_path" run 9001 9002 2>&1)"; then
+if ! dry_run_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --dry-run --home "$app_directory_path" run 9001 9002 2>&1)"; then
     printf 'not ok - %s (dry run command failed)\n%s\n' "$test_name" "$dry_run_output"
     exit 1
 fi
@@ -147,12 +150,12 @@ if [[ "$config_get_output" != "alwaysOn" ]]; then
 fi
 
 custom_config_home_path="$temporary_root/config-home"
-if ! config_add_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$custom_config_home_path" config add reachableAt "www.example.com:9999" 2>&1)"; then
+if ! config_add_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$custom_config_home_path" config add reachableAt "www.example.com:9999" 2>&1)"; then
     printf 'not ok - %s (config add command failed)\n%s\n' "$test_name" "$config_add_output"
     exit 1
 fi
 
-if ! config_remove_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" -d "$custom_config_home_path" config remove reachableAt "www.example.com:9999" 2>&1)"; then
+if ! config_remove_output="$(TALKSPHERE_LOG_LEVEL=warn "$binary_path" --home "$custom_config_home_path" config remove reachableAt "www.example.com:9999" 2>&1)"; then
     printf 'not ok - %s (config remove command failed)\n%s\n' "$test_name" "$config_remove_output"
     exit 1
 fi

@@ -1,5 +1,6 @@
 #include "creditWithdraw/credit_withdraw.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +8,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define TEST_SUCCESS 0
 #define TEMP_DIRECTORY_TEMPLATE_SIZE 128
 #define ADD_CODE_FAILED 10
 #define FIND_CODE_FAILED 11
@@ -41,6 +41,8 @@ struct list_test_context {
     int failure_after_count;
     struct credit_withdraw_entry credit_withdraw_entries[EXPECTED_LIST_ENTRY_COUNT];
 };
+
+static char *test_app_storage_directory_path;
 
 static int make_test_directory(
     char *test_directory_path,
@@ -280,40 +282,53 @@ static int test_list_returns_callback_failure(
     return TEST_SUCCESS;
 }
 
-int main(void) {
-    char test_directory_path[TEMP_DIRECTORY_TEMPLATE_SIZE];
+static int test_prepare_credit_withdraw_directory(void) {
     if (make_test_directory(
-            test_directory_path,
-            sizeof(test_directory_path)
+            test_app_storage_directory_path,
+            TEMP_DIRECTORY_TEMPLATE_SIZE
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 1;
-    }
-
-    int test_result = test_add_find_and_remove_code(test_directory_path);
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    test_result = test_remove_rejects_missing_code(test_directory_path);
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    test_result = test_add_rejects_invalid_credit_count(test_directory_path);
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    test_result = test_list_codes(test_directory_path);
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
-    }
-
-    test_result = test_list_returns_callback_failure(test_directory_path);
-    if (test_result != TEST_SUCCESS) {
-        return test_result;
+        return TEST_FAILURE;
     }
 
     return TEST_SUCCESS;
+}
+
+static int test_add_find_and_remove_code_case(void) {
+    return test_add_find_and_remove_code(test_app_storage_directory_path);
+}
+
+static int test_remove_rejects_missing_code_case(void) {
+    return test_remove_rejects_missing_code(test_app_storage_directory_path);
+}
+
+static int test_add_rejects_invalid_credit_count_case(void) {
+    return test_add_rejects_invalid_credit_count(test_app_storage_directory_path);
+}
+
+static int test_list_codes_case(void) {
+    return test_list_codes(test_app_storage_directory_path);
+}
+
+static int test_list_returns_callback_failure_case(void) {
+    return test_list_returns_callback_failure(test_app_storage_directory_path);
+}
+
+int main(void) {
+    char test_directory_path[TEMP_DIRECTORY_TEMPLATE_SIZE];
+    test_app_storage_directory_path = test_directory_path;
+
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_prepare_credit_withdraw_directory),
+        TEST_CASE(test_add_find_and_remove_code_case),
+        TEST_CASE(test_remove_rejects_missing_code_case),
+        TEST_CASE(test_add_rejects_invalid_credit_count_case),
+        TEST_CASE(test_list_codes_case),
+        TEST_CASE(test_list_returns_callback_failure_case)
+    };
+
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

@@ -86,33 +86,53 @@ run_c_test() {
 
     mkdir -p "$test_build_directory"
 
-    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc "$test_source_path" $module_source_files -o "$test_binary_path" -ldl; then
+    printf '=== RUN %s ===\n' "$test_source_path"
+
+    if ! gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc -Itest "$test_source_path" $module_source_files -o "$test_binary_path" -ldl; then
         printf 'not ok - %s (compile failed)\n' "$test_source_path"
+        printf '=== FAIL %s ===\n' "$test_source_path"
         failure_count=$((failure_count + 1))
         return
     fi
 
     local test_output
-    if ! test_output="$(TALKSPHERE_LOG_LEVEL=fatal "$test_binary_path" 2>&1)"; then
+    local test_exit_code
+
+    test_output="$(TALKSPHERE_LOG_LEVEL=fatal "$test_binary_path" 2>&1)"
+    test_exit_code="$?"
+    if [ "$test_exit_code" -ne 0 ]; then
         printf 'not ok - %s\n' "$test_source_path"
+        printf 'exit code: %s\n' "$test_exit_code"
         printf '%s\n' "$test_output"
+        printf '=== FAIL %s ===\n' "$test_source_path"
         failure_count=$((failure_count + 1))
         return
     fi
 
     printf 'ok - %s\n' "$test_source_path"
+    printf '=== PASS %s ===\n' "$test_source_path"
 }
 
 run_shell_test() {
     local test_script_path="$1"
+    local test_output
+    local test_exit_code
 
-    if ! bash "$test_script_path"; then
+    printf '=== RUN %s ===\n' "$test_script_path"
+
+    test_output="$(bash "$test_script_path" 2>&1)"
+    test_exit_code="$?"
+    if [ "$test_exit_code" -ne 0 ]; then
         printf 'not ok - %s\n' "$test_script_path"
+        printf 'exit code: %s\n' "$test_exit_code"
+        printf '%s\n' "$test_output"
+        printf '=== FAIL %s ===\n' "$test_script_path"
         failure_count=$((failure_count + 1))
         return
     fi
 
     printf 'ok - %s\n' "$test_script_path"
+    printf '=== PASS %s ===\n' "$test_script_path"
 }
 
 run_test_path() {

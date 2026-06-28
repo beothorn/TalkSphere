@@ -1,14 +1,15 @@
 #include "argumentParsing/program_arguments.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <stddef.h>
 #include <string.h>
 
-#define TEST_RUN_ARGUMENT_COUNT 5
-#define TEST_DRY_RUN_ARGUMENT_COUNT 4
+#define TEST_RUN_ARGUMENT_COUNT 4
 #define TEST_TWO_ARGUMENT_COUNT 2
 #define TEST_THREE_ARGUMENT_COUNT 3
 #define TEST_FOUR_ARGUMENT_COUNT 4
+#define TEST_FIVE_ARGUMENT_COUNT 5
 #define TEST_SIX_ARGUMENT_COUNT 6
 #define TEST_SEVEN_ARGUMENT_COUNT 7
 #define TEST_TALK_MESSAGE_TEXT_ARGUMENT_INDEX 5
@@ -62,8 +63,7 @@ static int test_run_arguments(void) {
         "talksphere",
         "run",
         "9001",
-        "9002",
-        "/tmp/talksphere-arguments-test"
+        "9002"
     };
     struct program_arguments program_arguments;
 
@@ -80,14 +80,14 @@ static int test_run_arguments(void) {
         &program_arguments,
         EXPECTED_LISTEN_PORT,
         EXPECTED_PEER_PORT,
-        argument_values[4]
+        NULL
     );
 }
 
 static int test_global_directory_home_run_arguments(void) {
     char *argument_values[] = {
         "talksphere",
-        "-d",
+        "--home",
         EXPECTED_HOME_DIRECTORY_PATH,
         "run",
         "9001",
@@ -123,7 +123,7 @@ static int test_dry_run_config_home_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -140,6 +140,44 @@ static int test_dry_run_config_home_arguments(void) {
         : TALKSPHERE_FAILURE;
 }
 
+static int test_dry_run_rejects_short_argument(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "d",
+        "config",
+        "get",
+        "home"
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_FIVE_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
+static int test_run_rejects_positional_home_argument(void) {
+    char *argument_values[] = {
+        "talksphere",
+        "run",
+        "9001",
+        "9002",
+        EXPECTED_HOME_DIRECTORY_PATH
+    };
+    struct program_arguments program_arguments;
+
+    return parse_arguments_for_test(
+        TEST_FIVE_ARGUMENT_COUNT,
+        argument_values,
+        &program_arguments
+    ) == TALKSPHERE_FAILURE
+        ? TALKSPHERE_SUCCESS
+        : TALKSPHERE_FAILURE;
+}
+
 static int test_config_set_arguments(void) {
     char *argument_values[] = {
         "talksphere",
@@ -151,7 +189,7 @@ static int test_config_set_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -250,7 +288,7 @@ static int test_config_add_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -280,7 +318,7 @@ static int test_config_remove_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -328,7 +366,7 @@ static int test_global_directory_home_offerings_get_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -524,7 +562,7 @@ static int test_talk_offerings_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -574,7 +612,7 @@ static int test_talk_offerings_rejects_invalid_port(void) {
     struct program_arguments program_arguments;
 
     return parse_arguments_for_test(
-        TEST_RUN_ARGUMENT_COUNT,
+        TEST_FIVE_ARGUMENT_COUNT,
         argument_values,
         &program_arguments
     ) == TALKSPHERE_FAILURE
@@ -657,7 +695,7 @@ static int test_credit_add_arguments(void) {
     struct program_arguments program_arguments;
 
     if (parse_arguments_for_test(
-            TEST_RUN_ARGUMENT_COUNT,
+            TEST_FIVE_ARGUMENT_COUNT,
             argument_values,
             &program_arguments
         ) != TALKSPHERE_SUCCESS
@@ -739,7 +777,7 @@ static int test_credit_add_rejects_invalid_count(void) {
     struct program_arguments program_arguments;
 
     return parse_arguments_for_test(
-        TEST_RUN_ARGUMENT_COUNT,
+        TEST_FIVE_ARGUMENT_COUNT,
         argument_values,
         &program_arguments
     ) == TALKSPHERE_FAILURE
@@ -802,121 +840,42 @@ static int test_encryption_create_rejects_extra_arguments(void) {
 }
 
 int main(void) {
-    if (test_run_arguments() != TALKSPHERE_SUCCESS) {
-        return 1;
-    }
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_run_arguments),
+        TEST_CASE(test_global_directory_home_run_arguments),
+        TEST_CASE(test_dry_run_config_home_arguments),
+        TEST_CASE(test_dry_run_rejects_short_argument),
+        TEST_CASE(test_run_rejects_positional_home_argument),
+        TEST_CASE(test_global_directory_home_offerings_get_arguments),
+        TEST_CASE(test_config_set_arguments),
+        TEST_CASE(test_config_get_availability_arguments),
+        TEST_CASE(test_global_directory_home_config_set_arguments),
+        TEST_CASE(test_config_add_arguments),
+        TEST_CASE(test_config_remove_arguments),
+        TEST_CASE(test_config_set_rejects_missing_value),
+        TEST_CASE(test_files_home_arguments),
+        TEST_CASE(test_encryption_help_arguments),
+        TEST_CASE(test_encryption_create_arguments),
+        TEST_CASE(test_encryption_message_arguments),
+        TEST_CASE(test_ledger_summary_arguments),
+        TEST_CASE(test_network_ping_arguments),
+        TEST_CASE(test_offerings_add_arguments),
+        TEST_CASE(test_share_remote_list_arguments),
+        TEST_CASE(test_talk_help_arguments),
+        TEST_CASE(test_talk_offerings_arguments),
+        TEST_CASE(test_talk_offerings_rejects_invalid_port),
+        TEST_CASE(test_talk_message_arguments),
+        TEST_CASE(test_invalid_run_port),
+        TEST_CASE(test_equal_ports),
+        TEST_CASE(test_encryption_create_rejects_extra_arguments),
+        TEST_CASE(test_credit_add_arguments),
+        TEST_CASE(test_credit_remove_arguments),
+        TEST_CASE(test_credit_add_rejects_invalid_count),
+        TEST_CASE(test_credit_withadraw_list_arguments)
+    };
 
-    if (test_global_directory_home_run_arguments() != TALKSPHERE_SUCCESS) {
-        return 2;
-    }
-
-    if (test_dry_run_config_home_arguments() != TALKSPHERE_SUCCESS) {
-        return 3;
-    }
-
-    if (test_global_directory_home_offerings_get_arguments() != TALKSPHERE_SUCCESS) {
-        return 4;
-    }
-
-    if (test_config_set_arguments() != TALKSPHERE_SUCCESS) {
-        return 5;
-    }
-
-    if (test_config_get_availability_arguments() != TALKSPHERE_SUCCESS) {
-        return 6;
-    }
-
-    if (test_global_directory_home_config_set_arguments() != TALKSPHERE_SUCCESS) {
-        return 7;
-    }
-
-    if (test_config_add_arguments() != TALKSPHERE_SUCCESS) {
-        return 8;
-    }
-
-    if (test_config_remove_arguments() != TALKSPHERE_SUCCESS) {
-        return 9;
-    }
-
-    if (test_config_set_rejects_missing_value() != TALKSPHERE_SUCCESS) {
-        return 10;
-    }
-
-    if (test_files_home_arguments() != TALKSPHERE_SUCCESS) {
-        return 12;
-    }
-
-    if (test_encryption_help_arguments() != TALKSPHERE_SUCCESS) {
-        return 13;
-    }
-
-    if (test_encryption_create_arguments() != TALKSPHERE_SUCCESS) {
-        return 14;
-    }
-
-    if (test_encryption_message_arguments() != TALKSPHERE_SUCCESS) {
-        return 15;
-    }
-
-    if (test_ledger_summary_arguments() != TALKSPHERE_SUCCESS) {
-        return 16;
-    }
-
-    if (test_network_ping_arguments() != TALKSPHERE_SUCCESS) {
-        return 17;
-    }
-
-    if (test_offerings_add_arguments() != TALKSPHERE_SUCCESS) {
-        return 18;
-    }
-
-    if (test_share_remote_list_arguments() != TALKSPHERE_SUCCESS) {
-        return 19;
-    }
-
-    if (test_talk_help_arguments() != TALKSPHERE_SUCCESS) {
-        return 20;
-    }
-
-    if (test_talk_offerings_arguments() != TALKSPHERE_SUCCESS) {
-        return 21;
-    }
-
-    if (test_talk_offerings_rejects_invalid_port() != TALKSPHERE_SUCCESS) {
-        return 22;
-    }
-
-    if (test_talk_message_arguments() != TALKSPHERE_SUCCESS) {
-        return 23;
-    }
-
-    if (test_invalid_run_port() != TALKSPHERE_SUCCESS) {
-        return 24;
-    }
-
-    if (test_equal_ports() != TALKSPHERE_SUCCESS) {
-        return 25;
-    }
-
-    if (test_encryption_create_rejects_extra_arguments() != TALKSPHERE_SUCCESS) {
-        return 26;
-    }
-
-    if (test_credit_add_arguments() != TALKSPHERE_SUCCESS) {
-        return 27;
-    }
-
-    if (test_credit_remove_arguments() != TALKSPHERE_SUCCESS) {
-        return 28;
-    }
-
-    if (test_credit_add_rejects_invalid_count() != TALKSPHERE_SUCCESS) {
-        return 29;
-    }
-
-    if (test_credit_withadraw_list_arguments() != TALKSPHERE_SUCCESS) {
-        return 30;
-    }
-
-    return 0;
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

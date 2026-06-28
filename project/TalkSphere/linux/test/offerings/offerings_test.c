@@ -1,5 +1,6 @@
 #include "offerings/offerings.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -61,7 +62,7 @@ static int write_offerings_file(
     return TALKSPHERE_SUCCESS;
 }
 
-int main(void) {
+static int test_read_local_offerings(void) {
     char temporary_directory_path[PATH_TEXT_SIZE];
     char app_storage_directory_path[PATH_TEXT_SIZE];
     char missing_file_directory_path[PATH_TEXT_SIZE];
@@ -75,7 +76,7 @@ int main(void) {
             (long)getpid()
         ) >= (int)sizeof(temporary_directory_path)
     ) {
-        return 1;
+        return TEST_FAILURE;
     }
 
     if (mkdir(
@@ -83,7 +84,7 @@ int main(void) {
             0700
         ) != 0
     ) {
-        return 14;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -93,7 +94,7 @@ int main(void) {
             sizeof(app_storage_directory_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 2;
+        return TEST_FAILURE;
     }
 
     if (mkdir(
@@ -101,11 +102,11 @@ int main(void) {
             0700
         ) != 0
     ) {
-        return 3;
+        return TEST_FAILURE;
     }
 
     if (write_offerings_file(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
-        return 4;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -114,7 +115,7 @@ int main(void) {
             strlen("[{\"availability\":\"alwaysOn\"}]") + 1
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 5;
+        return TEST_FAILURE;
     }
 
     if (strcmp(
@@ -122,7 +123,7 @@ int main(void) {
             "[{\"availability\":\"alwaysOn\"}]"
         ) != 0
     ) {
-        return 6;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -132,7 +133,7 @@ int main(void) {
             sizeof(missing_file_directory_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 7;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -141,7 +142,7 @@ int main(void) {
             sizeof(offerings_text)
         ) != TALKSPHERE_FAILURE
     ) {
-        return 8;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -150,7 +151,7 @@ int main(void) {
             sizeof(offerings_text)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 9;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -159,7 +160,7 @@ int main(void) {
             sizeof(small_offerings_text)
         ) != TALKSPHERE_FAILURE
     ) {
-        return 10;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -168,7 +169,7 @@ int main(void) {
             sizeof(offerings_text)
         ) != TALKSPHERE_FAILURE
     ) {
-        return 11;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -177,7 +178,7 @@ int main(void) {
             sizeof(offerings_text)
         ) != TALKSPHERE_FAILURE
     ) {
-        return 12;
+        return TEST_FAILURE;
     }
 
     if (read_local_offerings(
@@ -186,8 +187,19 @@ int main(void) {
             0
         ) != TALKSPHERE_FAILURE
     ) {
-        return 13;
+        return TEST_FAILURE;
     }
 
-    return 0;
+    return TEST_SUCCESS;
+}
+
+int main(void) {
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_read_local_offerings)
+    };
+
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

@@ -1,5 +1,6 @@
 #include "config/config.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -153,7 +154,7 @@ static int prepare_test_directory(
     return create_empty_config_file(temporary_directory_path);
 }
 
-int main(void) {
+static int test_config_value_lifecycle(void) {
     char temporary_directory_path[PATH_TEXT_SIZE];
     if (prepare_test_directory(
             temporary_directory_path,
@@ -289,5 +290,16 @@ int main(void) {
         return TEST_FAILURE_GET_MISSING_AVAILABILITY;
     }
 
-    return 0;
+    return TEST_SUCCESS;
+}
+
+int main(void) {
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_config_value_lifecycle)
+    };
+
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

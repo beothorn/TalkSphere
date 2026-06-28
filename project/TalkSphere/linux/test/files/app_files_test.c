@@ -1,5 +1,6 @@
 #include "files/app_files.h"
 #include "common/result.h"
+#include "test_support.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -120,7 +121,7 @@ static int offerings_have_expected_defaults(
         : TALKSPHERE_FAILURE;
 }
 
-int main(void) {
+static int test_ensure_app_files_creates_expected_files(void) {
     char temporary_directory_path[PATH_TEXT_SIZE];
     char app_storage_directory_path[PATH_TEXT_SIZE];
     char ledger_directory_path[PATH_TEXT_SIZE];
@@ -136,7 +137,7 @@ int main(void) {
             (long)getpid()
         ) >= (int)sizeof(temporary_directory_path)
     ) {
-        return 1;
+        return TEST_FAILURE;
     }
 
     if (mkdir(
@@ -144,7 +145,7 @@ int main(void) {
             0700
         ) != 0
     ) {
-        return 11;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -154,11 +155,11 @@ int main(void) {
             sizeof(app_storage_directory_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 2;
+        return TEST_FAILURE;
     }
 
     if (ensure_app_files(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
-        return 3;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -168,7 +169,7 @@ int main(void) {
             sizeof(ledger_directory_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 4;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -178,7 +179,7 @@ int main(void) {
             sizeof(identifier_file_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 5;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -188,7 +189,7 @@ int main(void) {
             sizeof(offerings_file_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 6;
+        return TEST_FAILURE;
     }
 
     if (build_path(
@@ -198,7 +199,7 @@ int main(void) {
             sizeof(config_file_path)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 7;
+        return TEST_FAILURE;
     }
 
     if (!path_exists(app_storage_directory_path)
@@ -207,7 +208,7 @@ int main(void) {
         || !path_exists(offerings_file_path)
         || !path_exists(config_file_path)
     ) {
-        return 8;
+        return TEST_FAILURE;
     }
 
     if (read_local_identifier(
@@ -216,16 +217,27 @@ int main(void) {
             sizeof(identifier_text)
         ) != TALKSPHERE_SUCCESS
     ) {
-        return 9;
+        return TEST_FAILURE;
     }
 
     if (!identifier_has_expected_shape(identifier_text)) {
-        return 10;
+        return TEST_FAILURE;
     }
 
     if (offerings_have_expected_defaults(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
-        return 11;
+        return TEST_FAILURE;
     }
 
-    return 0;
+    return TEST_SUCCESS;
+}
+
+int main(void) {
+    const struct test_case test_cases[] = {
+        TEST_CASE(test_ensure_app_files_creates_expected_files)
+    };
+
+    return run_test_cases(
+        test_cases,
+        sizeof(test_cases) / sizeof(test_cases[0])
+    );
 }

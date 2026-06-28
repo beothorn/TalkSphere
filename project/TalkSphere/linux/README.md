@@ -120,14 +120,14 @@ Terminal 1:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/alice
-build/talksphere run 9101 9102 /tmp/talksphere-demo/alice
+build/talksphere --home /tmp/talksphere-demo/alice run 9101 9102
 ```
 
 Terminal 2:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/bob
-build/talksphere run 9201 9202 /tmp/talksphere-demo/bob
+build/talksphere --home /tmp/talksphere-demo/bob run 9201 9202
 ```
 
 Each instance creates and reads its own files:
@@ -169,14 +169,14 @@ Terminal 1:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/instance1
-build/talksphere run 8899 9900 /tmp/talksphere-demo/instance1
+build/talksphere --home /tmp/talksphere-demo/instance1 run 8899 9900
 ```
 
 Terminal 2:
 
 ```bash
 mkdir -p /tmp/talksphere-demo/instance2
-build/talksphere run 9900 8899 /tmp/talksphere-demo/instance2
+build/talksphere --home /tmp/talksphere-demo/instance2 run 9900 8899
 ```
 
 Terminal 3:

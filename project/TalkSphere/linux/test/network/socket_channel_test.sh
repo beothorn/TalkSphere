@@ -9,9 +9,9 @@ instance_two_data="$temporary_root/instance2"
 
 mkdir -p "$instance_one_data" "$instance_two_data"
 
-TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" run 9101 9201 "$instance_one_data" >"$temporary_root/instance1.log" 2>&1 &
+TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" --home "$instance_one_data" run 9101 9201 >"$temporary_root/instance1.log" 2>&1 &
 instance_one_process_id=$!
-TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" run 9201 9202 "$instance_two_data" >"$temporary_root/instance2.log" 2>&1 &
+TALKSPHERE_LOG_LEVEL=warn timeout 8 "$binary_path" --home "$instance_two_data" run 9201 9202 >"$temporary_root/instance2.log" 2>&1 &
 instance_two_process_id=$!
 
 sleep 1
