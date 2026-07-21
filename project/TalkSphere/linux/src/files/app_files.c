@@ -23,11 +23,9 @@
 #define TALKSPHERE_APPLICATION_DIRECTORY_NAME "talksphere"
 #define TALKSPHERE_IDENTIFIER_FILE_NAME "id"
 #define TALKSPHERE_LEDGER_DIRECTORY_NAME "ledger"
-#define DEFAULT_OFFERINGS_FILE_PATH "defaults/offerings.json"
-#define REPOSITORY_DEFAULT_OFFERINGS_FILE_PATH "project/TalkSphere/linux/defaults/offerings.json"
 #define RANDOM_IDENTIFIER_BYTES 96
 #define BASE64URL_IDENTIFIER_LENGTH 128
-#define FILE_COPY_BUFFER_SIZE 4096
+#define EMPTY_JSON_TEXT "{}"
 
 static int directory_exists(
     const char *directory_path,
@@ -324,23 +322,6 @@ static int ensure_identifier_file(
     return TALKSPHERE_SUCCESS;
 }
 
-static FILE *open_default_offerings_file(void) {
-    LOG_TRACE("open_default_offerings_file(): now we open the default offerings document shipped with the application");
-
-    FILE *default_offerings_file = fopen(
-        DEFAULT_OFFERINGS_FILE_PATH,
-        "r"
-    );
-    if (default_offerings_file != NULL) {
-        return default_offerings_file;
-    }
-
-    return fopen(
-        REPOSITORY_DEFAULT_OFFERINGS_FILE_PATH,
-        "r"
-    );
-}
-
 static int write_all_bytes(
     int file_descriptor,
     const char *file_text,
@@ -367,51 +348,24 @@ static int write_all_bytes(
     return TALKSPHERE_SUCCESS;
 }
 
-static int copy_default_offerings_file(
+static int write_default_offerings_file(
     int offerings_file_descriptor
 ) {
-    LOG_TRACE("copy_default_offerings_file(): now we copy the shipped default offerings into the local app file");
+    LOG_TRACE(">write_default_offerings_file(): now we write an empty JSON document into the local offerings file");
 
-    FILE *default_offerings_file = open_default_offerings_file();
-    if (default_offerings_file == NULL) {
-        LOG_ERROR("Opening the default offerings asset failed so startup cannot create the local offerings file");
+    const char *empty_json_text = EMPTY_JSON_TEXT;
+    int write_result = write_all_bytes(
+        offerings_file_descriptor,
+        empty_json_text,
+        strlen(empty_json_text)
+    );
+    if (write_result != TALKSPHERE_SUCCESS) {
+        LOG_ERROR("Writing the default offerings failed so startup cannot continue");
+        LOG_TRACE("<write_default_offerings_file(): failed to write the empty JSON document");
         return TALKSPHERE_FAILURE;
     }
 
-    char file_copy_buffer[FILE_COPY_BUFFER_SIZE];
-    while (true) {
-        size_t read_bytes_count = fread(
-            file_copy_buffer,
-            sizeof(char),
-            sizeof(file_copy_buffer),
-            default_offerings_file
-        );
-
-        if (read_bytes_count > 0) {
-            if (write_all_bytes(
-                offerings_file_descriptor,
-                file_copy_buffer,
-                read_bytes_count
-            ) != TALKSPHERE_SUCCESS
-            ) {
-                fclose(default_offerings_file);
-                LOG_ERROR("Writing the default offerings failed so startup cannot continue");
-                return TALKSPHERE_FAILURE;
-            }
-        }
-
-        if (read_bytes_count < sizeof(file_copy_buffer)) {
-            if (ferror(default_offerings_file)) {
-                fclose(default_offerings_file);
-                LOG_ERROR("Reading the default offerings asset failed so startup cannot create the local offerings file");
-                return TALKSPHERE_FAILURE;
-            }
-
-            break;
-        }
-    }
-
-    fclose(default_offerings_file);
+    LOG_TRACE("<write_default_offerings_file(): successfully wrote the empty JSON document");
     return TALKSPHERE_SUCCESS;
 }
 
@@ -445,13 +399,13 @@ static int ensure_offerings_file(
         return TALKSPHERE_FAILURE;
     }
 
-    int copy_default_offerings_result = copy_default_offerings_file(
+    int write_default_offerings_result = write_default_offerings_file(
         offerings_file_descriptor
     );
 
     close(offerings_file_descriptor);
 
-    if (copy_default_offerings_result != TALKSPHERE_SUCCESS) {
+    if (write_default_offerings_result != TALKSPHERE_SUCCESS) {
         return TALKSPHERE_FAILURE;
     }
 

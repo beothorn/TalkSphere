@@ -1,8 +1,7 @@
 start an instance at a folder:
-`talksphere --home /tmp/Alice start`
-(NOT IMPLEMENETD, DEFAUL IS NOT EMPTY)  
+`talksphere --home /tmp/Alice start`  
 ```
-talksphere --home /tmp/Alice  offerings get
+talksphere --home /tmp/Alice offerings get
 {
 }
 ``` 

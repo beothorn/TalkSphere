@@ -11,7 +11,7 @@
 #define IDENTIFIER_TEXT_SIZE 256
 #define PATH_TEXT_SIZE 512
 #define OFFERINGS_TEXT_SIZE 8192
-#define DEFAULT_OFFERINGS_FILE_PATH "defaults/offerings.json"
+#define EMPTY_JSON_TEXT "{}"
 
 static int path_exists(
     const char *path
@@ -62,12 +62,11 @@ static int identifier_has_expected_shape(
     return 1;
 }
 
-static int offerings_have_expected_defaults(
+static int offerings_are_empty_json(
     const char *app_storage_directory_path
 ) {
     char offerings_file_path[PATH_TEXT_SIZE];
     char offerings_text[OFFERINGS_TEXT_SIZE];
-    char default_offerings_text[OFFERINGS_TEXT_SIZE];
 
     if (build_path(
             app_storage_directory_path,
@@ -96,26 +95,9 @@ static int offerings_have_expected_defaults(
     fclose(offerings_file);
     offerings_text[read_bytes_count] = '\0';
 
-    FILE *default_offerings_file = fopen(
-        DEFAULT_OFFERINGS_FILE_PATH,
-        "r"
-    );
-    if (default_offerings_file == NULL) {
-        return TALKSPHERE_FAILURE;
-    }
-
-    size_t default_read_bytes_count = fread(
-        default_offerings_text,
-        sizeof(char),
-        sizeof(default_offerings_text) - 1,
-        default_offerings_file
-    );
-    fclose(default_offerings_file);
-    default_offerings_text[default_read_bytes_count] = '\0';
-
     return strcmp(
         offerings_text,
-        default_offerings_text
+        EMPTY_JSON_TEXT
     ) == 0
         ? TALKSPHERE_SUCCESS
         : TALKSPHERE_FAILURE;
@@ -224,7 +206,7 @@ static int test_ensure_app_files_creates_expected_files(void) {
         return TEST_FAILURE;
     }
 
-    if (offerings_have_expected_defaults(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
+    if (offerings_are_empty_json(app_storage_directory_path) != TALKSPHERE_SUCCESS) {
         return TEST_FAILURE;
     }
 

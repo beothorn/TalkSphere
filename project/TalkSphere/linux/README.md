@@ -33,6 +33,21 @@ talksphere share [--help|help|h]
 
 The home folder defaults to `$XDG_DATA_HOME/talksphere` or `$HOME/.local/share/talksphere`.  
 
+## Log level
+
+You can set the environment variable `TALKSPHERE_LOG_LEVEL` with the log level.  
+The levels available are:  
+ - trace
+ - debug
+ - info
+ - warn
+ - error
+ - fatal
+
+Example:
+
+`TALKSPHERE_LOG_LEVEL=trace ./talksphere`
+
 ## Existing Commands
 
 Run a server:
