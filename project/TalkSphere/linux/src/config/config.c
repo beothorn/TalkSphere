@@ -544,6 +544,14 @@ static int validate_scalar_config_key(
         return TALKSPHERE_SUCCESS;
     }
 
+    if (text_is_equal(
+            config_key_text,
+            CONFIG_REACHABLE_AT_KEY_TEXT
+        )
+    ) {
+        return TALKSPHERE_SUCCESS;
+    }
+
     LOG_WARN("The config key is unwanted because it cannot be replaced with set");
     fprintf(
         stderr,

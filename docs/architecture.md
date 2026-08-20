@@ -44,3 +44,15 @@ The project notes describe a broader system with identities, signed messages, en
 - Keep signed/encrypted payload formats outside raw socket transport code.
 - Add resource-sharing modules for storage or computation without coupling them directly to ledger internals.
 - Treat identities and keys as application-level concepts that can be reused by messaging, dashboard, and discovery applications.
+
+
+# thinking
+
+We should focus on the core and let all else be solved by other application. What we need is:
+
+Credit management
+Communication channel
+
+All else (encryption, configuration) is not the responsibility.
+
+The format for the offerings for example, is for the client  
