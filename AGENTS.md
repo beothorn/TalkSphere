@@ -14,11 +14,37 @@ tests and test vectors before implementing a module. Record the upstream
 revision used for behavior and fixtures; investigate contradictions rather
 than silently inventing wire behavior.
 
-## Plan and module boundaries
+## Planning method
 
-- Maintain [PLAN.md](PLAN.md) as a checklist. Step 1 is project setup and step 2
-  is Transport. Mark work complete only after its implementation, tests, help
-  and documentation are complete. A scaffold does not complete a module.
+- Maintain [plans/PLAN.md](plans/PLAN.md) as the main roadmap checklist, retaining
+  completed setup and the remaining module milestones.
+- Break down the module currently requested into its own
+  `plans/<number>_<Module_name>/PLAN.md`; the first is
+  [plans/1_Transport_module/PLAN.md](plans/1_Transport_module/PLAN.md).
+  Folder numbers count the modules being planned, so Transport is folder 1
+  while remaining step 2 after setup in the main roadmap.
+- Start each detailed plan with a numbered checklist whose entries are each
+  exactly one short, actionable sentence describing one manageable step.
+  Keep the sentences easy to review without reading the technical details.
+- Put explanations, dependencies, acceptance criteria and testing instructions
+  in a separate details section below the complete checklist, in the same file.
+  Number those detail sections to match the checklist and keep the same order;
+  do not bury extra steps in checklist sub-bullets or multi-sentence entries.
+- Size steps as focused changes that can be implemented and reviewed separately;
+  include unit tests with each implementation step rather than postponing all
+  testing to the end.
+- Expand only the requested module, preserving the scope and progress of the
+  other roadmap entries, and link the detailed plan from the main roadmap.
+- For a planning-only request, leave proposed implementation steps unchecked
+  and stop after preparing the plan for review; wait for a subsequent request
+  to implement it instead of treating creation of the plan as authorization.
+- When moving or renaming plans, update README links, contributor instructions
+  and plan paths in CLI help/diagnostics so the plan remains discoverable.
+- Mark work complete only after its implementation, tests, help and
+  documentation are complete; a scaffold does not complete a module.
+
+## Module boundaries
+
 - Keep protocol code under `src/modules/<module>/`, one directory per CR2SE
   module. Use Rust names such as `peer_protocol` and `node_api` where needed.
 - Split each module into focused files and, when useful, subfolders for codecs,

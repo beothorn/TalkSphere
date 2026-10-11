@@ -11,7 +11,7 @@ impl fmt::Display for TransportError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NotImplemented => formatter.write_str(
-                "Transport is not implemented yet; no server was started. See PLAN.md step 2.",
+                "Transport is not implemented yet; no server was started. See plans/PLAN.md step 2.",
             ),
         }
     }
@@ -29,7 +29,7 @@ mod tests {
         let message = error.to_string();
         assert!(message.contains("not implemented"));
         assert!(message.contains("no server was started"));
-        assert!(message.contains("PLAN.md step 2"));
+        assert!(message.contains("plans/PLAN.md step 2"));
         assert!(error.source().is_none());
     }
 }

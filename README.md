@@ -3,7 +3,8 @@
 TalkSphere is a Rust server implementation and proof of concept for
 [CR2SE](https://github.com/beothorn/CR2SE). It will grow module by module into a
 node that exchanges services and storage, followed by messaging, public boards,
-pages and the other CR2SE capabilities. See the [implementation plan](PLAN.md).
+pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md)
+and the [Transport breakdown](plans/1_Transport_module/PLAN.md).
 
 The intended model is ad-free social features supported by shared device
 storage and paid backup space. Compatibility with CR2SE clients is an
@@ -69,7 +70,10 @@ src/
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
 AGENTS.md                  instructions for ongoing implementation
-PLAN.md                    staged implementation checklist
+plans/
+  PLAN.md                  staged implementation checklist
+  1_Transport_module/
+    PLAN.md                Transport steps and matching detailed instructions
 ```
 
 Protocol modules own their code and private state. Focused subfolders will be

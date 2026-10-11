@@ -8,9 +8,15 @@ Recheck the upstream module contracts and acceptance tests at each step.
 A module is complete only when its contracts and failure behavior are
 implemented, unit tests and applicable upstream vectors/acceptance cases pass,
 and build/run documentation and discoverable CLI help are current. Document
-language-independent protocol defects in [`CR2SE bugs/`](CR2SE%20bugs/README.md).
+language-independent protocol defects in [`CR2SE bugs/`](../CR2SE%20bugs/README.md).
 Use dependency substitutes to preserve module-by-module development; substitutes
 do not demonstrate network authentication or interoperability.
+
+The first module to implement has a
+[detailed Transport plan](1_Transport_module/PLAN.md), with single-sentence
+checklist steps followed by matching details in the same order. Its folder
+number starts at 1 because project setup is already complete; Transport remains
+step 2 in this roadmap. No other module has been broken down yet.
 
 ## Setup and required node modules
 
@@ -18,7 +24,7 @@ do not demonstrate network authentication or interoperability.
   gitignore, contributor instructions, protocol bug directory/template, CLI
   overview and detailed help, unit/integration tests, build/run instructions,
   editor tasks and an explicitly unimplemented Transport scaffold.
-- [ ] **2. Transport module.** Implement bounded frame codecs, fragmented and
+- [ ] **2. [Transport module](1_Transport_module/PLAN.md).** Implement bounded frame codecs, fragmented and
   coalesced I/O, handshake and integrity orchestration, bidirectional streams,
   exact stream-ID allocation, half-close, cancellation, ping, GOAWAY, deadlines
   and resource limits. Exercise upstream TR-01 through TR-15 with test-owned

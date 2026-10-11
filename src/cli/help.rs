@@ -26,7 +26,7 @@ pub(super) const TOPICS: &[HelpTopic] = &[
                   Help:  talksphere help serve | talksphere serve --help\n\n\
                   Transport is not implemented yet. This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
-                  Implementation begins in PLAN.md step 2. There are no server options yet.\n",
+                  Implementation begins in plans/PLAN.md step 2. There are no server options yet.\n",
     },
     HelpTopic {
         topic: Topic::Help,

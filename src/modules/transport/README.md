@@ -30,9 +30,10 @@ Initial baseline:
   [wire vectors](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/TestVectors.md)
   and [acceptance cases TR-01–TR-15](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/acceptanceTests/README.md)
 
-See [PLAN.md](../../../PLAN.md) step 2 for implementation and steps 3–5 for
-real Identity/Cryptography integration. No acceptance case is claimed as passed
-by this scaffold.
+See the [Transport plan](../../../plans/1_Transport_module/PLAN.md) for the
+proposed implementation steps and the [main roadmap](../../../plans/PLAN.md)
+steps 3–5 for real Identity/Cryptography integration. No acceptance case is
+claimed as passed by this scaffold.
 
 ## Build, run and test
 
