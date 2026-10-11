@@ -1,5 +1,10 @@
 //! Transport contracts and local boundary validation.
-//! No driver, socket adapters, wire codecs or authentication are implemented.
+//! No runtime driver, TCP adapters, wire codecs or authentication are implemented.
+//!
+//! Deterministic dependencies are available only to internal unit tests.
+//! ```compile_fail
+//! use talksphere::modules::transport::test_support::socket::ScriptedSocket;
+//! ```
 //!
 //! The upstream contract is at <https://github.com/beothorn/CR2SE/tree/main/modules/transport>.
 
@@ -8,6 +13,9 @@ pub mod config;
 mod error;
 pub mod handles;
 pub mod ports;
+
+#[cfg(test)]
+pub(crate) mod test_support;
 
 pub use error::TransportError;
 

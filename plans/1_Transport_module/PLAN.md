@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: step 1 is implemented and checked; steps 2–24 have not been started.
+Status: steps 1–2 are implemented and checked; steps 3–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -19,7 +19,7 @@ step brings those tests together; it does not defer testing until the end.
 ## Steps
 
 - [x] **1.** Define Transport's public interface and replaceable dependencies.
-- [ ] **2.** Add deterministic test helpers for Transport's dependencies.
+- [x] **2.** Add deterministic test helpers for Transport's dependencies.
 - [ ] **3.** Implement frame header encoding and validation.
 - [ ] **4.** Implement connection-control and error payload formats.
 - [ ] **5.** Read and write complete frames across partial socket operations.
@@ -93,6 +93,17 @@ Keep substitutes available only to tests; do not expose a runtime switch for
 fake authentication. Test the helper behaviors used by assertions and retain
 upstream fixtures with their revision and expected bytes. Scripted results can
 verify orchestration but cannot prove cryptographic correctness.
+
+Completed: [test-only dependency helpers](../../src/modules/transport/test_support/README.md)
+provide scripted sockets, connect/listen/accept operations, a manual clock,
+an event recorder and strict Identity/Cryptography call expectations. Tests
+cover fragmentation, coalescing, every frame truncation offset, short/failed
+writes, pending wakeups, resource release, consumer backpressure and dependency
+failures. The unchanged upstream vector snapshot retains the reference revision;
+tests verify its structure without claiming cryptographic correctness.
+Formatting, Clippy with warnings denied, all 69 tests (58 unit, 6 CLI and 5
+documentation), debug/release builds and overview/detailed help checks passed.
+The helpers are excluded from normal builds; networking remains unimplemented.
 
 ### 3. Frame headers
 

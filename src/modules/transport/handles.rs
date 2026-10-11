@@ -102,26 +102,31 @@ impl StreamHandle {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod test_fixtures {
     use super::*;
 
-    fn connection() -> ConnectionHandle {
+    pub fn connection() -> ConnectionHandle {
         ConnectionHandle {
             id: ConnectionId(Instance(Arc::new(()))),
         }
     }
 
-    fn owner() -> StreamOwner {
+    pub fn owner() -> StreamOwner {
         StreamOwner(Instance(Arc::new(())))
     }
 
-    fn stream(connection: &ConnectionHandle, owner: &StreamOwner) -> StreamHandle {
+    pub fn stream(connection: &ConnectionHandle, owner: &StreamOwner) -> StreamHandle {
         StreamHandle {
             connection: connection.id.clone(),
             owner: owner.clone(),
             wire_id: NonZeroU32::new(1).unwrap(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{test_fixtures::*, *};
 
     #[test]
     fn cloned_authority_can_use_its_own_stream() {

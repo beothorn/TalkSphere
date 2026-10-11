@@ -4,10 +4,11 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** step 1 is implemented: public contracts, replaceable dependency
-interfaces, local configuration validation and handle ownership checks.
+**Status:** steps 1–2 are implemented: public contracts, replaceable dependency
+interfaces, local configuration validation, handle ownership checks and
+deterministic test helpers.
 `transport::start()` still returns the typed local error
-`TransportError::NotImplemented`, before any I/O. There is no driver, socket
+`TransportError::NotImplemented`, before any I/O. There is no driver, TCP
 adapter, handshake, frame codec or protocol registration runtime yet.
 
 ## Layout
@@ -21,10 +22,13 @@ adapter, handshake, frame codec or protocol registration runtime yet.
 - `ports/identity.rs`: public credentials and Transport-only signing authority.
 - `ports/crypto.rs`: primitive operations and opaque transient-secret types.
 - `ports/mod.rs`: dependency bundle and structured adapter failures.
+- `test_support/`: test-only scripted dependencies, recording consumer and
+  pinned upstream fixtures; see the [helper guide](test_support/README.md).
 
 Introduce focused codec, handshake, stream and adapter files/subfolders during
 implementation. Keep session state private and test dependency substitutes
-separate from usable runtime capabilities; deterministic helpers are step 2.
+separate from usable runtime capabilities; `test_support` is compiled only with
+`#[cfg(test)]` and is not part of the application or public library interface.
 
 ## Public boundary
 
@@ -118,6 +122,7 @@ From the repository root:
 ```sh
 cargo build --locked
 cargo test --locked modules::transport
+cargo test --locked modules::transport::test_support
 cargo test --locked --doc
 cargo doc --locked --no-deps
 cargo run --locked -- help serve
@@ -131,5 +136,8 @@ stderr and exits with status 1. It starts no listener. Run all tests with
 
 Unit tests exercise configuration limits, endpoint validation and handle scope;
 documentation tests check the public configuration example and reject forged
-control/signing capabilities. Generated API documentation is under
+control/signing capabilities. Helper tests additionally check partial/coalesced
+I/O, EOF offsets, manual time, wakeups, exact dependency scripts, resource
+release and consumer event order. They do not prove the pending Transport
+state machine or real cryptographic behavior. Generated API documentation is under
 `target/doc/talksphere/modules/transport/index.html` after `cargo doc`.

@@ -14,8 +14,8 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport step 1, its public interface
-and replaceable dependency contracts, are implemented and tested. There is no
+**Current status:** project setup and Transport steps 1–2, its public interface
+and deterministic dependency test helpers, are implemented and tested. There is no
 working server, socket listener, handshake or protocol interoperability yet.
 `serve` returns an explicit not-implemented error.
 
@@ -31,6 +31,11 @@ cargo test --locked
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
 ```
+
+Run only the deterministic Transport helpers with
+`cargo test --locked modules::transport::test_support`; their
+[README](src/modules/transport/test_support/README.md) describes scripted I/O,
+manual time, dependency failures and pinned fixtures.
 
 Cargo.lock is tracked for reproducible application builds. For an optimized
 build, run `cargo build --locked --release`; the executable is
