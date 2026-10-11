@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: proposed for review; no implementation steps have been started.
+Status: step 1 is implemented and checked; steps 2–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -18,7 +18,7 @@ step brings those tests together; it does not defer testing until the end.
 
 ## Steps
 
-- [ ] **1.** Define Transport's public interface and replaceable dependencies.
+- [x] **1.** Define Transport's public interface and replaceable dependencies.
 - [ ] **2.** Add deterministic test helpers for Transport's dependencies.
 - [ ] **3.** Implement frame header encoding and validation.
 - [ ] **4.** Implement connection-control and error payload formats.
@@ -72,6 +72,15 @@ as `codec/`, `handshake/`, `stream/` and `adapters/` only when needed. Document
 the selected I/O/concurrency approach without making it part of the protocol.
 Test invalid local configuration and handle ownership rules as they are added;
 no Board, Ledger or service implementation is required.
+
+Completed: [public contracts and dependency ports](../../src/modules/transport/README.md)
+define requests/events, typed failures, opaque scoped handles, validated local
+policy and the polling-based I/O/concurrency boundary. Unit tests cover invalid
+configuration, expected contacts and cross-owner/cross-connection access;
+documentation tests check usable configuration and reject forged capabilities.
+Formatting, Clippy with warnings denied, all 30 tests, build, API documentation
+and the overview/detailed help checks passed. No driver, adapter, protocol codec
+or deterministic dependency harness was implemented in this step.
 
 ### 2. Deterministic test helpers
 

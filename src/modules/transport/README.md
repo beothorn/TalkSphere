@@ -4,19 +4,95 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** scaffold only. `transport::start()` always returns the typed local
-error `TransportError::NotImplemented`, before any I/O. This is not a protocol
-wire error or a completed Transport implementation.
+**Status:** step 1 is implemented: public contracts, replaceable dependency
+interfaces, local configuration validation and handle ownership checks.
+`transport::start()` still returns the typed local error
+`TransportError::NotImplemented`, before any I/O. There is no driver, socket
+adapter, handshake, frame codec or protocol registration runtime yet.
 
 ## Layout
 
-- `mod.rs`: public entry point and scaffold behavior test.
-- `error.rs`: local error type, diagnostic and unit test.
+- `mod.rs`: module exports and the unavailable networking entry point.
+- `api.rs`: control requests, acceptance results, events and terminal outcomes.
+- `config.rs`: immutable validated configuration and resource-limit types.
+- `handles.rs`: opaque connection, listener and stream capabilities.
+- `error.rs`: machine-readable local request failures.
+- `ports/io.rs`: replaceable sockets, listeners, connection attempts and clock.
+- `ports/identity.rs`: public credentials and Transport-only signing authority.
+- `ports/crypto.rs`: primitive operations and opaque transient-secret types.
+- `ports/mod.rs`: dependency bundle and structured adapter failures.
 
 Introduce focused codec, handshake, stream and adapter files/subfolders during
 implementation. Keep session state private and test dependency substitutes
-separate from usable runtime capabilities. The placeholder `start()` boundary
-will evolve to accept explicit dependencies and configuration.
+separate from usable runtime capabilities; deterministic helpers are step 2.
+
+## Public boundary
+
+`api::TransportControl` defines the future driver's `submit` and `poll_event`
+calls; no implementation of this trait is supplied yet. Requests cover
+connect/listen/accept, protocol registration, stream operations and connection
+control. `Accepted` reports local admission; subsequent `Event` values carry
+authenticated context, verified bytes, half-close, terminal results and ping
+outcomes. A queued write does not prove delivery or application success.
+
+`TransportConfig::new` rejects zero handshake timeouts, zero connection/stream
+counts and byte budgets smaller than a full supported frame. An outbound
+budget counts serialized bytes and needs at least 65,564 bytes; per-stream
+incoming buffering needs at least 65,536 payload bytes. These are TalkSphere
+configuration rules that preserve CR2SE's frame-size support, not new wire
+negotiation. Admission and queue enforcement remain later steps.
+
+`ConnectRequest::new` rejects an outgoing port of zero, while listen requests
+may use zero for an OS-selected port. `ExpectedPeer::Known` carries the required
+expected ID for a configured contact; `Unpinned` still requires a successful
+handshake. Other request validation, including protocol selection, belongs to
+the planned runtime/codec steps; constructing a request does not accept it.
+
+`TransportError` describes immediate local rejection. Terminal `Failure`
+values distinguish a local decision, explicit peer failure and dependency
+failure, with machine-readable codes. Stream/connection scope comes from the
+event's handle or ID; these types do not define wire error encodings.
+
+## Authority and lifetimes
+
+The control port belongs to trusted local composition, never a network parser.
+A peer's public `IdentityId` carries no local signing or stream authority.
+`ConnectionId` identifies an instance for observations, while `ConnectionHandle`
+grants control over it. A consumer's `StreamHandle` exposes only the former.
+Stream requests also require the matching `StreamOwner` granted by successful
+registration. Handles have private fields and no constructors from wire IDs or
+peer data; the future driver will issue them after admission.
+
+`StreamHandle::authorize` checks both connection instance and owner before a
+stream effect. Sharing a capability clone deliberately delegates that same
+authority. Runtime liveness, registration and state still require checks by
+the future driver; this method alone does not prove a connection is active.
+
+Instance equality uses private reference-counted tokens. They are process-local
+and cannot be serialized or restored after restart; an IPC adapter would need
+its own authenticated scoped-handle mapping. A new connection cannot reuse an
+old handle even when the wire stream number is the same.
+
+`Identity::sign_authentication` accepts only an `AuthenticationMessage` that
+Transport constructs; it exposes no unrestricted signing API or private keys.
+Cryptography's associated secret types have no Clone/Debug requirement and
+must erase/release their material when dropped. These adapter obligations and
+real cryptographic correctness are not proven by this interface-only step.
+
+## I/O and concurrency choice
+
+Use a single owner per Transport driver with nonblocking `Poll`/`Context`
+interfaces from the Rust standard library. Socket reads/writes may make partial
+progress, and pending operations must arrange a wakeup. The injected monotonic
+clock registers the next deadline, allowing later tests to advance time without
+sleeping. No executor, TCP implementation or cryptographic crate is selected
+by these contracts.
+
+Composition supplies the `Dependencies` bundle: socket provider, clock, one
+purpose-scoped local Identity capability and a Cryptography adapter. The driver
+will serialize frame writes and deliver queued events outside internal locks;
+other tasks can exchange bounded messages with it. This is a Rust integration
+choice, not a CR2SE concurrency or deployment requirement.
 
 ## Protocol references
 
@@ -31,9 +107,9 @@ Initial baseline:
   and [acceptance cases TR-01–TR-15](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/acceptanceTests/README.md)
 
 See the [Transport plan](../../../plans/1_Transport_module/PLAN.md) for the
-proposed implementation steps and the [main roadmap](../../../plans/PLAN.md)
+remaining implementation steps and the [main roadmap](../../../plans/PLAN.md)
 steps 3–5 for real Identity/Cryptography integration. No acceptance case is
-claimed as passed by this scaffold.
+claimed as passed by these boundary tests.
 
 ## Build, run and test
 
@@ -42,6 +118,8 @@ From the repository root:
 ```sh
 cargo build --locked
 cargo test --locked modules::transport
+cargo test --locked --doc
+cargo doc --locked --no-deps
 cargo run --locked -- help serve
 cargo run --locked -- serve
 ```
@@ -50,3 +128,8 @@ The final command currently reports the missing Transport implementation on
 stderr and exits with status 1. It starts no listener. Run all tests with
 `cargo test --locked`; build and run details are also in the
 [project README](../../../README.md).
+
+Unit tests exercise configuration limits, endpoint validation and handle scope;
+documentation tests check the public configuration example and reject forged
+control/signing capabilities. Generated API documentation is under
+`target/doc/talksphere/modules/transport/index.html` after `cargo doc`.

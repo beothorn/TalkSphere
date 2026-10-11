@@ -14,9 +14,10 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and a tested Transport scaffold only. There
-is no working server, socket listener, handshake or protocol interoperability
-yet. `serve` returns an explicit not-implemented error.
+**Current status:** project setup and Transport step 1, its public interface
+and replaceable dependency contracts, are implemented and tested. There is no
+working server, socket listener, handshake or protocol interoperability yet.
+`serve` returns an explicit not-implemented error.
 
 ## Build and test
 
@@ -66,7 +67,7 @@ src/
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
   modules/
-    transport/             explicit Transport scaffold and unit tests
+    transport/             public contracts, dependency ports and unit tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
 AGENTS.md                  instructions for ongoing implementation

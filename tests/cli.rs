@@ -20,7 +20,7 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("talksphere help <topic>"));
     assert!(overview.contains("serve"));
     assert!(overview.contains("--version"));
-    assert!(overview.contains("Transport is not implemented"));
+    assert!(overview.contains("Transport interface defined; networking is not implemented"));
     for arguments in [&[][..], &["-h"], &["help"]] {
         assert_eq!(successful_stdout(arguments), overview);
     }
@@ -42,6 +42,8 @@ fn command_and_option_details_are_accessible_without_starting_server() {
     }
     let serve_help = successful_stdout(&["help", "serve"]);
     assert!(serve_help.contains("opens no sockets"));
+    assert!(serve_help.contains("public interface is defined"));
+    assert!(serve_help.contains("plans/1_Transport_module/PLAN.md"));
     assert_eq!(successful_stdout(&["serve", "--help"]), serve_help);
     assert_eq!(successful_stdout(&["serve", "-h"]), serve_help);
     assert_eq!(
@@ -63,7 +65,7 @@ fn serve_fails_explicitly_until_transport_is_implemented() {
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     let error = String::from_utf8(output.stderr).unwrap();
-    assert!(error.contains("Transport is not implemented"));
+    assert!(error.contains("Transport networking is not implemented"));
     assert!(error.contains("no server was started"));
     assert!(error.contains("talksphere help serve"));
 }

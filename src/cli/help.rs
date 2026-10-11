@@ -21,12 +21,13 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         topic: Topic::Serve,
         names: &["serve"],
         label: "serve",
-        summary: "Start the server (currently a scaffold).",
+        summary: "Start the server (networking not implemented).",
         details: "Usage: talksphere serve\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
-                  Transport is not implemented yet. This command opens no sockets,\n\
+                  Transport's public interface is defined, but networking is not implemented.\n\
+                  This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
-                  Implementation begins in plans/PLAN.md step 2. There are no server options yet.\n",
+                  See plans/1_Transport_module/PLAN.md. There are no server options yet.\n",
     },
     HelpTopic {
         topic: Topic::Help,
@@ -70,7 +71,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: setup only; Transport is not implemented.\n\n\
+         Status: Transport interface defined; networking is not implemented.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -96,7 +97,7 @@ mod tests {
     fn overview_lists_all_topics_and_how_to_get_details() {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
-        assert!(overview.contains("Transport is not implemented"));
+        assert!(overview.contains("Transport interface defined; networking is not implemented"));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));
             assert!(overview.contains(entry.summary));
