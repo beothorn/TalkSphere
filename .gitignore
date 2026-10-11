@@ -1,0 +1,17 @@
+# Cargo output. Cargo.lock is intentionally committed for this application.
+/target/
+
+# Local runtime state and secrets; never commit real identity credentials.
+/data/
+/.env
+/.env.*
+!/.env.example
+*.log
+
+# Editor and operating-system temporary files.
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+/.idea/

@@ -4,41 +4,44 @@
         {
             "label": "Build TalkSphere Debug",
             "type": "shell",
-            "command": "make",
+            "command": "cargo",
             "args": [
-                "debug"
+                "build",
+                "--locked"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/project/TalkSphere/linux"
+                "cwd": "${workspaceFolder}"
             },
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": "$gcc"
+            "problemMatcher": "$rustc"
         },
         {
             "label": "Build TalkSphere Release",
             "type": "shell",
-            "command": "make",
+            "command": "cargo",
+            "args": ["build", "--locked", "--release"],
             "options": {
-                "cwd": "${workspaceFolder}/project/TalkSphere/linux"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
-            "problemMatcher": "$gcc"
+            "problemMatcher": "$rustc"
         },
         {
             "label": "Test TalkSphere",
             "type": "shell",
-            "command": "make",
+            "command": "cargo",
             "args": [
-                "test"
+                "test",
+                "--locked"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/project/TalkSphere/linux"
+                "cwd": "${workspaceFolder}"
             },
             "group": "test",
-            "problemMatcher": "$gcc"
+            "problemMatcher": "$rustc"
         }
     ]
 }

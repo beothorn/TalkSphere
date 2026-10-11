@@ -1,0 +1,14 @@
+[package]
+name = "talksphere"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "A modular Rust server and proof of concept for the CR2SE protocol"
+repository = "https://github.com/beothorn/TalkSphere"
+readme = "README.md"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

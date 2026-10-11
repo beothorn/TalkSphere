@@ -3,28 +3,17 @@
     "configurations": [
         {
             "name": "Debug TalkSphere",
-            "type": "cppdbg",
+            "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/project/TalkSphere/linux/build/debug/talksphere",
-            "args": ["run"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/project/TalkSphere/linux",
-            "environment": [
-                {
-                    "name": "TALKSPHERE_LOG_LEVEL",
-                    "value": "trace"
+            "cargo": {
+                "args": ["build", "--locked", "--bin", "talksphere"],
+                "filter": {
+                    "name": "talksphere",
+                    "kind": "bin"
                 }
-            ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "preLaunchTask": "Build TalkSphere Debug",
-            "setupCommands": [
-                {
-                    "description": "Enable gdb pretty printing",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+            },
+            "args": ["--help"],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
