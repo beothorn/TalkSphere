@@ -2,10 +2,10 @@
 
 use std::{error::Error, fmt, time::Duration};
 
-/// The fixed version 1 payload bound, not a configurable peer limit.
-pub const MAX_PAYLOAD_BYTES: usize = 65_536;
+pub use super::codec::MAX_PAYLOAD_BYTES;
+use super::codec::{HEADER_BYTES, INTEGRITY_TAG_BYTES};
 /// Space for one maximum protected frame: header, payload and integrity tag.
-pub const MAX_FRAME_BYTES: usize = 12 + MAX_PAYLOAD_BYTES + 16;
+pub const MAX_FRAME_BYTES: usize = HEADER_BYTES + MAX_PAYLOAD_BYTES + INTEGRITY_TAG_BYTES;
 
 /// Finite local budgets; byte budgets count bytes, not queue entries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

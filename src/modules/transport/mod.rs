@@ -1,5 +1,6 @@
 //! Transport contracts and local boundary validation.
-//! No runtime driver, TCP adapters, wire codecs or authentication are implemented.
+//! Includes preliminary frame-header encoding and validation.
+//! No runtime driver, TCP adapters, payload codecs or authentication are implemented.
 //!
 //! Deterministic dependencies are available only to internal unit tests.
 //! ```compile_fail
@@ -9,6 +10,7 @@
 //! The upstream contract is at <https://github.com/beothorn/CR2SE/tree/main/modules/transport>.
 
 pub mod api;
+pub mod codec;
 pub mod config;
 mod error;
 pub mod handles;

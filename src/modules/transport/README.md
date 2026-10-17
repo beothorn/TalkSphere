@@ -4,12 +4,12 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–2 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–3 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
-deterministic test helpers.
+deterministic test helpers and preliminary frame header encoding/validation.
 `transport::start()` still returns the typed local error
 `TransportError::NotImplemented`, before any I/O. There is no driver, TCP
-adapter, handshake, frame codec or protocol registration runtime yet.
+adapter, handshake, payload codec or protocol registration runtime yet.
 
 ## Layout
 
@@ -18,6 +18,8 @@ adapter, handshake, frame codec or protocol registration runtime yet.
 - `config.rs`: immutable validated configuration and resource-limit types.
 - `handles.rs`: opaque connection, listener and stream capabilities.
 - `error.rs`: machine-readable local request failures.
+- `codec/`: version 1 frame headers, type registry and structured validation
+  errors; see the [codec guide](codec/README.md).
 - `ports/io.rs`: replaceable sockets, listeners, connection attempts and clock.
 - `ports/identity.rs`: public credentials and Transport-only signing authority.
 - `ports/crypto.rs`: primitive operations and opaque transient-secret types.
@@ -113,7 +115,8 @@ Initial baseline:
 See the [Transport plan](../../../plans/1_Transport_module/PLAN.md) for the
 remaining implementation steps and the [main roadmap](../../../plans/PLAN.md)
 steps 3–5 for real Identity/Cryptography integration. No acceptance case is
-claimed as passed by these boundary tests.
+claimed as fully passed: the codec covers TR-03 header rules, while payload
+delivery, authentication and TCP closure still need a runtime implementation.
 
 ## Build, run and test
 
@@ -123,6 +126,7 @@ From the repository root:
 cargo build --locked
 cargo test --locked modules::transport
 cargo test --locked modules::transport::test_support
+cargo test --locked modules::transport::codec
 cargo test --locked --doc
 cargo doc --locked --no-deps
 cargo run --locked -- help serve
@@ -138,6 +142,8 @@ Unit tests exercise configuration limits, endpoint validation and handle scope;
 documentation tests check the public configuration example and reject forged
 control/signing capabilities. Helper tests additionally check partial/coalesced
 I/O, EOF offsets, manual time, wakeups, exact dependency scripts, resource
-release and consumer event order. They do not prove the pending Transport
+release and consumer event order. Codec tests use upstream PING/PONG headers
+and independent expected DATA bytes, payload boundaries and malformed headers.
+They do not prove the pending Transport
 state machine or real cryptographic behavior. Generated API documentation is under
 `target/doc/talksphere/modules/transport/index.html` after `cargo doc`.

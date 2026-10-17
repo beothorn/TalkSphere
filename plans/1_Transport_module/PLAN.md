@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–2 are implemented and checked; steps 3–24 have not been started.
+Status: steps 1–3 are implemented and checked; steps 4–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -20,7 +20,7 @@ step brings those tests together; it does not defer testing until the end.
 
 - [x] **1.** Define Transport's public interface and replaceable dependencies.
 - [x] **2.** Add deterministic test helpers for Transport's dependencies.
-- [ ] **3.** Implement frame header encoding and validation.
+- [x] **3.** Implement frame header encoding and validation.
 - [ ] **4.** Implement connection-control and error payload formats.
 - [ ] **5.** Read and write complete frames across partial socket operations.
 - [ ] **6.** Implement HELLO and AUTH handshake payload formats.
@@ -114,6 +114,18 @@ arithmetic. Keep context-dependent stream-state checks for later steps.
 
 Test exact bytes, maximum lengths and malformed headers using TR-03; rejected
 headers must not trigger a scan for another frame boundary.
+
+Completed: the [header codec](../../src/modules/transport/codec/README.md)
+encodes exact 12-byte version 1 headers and rejects invalid versions, flags,
+types, payload bounds and statically invalid type/stream-ID combinations.
+Immutable headers expose checked tagged/untagged frame sizes without allocating
+payloads or performing I/O. Tests cover pinned PING/PONG headers, independent
+DATA expectations, size boundaries, all type/version/flag values and malformed
+header lengths. Payload formats, integrity, stream state and actual connection
+closure remain later work; full TR-03 acceptance is not yet claimed.
+Formatting, Clippy with warnings denied, all 80 tests (68 unit, 6 CLI and 6
+documentation), build and overview/detailed help checks passed against the
+unchanged reference revision.
 
 ### 4. Control and error payloads
 

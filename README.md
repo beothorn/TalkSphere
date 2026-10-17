@@ -14,8 +14,8 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–2, its public interface
-and deterministic dependency test helpers, are implemented and tested. There is no
+**Current status:** project setup and Transport steps 1–3, its public interface,
+deterministic dependency test helpers and frame header codec, are implemented and tested. There is no
 working server, socket listener, handshake or protocol interoperability yet.
 `serve` returns an explicit not-implemented error.
 
@@ -36,6 +36,10 @@ Run only the deterministic Transport helpers with
 `cargo test --locked modules::transport::test_support`; their
 [README](src/modules/transport/test_support/README.md) describes scripted I/O,
 manual time, dependency failures and pinned fixtures.
+
+Exercise frame header encoding and validation with
+`cargo test --locked modules::transport::codec`; see the
+[codec guide](src/modules/transport/codec/README.md) for its API and scope.
 
 Cargo.lock is tracked for reproducible application builds. For an optimized
 build, run `cargo build --locked --release`; the executable is
@@ -72,7 +76,7 @@ src/
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
   modules/
-    transport/             public contracts, dependency ports and unit tests
+    transport/             contracts, header codec, dependency ports and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
 AGENTS.md                  instructions for ongoing implementation
