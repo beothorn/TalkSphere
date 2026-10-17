@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–5 are implemented and checked; steps 6–24 have not been started.
+Status: steps 1–6 are implemented and checked; steps 7–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -23,7 +23,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **3.** Implement frame header encoding and validation.
 - [x] **4.** Implement connection-control and error payload formats.
 - [x] **5.** Read and write complete frames across partial socket operations.
-- [ ] **6.** Implement HELLO and AUTH handshake payload formats.
+- [x] **6.** Implement HELLO and AUTH handshake payload formats.
 - [ ] **7.** Construct authentication transcripts and directional key derivation requests.
 - [ ] **8.** Implement handshake sequencing and peer identity checks.
 - [ ] **9.** Add frame integrity verification and replay protection.
@@ -179,6 +179,8 @@ selectors here while delegating identity/signature semantics to later steps.
 
 Test fixed byte layouts and incorrect lengths/selectors from TR-01 and TR-04;
 parsing an identity key or signature must not mark the peer authenticated.
+
+Completed: HELLO/AUTH codecs validate exact upstream layouts and selectors while leaving authentication to orchestration. All 102 tests, formatting, Clippy, build and help checks passed; production line coverage is 95.22% (617/648). Coverage exposed an existing parallel trace-test initialization race, fixed by serializing those two integration tests and verified with ten repeat runs.
 
 ### 7. Authentication inputs and key derivation
 

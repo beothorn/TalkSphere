@@ -2,6 +2,8 @@
 
 This module exposes FrameHeader, FrameProtection, FrameType and HeaderError for
 preliminary version 1 header validation, plus the [control payload module](control/README.md).
+The [handshake payload module](handshake.md) exposes Hello, Auth and their typed
+shape errors; cryptographic verification remains outside these codecs.
 The [codec guide](README.md) describes header operations and validation boundaries.
 
 Public constants are VERSION = 1, HEADER_BYTES = 12, INTEGRITY_TAG_BYTES = 16

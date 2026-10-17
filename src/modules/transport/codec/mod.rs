@@ -9,6 +9,7 @@ mod frame_type;
 mod header;
 
 pub mod control;
+pub mod handshake;
 
 pub use error::HeaderError;
 pub use frame_type::FrameType;

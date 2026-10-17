@@ -5,6 +5,8 @@ type registry in `frame_type.rs` and structured `HeaderError` failures in
 `error.rs`. Header processing performs no socket I/O or payload allocation.
 Step 4 adds [control payload codecs](control/README.md) for PING/PONG, GOAWAY
 and ERROR/CANCEL, with bounded encoding and allocation-free borrowed decoding.
+Step 6 adds [HELLO/AUTH formats](handshake.md), validating exact lengths and
+version/algorithm selectors without authenticating the peer.
 
 Behavior follows CR2SE revision
 [`8e848eb2e70ef7cd4490a753f9e647fdddcd99fd`](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd),

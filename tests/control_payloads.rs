@@ -11,9 +11,15 @@ use tracing::{
     span::{Attributes, Id, Record},
 };
 
+// Serialize callsite initialization with the thread-local capture subscriber.
+// Otherwise the parallel composition test can first register a callsite while
+// another thread is changing the process-wide tracing interest cache.
+static TRACE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
 // A caller assembles exact headers and payloads for ping, cancellation and graceful draining.
 #[test]
 fn caller_can_compose_control_headers_and_payloads() {
+    let _trace_guard = TRACE_TEST_LOCK.lock().unwrap();
     let cases = [
         (
             FrameType::Ping,
@@ -127,6 +133,7 @@ impl Visit for Fields {
 // Operators can trace the codec flow without seeing reasons or opaque token contents.
 #[test]
 fn trace_events_have_context_without_raw_payloads_or_reasons() {
+    let _trace_guard = TRACE_TEST_LOCK.lock().unwrap();
     let capture = Capture::default();
     tracing::subscriber::with_default(capture.clone(), || {
         let reason = "private diagnostic sentinel";

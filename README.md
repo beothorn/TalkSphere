@@ -14,7 +14,7 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–5, its public interface,
+**Current status:** project setup and Transport steps 1–6, its public interface,
 deterministic dependency test helpers, frame headers and control/error payload
 codecs and bounded frame I/O are implemented and tested. There is no
 working server, socket listener, handshake or protocol interoperability yet.
