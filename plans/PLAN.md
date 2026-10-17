@@ -18,7 +18,7 @@ checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
 step 2 in this roadmap. No other module has been broken down yet.
 
-Transport substeps 1–6 are complete; the remaining substeps and overall
+Transport substeps 1–7 are complete; the remaining substeps and overall
 Transport milestone are still pending.
 
 ## Setup and required node modules

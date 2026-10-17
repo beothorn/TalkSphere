@@ -15,6 +15,7 @@ pub mod config;
 mod error;
 pub mod framing;
 pub mod handles;
+pub mod handshake;
 pub mod ports;
 
 #[cfg(test)]

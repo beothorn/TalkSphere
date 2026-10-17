@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–6 are implemented and checked; steps 7–24 have not been started.
+Status: steps 1–7 are implemented and checked; steps 8–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -24,7 +24,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **4.** Implement connection-control and error payload formats.
 - [x] **5.** Read and write complete frames across partial socket operations.
 - [x] **6.** Implement HELLO and AUTH handshake payload formats.
-- [ ] **7.** Construct authentication transcripts and directional key derivation requests.
+- [x] **7.** Construct authentication transcripts and directional key derivation requests.
 - [ ] **8.** Implement handshake sequencing and peer identity checks.
 - [ ] **9.** Add frame integrity verification and replay protection.
 - [ ] **10.** Implement stream-opening payload encoding and validation.
@@ -194,6 +194,8 @@ Use recording substitutes and upstream fixtures to check exact input bytes,
 roles, selectors, lengths and assignments for TR-01, TR-04 and TR-06. Compare
 real signatures, derived keys and tags with the fixed vectors only when the
 real Cryptography/Identity adapters are available in roadmap steps 3–5.
+
+Completed: Canonical transcripts, role-bound signing/verification requests, exact HKDF labels and directional assignments are implemented with opaque secret ownership. Scripted tests verify exact inputs, failures and release behavior; real crypto remains pending. All 105 tests and required checks passed; production line coverage is 95.81% (709/740).
 
 ### 8. Handshake sequencing and identity
 

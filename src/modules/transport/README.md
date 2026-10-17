@@ -4,7 +4,7 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–6 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–7 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
 deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
 `transport::start()` still returns the typed local error
@@ -13,6 +13,8 @@ adapter, handshake or protocol registration runtime yet; other payload formats r
 
 Frame I/O is independently exercised with `cargo test --locked modules::transport::framing`;
 see the [framing guide](framing/README.md). Frames are not authenticated yet.
+Role-bound [authentication constructions](handshake/README.md) request signatures
+and key derivation through the injected ports; real primitives remain pending.
 
 ## Layout
 
