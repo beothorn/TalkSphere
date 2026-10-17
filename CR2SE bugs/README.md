@@ -2,7 +2,9 @@
 
 Keep one confirmed, language-independent issue per Markdown file here so
 [CR2SE](https://github.com/beothorn/CR2SE) can be corrected as TalkSphere grows.
-No protocol bugs have been confirmed during the initial setup review.
+Confirmed reports:
+
+- [0001: Diagnostic payload pseudocode accepts a leading byte-order mark](0001-diagnostic-byte-order-mark.md) — open.
 
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision

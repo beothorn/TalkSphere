@@ -7,6 +7,9 @@ description = "A modular Rust server and proof of concept for the CR2SE protocol
 repository = "https://github.com/beothorn/TalkSphere"
 readme = "README.md"
 
+[dependencies]
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+
 [lints.rust]
 unsafe_code = "forbid"
 

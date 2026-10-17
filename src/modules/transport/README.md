@@ -4,12 +4,12 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–3 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–4 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
-deterministic test helpers and preliminary frame header encoding/validation.
+deterministic test helpers, preliminary frame headers and control/error payload codecs.
 `transport::start()` still returns the typed local error
 `TransportError::NotImplemented`, before any I/O. There is no driver, TCP
-adapter, handshake, payload codec or protocol registration runtime yet.
+adapter, handshake or protocol registration runtime yet; other payload formats remain pending.
 
 ## Layout
 
@@ -18,7 +18,7 @@ adapter, handshake, payload codec or protocol registration runtime yet.
 - `config.rs`: immutable validated configuration and resource-limit types.
 - `handles.rs`: opaque connection, listener and stream capabilities.
 - `error.rs`: machine-readable local request failures.
-- `codec/`: version 1 frame headers, type registry and structured validation
+- `codec/`: version 1 headers, control/error payloads, registries and structured validation
   errors; see the [codec guide](codec/README.md).
 - `ports/io.rs`: replaceable sockets, listeners, connection attempts and clock.
 - `ports/identity.rs`: public credentials and Transport-only signing authority.
@@ -115,8 +115,11 @@ Initial baseline:
 See the [Transport plan](../../../plans/1_Transport_module/PLAN.md) for the
 remaining implementation steps and the [main roadmap](../../../plans/PLAN.md)
 steps 3–5 for real Identity/Cryptography integration. No acceptance case is
-claimed as fully passed: the codec covers TR-03 header rules, while payload
-delivery, authentication and TCP closure still need a runtime implementation.
+claimed as fully passed: codecs cover TR-03 header rules and payload cases from
+TR-11/12/13, while delivery, authentication and TCP closure still need a runtime.
+The control parser follows the specification's BOM prohibition; see
+[bug 0001](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md) for the
+corresponding pseudocode omission.
 
 ## Build, run and test
 
@@ -127,6 +130,7 @@ cargo build --locked
 cargo test --locked modules::transport
 cargo test --locked modules::transport::test_support
 cargo test --locked modules::transport::codec
+cargo test --locked --test control_payloads
 cargo test --locked --doc
 cargo doc --locked --no-deps
 cargo run --locked -- help serve

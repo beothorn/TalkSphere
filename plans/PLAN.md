@@ -18,8 +18,8 @@ checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
 step 2 in this roadmap. No other module has been broken down yet.
 
-Transport substeps 1–3 (public interface, replaceable dependencies, deterministic
-test helpers and frame headers) are complete; the remaining substeps and the overall Transport
+Transport substeps 1–4 (public interface, replaceable dependencies, deterministic
+test helpers, frame headers and control/error payloads) are complete; the remaining substeps and the overall Transport
 milestone are still pending.
 
 ## Setup and required node modules

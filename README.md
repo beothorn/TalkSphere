@@ -14,15 +14,16 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–3, its public interface,
-deterministic dependency test helpers and frame header codec, are implemented and tested. There is no
+**Current status:** project setup and Transport steps 1–4, its public interface,
+deterministic dependency test helpers, frame headers and control/error payload
+codecs, are implemented and tested. There is no
 working server, socket listener, handshake or protocol interoperability yet.
 `serve` returns an explicit not-implemented error.
 
 ## Build and test
 
 Install a current stable Rust toolchain with Cargo, rustfmt and Clippy. The
-project uses Rust edition 2024 and currently has no external dependencies.
+project uses Rust edition 2024 and `tracing` for structured codec events.
 Run these commands from the repository root:
 
 ```sh
@@ -37,9 +38,12 @@ Run only the deterministic Transport helpers with
 [README](src/modules/transport/test_support/README.md) describes scripted I/O,
 manual time, dependency failures and pinned fixtures.
 
-Exercise frame header encoding and validation with
+Exercise frame header and control payload encoding/validation with
 `cargo test --locked modules::transport::codec`; see the
 [codec guide](src/modules/transport/codec/README.md) for its API and scope.
+Run `cargo test --locked --test control_payloads` for public API composition
+and trace privacy tests. See [production coverage](docs/coverage.md) for the
+coverage setup, exclusions and measurement procedure.
 
 Cargo.lock is tracked for reproducible application builds. For an optimized
 build, run `cargo build --locked --release`; the executable is
@@ -76,7 +80,7 @@ src/
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
   modules/
-    transport/             contracts, header codec, dependency ports and tests
+    transport/             contracts, wire codecs, dependency ports and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
 AGENTS.md                  instructions for ongoing implementation

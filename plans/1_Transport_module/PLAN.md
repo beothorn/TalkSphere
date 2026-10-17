@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–3 are implemented and checked; steps 4–24 have not been started.
+Status: steps 1–4 are implemented and checked; steps 5–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -21,7 +21,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **1.** Define Transport's public interface and replaceable dependencies.
 - [x] **2.** Add deterministic test helpers for Transport's dependencies.
 - [x] **3.** Implement frame header encoding and validation.
-- [ ] **4.** Implement connection-control and error payload formats.
+- [x] **4.** Implement connection-control and error payload formats.
 - [ ] **5.** Read and write complete frames across partial socket operations.
 - [ ] **6.** Implement HELLO and AUTH handshake payload formats.
 - [ ] **7.** Construct authentication transcripts and directional key derivation requests.
@@ -137,6 +137,20 @@ bytes; allow `NO_ERROR` only in GOAWAY.
 Test the payload cases from TR-11, TR-12 and TR-13, including invalid codes and
 lengths. Diagnostic strings must never determine machine state or expose local
 secrets; context-specific error routing is completed in step 16.
+
+Completed: [control payload codecs](../../src/modules/transport/codec/control/README.md)
+encode/decode exact PING/PONG tokens, GOAWAY fields and ERROR/CANCEL diagnostics,
+with the complete code registry, bounded UTF-8 reasons, strict lengths and
+NO_ERROR restricted to GOAWAY. Decoders borrow text without allocation; structured
+trace events expose function flow without reasons or tokens. Public contracts
+have companion documents and tests cover header/payload composition and logging.
+[Bug 0001](../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md) records the
+pseudocode's omitted BOM check; implementation follows the normative text rule.
+Formatting, Clippy with warnings denied, all 92 tests (77 unit, 8 integration
+and 7 documentation), build, API documentation and overview/detailed help passed.
+[Production line coverage](../../docs/coverage.md) is 93.64% (412/440), excluding
+test-only code; new control codecs cover 166/166 lines. Connection behavior and
+full TR-11/12/13 acceptance remain pending.
 
 ### 5. Complete frame I/O
 

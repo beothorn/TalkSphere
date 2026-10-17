@@ -2,7 +2,9 @@
 
 Step 3 implements the 12-byte version 1 header in `header.rs`, the closed frame
 type registry in `frame_type.rs` and structured `HeaderError` failures in
-`error.rs`. It performs no socket I/O or payload allocation.
+`error.rs`. Header processing performs no socket I/O or payload allocation.
+Step 4 adds [control payload codecs](control/README.md) for PING/PONG, GOAWAY
+and ERROR/CANCEL, with bounded encoding and allocation-free borrowed decoding.
 
 Behavior follows CR2SE revision
 [`8e848eb2e70ef7cd4490a753f9e647fdddcd99fd`](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd),
@@ -33,8 +35,9 @@ At the maximum payload these sizes are 65,548 and 65,564 bytes. Tag state must
 come from the direction's handshake state; selecting Tagged proves nothing
 about authentication. Payload length always excludes the header and tag.
 
-Header acceptance is preliminary. Payload shapes (including nonempty DATA and
-empty END), handshake sequencing, stream existence/parity/allocation, terminal
+Header acceptance is preliminary. The control codecs validate their own payload
+shapes; other payload shapes (including nonempty DATA and empty END), handshake
+sequencing, stream existence/parity/allocation, terminal
 states and integrity validation are later steps. Keeping payload/state checks
 separate preserves their required error scope. A decoded header must not be
 treated as authenticated data or dispatched to an application.
@@ -53,6 +56,7 @@ From the repository root:
 ```sh
 cargo build --locked
 cargo test --locked modules::transport::codec
+cargo test --locked --test control_payloads
 cargo test --locked --doc
 cargo test --locked
 cargo run --locked -- --help

@@ -58,6 +58,103 @@ than silently inventing wire behavior.
 - An unfinished capability must return an explicit error and must not be
   advertised as supported. Preserve protocol errors, bounds and exact values.
 
+## Rust development and organization
+
+These conventions adapt the code-focused guidance in
+[coisaCommander's contributor guide](https://github.com/beothorn/coisaCommander/blob/main/AGENTS.md)
+to Rust and TalkSphere's module boundaries.
+
+- Prefer simple, idiomatic Rust and the smallest clear implementation. Split
+  responsibilities into focused functions, types and files; avoid speculative
+  abstractions, unnecessary dependencies and deeply nested control flow.
+  Look for opportunities to simplify the code touched by a change.
+- Organize by protocol domain first, then by responsibility within that domain
+  (for example `transport/codec/`, not a global `codecs/transport/` tree).
+  Put shared contracts at the nearest common module boundary and specialized
+  implementations below it. Folder structure should make a feature easy to find;
+  keep dependency direction explicit rather than inferring it from folder depth.
+- Present public types, traits and commonly used operations before private
+  helpers where practical. Keep internals private and expose only the contract
+  callers need; a caller should understand usage without reading implementation
+  details. Use `pub(crate)` or narrower visibility for internal collaboration.
+- Consult Git history, `git blame` and the relevant plan details when existing
+  behavior is unclear. Preserve intentional behavior unless the task calls for
+  changing it; document the reason for meaningful design choices.
+- Use clear names and named constants or local bindings for values whose meaning
+  would otherwise be hidden in a call. Include units in names where useful.
+  Prefer immutable bindings; add `mut` only when needed and explicit types when
+  they clarify a contract or prevent ambiguous numeric interpretation.
+- Prefer guard clauses, early returns, `?`, `let ... else` and exhaustive `match`
+  expressions to deeply nested branches. Return typed `Result` errors for
+  expected failures instead of panicking or using unchecked `unwrap()`.
+- Use iterator adapters when they clarify transformations; separate meaningful
+  stages into small maps or named helpers. Prefer a straightforward loop when
+  iterator chains obscure state, errors or ownership. Do not introduce clones,
+  boxing or extra collections merely to force a functional style.
+- Keep signatures and expressions readable and reasonably narrow. Format
+  multiline parameter lists as parenthesized blocks with one parameter per
+  line, a trailing comma and the closing parenthesis aligned with the function
+  declaration. Let `cargo fmt` determine wrapping and indentation; do not fight
+  rustfmt with manual alignment or formatting exclusions. Explain parameters in
+  rustdoc, including their purpose, origin, units and constraints when relevant.
+
+## Comments and contract documentation
+
+- Begin each source module with `//!` documentation explaining its responsibility,
+  callers and dependencies. Use `///` for public types, traits, functions and
+  fields so the generated API documentation explains how to use them.
+- Place a human-readable explanation before every function or method, including
+  private helpers and tests: use rustdoc for public APIs and ordinary comments
+  for internal behavior. Describe the purpose, inputs, result, important rules
+  and failure behavior in enough detail to reconstruct the intended behavior.
+  For tests, describe the scenario and expected outcome.
+- Write comments as an explanation to a developer learning the code. Explain
+  why a choice exists, where values come from, and surprising ownership,
+  concurrency or protocol constraints. Avoid comments that merely repeat a
+  variable name or narrate obvious syntax. Keep explanations current when code
+  changes; focus on observable behavior rather than a line-by-line translation.
+- Document public contracts with relevant `# Errors`, `# Panics` and usage
+  examples. State ownership/lifetime expectations and side effects where they
+  matter; use executable rustdoc examples for public usage when practical.
+- For each Rust source file defining a public contract, maintain a companion
+  Markdown file with the same stem (for example `header.rs` and `header.md`).
+  Describe public types, traits, constructors, functions and fields in plain
+  language or language-independent pseudocode, including inputs, outputs and
+  failure rules. Omit private implementation details and Rust implementation
+  listings so a programmer unfamiliar with Rust can understand the contract.
+  Update the companion document whenever the public contract changes; test-only
+  files and files containing only private helpers do not need companions.
+- Each module README must also describe its callers, dependencies, relationships
+  to other modules and the reasons for its responsibility boundaries.
+
+## Logging
+
+- Use a shared structured logging framework such as `tracing`, with the
+  subscriber configured by application composition rather than protocol code.
+  Include module/function context and support filtering by target and level.
+  Send operational logs to stderr; preserve stdout for intentional CLI output.
+- Add a trace event or trace-level span at the start of production functions
+  to make execution flow discoverable. Keep logging out of logging/formatting
+  implementations where it could recurse; test functions need scenario comments,
+  not entry logs. Use narrative messages that explain the operation or transition.
+- Choose levels by audience and consequence: `trace` explains developer control
+  flow; `debug` adds safe values useful for diagnosis; `info` marks a small number
+  of significant normal lifecycle events; `warn` explains an unexpected condition
+  the operation can recover from; `error` explains a failed operation and its
+  consequences when the application can continue. For an unrecoverable application
+  failure, emit `error` and perform controlled shutdown with a failing exit status;
+  Rust's common logging frameworks do not provide a separate `fatal` level.
+- Keep `info` sparse. Warn/error messages should explain what went wrong, its
+  effect and any recovery action. Avoid logging the same failure at every layer;
+  log it at the boundary that handles it, preserving structured error context.
+- Put diagnostic values in structured fields and make expensive debug/trace
+  preparation conditional on the level being enabled. Never log private keys,
+  tokens, secret material or raw application payloads. Do not record unauthenticated
+  peer input as trusted facts; bound and sanitize any peer-controlled diagnostic
+  fields and avoid unbounded log volume on per-byte or repeated failure paths.
+- When adding logging configuration or CLI options, document defaults and filters
+  and update overview/detailed help and CLI tests together.
+
 ## Protocol bug reports
 
 Record confirmed CR2SE issues as individual Markdown files in
@@ -75,6 +172,13 @@ them.
 - Always add or update unit tests with implementation changes, including module
   scaffolds. Test observable behavior and relevant invalid/failure paths.
   Add integration tests for executable behavior and cross-module contracts.
+- Cover happy paths and ask what can go wrong: include invalid inputs, boundary
+  values, dependency failures and recovery behavior where applicable. Include
+  both focused technical tests and realistic caller scenarios; explain the
+  scenario in a comment instead of relying only on the test function's name.
+- Fix failing tests and newly introduced compiler/Clippy warnings before marking
+  implementation complete; do not disable tests or weaken assertions to hide a
+  regression.
 - Use upstream acceptance cases and fixed vectors as implementation progresses;
   do not claim conformance based only on local round trips.
 - Keep the root README's build, test and run instructions current. Each module
@@ -88,6 +192,11 @@ them.
   runtime failures exit with status 1 and explain the problem on stderr.
 - Keep dependencies deliberate and commit Cargo.lock. Never commit keys,
   tokens, runtime state, logs or build artifacts.
+
+For implementation changes, keep production line coverage above 80%, measure it
+with a Rust coverage tool such as `cargo llvm-cov --locked` using the
+[production coverage procedure](docs/coverage.md) to exclude test-only code, and report the measured
+percentage or explicitly state why coverage could not be measured.
 
 Before finishing a change, run these commands from the repository root:
 

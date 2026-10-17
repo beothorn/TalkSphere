@@ -1,4 +1,4 @@
-//! Version 1 wire codecs, starting with preliminary header validation.
+//! Version 1 headers and connection-control/error payload formats.
 //!
 //! Baseline: <https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md#3-frame-format>.
 //! A decoded header is untrusted: payload shape, integrity and connection/stream
@@ -7,6 +7,8 @@
 mod error;
 mod frame_type;
 mod header;
+
+pub mod control;
 
 pub use error::HeaderError;
 pub use frame_type::FrameType;

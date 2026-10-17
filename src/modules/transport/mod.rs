@@ -1,6 +1,6 @@
 //! Transport contracts and local boundary validation.
-//! Includes preliminary frame-header encoding and validation.
-//! No runtime driver, TCP adapters, payload codecs or authentication are implemented.
+//! Includes preliminary frame headers and control/error payload codecs.
+//! No runtime driver, TCP adapters or authentication are implemented.
 //!
 //! Deterministic dependencies are available only to internal unit tests.
 //! ```compile_fail
