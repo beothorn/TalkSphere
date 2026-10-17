@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–4 are implemented and checked; steps 5–24 have not been started.
+Status: steps 1–5 are implemented and checked; steps 6–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -22,7 +22,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **2.** Add deterministic test helpers for Transport's dependencies.
 - [x] **3.** Implement frame header encoding and validation.
 - [x] **4.** Implement connection-control and error payload formats.
-- [ ] **5.** Read and write complete frames across partial socket operations.
+- [x] **5.** Read and write complete frames across partial socket operations.
 - [ ] **6.** Implement HELLO and AUTH handshake payload formats.
 - [ ] **7.** Construct authentication transcripts and directional key derivation requests.
 - [ ] **8.** Implement handshake sequencing and peer identity checks.
@@ -164,6 +164,12 @@ Test every split point, one-byte reads, short writes, coalesced frames and
 truncation within headers, payloads and tags using TR-02 and TR-14. Preserve
 the distinction between EOF at a frame boundary and a truncated frame;
 connection state later decides which active operations must fail.
+
+Completed: [bounded frame I/O](../../src/modules/transport/framing/README.md)
+handles partial/coalesced operations, explicit tag phases, terminal framing errors
+and single-frame write ownership. All 99 tests, formatting, Clippy, build and
+help checks passed; production line coverage is 94.83% (569/600). Returned
+frames remain unverified; connection-state and integrity behavior are later steps.
 
 ### 6. HELLO and AUTH formats
 
