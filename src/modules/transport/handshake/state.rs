@@ -20,6 +20,8 @@ use crate::modules::transport::{
 pub enum HandshakeError {
     /// Invalid order, duplicate, forbidden frame, or reuse after failure.
     Order,
+    /// A well-formed peer connection ERROR; never answer with another ERROR.
+    Peer(super::super::codec::control::ErrorCode),
     /// Invalid handshake payload shape or selector.
     Payload(HandshakePayloadError),
     /// Derived identity differs from the configured contact.
@@ -219,6 +221,11 @@ impl<C: Cryptography> Handshake<C> {
             return Err(HandshakeError::Order);
         }
         match frame.header().frame_type() {
+            FrameType::Error => {
+                let error = super::super::codec::control::ErrorPayload::decode(frame.payload())
+                    .map_err(|_| HandshakeError::Order)?;
+                Err(HandshakeError::Peer(error.code()))
+            }
             FrameType::Hello if self.remote.is_none() => {
                 let remote = Hello::decode(frame.payload()).map_err(HandshakeError::Payload)?;
                 let id = identity

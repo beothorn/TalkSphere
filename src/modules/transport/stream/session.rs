@@ -31,6 +31,8 @@ pub enum SessionError {
     Id(IdError),
     /// Caller is not registered for the requested protocol.
     Owner,
+    /// Connection has already terminated.
+    Closed,
     /// Caller supplied a stream from another connection or owner.
     Authority(super::super::TransportError),
     /// DATA must contain one to 65,536 bytes.
@@ -52,6 +54,7 @@ pub(super) struct StreamState {
 
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
+    pub(super) closed: bool,
     pub(super) handle: ConnectionHandle,
     pub(super) context: PeerContext,
     pub(super) ids: StreamIds,
@@ -80,6 +83,7 @@ impl Session {
             peer_identity,
         };
         Self {
+            closed: false,
             handle,
             context: context.clone(),
             ids: StreamIds::new(role),
@@ -104,6 +108,9 @@ impl Session {
         owner: &StreamOwner,
     ) -> Result<StreamHandle, SessionError> {
         tracing::trace!(function = "Session::open", "Opening a locally owned stream");
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
         let protocol = registry.protocol(owner).ok_or(SessionError::Owner)?;
         let payload = Open::new(&protocol.id, protocol.version)
             .map_err(|_| SessionError::Protocol)?
@@ -125,6 +132,9 @@ impl Session {
         bytes: Vec<u8>,
     ) -> Result<(), SessionError> {
         tracing::trace!(function = "Session::send", "Queueing ordered stream bytes");
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
         stream
             .authorize(self.handle.id(), owner)
             .map_err(SessionError::Authority)?;
@@ -159,6 +169,9 @@ impl Session {
             function = "Session::end",
             "Half-closing local stream output"
         );
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
         stream
             .authorize(self.handle.id(), owner)
             .map_err(SessionError::Authority)?;
@@ -188,6 +201,9 @@ impl Session {
             function = "Session::cancel",
             "Cancelling both stream directions"
         );
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
         stream
             .authorize(self.handle.id(), owner)
             .map_err(SessionError::Authority)?;
@@ -241,12 +257,69 @@ impl Session {
             function = "Session::receive",
             "Routing a verified stream frame"
         );
-        self.receive_parts(
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
+        let result = self.receive_parts(
             frame.header().frame_type(),
             frame.header().stream_id(),
             frame.into_payload(),
             registry,
-        )
+        );
+        if result.is_err() {
+            self.close(
+                Some(Failure {
+                    origin: FailureOrigin::Local,
+                    code: FailureCode::ProtocolViolation,
+                }),
+                Some(ErrorCode::ProtocolError),
+            );
+        }
+        result
+    }
+
+    /// Terminate unfinished work once and optionally queue one safe connection ERROR.
+    /// Callers permit a response only when framing and send integrity are trustworthy.
+    /// A normal close is valid only after all accepted streams have completed.
+    pub fn close(&mut self, failure: Option<Failure>, response: Option<ErrorCode>) {
+        tracing::trace!(
+            function = "Session::close",
+            "Closing connection and failing unfinished streams"
+        );
+        if self.closed {
+            return;
+        }
+        self.closed = true;
+        self.outbound.clear();
+        let unfinished = failure.unwrap_or(Failure {
+            origin: FailureOrigin::Local,
+            code: FailureCode::ConnectionLost,
+        });
+        for (_, state) in std::mem::take(&mut self.streams) {
+            self.events.push_back(Event::StreamClosed {
+                stream: state.handle,
+                outcome: StreamOutcome::Failed(unfinished),
+            });
+        }
+        self.events.push_back(Event::ConnectionClosed {
+            connection: self.handle.id().clone(),
+            failure,
+        });
+        if let Some(code) = response
+            && let Ok(payload) = ErrorPayload::new(code, "")
+            && let Ok(frame) = frame(FrameType::Error, 0, payload.encode())
+        {
+            self.outbound.push_back(frame);
+        }
+    }
+
+    /// True after terminal connection closure; queued outcomes remain drainable.
+    pub fn is_closed(&self) -> bool {
+        tracing::trace!(
+            function = "Session::is_closed",
+            "Checking connection liveness"
+        );
+        self.closed
     }
 
     /// Remove the next consumer event; no application code executes inside routing.
@@ -279,6 +352,17 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if kind == FrameType::Error && id == 0 {
+            let error = ErrorPayload::decode(&payload).map_err(|_| SessionError::Protocol)?;
+            self.close(
+                Some(Failure {
+                    origin: FailureOrigin::Peer,
+                    code: failure_code(error.code()),
+                }),
+                None,
+            );
+            return Ok(());
+        }
         if kind != FrameType::Open && id != 0 {
             if !self.ids.was_created(id) {
                 return Err(SessionError::Protocol);
@@ -477,7 +561,7 @@ impl Session {
 }
 
 // Preserve peer error codes as typed local outcomes, never interpret diagnostic text.
-fn failure_code(code: ErrorCode) -> FailureCode {
+pub(crate) fn failure_code(code: ErrorCode) -> FailureCode {
     tracing::trace!(
         function = "session::failure_code",
         "Mapping a peer failure code"

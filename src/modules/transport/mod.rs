@@ -13,6 +13,7 @@ pub mod api;
 pub mod codec;
 pub mod config;
 mod error;
+pub mod failure;
 pub mod framing;
 pub mod handles;
 pub mod handshake;

@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–15 are implemented and checked; steps 16–24 have not been started.
+Status: steps 1–16 are implemented and checked; steps 17–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -33,7 +33,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **13.** Exchange ordered data across multiple bidirectional streams.
 - [x] **14.** Support independent stream half-closing and normal completion.
 - [x] **15.** Implement stream cancellation and terminal-state handling.
-- [ ] **16.** Apply the required stream-level and connection-level error responses.
+- [x] **16.** Apply the required stream-level and connection-level error responses.
 - [ ] **17.** Add ping requests with response matching and timeouts.
 - [ ] **18.** Implement graceful connection shutdown with GOAWAY.
 - [ ] **19.** Enforce handshake deadlines and release connection resources on closure.
@@ -316,6 +316,8 @@ Send best-effort connection ERROR only when encoding it is safe; unsupported
 versions, failed tags and uncertain integrity/framing state require closure
 without that response. Preserve completed stream results when a later error
 closes the connection.
+
+Completed: Failure dispositions preserve typed causes and safe wire codes, suppress unsupported-version/tag/uncertain-output replies, and handle peer ERROR without reply loops. Session closure fails unfinished consumers once while retaining completed outcomes. All 139 tests and required checks passed; production coverage is 95.42% (1541/1615). Socket-level application of this policy is composed in deadline/cleanup step 19.
 
 ### 17. Ping and response matching
 

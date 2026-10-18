@@ -25,3 +25,6 @@ HandshakeError distinguishes Order, malformed Payload, UnexpectedIdentity,
 Dependency and local Framing failures. All failures are terminal; socket closure,
 safe error responses and timeouts remain the connection owner's responsibility.
 After session transfer, that owner is responsible for key release.
+
+A well-formed peer connection ERROR during handshake preserves its registered
+code in `HandshakeError.Peer` and closes state; the driver sends no error reply.

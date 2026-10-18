@@ -58,3 +58,12 @@ frames for that ID are discarded after framing/integrity checks, without
 payload interpretation or duplicate events. OPEN reuse remains a connection
 violation. Non-OPEN references to never-created IDs are connection violations.
 No cancellation outcome implies retry, rollback or absence of remote effects.
+
+`close(failure, response)` is idempotent, clears pending ordinary output, fails
+all unfinished streams exactly once and queues a connection-close event.
+Already completed stream outcomes remain intact. A supplied safe response code
+queues one connection ERROR; no response is emitted for peer connection ERROR.
+`is_closed` reports terminal state; subsequent local operations are rejected.
+Public `receive` closes the session on connection-level dispatch violations.
+The caller applies the [failure policy](../failure.md) to framing, handshake
+and integrity errors and performs the actual socket close.

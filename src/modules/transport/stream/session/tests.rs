@@ -424,3 +424,95 @@ fn malformed_terminal_controls_are_rejected() {
     );
     assert!(state.streams.contains_key(&1));
 }
+
+// Connection failure preserves already completed results and fails unfinished work once.
+#[test]
+fn connection_failure_preserves_completed_outcomes() {
+    let (mut state, registry, owner) = setup();
+    let completed = state.open(&registry, &owner).unwrap();
+    let pending = state.open(&registry, &owner).unwrap();
+    state.end(&owner, &completed).unwrap();
+    state.sent(FrameType::End, 1);
+    state
+        .receive_parts(FrameType::End, 1, vec![], &registry)
+        .unwrap();
+    let failure = Failure {
+        origin: FailureOrigin::Local,
+        code: FailureCode::TruncatedFrame,
+    };
+    state.close(Some(failure), None);
+    state.close(Some(failure), None);
+    assert!(state.is_closed());
+    assert!(state.outbound.is_empty());
+    assert_eq!(
+        state.send(&owner, &pending, vec![1]),
+        Err(SessionError::Closed)
+    );
+    assert_eq!(state.open(&registry, &owner), Err(SessionError::Closed));
+    assert_eq!(
+        state
+            .events
+            .iter()
+            .filter(|e| matches!(e, Event::ConnectionClosed { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(
+        state
+            .events
+            .iter()
+            .filter(|e| matches!(
+                e,
+                Event::StreamClosed {
+                    outcome: StreamOutcome::Completed,
+                    ..
+                }
+            ))
+            .count(),
+        1
+    );
+    assert_eq!(state.events.iter().filter(|e| matches!(e, Event::StreamClosed { outcome: StreamOutcome::Failed(f), .. } if *f == failure)).count(), 1);
+}
+
+// Remote connection errors preserve exact codes and never provoke an error exchange.
+#[test]
+fn peer_connection_error_and_safe_local_reply() {
+    let (mut state, registry, owner) = setup();
+    state.open(&registry, &owner).unwrap();
+    state
+        .receive_parts(
+            FrameType::Error,
+            0,
+            ErrorPayload::new(ErrorCode::ResourceLimit, "")
+                .unwrap()
+                .encode(),
+            &registry,
+        )
+        .unwrap();
+    assert!(state.is_closed());
+    assert!(state.outbound.is_empty());
+    assert!(state.events.iter().any(|e| matches!(
+        e,
+        Event::ConnectionClosed {
+            failure: Some(Failure {
+                origin: FailureOrigin::Peer,
+                code: FailureCode::ResourceLimit
+            }),
+            ..
+        }
+    )));
+    let (mut state, _, _) = setup();
+    state.close(
+        Some(Failure {
+            origin: FailureOrigin::Local,
+            code: FailureCode::ProtocolViolation,
+        }),
+        Some(ErrorCode::ProtocolError),
+    );
+    let response = state.pop_outbound().unwrap();
+    assert_eq!(response.header().stream_id(), 0);
+    assert_eq!(
+        ErrorPayload::decode(response.payload()).unwrap().code(),
+        ErrorCode::ProtocolError
+    );
+}
