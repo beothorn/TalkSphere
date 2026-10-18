@@ -22,6 +22,7 @@ use super::{
 use std::{
     collections::{BTreeMap, VecDeque},
     num::NonZeroU32,
+    time::Instant,
 };
 
 /// Local operation rejection or a connection-level protocol violation.
@@ -54,6 +55,8 @@ pub(super) struct StreamState {
 
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
+    pings: BTreeMap<[u8; 8], (Instant, Instant)>,
+    now: Option<Instant>,
     pub(super) closed: bool,
     pub(super) handle: ConnectionHandle,
     pub(super) context: PeerContext,
@@ -83,6 +86,8 @@ impl Session {
             peer_identity,
         };
         Self {
+            pings: BTreeMap::new(),
+            now: None,
             closed: false,
             handle,
             context: context.clone(),
@@ -252,6 +257,7 @@ impl Session {
         &mut self,
         frame: VerifiedFrame,
         registry: &Registry,
+        now: Instant,
     ) -> Result<(), SessionError> {
         tracing::trace!(
             function = "Session::receive",
@@ -260,6 +266,7 @@ impl Session {
         if self.closed {
             return Err(SessionError::Closed);
         }
+        self.tick(now);
         let result = self.receive_parts(
             frame.header().frame_type(),
             frame.header().stream_id(),
@@ -295,6 +302,13 @@ impl Session {
             origin: FailureOrigin::Local,
             code: FailureCode::ConnectionLost,
         });
+        for (token, _) in std::mem::take(&mut self.pings) {
+            self.events.push_back(Event::PingFinished {
+                connection: self.handle.id().clone(),
+                token,
+                result: Err(unfinished),
+            });
+        }
         for (_, state) in std::mem::take(&mut self.streams) {
             self.events.push_back(Event::StreamClosed {
                 stream: state.handle,
@@ -352,6 +366,9 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if matches!(kind, FrameType::Ping | FrameType::Pong) && id == 0 {
+            return self.receive_ping(kind, &payload);
+        }
         if kind == FrameType::Error && id == 0 {
             let error = ErrorPayload::decode(&payload).map_err(|_| SessionError::Protocol)?;
             self.close(
@@ -594,3 +611,5 @@ fn frame(kind: FrameType, id: u32, payload: Vec<u8>) -> Result<WireFrame, Sessio
 #[cfg(test)]
 #[path = "session/tests.rs"]
 mod tests;
+
+mod ping;

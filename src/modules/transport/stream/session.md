@@ -67,3 +67,7 @@ queues one connection ERROR; no response is emitted for peer connection ERROR.
 Public `receive` closes the session on connection-level dispatch violations.
 The caller applies the [failure policy](../failure.md) to framing, handshake
 and integrity errors and performs the actual socket close.
+
+`receive` also takes monotonic `now`, expiring timers before processing input.
+[PING/PONG operations](session/ping.md) use this injected time and expose the next
+deadline for the connection clock. No timer sleeps inside protocol state.

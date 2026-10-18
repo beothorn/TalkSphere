@@ -516,3 +516,97 @@ fn peer_connection_error_and_safe_local_reply() {
         ErrorCode::ProtocolError
     );
 }
+
+// Matching PONG completes once; unrelated/duplicate tokens never finish another probe.
+#[test]
+fn ping_echo_matching_and_timeout() {
+    use std::time::Duration;
+    let (mut state, registry, _) = setup();
+    let now = Instant::now();
+    let timeout = Duration::from_secs(3);
+    state.ping([1; 8], timeout, now).unwrap();
+    state.ping([2; 8], timeout, now).unwrap();
+    assert_eq!(state.next_deadline(), Some(now + timeout));
+    assert_eq!(
+        state.ping([1; 8], timeout, now),
+        Err(SessionError::Protocol)
+    );
+    assert_eq!(
+        state.ping([3; 8], Duration::ZERO, now),
+        Err(SessionError::Protocol)
+    );
+    state.tick(now + Duration::from_secs(1));
+    for token in [[9; 8], [1; 8], [1; 8]] {
+        state
+            .receive_parts(FrameType::Pong, 0, token.to_vec(), &registry)
+            .unwrap();
+    }
+    state
+        .receive_parts(FrameType::Ping, 0, vec![7; 8], &registry)
+        .unwrap();
+    assert_eq!(
+        state
+            .outbound
+            .iter()
+            .filter(|f| f.header().frame_type() == FrameType::Pong && f.payload() == [7; 8])
+            .count(),
+        1
+    );
+    state.tick(now + timeout);
+    state
+        .receive_parts(FrameType::Pong, 0, vec![2; 8], &registry)
+        .unwrap();
+    assert!(state.next_deadline().is_none());
+    assert_eq!(state.events.iter().filter(|e| matches!(e, Event::PingFinished { result: Ok(elapsed), .. } if *elapsed == Duration::from_secs(1))).count(), 1);
+    assert_eq!(
+        state
+            .events
+            .iter()
+            .filter(|e| matches!(
+                e,
+                Event::PingFinished {
+                    result: Err(Failure {
+                        code: FailureCode::DeadlineExceeded,
+                        ..
+                    }),
+                    ..
+                }
+            ))
+            .count(),
+        1
+    );
+    assert_eq!(
+        state.receive_parts(FrameType::Ping, 0, vec![0; 7], &registry),
+        Err(SessionError::Protocol)
+    );
+}
+
+// Outstanding probes are finite and closure fails each remaining probe exactly once.
+#[test]
+fn ping_capacity_and_close() {
+    let (mut state, _, _) = setup();
+    let now = Instant::now();
+    for byte in 0..64 {
+        state
+            .ping([byte; 8], std::time::Duration::from_secs(1), now)
+            .unwrap();
+    }
+    assert_eq!(
+        state.ping([64; 8], std::time::Duration::from_secs(1), now),
+        Err(SessionError::Capacity)
+    );
+    state.close(None, None);
+    assert!(state.next_deadline().is_none());
+    assert_eq!(
+        state
+            .events
+            .iter()
+            .filter(|e| matches!(e, Event::PingFinished { result: Err(_), .. }))
+            .count(),
+        64
+    );
+    assert_eq!(
+        state.ping([65; 8], std::time::Duration::from_secs(1), now),
+        Err(SessionError::Closed)
+    );
+}

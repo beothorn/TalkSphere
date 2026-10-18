@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–16 are implemented and checked; steps 17–24 have not been started.
+Status: steps 1–17 are implemented and checked; steps 18–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -34,7 +34,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **14.** Support independent stream half-closing and normal completion.
 - [x] **15.** Implement stream cancellation and terminal-state handling.
 - [x] **16.** Apply the required stream-level and connection-level error responses.
-- [ ] **17.** Add ping requests with response matching and timeouts.
+- [x] **17.** Add ping requests with response matching and timeouts.
 - [ ] **18.** Implement graceful connection shutdown with GOAWAY.
 - [ ] **19.** Enforce handshake deadlines and release connection resources on closure.
 - [ ] **20.** Enforce limits on connections, streams and queued bytes.
@@ -328,6 +328,8 @@ PONG without treating unrelated tokens as success.
 Test TR-11 using the controllable clock, including mismatched tokens,
 duplicates and expiration without real sleeps. A successful ping is evidence
 of reachability, not a service acknowledgement.
+
+Completed: Timed probes use injected monotonic time, match only pending tokens, echo PING once and ignore unsolicited/duplicate/expired PONG. Pending probes are bounded and failed on closure. All 141 tests and required checks passed; production coverage is 95.53% (1625/1701).
 
 ### 18. Graceful shutdown
 
