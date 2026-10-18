@@ -114,7 +114,14 @@ impl<C: Cryptography> Connection<C> {
         };
         if let Some(handshake) = &mut self.handshake {
             match handshake.receive(frame, identity, crypto) {
-                Ok(Some(auth)) => self.handshake_output.push_back(auth),
+                Ok(Some(mut auth)) => {
+                    auth.reservation = self.resources.outbound(auth.payload().len() + 12);
+                    if auth.reservation.is_some() {
+                        self.handshake_output.push_back(auth);
+                    } else {
+                        self.abort(local_failure(FailureCode::ResourceLimit));
+                    }
+                }
                 Ok(None) => {}
                 Err(error) => self.fail(Disposition::handshake(error), now),
             }

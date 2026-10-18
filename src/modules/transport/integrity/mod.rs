@@ -111,9 +111,14 @@ impl<K> Integrity<K> {
             Ok(tag) => tag,
             Err(error) => return self.fail(IntegrityError::Dependency(error)),
         };
+        let reservation = frame
+            .reservation
+            .as_ref()
+            .map(super::resources::Reservation::retain);
         let header = frame.header();
-        let frame = WireFrame::new(header, frame.into_payload(), Some(tag))
+        let mut frame = WireFrame::new(header, frame.into_payload(), Some(tag))
             .map_err(IntegrityError::Framing)?;
+        frame.reservation = reservation;
         self.pending_send = true;
         Ok(frame)
     }

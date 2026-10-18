@@ -10,6 +10,7 @@ use std::{
 /// Owns an entire serialized frame until its last byte is accepted by the socket.
 #[derive(Default)]
 pub struct FrameWriter {
+    reservation: Option<super::super::resources::Reservation>,
     bytes: Vec<u8>,
     offset: usize,
     failed: bool,
@@ -38,6 +39,10 @@ impl FrameWriter {
             .header
             .frame_len(phase)
             .map_err(FramingError::Header)?;
+        self.reservation = frame
+            .reservation
+            .as_ref()
+            .map(super::super::resources::Reservation::retain);
         self.bytes = Vec::with_capacity(length);
         self.bytes.extend_from_slice(&frame.header.encode());
         self.bytes.extend_from_slice(&frame.payload);
@@ -64,6 +69,7 @@ impl FrameWriter {
         }
         for _ in 0..64 {
             if self.offset == self.bytes.len() {
+                self.reservation = None;
                 self.bytes.clear();
                 self.offset = 0;
                 return Poll::Ready(Ok(()));
@@ -80,6 +86,7 @@ impl FrameWriter {
                 }
                 Poll::Ready(Ok(_)) => ErrorKind::InvalidData,
             };
+            self.reservation = None;
             self.failed = true;
             self.bytes = Vec::new();
             return Poll::Ready(Err(FramingError::Io(error)));

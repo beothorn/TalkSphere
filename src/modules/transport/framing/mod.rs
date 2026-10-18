@@ -29,6 +29,7 @@ pub enum FramingError {
 
 /// Complete but unverified bytes. Header and payload lengths are consistent.
 pub struct WireFrame {
+    pub(crate) reservation: Option<super::resources::Reservation>,
     header: FrameHeader,
     payload: Vec<u8>,
     tag: Option<[u8; 16]>,
@@ -48,6 +49,7 @@ impl WireFrame {
             return Err(FramingError::Shape);
         }
         Ok(Self {
+            reservation: None,
             header,
             payload,
             tag,

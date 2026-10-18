@@ -74,3 +74,11 @@ deadline for the connection clock. No timer sleeps inside protocol state.
 
 [Graceful draining](session/drain.md) validates GOAWAY bounds, refuses higher
 local streams and prevents new local streams after either endpoint begins drain.
+
+When composed by Connection, configured shared budgets replace standalone
+defaults. All output, including control frames and in-flight writes, counts
+against the same serialized-byte limit. Local OPEN checks stream/event/output
+capacity before consuming an ID. A valid next remote OPEN beyond the active
+stream limit is consumed and refused with RESOURCE_LIMIT. DATA buffering uses
+the configured per-stream byte limit. Metadata event counts are bounded too;
+consumer saturation closes with a resource failure rather than growing forever.

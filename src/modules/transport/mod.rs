@@ -20,6 +20,7 @@ pub mod handles;
 pub mod handshake;
 pub mod integrity;
 pub mod ports;
+pub mod resources;
 pub mod stream;
 
 #[cfg(test)]

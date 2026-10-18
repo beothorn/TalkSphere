@@ -33,6 +33,8 @@ pub struct Options {
 
 /// One owned socket and its transient credentials; dropping closes/releases them.
 pub struct Connection<C: Cryptography> {
+    resources: super::resources::Resources,
+    admission: Option<super::resources::Reservation>,
     handle: ConnectionHandle,
     socket: Option<Box<dyn Socket>>,
     reader: FrameReader,
@@ -60,16 +62,47 @@ impl<C: Cryptography> Connection<C> {
         identity: &impl Identity,
         crypto: &mut C,
     ) -> Result<Self, Disposition> {
+        Self::begin_shared(
+            socket,
+            options,
+            config,
+            now,
+            identity,
+            crypto,
+            super::resources::Resources::new(*config.limits()),
+        )
+    }
+
+    /// Admit a socket against shared instance-wide limits before credential allocation.
+    /// # Errors
+    /// Returns resource failure without starting authentication when capacity is full.
+    pub fn begin_shared(
+        socket: Box<dyn Socket>,
+        options: Options,
+        config: TransportConfig,
+        now: Instant,
+        identity: &impl Identity,
+        crypto: &mut C,
+        resources: super::resources::Resources,
+    ) -> Result<Self, Disposition> {
         tracing::trace!(
             function = "Connection::begin",
             "Beginning an owned connection handshake"
         );
         let mut socket = socket;
+        let Some(admission) = resources.connection() else {
+            let _ = socket.close();
+            return Err(local_failure(FailureCode::ResourceLimit));
+        };
+        let Some(hello_reservation) = resources.outbound(112) else {
+            let _ = socket.close();
+            return Err(local_failure(FailureCode::ResourceLimit));
+        };
         let Some(deadline) = now.checked_add(config.handshake_timeout()) else {
             let _ = socket.close();
             return Err(local_failure(FailureCode::Internal));
         };
-        let (handshake, hello) =
+        let (handshake, mut hello) =
             match Handshake::begin(options.role, options.expected_peer, identity, crypto) {
                 Ok(value) => value,
                 Err(error) => {
@@ -77,7 +110,10 @@ impl<C: Cryptography> Connection<C> {
                     return Err(Disposition::handshake(error));
                 }
             };
+        hello.reservation = Some(hello_reservation);
         Ok(Self {
+            resources,
+            admission: Some(admission),
             handle: ConnectionHandle::new(),
             socket: Some(socket),
             reader: FrameReader::default(),
@@ -214,6 +250,9 @@ impl<C: Cryptography> Connection<C> {
                 established.local_identity,
                 established.peer_identity,
             ));
+            if let Some(session) = &mut self.session {
+                session.set_resources(self.resources.clone());
+            }
             self.integrity = Some(Integrity::new(established.keys));
             self.handshake = None;
         }
@@ -270,8 +309,11 @@ impl<C: Cryptography> Connection<C> {
                 connection: self.handle.id().clone(),
                 failure: Some(disposition.failure),
             });
-            if let Some(frame) = error_frame(code) {
-                self.handshake_output.push_back(frame);
+            if let Some(mut frame) = error_frame(code) {
+                frame.reservation = self.resources.outbound(frame.payload().len() + 12);
+                if frame.reservation.is_some() {
+                    self.handshake_output.push_back(frame);
+                }
             }
         }
     }
@@ -285,6 +327,7 @@ impl<C: Cryptography> Connection<C> {
         if let Some(mut socket) = self.socket.take() {
             let _ = socket.close();
         }
+        self.admission = None;
         self.handshake = None;
         self.integrity = None;
         self.handshake_output.clear();

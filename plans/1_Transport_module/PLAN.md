@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–19 are implemented and checked; steps 20–24 have not been started.
+Status: steps 1–20 are implemented and checked; steps 21–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -37,7 +37,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **17.** Add ping requests with response matching and timeouts.
 - [x] **18.** Implement graceful connection shutdown with GOAWAY.
 - [x] **19.** Enforce handshake deadlines and release connection resources on closure.
-- [ ] **20.** Enforce limits on connections, streams and queued bytes.
+- [x] **20.** Enforce limits on connections, streams and queued bytes.
 - [ ] **21.** Schedule active streams fairly when consumers or sockets are slow.
 - [ ] **22.** Add TCP adapters for outgoing and incoming connections.
 - [ ] **23.** Verify Transport behavior against the upstream acceptance cases.
@@ -369,6 +369,8 @@ Test TR-15 at and beyond each boundary, including cancellation/drain while
 queues are full and recovery of released capacity. Resource refusal must not
 look like normal completion; connection-level limits must also cover the TCP
 admission path added in step 22.
+
+Completed: Shared reservations enforce connection admission and serialized queued/in-flight byte limits across connection owners. Sessions enforce configured active-stream and consumer-byte limits plus finite metadata events; cancellation releases queued capacity and resource refusal remains distinct from completion. All 152 tests and required checks passed; production coverage is 93.32% (2097/2247). TCP admission uses these same shared budgets in step 22.
 
 ### 21. Fair scheduling under backpressure
 

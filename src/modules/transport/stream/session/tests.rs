@@ -742,3 +742,46 @@ fn exhausted_numbering_drains() {
     );
     assert_eq!(state.open(&registry, &owner), Err(SessionError::Draining));
 }
+
+// Configured stream limits refuse remote OPEN after consuming its ID and recover when streams close.
+#[test]
+fn configured_limits_and_cancellation_recover_capacity() {
+    use crate::modules::transport::{config::ResourceLimits, resources::Resources};
+    let (mut state, registry, owner) = setup();
+    let resources = Resources::new(ResourceLimits {
+        connections: 1,
+        streams_per_connection: 1,
+        outbound_bytes: MAX_PAYLOAD_BYTES + 28,
+        buffered_bytes_per_stream: MAX_PAYLOAD_BYTES,
+    });
+    state.set_resources(resources.clone());
+    let stream = state.open(&registry, &owner).unwrap();
+    assert_eq!(state.open(&registry, &owner), Err(SessionError::Capacity));
+    state
+        .receive_parts(
+            FrameType::Open,
+            2,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+            &registry,
+        )
+        .unwrap();
+    assert!(state.ids.was_created(2));
+    assert_eq!(
+        ErrorPayload::decode(state.outbound.back().unwrap().payload())
+            .unwrap()
+            .code(),
+        ErrorCode::ResourceLimit
+    );
+    while state.pop_outbound().is_some() {}
+    state
+        .send(&owner, &stream, vec![1; MAX_PAYLOAD_BYTES])
+        .unwrap();
+    assert_eq!(resources.outbound_bytes(), MAX_PAYLOAD_BYTES + 28);
+    state
+        .cancel(&owner, &stream, CancellationReason::ResourceLimit)
+        .unwrap();
+    assert_eq!(resources.outbound_bytes(), 32);
+    while state.pop_outbound().is_some() {}
+    assert_eq!(resources.outbound_bytes(), 0);
+    assert!(state.open(&registry, &owner).is_ok());
+}

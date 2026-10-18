@@ -11,3 +11,7 @@ accepted byte offsets until the entire frame has been sent. Pending arranges a
 wakeup; an empty writer returns success. Zero writes or socket failures latch
 the writer closed and discard queued bytes. is_busy reports unfinished bytes.
 No delivery acknowledgement or peer processing is implied by a successful flush.
+
+For budgeted frames, a partial write retains the serialized-byte reservation.
+Completion, write failure or dropping the writer releases it, preventing queue
+transfer from falsely advertising free capacity while bytes remain in flight.

@@ -4,7 +4,7 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–19 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–20 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
 deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
 `transport::start()` still returns the typed local error

@@ -26,9 +26,8 @@ impl Session {
             return Err(SessionError::Capacity);
         }
         let deadline = now.checked_add(timeout).ok_or(SessionError::Protocol)?;
+        self.queue(frame(FrameType::Ping, 0, token.to_vec())?)?;
         self.pings.insert(token, (now, deadline));
-        self.outbound
-            .push_back(frame(FrameType::Ping, 0, token.to_vec())?);
         Ok(())
     }
 
@@ -81,8 +80,7 @@ impl Session {
             .map_err(|_| SessionError::Protocol)?
             .encode();
         if kind == FrameType::Ping {
-            self.outbound
-                .push_back(frame(FrameType::Pong, 0, token.to_vec())?);
+            self.queue(frame(FrameType::Pong, 0, token.to_vec())?)?;
         } else if let Some((started, _)) = self.pings.remove(&token) {
             let elapsed = self
                 .now

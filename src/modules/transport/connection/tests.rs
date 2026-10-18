@@ -306,3 +306,39 @@ fn authenticated_connection_preserves_handle_and_releases_keys() {
         crypto.0.assert_finished();
     }
 }
+
+// Shared admission refuses a socket before any credential call, then recovers after reservation release.
+#[test]
+fn connection_limit_precedes_authentication() {
+    use crate::modules::transport::resources::Resources;
+    let resources = Resources::new(*config().limits());
+    let first = resources.connection().unwrap();
+    let second = resources.connection().unwrap();
+    let (socket, control) = ScriptedSocket::new();
+    let identity = ScriptedIdentity(Script::new([]));
+    let mut crypto = ScriptedCryptography(Script::new([]));
+    let result = Connection::begin_shared(
+        Box::new(socket),
+        Options {
+            role: ConnectionRole::Acceptor,
+            expected_peer: ExpectedPeer::Unpinned,
+        },
+        config(),
+        Instant::now(),
+        &identity,
+        &mut crypto,
+        resources.clone(),
+    );
+    assert_eq!(
+        result.err().unwrap().failure.code,
+        FailureCode::ResourceLimit
+    );
+    assert!(control.is_closed());
+    assert_eq!(resources.connections(), 2);
+    drop(first);
+    drop(second);
+    assert_eq!(resources.connections(), 0);
+    assert_eq!(resources.outbound_bytes(), 0);
+    assert!(identity.0.calls().is_empty());
+    assert!(crypto.0.calls().is_empty());
+}

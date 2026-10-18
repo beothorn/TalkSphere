@@ -66,6 +66,7 @@ impl FrameReader {
                     self.offset = 0;
                     self.phase = None;
                     return Poll::Ready(Ok(Some(WireFrame {
+                        reservation: None,
                         header,
                         payload: bytes,
                         tag,

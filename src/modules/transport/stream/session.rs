@@ -57,6 +57,7 @@ pub(super) struct StreamState {
 
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
+    resources: super::super::resources::Resources,
     accepted_remote: u32,
     peer_goaway: Option<u32>,
     goaway_sent: bool,
@@ -105,6 +106,14 @@ impl Session {
             peer_identity,
         };
         Self {
+            resources: super::super::resources::Resources::new(
+                super::super::config::ResourceLimits {
+                    connections: 1,
+                    streams_per_connection: 256,
+                    outbound_bytes: 4 * (MAX_PAYLOAD_BYTES + 28),
+                    buffered_bytes_per_stream: MAX_PAYLOAD_BYTES,
+                },
+            ),
             accepted_remote: 0,
             peer_goaway: None,
             goaway_sent: false,
@@ -119,6 +128,43 @@ impl Session {
             events: VecDeque::from([Event::Authenticated(context)]),
             outbound: VecDeque::new(),
         }
+    }
+
+    // Bound metadata events as well as payload bytes when composition stops consuming.
+    fn event_limit(&self) -> usize {
+        tracing::trace!(
+            function = "Session::event_limit",
+            "Calculating finite consumer event capacity"
+        );
+        self.resources
+            .limits()
+            .streams_per_connection
+            .saturating_mul(4)
+            .saturating_add(130)
+    }
+
+    // Attach the parent's shared budgets before the session accepts any stream work.
+    pub(crate) fn set_resources(&mut self, resources: super::super::resources::Resources) {
+        tracing::trace!(
+            function = "Session::set_resources",
+            "Attaching instance-wide resource limits"
+        );
+        self.resources = resources;
+    }
+
+    // All control and application output shares one finite serialized-byte budget.
+    fn queue(&mut self, mut output: WireFrame) -> Result<(), SessionError> {
+        tracing::trace!(
+            function = "Session::queue",
+            "Admitting bounded session output"
+        );
+        output.reservation = Some(
+            self.resources
+                .outbound(output.payload().len() + 28)
+                .ok_or(SessionError::Capacity)?,
+        );
+        self.outbound.push_back(output);
+        Ok(())
     }
 
     /// Borrow this connection's control capability for trusted composition.
@@ -146,6 +192,15 @@ impl Session {
         let payload = Open::new(&protocol.id, protocol.version)
             .map_err(|_| SessionError::Protocol)?
             .encode();
+        if self.events.len() >= self.event_limit()
+            || self.streams.len() >= self.resources.limits().streams_per_connection
+        {
+            return Err(SessionError::Capacity);
+        }
+        let reservation = self
+            .resources
+            .outbound(payload.len() + 28)
+            .ok_or(SessionError::Capacity)?;
         let id = match self.ids.allocate() {
             Ok(id) => id,
             Err(error) => {
@@ -154,8 +209,9 @@ impl Session {
             }
         };
         let handle = self.add(id, owner, protocol.clone())?;
-        self.outbound
-            .push_back(frame(FrameType::Open, id, payload)?);
+        let mut output = frame(FrameType::Open, id, payload)?;
+        output.reservation = Some(reservation);
+        self.outbound.push_back(output);
         Ok(handle)
     }
 
@@ -185,16 +241,7 @@ impl Session {
         if bytes.is_empty() || bytes.len() > MAX_PAYLOAD_BYTES {
             return Err(SessionError::InvalidData);
         }
-        let queued: usize = self
-            .outbound
-            .iter()
-            .map(|frame| frame.payload().len() + 28)
-            .sum();
-        if queued + bytes.len() + 28 > 4 * (MAX_PAYLOAD_BYTES + 28) {
-            return Err(SessionError::Capacity);
-        }
-        self.outbound
-            .push_back(frame(FrameType::Data, stream.wire_id().get(), bytes)?);
+        self.queue(frame(FrameType::Data, stream.wire_id().get(), bytes)?)?;
         Ok(())
     }
 
@@ -219,9 +266,10 @@ impl Session {
         if !state.local_open {
             return Err(SessionError::Protocol);
         }
+        let mut output = frame(FrameType::End, stream.wire_id().get(), vec![])?;
+        output.reservation = Some(self.resources.outbound(28).ok_or(SessionError::Capacity)?);
         state.local_open = false;
-        self.outbound
-            .push_back(frame(FrameType::End, stream.wire_id().get(), vec![])?);
+        self.outbound.push_back(output);
         Ok(())
     }
 
@@ -263,8 +311,15 @@ impl Session {
         let payload = ErrorPayload::new(code, "")
             .map_err(|_| SessionError::Protocol)?
             .encode();
-        self.outbound
-            .push_back(frame(FrameType::Cancel, id, payload)?);
+        if self.queue(frame(FrameType::Cancel, id, payload)?).is_err() {
+            self.close(
+                Some(Failure {
+                    origin: FailureOrigin::Local,
+                    code: FailureCode::ResourceLimit,
+                }),
+                None,
+            );
+        }
         Ok(())
     }
 
@@ -302,6 +357,16 @@ impl Session {
             return Err(SessionError::Closed);
         }
         self.tick(now);
+        if self.events.len() >= self.event_limit() {
+            self.close(
+                Some(Failure {
+                    origin: FailureOrigin::Local,
+                    code: FailureCode::ResourceLimit,
+                }),
+                None,
+            );
+            return Err(SessionError::Capacity);
+        }
         let result = self.receive_parts(
             frame.header().frame_type(),
             frame.header().stream_id(),
@@ -312,9 +377,17 @@ impl Session {
             self.close(
                 Some(Failure {
                     origin: FailureOrigin::Local,
-                    code: FailureCode::ProtocolViolation,
+                    code: if result == Err(SessionError::Capacity) {
+                        FailureCode::ResourceLimit
+                    } else {
+                        FailureCode::ProtocolViolation
+                    },
                 }),
-                Some(ErrorCode::ProtocolError),
+                Some(if result == Err(SessionError::Capacity) {
+                    ErrorCode::ResourceLimit
+                } else {
+                    ErrorCode::ProtocolError
+                }),
             );
         }
         result
@@ -358,7 +431,7 @@ impl Session {
             && let Ok(payload) = ErrorPayload::new(code, "")
             && let Ok(frame) = frame(FrameType::Error, 0, payload.encode())
         {
-            self.outbound.push_back(frame);
+            let _ = self.queue(frame);
         }
     }
 
@@ -482,7 +555,7 @@ impl Session {
                     _ => None,
                 })
                 .sum();
-            if buffered + payload.len() > MAX_PAYLOAD_BYTES {
+            if buffered + payload.len() > self.resources.limits().buffered_bytes_per_stream {
                 return self.fail_stream(id, ErrorCode::ResourceLimit, FailureCode::ResourceLimit);
             }
             self.events.push_back(Event::Data {
@@ -497,6 +570,9 @@ impl Session {
         self.ids.accept(id).map_err(SessionError::Id)?;
         if self.goaway_sent || self.peer_goaway.is_some() {
             return self.refuse(id, ErrorCode::RefusedStream);
+        }
+        if self.streams.len() >= self.resources.limits().streams_per_connection {
+            return self.refuse(id, ErrorCode::ResourceLimit);
         }
         let selection = match Open::decode(&payload) {
             Ok(value) => value,
@@ -615,8 +691,7 @@ impl Session {
         let payload = ErrorPayload::new(code, "")
             .map_err(|_| SessionError::Protocol)?
             .encode();
-        self.outbound
-            .push_back(frame(FrameType::Error, id, payload)?);
+        self.queue(frame(FrameType::Error, id, payload)?)?;
         Ok(())
     }
 }

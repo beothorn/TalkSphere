@@ -26,8 +26,7 @@ impl Session {
         let payload = GoAway::new(self.accepted_remote, code, "")
             .map_err(|_| SessionError::Protocol)?
             .encode();
-        self.outbound
-            .push_back(frame(FrameType::GoAway, 0, payload)?);
+        self.queue(frame(FrameType::GoAway, 0, payload)?)?;
         self.goaway_sent = true;
         Ok(())
     }

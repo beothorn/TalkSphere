@@ -9,3 +9,7 @@ FramingError distinguishes Header errors, Truncated input, socket Io errors,
 Closed state, a PhaseChanged caller error, local Shape mismatch and writer Busy.
 These are local outcomes, not wire codes. The future connection driver maps them
 to safe closure/error responses. FrameReader and FrameWriter are re-exported.
+
+Internally, admitted outgoing frames retain a shared byte reservation. Ownership
+transfer through integrity and the writer preserves that reservation until full
+output or discard; decoded incoming frames carry no outbound reservation.
