@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–8 are implemented and checked; steps 9–24 have not been started.
+Status: steps 1–9 are implemented and checked; steps 10–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -26,7 +26,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **6.** Implement HELLO and AUTH handshake payload formats.
 - [x] **7.** Construct authentication transcripts and directional key derivation requests.
 - [x] **8.** Implement handshake sequencing and peer identity checks.
-- [ ] **9.** Add frame integrity verification and replay protection.
+- [x] **9.** Add frame integrity verification and replay protection.
 - [ ] **10.** Implement stream-opening payload encoding and validation.
 - [ ] **11.** Allocate and validate stream identifiers in the required order.
 - [ ] **12.** Route new streams to registered protocol handlers.
@@ -224,6 +224,8 @@ only after complete verification, dispatch nothing on failure, and close
 without sending an error on tag failure. Exercise wrong directions, replay,
 old-connection material and exhaustion; retain real mutation/vector tests as
 explicitly pending until real cryptography is integrated.
+
+Completed: Directional integrity state authenticates exact header/payload bytes, advances counters only after successful verification or complete writes, and releases keys on integrity failure or sequence exhaustion. Unit tests cover fixed-vector requests, replay rejection, wrong-direction tags, malformed tag presence and counter boundaries. Formatting, Clippy, all 116 tests, build and overview/detailed help passed; production line coverage is 96.91% (972/1003). Scripted primitives do not establish real cryptographic correctness.
 
 ### 10. Stream-opening payloads
 

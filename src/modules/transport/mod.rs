@@ -16,6 +16,7 @@ mod error;
 pub mod framing;
 pub mod handles;
 pub mod handshake;
+pub mod integrity;
 pub mod ports;
 
 #[cfg(test)]

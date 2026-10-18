@@ -14,9 +14,10 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–8, its public interface,
+**Current status:** project setup and Transport steps 1–9, its public interface,
 deterministic dependency test helpers, frame headers and control/error payload
-codecs and bounded frame I/O are implemented and tested. There is no
+codecs, bounded frame I/O, handshake sequencing and frame integrity state are
+implemented and tested with injected cryptography. There is no
 working server, socket listener or real-cryptography interoperability yet.
 `serve` returns an explicit not-implemented error.
 
