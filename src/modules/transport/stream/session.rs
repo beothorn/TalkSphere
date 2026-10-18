@@ -43,12 +43,19 @@ pub enum SessionError {
     Framing(FramingError),
 }
 
+pub(super) struct StreamState {
+    handle: StreamHandle,
+    local_open: bool,
+    remote_open: bool,
+    local_end_written: bool,
+}
+
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
     pub(super) handle: ConnectionHandle,
     pub(super) context: PeerContext,
     pub(super) ids: StreamIds,
-    pub(super) streams: BTreeMap<u32, StreamHandle>,
+    pub(super) streams: BTreeMap<u32, StreamState>,
     pub(super) events: VecDeque<Event>,
     pub(super) outbound: VecDeque<WireFrame>,
 }
@@ -121,7 +128,11 @@ impl Session {
         stream
             .authorize(self.handle.id(), owner)
             .map_err(SessionError::Authority)?;
-        if !self.streams.contains_key(&stream.wire_id().get()) {
+        if !self
+            .streams
+            .get(&stream.wire_id().get())
+            .is_some_and(|state| state.local_open)
+        {
             return Err(SessionError::Protocol);
         }
         if bytes.is_empty() || bytes.len() > MAX_PAYLOAD_BYTES {
@@ -138,6 +149,44 @@ impl Session {
         self.outbound
             .push_back(frame(FrameType::Data, stream.wire_id().get(), bytes)?);
         Ok(())
+    }
+
+    /// Queue END for the local direction without closing the peer's direction.
+    /// # Errors
+    /// Rejects foreign authority, inactive streams or a repeated local END.
+    pub fn end(&mut self, owner: &StreamOwner, stream: &StreamHandle) -> Result<(), SessionError> {
+        tracing::trace!(
+            function = "Session::end",
+            "Half-closing local stream output"
+        );
+        stream
+            .authorize(self.handle.id(), owner)
+            .map_err(SessionError::Authority)?;
+        let state = self
+            .streams
+            .get_mut(&stream.wire_id().get())
+            .ok_or(SessionError::Protocol)?;
+        if !state.local_open {
+            return Err(SessionError::Protocol);
+        }
+        state.local_open = false;
+        self.outbound
+            .push_back(frame(FrameType::End, stream.wire_id().get(), vec![])?);
+        Ok(())
+    }
+
+    /// Report a fully written frame; normal completion waits for local END delivery.
+    pub fn sent(&mut self, kind: FrameType, id: u32) {
+        tracing::trace!(
+            function = "Session::sent",
+            "Recording stream output completion"
+        );
+        if kind == FrameType::End {
+            if let Some(state) = self.streams.get_mut(&id) {
+                state.local_end_written = !state.local_open;
+            }
+            self.complete(id);
+        }
     }
 
     /// Dispatch a frame only after successful integrity verification.
@@ -190,12 +239,24 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if kind == FrameType::End {
+            let state = self.streams.get_mut(&id).ok_or(SessionError::Protocol)?;
+            if !payload.is_empty() || !state.remote_open {
+                return self.fail_stream(id, ErrorCode::StreamStateError, FailureCode::StreamState);
+            }
+            state.remote_open = false;
+            self.events.push_back(Event::RemoteEnd {
+                stream: state.handle.clone(),
+            });
+            self.complete(id);
+            return Ok(());
+        }
         if kind == FrameType::Data {
-            let stream = self
-                .streams
-                .get(&id)
-                .cloned()
-                .ok_or(SessionError::Protocol)?;
+            let state = self.streams.get(&id).ok_or(SessionError::Protocol)?;
+            if !state.remote_open {
+                return self.fail_stream(id, ErrorCode::StreamStateError, FailureCode::StreamState);
+            }
+            let stream = state.handle.clone();
             if payload.is_empty() || payload.len() > MAX_PAYLOAD_BYTES {
                 return self.fail_stream(id, ErrorCode::StreamStateError, FailureCode::StreamState);
             }
@@ -253,13 +314,40 @@ impl Session {
         );
         let wire_id = NonZeroU32::new(id).ok_or(SessionError::Protocol)?;
         let stream = StreamHandle::new(&self.handle, owner, wire_id);
-        self.streams.insert(id, stream.clone());
+        self.streams.insert(
+            id,
+            StreamState {
+                handle: stream.clone(),
+                local_open: true,
+                remote_open: true,
+                local_end_written: false,
+            },
+        );
         self.events.push_back(Event::StreamOpened {
             context: self.context.clone(),
             stream: stream.clone(),
             protocol,
         });
         Ok(stream)
+    }
+
+    // A queued END is insufficient: successful output and remote END must both hold.
+    fn complete(&mut self, id: u32) {
+        tracing::trace!(
+            function = "Session::complete",
+            "Checking both stream directions for completion"
+        );
+        if self
+            .streams
+            .get(&id)
+            .is_some_and(|state| !state.remote_open && state.local_end_written)
+            && let Some(state) = self.streams.remove(&id)
+        {
+            self.events.push_back(Event::StreamClosed {
+                stream: state.handle,
+                outcome: StreamOutcome::Completed,
+            });
+        }
     }
 
     // Isolate malformed or overflowing active streams and preserve unrelated work.
@@ -273,7 +361,8 @@ impl Session {
             function = "Session::fail_stream",
             "Terminating an affected stream"
         );
-        if let Some(stream) = self.streams.remove(&id) {
+        if let Some(state) = self.streams.remove(&id) {
+            let stream = state.handle;
             self.events.push_back(Event::StreamClosed {
                 stream,
                 outcome: StreamOutcome::Failed(Failure {

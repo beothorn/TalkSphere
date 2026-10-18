@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–13 are implemented and checked; steps 14–24 have not been started.
+Status: steps 1–14 are implemented and checked; steps 15–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -31,7 +31,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **11.** Allocate and validate stream identifiers in the required order.
 - [x] **12.** Route new streams to registered protocol handlers.
 - [x] **13.** Exchange ordered data across multiple bidirectional streams.
-- [ ] **14.** Support independent stream half-closing and normal completion.
+- [x] **14.** Support independent stream half-closing and normal completion.
 - [ ] **15.** Implement stream cancellation and terminal-state handling.
 - [ ] **16.** Apply the required stream-level and connection-level error responses.
 - [ ] **17.** Add ping requests with response matching and timeouts.
@@ -288,6 +288,8 @@ directions, and reject DATA or repeated END after the sender's own END.
 Test both half-close orders, nonempty END payloads and isolated stream-state
 errors from TR-09. Use TR-14 to ensure EOF cannot turn an unfinished stream
 into a normal completion, even when expected-looking bytes have arrived.
+
+Completed: Independent local/remote END state preserves the opposite direction and emits completion only after remote END plus a fully written local END. Tests cover both close orders, repeated/nonempty END, DATA after END and isolated stream errors. All 131 tests and required checks passed; production coverage is 96.80% (1360/1405). EOF cleanup is composed in the following error/closure steps.
 
 ### 15. Cancellation and terminal streams
 

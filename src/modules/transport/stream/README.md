@@ -2,7 +2,7 @@
 
 This domain owns per-connection stream numbering, authorized protocol
 registration, queued OPEN dispatch and bounded bidirectional DATA; lifecycle
-state follows in later steps. It depends on the TCP role contract;
+state now supports independent END directions and completion after full END output. It depends on the TCP role contract;
 framing and cryptography remain separate responsibilities. The connection
 owner serializes mutations and retains only high-water marks for terminal IDs.
 

@@ -33,3 +33,15 @@ bytes form the application stream; event/frame boundaries are not messages.
 Invalid DATA terminates only its active stream with STREAM_STATE_ERROR.
 Incoming queued DATA is capped at 65,536 bytes per stream; overflow fails that
 stream with RESOURCE_LIMIT. Popping data events releases their buffering.
+
+`end(owner, stream)` queues an empty END and closes only local production.
+The opposite receive direction remains usable. Repeated local END or DATA after
+local END is rejected without queueing. Verified peer END must be empty and may
+occur once; it queues `RemoteEnd`. Peer DATA after its END, repeated END and
+nonempty END terminate only that stream with STREAM_STATE_ERROR.
+
+`sent(type, id)` is called by the writer only after a whole frame succeeds.
+Normal completion is emitted exactly once when peer END was received and local
+END was fully written; merely queueing local END is insufficient. The active
+entry is then removed while ID history remains. Connection cleanup of unfinished
+streams is implemented in the later error/cleanup steps.

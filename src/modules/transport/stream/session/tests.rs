@@ -128,7 +128,7 @@ fn multiplexed_bidirectional_bytes_preserve_order() {
             &registry,
         )
         .unwrap();
-    let remote = state.streams[&2].clone();
+    let remote = state.streams[&2].handle.clone();
     for (stream, bytes) in [
         (&local, b"a".to_vec()),
         (&remote, b"xyz".to_vec()),
@@ -230,4 +230,90 @@ fn empty_peer_data_is_a_stream_error() {
             ..
         }
     )));
+}
+
+// Either peer can end first; the opposite direction works until both ENDs complete.
+#[test]
+fn independent_half_close_orders_and_write_completion() {
+    for remote_first in [false, true] {
+        let (mut state, registry, owner) = setup();
+        let stream = state.open(&registry, &owner).unwrap();
+        if remote_first {
+            state
+                .receive_parts(FrameType::End, 1, vec![], &registry)
+                .unwrap();
+            state.send(&owner, &stream, vec![1]).unwrap();
+            state.end(&owner, &stream).unwrap();
+        } else {
+            state.end(&owner, &stream).unwrap();
+            state
+                .receive_parts(FrameType::Data, 1, vec![2], &registry)
+                .unwrap();
+            state
+                .receive_parts(FrameType::End, 1, vec![], &registry)
+                .unwrap();
+        }
+        assert!(state.streams.contains_key(&1));
+        assert!(
+            !state
+                .events
+                .iter()
+                .any(|e| matches!(e, Event::StreamClosed { .. }))
+        );
+        assert_eq!(
+            state.send(&owner, &stream, vec![1]),
+            Err(SessionError::Protocol)
+        );
+        assert_eq!(state.end(&owner, &stream), Err(SessionError::Protocol));
+        state.sent(FrameType::End, 1);
+        state.sent(FrameType::End, 1);
+        state.sent(FrameType::Data, 1);
+        assert!(!state.streams.contains_key(&1));
+        assert_eq!(
+            state
+                .events
+                .iter()
+                .filter(|e| matches!(
+                    e,
+                    Event::StreamClosed {
+                        outcome: StreamOutcome::Completed,
+                        ..
+                    }
+                ))
+                .count(),
+            1
+        );
+    }
+}
+
+// Repeated END, nonempty END and DATA after peer END fail only that active stream.
+#[test]
+fn invalid_peer_half_close_sequences_are_isolated() {
+    for (kind, payload, end_first) in [
+        (FrameType::End, vec![1], false),
+        (FrameType::End, vec![], true),
+        (FrameType::Data, vec![1], true),
+    ] {
+        let (mut state, registry, owner) = setup();
+        state.open(&registry, &owner).unwrap();
+        let unaffected = state.open(&registry, &owner).unwrap();
+        if end_first {
+            state
+                .receive_parts(FrameType::End, 1, vec![], &registry)
+                .unwrap();
+        }
+        state.receive_parts(kind, 1, payload, &registry).unwrap();
+        assert!(!state.streams.contains_key(&1));
+        state.send(&owner, &unaffected, vec![7]).unwrap();
+        assert!(state.events.iter().any(|e| matches!(
+            e,
+            Event::StreamClosed {
+                outcome: StreamOutcome::Failed(Failure {
+                    code: FailureCode::StreamState,
+                    ..
+                }),
+                ..
+            }
+        )));
+    }
 }
