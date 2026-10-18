@@ -82,3 +82,7 @@ capacity before consuming an ID. A valid next remote OPEN beyond the active
 stream limit is consumed and refused with RESOURCE_LIMIT. DATA buffering uses
 the configured per-stream byte limit. Metadata event counts are bounded too;
 consumer saturation closes with a resource failure rather than growing forever.
+
+[Fair scheduling](session/scheduler.md) rotates whole output frames among ready
+streams and permits independent consumer-event polling while preserving OPEN
+allocation order, per-stream order and the single writer's partial frame.

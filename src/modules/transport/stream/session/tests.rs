@@ -785,3 +785,94 @@ fn configured_limits_and_cancellation_recover_capacity() {
     assert_eq!(resources.outbound_bytes(), 0);
     assert!(state.open(&registry, &owner).is_ok());
 }
+
+// A busy stream yields whole frames to a smaller operation while OPEN IDs stay in order.
+#[test]
+fn round_robin_preserves_open_order_and_per_stream_bytes() {
+    let (mut state, registry, owner) = setup();
+    let first = state.open(&registry, &owner).unwrap();
+    for byte in 0..5 {
+        state.send(&owner, &first, vec![byte]).unwrap();
+    }
+    let second = state.open(&registry, &owner).unwrap();
+    state.send(&owner, &second, vec![9]).unwrap();
+    let mut selected = vec![];
+    let mut first_bytes = vec![];
+    while let Some(frame) = state.pop_outbound() {
+        selected.push((frame.header().frame_type(), frame.header().stream_id()));
+        if frame.header().frame_type() == FrameType::Data && frame.header().stream_id() == 1 {
+            first_bytes.extend(frame.into_payload());
+        }
+    }
+    assert_eq!(
+        &selected[..4],
+        &[
+            (FrameType::Open, 1),
+            (FrameType::Open, 3),
+            (FrameType::Data, 1),
+            (FrameType::Data, 3)
+        ]
+    );
+    assert_eq!(first_bytes, vec![0, 1, 2, 3, 4]);
+}
+
+// One blocked consumer can overflow its own stream without preventing another owner's progress.
+#[test]
+fn independent_consumers_avoid_head_of_line_blocking() {
+    let (mut state, mut registry, slow_owner) = setup();
+    let fast_owner = registry
+        .register(Protocol {
+            id: "org.example.fast".into(),
+            version: 1,
+        })
+        .unwrap();
+    let slow = state.open(&registry, &slow_owner).unwrap();
+    let fast = state.open(&registry, &fast_owner).unwrap();
+    state
+        .receive_parts(
+            FrameType::Data,
+            slow.wire_id().get(),
+            vec![1; MAX_PAYLOAD_BYTES],
+            &registry,
+        )
+        .unwrap();
+    state
+        .receive_parts(FrameType::Data, fast.wire_id().get(), vec![9], &registry)
+        .unwrap();
+    assert!(matches!(
+        state.pop_stream_event(&fast_owner),
+        Some(Event::StreamOpened { .. })
+    ));
+    assert!(
+        matches!(state.pop_stream_event(&fast_owner), Some(Event::Data { bytes, .. }) if bytes == [9])
+    );
+    assert!(state.pop_stream_event(&fast_owner).is_none());
+    state
+        .receive_parts(FrameType::Data, slow.wire_id().get(), vec![2], &registry)
+        .unwrap();
+    assert!(!state.streams.contains_key(&slow.wire_id().get()));
+    state
+        .receive_parts(FrameType::Data, fast.wire_id().get(), vec![8], &registry)
+        .unwrap();
+    assert!(
+        matches!(state.pop_stream_event(&fast_owner), Some(Event::Data { bytes, .. }) if bytes == [8])
+    );
+}
+
+// GOAWAY cannot overtake queued OPENs even when control traffic receives a scheduling turn.
+#[test]
+fn drain_respects_queued_open_barrier() {
+    let (mut state, registry, owner) = setup();
+    state.open(&registry, &owner).unwrap();
+    state.open(&registry, &owner).unwrap();
+    state
+        .drain(crate::modules::transport::api::ShutdownReason::Normal)
+        .unwrap();
+    let kinds: Vec<_> = std::iter::from_fn(|| state.pop_outbound())
+        .map(|f| f.header().frame_type())
+        .collect();
+    assert_eq!(
+        kinds,
+        vec![FrameType::Open, FrameType::Open, FrameType::GoAway]
+    );
+}

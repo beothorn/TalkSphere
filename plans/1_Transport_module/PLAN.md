@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–20 are implemented and checked; steps 21–24 have not been started.
+Status: steps 1–21 are implemented and checked; steps 22–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -38,7 +38,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **18.** Implement graceful connection shutdown with GOAWAY.
 - [x] **19.** Enforce handshake deadlines and release connection resources on closure.
 - [x] **20.** Enforce limits on connections, streams and queued bytes.
-- [ ] **21.** Schedule active streams fairly when consumers or sockets are slow.
+- [x] **21.** Schedule active streams fairly when consumers or sockets are slow.
 - [ ] **22.** Add TCP adapters for outgoing and incoming connections.
 - [ ] **23.** Verify Transport behavior against the upstream acceptance cases.
 - [ ] **24.** Document completed coverage and the remaining real-cryptography integration.
@@ -382,6 +382,8 @@ backpressure or cancelling an affected stream when safe.
 Test TR-02, TR-09 and TR-15 with short writes, a blocked consumer and several
 active streams; assert progress where the socket permits it and bounded memory
 where it does not. Do not invent wire-level flow-control frames.
+
+Completed: Whole-frame round-robin scheduling preserves per-stream order, global OPEN numbering and GOAWAY barriers. Independent consumer polling and per-stream overflow isolation prevent a blocked consumer from stopping unrelated progress; the existing partial writer keeps frame bytes contiguous and budgeted. All 155 tests and required checks passed; production coverage is 93.40% (2138/2289).
 
 ### 22. TCP adapters
 

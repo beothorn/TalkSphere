@@ -57,6 +57,7 @@ pub(super) struct StreamState {
 
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
+    last_output: Option<u32>,
     resources: super::super::resources::Resources,
     accepted_remote: u32,
     peer_goaway: Option<u32>,
@@ -106,6 +107,7 @@ impl Session {
             peer_identity,
         };
         Self {
+            last_output: None,
             resources: super::super::resources::Resources::new(
                 super::super::config::ResourceLimits {
                     connections: 1,
@@ -459,7 +461,7 @@ impl Session {
             function = "Session::pop_outbound",
             "Transferring queued connection output"
         );
-        self.outbound.pop_front()
+        self.next_output()
     }
 
     // Consume the OPEN ID before payload validation or registration lookup.
@@ -734,3 +736,5 @@ mod tests;
 mod ping;
 
 mod drain;
+
+mod scheduler;
