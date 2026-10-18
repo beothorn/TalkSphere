@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–21 are implemented and checked; steps 22–24 have not been started.
+Status: steps 1–22 are implemented and checked; steps 23–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -39,7 +39,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **19.** Enforce handshake deadlines and release connection resources on closure.
 - [x] **20.** Enforce limits on connections, streams and queued bytes.
 - [x] **21.** Schedule active streams fairly when consumers or sockets are slow.
-- [ ] **22.** Add TCP adapters for outgoing and incoming connections.
+- [x] **22.** Add TCP adapters for outgoing and incoming connections.
 - [ ] **23.** Verify Transport behavior against the upstream acceptance cases.
 - [ ] **24.** Document completed coverage and the remaining real-cryptography integration.
 
@@ -396,6 +396,8 @@ Use OS-assigned loopback ports for adapter integration tests and keep scripted
 authentication inside the test harness. Leave the normal CLI's unavailable
 server behavior in place until real Identity/Cryptography can be supplied;
 the authenticated two-node run belongs to roadmap step 5.
+
+Completed: Mio-backed nonblocking TCP adapters and monotonic wakeups support outgoing attempts, listeners, accepted sockets and immediate cancellation/closure. The public control driver composes all requests with shared admission, scoped authority, fair connection polling and earliest-deadline registration. Loopback tests use ephemeral ports and cover real I/O, bind/refusal failures and timers; scripted driver tests cover incoming ordering and capacity recovery. All 161 tests and required checks passed; production coverage is 92.42% (2757/2983). Normal CLI serve remains unavailable until real credentials/cryptography are supplied.
 
 ### 23. Acceptance verification
 

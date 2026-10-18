@@ -4,12 +4,13 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–21 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–22 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
 deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
 `transport::start()` still returns the typed local error
 `TransportError::NotImplemented`, before any I/O. A [connection driver](connection/README.md) now composes socket lifecycle and
-protocol state; there is no TCP adapter yet; [stream routing](stream/README.md) now provides registration and
+protocol state; [TCP adapters](adapters/README.md) and the [control driver](driver/README.md)
+provide bounded nonblocking admission; [stream routing](stream/README.md) now provides registration and
 OPEN dispatch for authenticated composition.
 
 Frame I/O is independently exercised with `cargo test --locked modules::transport::framing`;
@@ -43,8 +44,8 @@ separate from usable runtime capabilities; `test_support` is compiled only with
 
 ## Public boundary
 
-`api::TransportControl` defines the future driver's `submit` and `poll_event`
-calls; no implementation of this trait is supplied yet. Requests cover
+`driver::Driver` implements `api::TransportControl` with `submit` and `poll_event`
+calls over explicitly supplied dependencies. Requests cover
 connect/listen/accept, protocol registration, stream operations and connection
 control. `Accepted` reports local admission; subsequent `Event` values carry
 authenticated context, verified bytes, half-close, terminal results and ping

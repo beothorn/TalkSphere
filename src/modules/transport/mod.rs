@@ -9,10 +9,12 @@
 //!
 //! The upstream contract is at <https://github.com/beothorn/CR2SE/tree/main/modules/transport>.
 
+pub mod adapters;
 pub mod api;
 pub mod codec;
 pub mod config;
 pub mod connection;
+pub mod driver;
 mod error;
 pub mod failure;
 pub mod framing;

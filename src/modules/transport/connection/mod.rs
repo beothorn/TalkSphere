@@ -130,6 +130,15 @@ impl<C: Cryptography> Connection<C> {
         })
     }
 
+    // Carry the pending-connect capability into its socket-backed instance before polling.
+    pub(crate) fn set_handle(&mut self, handle: ConnectionHandle) {
+        tracing::trace!(
+            function = "Connection::set_handle",
+            "Preserving admitted connection authority"
+        );
+        self.handle = handle;
+    }
+
     /// Borrow authority for this exact socket instance before or after authentication.
     pub fn handle(&self) -> &ConnectionHandle {
         tracing::trace!(

@@ -20,7 +20,7 @@ use crate::modules::transport::{
 };
 
 // Produce exact dependency expectations without simulating cryptographic computation.
-pub(super) fn handshake(
+pub fn handshake(
     role: ConnectionRole,
 ) -> (ScriptedIdentity, ScriptedCryptography, SecretLog, Vec<u8>) {
     let same_identity = false;

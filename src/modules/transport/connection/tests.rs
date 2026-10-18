@@ -198,8 +198,7 @@ fn safe_response_and_unsupported_version_silence() {
     }
 }
 
-#[path = "tests/fixtures.rs"]
-mod fixtures;
+use crate::modules::transport::test_support::handshake as fixtures;
 
 // Coalesced HELLO/AUTH crosses both phases and closure drops established keys and unfinished streams.
 #[test]

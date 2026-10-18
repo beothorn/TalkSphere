@@ -64,6 +64,17 @@ impl ConnectionHandle {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListenerHandle(Instance);
 
+impl ListenerHandle {
+    // Issue a process-local listener capability after successful binding.
+    pub(crate) fn new() -> Self {
+        tracing::trace!(
+            function = "ListenerHandle::new",
+            "Issuing listener authority"
+        );
+        Self(Instance(Arc::new(())))
+    }
+}
+
 /// Authority issued to the consumer when a protocol registration succeeds.
 /// Sharing a clone deliberately delegates ownership of its streams.
 /// Public peer identity bytes cannot be used as local owner authority.

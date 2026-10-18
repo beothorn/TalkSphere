@@ -4,6 +4,7 @@
 pub mod clock;
 pub mod consumer;
 pub mod crypto;
+pub mod handshake;
 pub mod identity;
 pub mod network;
 pub mod script;

@@ -1,3 +1,4 @@
+//! Typed immediate local admission failures; wire failures remain separate.
 use std::{error::Error, fmt};
 
 use super::{
@@ -14,6 +15,12 @@ pub enum TransportError {
     WrongConnection,
     WrongStreamOwner,
     InvalidEndpoint,
+    /// Local request violates a validated protocol or lifecycle contract.
+    InvalidRequest,
+    /// Operating-system socket/bind/connect failure without peer diagnostics.
+    Io(std::io::ErrorKind),
+    /// Startup failed before a connection could be admitted.
+    Startup(super::api::Failure),
     Dependency {
         dependency: Dependency,
         error: DependencyError,
@@ -32,6 +39,9 @@ impl fmt::Display for TransportError {
             Self::InvalidConfig(error) => write!(formatter, "invalid Transport configuration: {error}"),
             Self::WrongConnection => formatter.write_str("stream belongs to a different connection"),
             Self::WrongStreamOwner => formatter.write_str("stream belongs to a different local owner"),
+            Self::InvalidRequest => formatter.write_str("invalid Transport request or state"),
+            Self::Io(kind) => write!(formatter, "Transport socket operation failed: {kind:?}"),
+            Self::Startup(failure) => write!(formatter, "Transport startup failed: {:?}", failure.code),
             Self::InvalidEndpoint => formatter.write_str("outgoing connection port must be nonzero"),
             Self::Dependency { dependency, error } => write!(formatter, "{dependency:?} dependency failed: {error:?}"),
             Self::Backpressure => formatter.write_str("Transport capacity is full; request was not queued"),
