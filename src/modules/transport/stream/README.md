@@ -11,7 +11,7 @@ See [ID contracts](ids.md) and the [Transport plan](../../../../plans/1_Transpor
 
 From the repository root, build with `cargo build --locked`, exercise with
 `cargo test --locked modules::transport::stream`, and inspect application status
-with `cargo run --locked -- help serve`. Runtime networking remains pending.
+with `cargo run --locked -- help serve`. The normal server still requires real Identity/Cryptography integration.
 
 See [registration](registry.md) and [session routing](session.md) for caller
 authority and event contracts. DATA immediately following OPEN is supported without an OPEN acknowledgement.

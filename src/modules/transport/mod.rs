@@ -1,6 +1,6 @@
-//! Transport contracts and local boundary validation.
-//! Includes preliminary frame headers and control/error payload codecs.
-//! No runtime driver, TCP adapters or authentication are implemented.
+//! Transport framing, authentication orchestration, multiplexed streams and TCP control.
+//! Production primitives are injected through explicit Identity/Cryptography contracts.
+//! Normal CLI composition remains unavailable until those real modules are integrated.
 //!
 //! Deterministic dependencies are available only to internal unit tests.
 //! ```compile_fail
@@ -34,18 +34,23 @@ pub use error::TransportError;
 ///
 /// # Errors
 ///
-/// Always returns [`TransportError::NotImplemented`] until networking is implemented.
+/// Always returns [`TransportError::RuntimeUnavailable`] until real Identity/Cryptography and normal server composition are integrated.
 /// This function performs no network I/O and creates no runtime state.
 pub fn start() -> Result<(), TransportError> {
-    Err(TransportError::NotImplemented)
+    tracing::trace!(
+        function = "transport::start",
+        "Checking normal server composition availability"
+    );
+    Err(TransportError::RuntimeUnavailable)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // The implemented library must not claim that unavailable normal server composition is running.
     #[test]
-    fn scaffold_cannot_report_a_running_transport() {
-        assert_eq!(start(), Err(TransportError::NotImplemented));
+    fn missing_runtime_cannot_report_a_running_server() {
+        assert_eq!(start(), Err(TransportError::RuntimeUnavailable));
     }
 }

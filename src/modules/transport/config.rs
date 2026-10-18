@@ -1,4 +1,4 @@
-//! Local policy validation; admission and queue enforcement are later steps.
+//! Finite local policy validated before driver admission and queue enforcement.
 
 use std::{error::Error, fmt, time::Duration};
 

@@ -28,4 +28,4 @@ cargo run --locked -- --help
 ```
 
 Networking remains unavailable through `serve`; exercise framing through the
-polling API and deterministic tests. Actual tag verification is step 9.
+polling API and deterministic tests. The integrity layer performs tag verification through injected Crypto.

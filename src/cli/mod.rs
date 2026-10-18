@@ -10,6 +10,7 @@ use args::Command;
 
 /// Run the CLI with arguments excluding the executable name.
 pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
+    tracing::trace!(function = "cli::run", "Dispatching command-line input");
     let arguments: Result<Vec<String>, _> = arguments
         .into_iter()
         .map(|argument| argument.into_string())
@@ -32,6 +33,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
         Ok(Command::Serve) => match transport::start() {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
+                tracing::error!(%error, "Server startup failed; exiting without a listener");
                 eprintln!("error: {error}\nTry 'talksphere help serve' for details.");
                 ExitCode::FAILURE
             }

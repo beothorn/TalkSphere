@@ -1,3 +1,4 @@
+//! Exact CLI argument forms; parser errors never start protocol work.
 use super::help::{self, Topic};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -7,7 +8,9 @@ pub(super) enum Command {
     Serve,
 }
 
+// Match supported forms and reject unknown or extra arguments with a usage error.
 pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
+    tracing::trace!(function = "args::parse", "Parsing CLI command forms");
     match arguments {
         [] => Ok(Command::Help(Topic::Overview)),
         [argument] => match argument.as_str() {

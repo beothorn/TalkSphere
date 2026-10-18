@@ -122,6 +122,10 @@ impl Socket for TcpSocket {
 impl Drop for TcpSocket {
     // Dropping an attempt or established stream always closes its OS handle.
     fn drop(&mut self) {
+        tracing::trace!(
+            function = "adapter::drop",
+            "Releasing an owned platform adapter"
+        );
         let _ = self.close();
     }
 }
@@ -210,6 +214,10 @@ impl Listener for TcpAcceptor {
 impl Drop for TcpAcceptor {
     // Listener lifetime is bounded by its owner even when stop-listening is omitted.
     fn drop(&mut self) {
+        tracing::trace!(
+            function = "adapter::drop",
+            "Releasing an owned platform adapter"
+        );
         let _ = self.close();
     }
 }

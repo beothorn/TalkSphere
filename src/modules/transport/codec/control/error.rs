@@ -3,7 +3,7 @@
 
 use std::{error::Error, fmt};
 
-/// Malformed control payloads; the future driver decides how to close safely.
+/// Malformed control payloads; the connection driver decides how to close safely.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PayloadError {
     /// A fixed prefix or token is incomplete.

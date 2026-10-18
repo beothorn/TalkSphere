@@ -1,4 +1,4 @@
-//! Bounded complete-frame I/O for the future connection driver.
+//! Bounded complete-frame I/O for the connection driver.
 //! One reader and writer belong to one socket; tag state is supplied per direction.
 //! Frames returned here are unverified and must not reach application consumers.
 

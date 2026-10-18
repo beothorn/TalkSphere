@@ -1,4 +1,4 @@
-//! Replaceable platform and module dependencies; no adapters are implemented.
+//! Replaceable module capabilities; platform TCP/clock adapters live under adapters.
 
 pub mod crypto;
 pub mod identity;

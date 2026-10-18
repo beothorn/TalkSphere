@@ -1,4 +1,4 @@
-//! Local request/event contract. No driver or wire processing is implemented yet.
+//! Local request/event contract implemented by the composed Transport driver.
 //!
 //! Only trusted composition receives the control port and registers consumers.
 //! Requests are local calls, never deserialized peer messages. The driver must
@@ -57,7 +57,7 @@ impl ConnectRequest {
     }
 }
 
-/// Requested protocol selection; grammar/version validation belongs to step 10.
+/// Requested protocol selection; the OPEN codec validates grammar and version.
 /// Carrying this value does not prove registration or protocol support.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Protocol {
@@ -244,7 +244,7 @@ pub enum Event {
     },
 }
 
-/// Interface for the future driver; no implementation is supplied in step 1.
+/// Control interface implemented by driver::Driver with explicitly supplied dependencies.
 /// One owner submits requests and polls events, while adapters wake that owner.
 /// Consumers can run elsewhere through bounded message queues.
 pub trait TransportControl {

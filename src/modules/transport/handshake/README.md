@@ -25,8 +25,8 @@ Step 8 adds [sequencing and identity gates](state.md), including same-identity
 peers, contact pins, duplicates and independent tag transitions. Tests combine
 AUTH and a tagged frame in one socket chunk. Derivation follows the normative
 post-AUTH ordering; [bug 0002](../../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md)
-records the differing pseudocode order. Tag verification is step 9.
+records the differing pseudocode order. The integrity layer performs tag verification through injected Crypto.
 
 `serve` remains unavailable. Constructors never authenticate by themselves;
 only fully checked state can release connection facts. Real cryptography and
-socket/timeouts/error-response composition remain required for a running node.
+normal server composition remain required for a running node.

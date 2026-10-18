@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–23 are implemented and checked; steps 24–24 have not been started.
+Status: steps 1–24 are implemented, tested and documented with injected dependencies; real Cryptography/Identity integration remains roadmap steps 3–5.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -41,7 +41,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **21.** Schedule active streams fairly when consumers or sockets are slow.
 - [x] **22.** Add TCP adapters for outgoing and incoming connections.
 - [x] **23.** Verify Transport behavior against the upstream acceptance cases.
-- [ ] **24.** Document completed coverage and the remaining real-cryptography integration.
+- [x] **24.** Document completed coverage and the remaining real-cryptography integration.
 
 ## Reference baseline
 
@@ -426,6 +426,8 @@ Check `cargo run --locked -- --help` and `cargo run --locked -- help serve`,
 record the upstream revision used and link any confirmed protocol bug reports.
 Only check completed substeps, preserving the later integration milestone and
 all pending real-cryptography checks in the main roadmap.
+
+Completed: root/module guides, public contract companions, acceptance evidence and CLI overview/detailed help describe the completed Transport boundary and missing real-module integration. Session lifecycle and receive dispatch are split into focused files. The normal server returns RuntimeUnavailable without opening sockets. All 174 tests, formatting, Clippy with warnings denied, locked build, API documentation and every changed help/run behavior passed; local Markdown links are valid. Final production coverage is 94.09% (2833/3011), excluding all test helpers. The main Transport milestone is complete for this dependency-injected scope; the real cryptographic vector/mutation checks and authenticated two-node demonstration remain explicitly pending.
 
 [spec]: https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md
 [pseudocode]: https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/README.md

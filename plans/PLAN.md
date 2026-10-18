@@ -18,8 +18,10 @@ checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
 step 2 in this roadmap. No other module has been broken down yet.
 
-Transport substeps 1–23 are complete; the remaining substeps and overall
-Transport milestone are still pending.
+Transport substeps 1–24 are complete with injected Identity/Cryptography and
+real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTANCE.md)
+records local evidence and pending cryptographic assertions. Roadmap steps 3–5
+remain required for a working authenticated server and full Transport conformance.
 
 ## Setup and required node modules
 
@@ -27,7 +29,7 @@ Transport milestone are still pending.
   gitignore, contributor instructions, protocol bug directory/template, CLI
   overview and detailed help, unit/integration tests, build/run instructions,
   editor tasks and an explicitly unimplemented Transport scaffold.
-- [ ] **2. [Transport module](1_Transport_module/PLAN.md).** Implement bounded frame codecs, fragmented and
+- [x] **2. [Transport module](1_Transport_module/PLAN.md).** Implement bounded frame codecs, fragmented and
   coalesced I/O, handshake and integrity orchestration, bidirectional streams,
   exact stream-ID allocation, half-close, cancellation, ping, GOAWAY, deadlines
   and resource limits. Exercise upstream TR-01 through TR-15 with test-owned

@@ -55,7 +55,12 @@ impl ConnectionHandle {
         }
     }
 
+    /// Borrow the observation-only identity of this connection instance.
     pub fn id(&self) -> &ConnectionId {
+        tracing::trace!(
+            function = "ConnectionHandle::id",
+            "Reading connection instance identity"
+        );
         &self.id
     }
 }
@@ -125,12 +130,21 @@ impl StreamHandle {
         }
     }
 
+    /// Borrow the stream's connection instance without granting connection control.
     pub fn connection_id(&self) -> &ConnectionId {
+        tracing::trace!(
+            function = "StreamHandle::connection_id",
+            "Reading stream connection scope"
+        );
         &self.connection
     }
 
     /// Observation only; a number is insufficient to invoke stream operations.
     pub fn wire_id(&self) -> NonZeroU32 {
+        tracing::trace!(
+            function = "StreamHandle::wire_id",
+            "Reading nonzero stream identity"
+        );
         self.wire_id
     }
 
@@ -141,6 +155,10 @@ impl StreamHandle {
         connection: &ConnectionId,
         owner: &StreamOwner,
     ) -> Result<(), TransportError> {
+        tracing::trace!(
+            function = "StreamHandle::authorize",
+            "Validating stream caller authority"
+        );
         if self.connection != *connection {
             return Err(TransportError::WrongConnection);
         }

@@ -1,7 +1,7 @@
 # PayloadError
 
 Reports malformed control payloads without retaining or echoing diagnostic text.
-It is a local validation result, not a wire error code. The future driver must
+It is a local validation result, not a wire error code. The connection driver must
 handle malformed payloads using the specification's connection-error rules.
 
 | Variant | Public data and meaning |

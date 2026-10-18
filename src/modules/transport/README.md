@@ -1,166 +1,108 @@
 # Transport
 
-Transport owns CR2SE connections, authentication, frames and multiplexed
-streams. It consumes Identity, Cryptography, TCP and timers through explicit
-boundaries; it does not own service dispatch, balances or application retries.
+Transport's planned implementation is complete with injected dependencies:
+wire codecs, bounded fragmented I/O, handshake and directional integrity
+orchestration, multiplexed streams, cancellation, ping, graceful drain, deadlines,
+resource limits, fair scheduling, TCP adapters and the public control driver.
 
-**Status:** steps 1–23 are implemented: public contracts, replaceable dependency
-interfaces, local configuration validation, handle ownership checks and
-deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
-`transport::start()` still returns the typed local error
-`TransportError::NotImplemented`, before any I/O. A [connection driver](connection/README.md) now composes socket lifecycle and
-protocol state; [TCP adapters](adapters/README.md) and the [control driver](driver/README.md)
-provide bounded nonblocking admission; [stream routing](stream/README.md) now provides registration and
-OPEN dispatch for authenticated composition.
+Real Identity and Cryptography modules are still pending. The normal `serve`
+command returns `TransportError::RuntimeUnavailable`, opens no sockets and exits
+1. Test substitutes are unavailable in production builds. Local test success
+does not establish cryptographic conformance or an authenticated deployment.
 
-Frame I/O is independently exercised with `cargo test --locked modules::transport::framing`;
-see the [framing guide](framing/README.md). The [integrity layer](integrity/README.md) authenticates frames through injected
-cryptographic primitives and enforces independent directional sequence counters.
-Role-bound [authentication constructions](handshake/README.md) request signatures
-and key derivation through the injected ports; real primitives remain pending.
+## Callers and boundaries
 
-## Layout
+Trusted composition constructs `driver::Driver` from validated `TransportConfig`
+and `Dependencies`, then uses `api::TransportControl::submit` and `poll_event`.
+It owns protocol registration and routes queued events to consumers. Identity
+supplies an existing credential and purpose-scoped signing authority;
+Cryptography supplies primitives and opaque secret lifetimes. TCP/clock adapters
+provide nonblocking OS I/O and monotonic wakeups. Transport owns no application
+retry, credit, ledger rollback or service-specific message semantics.
 
-- `mod.rs`: module exports and the unavailable networking entry point.
-- `api.rs`: control requests, acceptance results, events and terminal outcomes.
-- `handshake/`: role-bound authentication and handshake sequencing.
-- `integrity/`: protected frames, directional counters and replay rejection.
-- `config.rs`: immutable validated configuration and resource-limit types.
-- `handles.rs`: opaque connection, listener and stream capabilities.
-- `error.rs`: machine-readable local request failures.
-- `codec/`: version 1 headers, control/error payloads, registries and structured validation
-  errors; see the [codec guide](codec/README.md).
-- `ports/io.rs`: replaceable sockets, listeners, connection attempts and clock.
-- `ports/identity.rs`: public credentials and Transport-only signing authority.
-- `ports/crypto.rs`: primitive operations and opaque transient-secret types.
-- `ports/mod.rs`: dependency bundle and structured adapter failures.
-- `test_support/`: test-only scripted dependencies, recording consumer and
-  pinned upstream fixtures; see the [helper guide](test_support/README.md).
+Connection and stream capabilities are process-local and scoped to exact
+instances/owners. Registration grants authority; peer IDs and wire stream IDs
+do not. New connections cannot revive stale handles. Authentication is emitted
+only after peer verification and successful local AUTH output.
 
-Introduce focused codec, handshake, stream and adapter files/subfolders during
-implementation. Keep session state private and test dependency substitutes
-separate from usable runtime capabilities; `test_support` is compiled only with
-`#[cfg(test)]` and is not part of the application or public library interface.
+Frame integrity authenticates header and payload bytes but does not encrypt
+application bytes. Incoming DATA is dispatched only after verification. DATA
+frame boundaries have no application meaning: concatenate bytes per direction.
+Local queue admission is not proof of remote delivery or application success.
 
-## Public boundary
+## Organization
 
-`driver::Driver` implements `api::TransportControl` with `submit` and `poll_event`
-calls over explicitly supplied dependencies. Requests cover
-connect/listen/accept, protocol registration, stream operations and connection
-control. `Accepted` reports local admission; subsequent `Event` values carry
-authenticated context, verified bytes, half-close, terminal results and ping
-outcomes. A queued write does not prove delivery or application success.
+| Domain | Responsibility |
+| --- | --- |
+| [API](api.md), [handles](handles.md), [configuration](config.md) | Trusted local contracts, authority and finite policy |
+| [Ports](ports/mod.md) | Explicit Identity/Crypto/socket/clock dependencies |
+| [Codecs](codec/README.md) | Header, control, handshake and OPEN byte formats |
+| [Framing](framing/README.md) | Complete frames across partial/coalesced socket I/O |
+| [Handshake](handshake/README.md) | Role-bound transcript, pinning and key requests |
+| [Integrity](integrity/README.md) | Directional counters, tags and replay rejection |
+| [Streams](stream/README.md) | Registration, ID history, DATA/lifecycle and scheduling |
+| [Failures](failure.md), [resources](resources.md) | Error scope and shared admission/byte reservations |
+| [Connection](connection/README.md) | One socket's composed state, deadlines and cleanup |
+| [Driver](driver/README.md) | Public control requests, listeners and fair connection polling |
+| [Adapters](adapters/README.md) | Mio TCP readiness and monotonic timers |
+| [Test helpers](test_support/README.md) | Deterministic scripts and pinned upstream fixtures |
 
-`TransportConfig::new` rejects zero handshake timeouts, zero connection/stream
-counts and byte budgets smaller than a full supported frame. An outbound
-budget counts serialized bytes and needs at least 65,564 bytes; per-stream
-incoming buffering needs at least 65,536 payload bytes. These are TalkSphere
-configuration rules that preserve CR2SE's frame-size support, not new wire
-negotiation. Admission and queue enforcement remain later steps.
+Public Rust contracts have companion Markdown files for language-independent
+explanations. Specialized lifecycle, receive, probe, drain and scheduling code
+lives under `stream/session/` rather than a single catch-all implementation.
 
-`ConnectRequest::new` rejects an outgoing port of zero, while listen requests
-may use zero for an OS-selected port. `ExpectedPeer::Known` carries the required
-expected ID for a configured contact; `Unpinned` still requires a successful
-handshake. Other request validation, including protocol selection, belongs to
-the planned runtime/codec steps; constructing a request does not accept it.
+## Resource and concurrency policy
 
-`TransportError` describes immediate local rejection. Terminal `Failure`
-values distinguish a local decision, explicit peer failure and dependency
-failure, with machine-readable codes. Stream/connection scope comes from the
-event's handle or ID; these types do not define wire error encodings.
+One owner polls a driver; adapters arrange readiness wakeups. The parent clock
+registers the earliest pending deadline. Connections and streams share finite
+budgets; serialized-byte reservations follow queued frames through partial
+writes. Configuration preserves the full 65,536-byte payload and 65,564-byte
+protected frame. Overflow is backpressure or an explicit resource failure,
+never normal completion. There are no invented wire flow-control frames.
 
-## Authority and lifetimes
+Whole-frame round-robin output preserves per-stream order, OPEN allocation
+order and GOAWAY barriers. Independent consumer polling and per-stream byte
+limits isolate slow consumers. Standalone Session defaults are finite; composed
+sessions inherit the configured instance-wide budgets. Driver policy also caps
+registrations at 256 and pending probes at 64 per connection. Listener and
+undelivered connection-state counts are bounded by the connection policy.
 
-The control port belongs to trusted local composition, never a network parser.
-A peer's public `IdentityId` carries no local signing or stream authority.
-`ConnectionId` identifies an instance for observations, while `ConnectionHandle`
-grants control over it. A consumer's `StreamHandle` exposes only the former.
-Stream requests also require the matching `StreamOwner` granted by successful
-registration. Handles have private fields and no constructors from wire IDs or
-peer data; the future driver will issue them after admission.
+`tracing` events use module targets and structured function context. Composition
+configures its subscriber, filters and stderr destination; protocol code does
+not install a global subscriber. Traces omit raw application bytes, peer reason
+text, tokens and secret material. Normal CLI status output remains on stdout,
+with runtime/usage failures on stderr.
 
-`StreamHandle::authorize` checks both connection instance and owner before a
-stream effect. Sharing a capability clone deliberately delegates that same
-authority. Runtime liveness, registration and state still require checks by
-the future driver; this method alone does not prove a connection is active.
-
-Instance equality uses private reference-counted tokens. They are process-local
-and cannot be serialized or restored after restart; an IPC adapter would need
-its own authenticated scoped-handle mapping. A new connection cannot reuse an
-old handle even when the wire stream number is the same.
-
-`Identity::sign_authentication` accepts only an `AuthenticationMessage` that
-Transport constructs; it exposes no unrestricted signing API or private keys.
-Cryptography's associated secret types have no Clone/Debug requirement and
-must erase/release their material when dropped. These adapter obligations and
-real cryptographic correctness are not proven by this interface-only step.
-
-## I/O and concurrency choice
-
-Use a single owner per Transport driver with nonblocking `Poll`/`Context`
-interfaces from the Rust standard library. Socket reads/writes may make partial
-progress, and pending operations must arrange a wakeup. The injected monotonic
-clock registers the next deadline, allowing later tests to advance time without
-sleeping. No executor, TCP implementation or cryptographic crate is selected
-by these contracts.
-
-Composition supplies the `Dependencies` bundle: socket provider, clock, one
-purpose-scoped local Identity capability and a Cryptography adapter. The driver
-will serialize frame writes and deliver queued events outside internal locks;
-other tasks can exchange bounded messages with it. This is a Rust integration
-choice, not a CR2SE concurrency or deployment requirement.
-
-## Protocol references
-
-Initial baseline:
-[`8e848eb2e70ef7cd4490a753f9e647fdddcd99fd`](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd).
-
-- [Wire specification](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md)
-- [Inputs](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/inputs/README.md)
-  and [outputs](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/outputs/README.md)
-- [Pseudocode](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/README.md),
-  [wire vectors](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/TestVectors.md)
-  and [acceptance cases TR-01–TR-15](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/acceptanceTests/README.md)
-
-See the [Transport plan](../../../plans/1_Transport_module/PLAN.md) for the
-remaining implementation steps and the [main roadmap](../../../plans/PLAN.md)
-steps 3–5 for real Identity/Cryptography integration. No acceptance case is
-claimed as fully passed: codecs cover TR-03 header rules and payload cases from
-TR-11/12/13, while delivery, authentication and TCP closure still need a runtime.
-The control parser follows the specification's BOM prohibition; see
-[bug 0001](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md) for the
-corresponding pseudocode omission.
-
-## Build, run and test
+## Build, exercise and run
 
 From the repository root:
 
 ```sh
 cargo build --locked
-cargo test --locked modules::transport
-cargo test --locked modules::transport::test_support
-cargo test --locked modules::transport::codec
-cargo test --locked --test control_payloads
-cargo test --locked --doc
+cargo test --locked
+cargo test --locked modules::transport::connection::tests::acceptance
+cargo test --locked modules::transport::adapters
+cargo test --locked modules::transport::driver
 cargo doc --locked --no-deps
+cargo run --locked -- --help
 cargo run --locked -- help serve
 cargo run --locked -- serve
 ```
 
-The final command currently reports the missing Transport implementation on
-stderr and exits with status 1. It starts no listener. Run all tests with
-`cargo test --locked`; build and run details are also in the
-[project README](../../../README.md).
+The final command intentionally exits 1 until real module integration and normal
+server composition are supplied. There is no fake-authentication switch.
+Generated API documentation is under `target/doc/talksphere/`.
 
-Unit tests exercise configuration limits, endpoint validation and handle scope;
-documentation tests check the public configuration example and reject forged
-control/signing capabilities. Helper tests additionally check partial/coalesced
-I/O, EOF offsets, manual time, wakeups, exact dependency scripts, resource
-release and consumer event order. Codec tests use upstream PING/PONG headers
-and independent expected DATA bytes, payload boundaries and malformed headers.
-They do not prove the pending Transport
-state machine or real cryptographic behavior. Generated API documentation is under
-`target/doc/talksphere/modules/transport/index.html` after `cargo doc`.
+## Evidence and integration handoff
 
-See the [acceptance coverage matrix](ACCEPTANCE.md) for executable TR-01–TR-15
-mappings, measured checks and explicitly pending real-cryptography evidence.
+Behavior and fixtures use [CR2SE revision
+8e848eb2e70ef7cd4490a753f9e647fdddcd99fd](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport).
+The [acceptance matrix](ACCEPTANCE.md) maps TR-01–TR-15 to executable tests and
+explicitly identifies real-crypto assertions still pending. The [Transport
+plan](../../../plans/1_Transport_module/PLAN.md) records each step's validation.
+[Roadmap steps 3–5](../../../plans/PLAN.md) implement real primitives/credentials,
+verify cryptographic vectors and mutations, and demonstrate two local nodes.
+
+Two language-independent findings remain documented: [diagnostic BOM handling](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md)
+and [key derivation order](../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md).
+The implementation follows the normative specification in both cases.

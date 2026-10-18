@@ -1,3 +1,4 @@
+//! Typed preliminary header failures for connection closure policy.
 use std::{error::Error, fmt};
 
 use super::FrameType;
@@ -6,7 +7,7 @@ use super::FrameType;
 ///
 /// A receiver must terminate on invalid headers without scanning for another
 /// boundary. Unsupported versions must never cause a wire error response.
-/// Response/closure orchestration belongs to the future connection driver.
+/// Response/closure orchestration belongs to the connection driver.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeaderError {
     InvalidLength {

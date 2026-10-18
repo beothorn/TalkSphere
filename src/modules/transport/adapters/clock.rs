@@ -55,6 +55,10 @@ impl Clock for SystemClock {
 impl Drop for SystemClock {
     // Remove the timer without waiting for its deadline.
     fn drop(&mut self) {
+        tracing::trace!(
+            function = "adapter::drop",
+            "Releasing an owned platform adapter"
+        );
         self.reactor.remove(self.token);
     }
 }

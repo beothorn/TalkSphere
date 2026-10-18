@@ -9,8 +9,8 @@ use super::{
 /// Local request failure; these variants are not CR2SE wire error codes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransportError {
-    /// The public boundary is defined, but networking is not implemented.
-    NotImplemented,
+    /// Normal server composition awaits real Identity and Cryptography adapters.
+    RuntimeUnavailable,
     InvalidConfig(ConfigError),
     WrongConnection,
     WrongStreamOwner,
@@ -33,8 +33,8 @@ pub enum TransportError {
 impl fmt::Display for TransportError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NotImplemented => formatter.write_str(
-                "Transport networking is not implemented yet; no server was started. See plans/1_Transport_module/PLAN.md.",
+            Self::RuntimeUnavailable => formatter.write_str(
+                "Server runtime requires real Identity and Cryptography integration; no server was started. See plans/1_Transport_module/PLAN.md.",
             ),
             Self::InvalidConfig(error) => write!(formatter, "invalid Transport configuration: {error}"),
             Self::WrongConnection => formatter.write_str("stream belongs to a different connection"),
@@ -69,11 +69,12 @@ impl From<ConfigError> for TransportError {
 mod tests {
     use super::*;
 
+    // The local failure explains required real modules and where to find the integration plan.
     #[test]
-    fn scaffold_error_explains_the_failure_and_next_step() {
-        let error: &dyn Error = &TransportError::NotImplemented;
+    fn runtime_error_explains_missing_integration() {
+        let error: &dyn Error = &TransportError::RuntimeUnavailable;
         let message = error.to_string();
-        assert!(message.contains("not implemented"));
+        assert!(message.contains("real Identity and Cryptography"));
         assert!(message.contains("no server was started"));
         assert!(message.contains("plans/1_Transport_module/PLAN.md"));
         assert!(error.source().is_none());

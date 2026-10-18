@@ -1,3 +1,4 @@
+//! Version-1 frame type registry and static stream-ID scope rules.
 use super::HeaderError;
 
 /// The complete version 1 registry; application extensions cannot add types.

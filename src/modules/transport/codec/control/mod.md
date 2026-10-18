@@ -1,6 +1,6 @@
 # Control codec module
 
-The future Transport reader and writer use this module to convert complete
+The Transport connection state use this module to convert complete
 control payloads between bytes and validated values. It re-exports PingToken,
 ErrorPayload, GoAway, ErrorCode and PayloadError, whose contracts are linked in
 the [module README](README.md). MAX_REASON_BYTES is the fixed value 1,024 and

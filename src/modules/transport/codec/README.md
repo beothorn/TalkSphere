@@ -44,16 +44,16 @@ about authentication. Payload length always excludes the header and tag.
 Header acceptance is preliminary. The control codecs validate their own payload
 shapes; other payload shapes (including nonempty DATA and empty END), handshake
 sequencing, stream existence/parity/allocation, terminal
-states and integrity validation are later steps. Keeping payload/state checks
+states and integrity validation belong to the composed connection/session layers. Keeping payload/state checks
 separate preserves their required error scope. A decoded header must not be
 treated as authenticated data or dispatched to an application.
 
 The decoder never consumes a payload or scans for another boundary after an
-error. A future reader must stop on rejection before allocating/reading the
-claimed payload and close the connection without resynchronizing. Unsupported
+error. The reader stops on rejection before allocating/reading the
+claimed payload; the owning connection closes the connection without resynchronizing. Unsupported
 version errors are distinct because the driver must close without encoding a
-response. Actual shutdown/error-response behavior and complete TR-03 acceptance
-coverage remain pending until the connection driver exists.
+response. Composed shutdown/error-response checks are mapped in the
+[acceptance matrix](../ACCEPTANCE.md).
 
 ## Build, run and test
 
@@ -73,5 +73,5 @@ The public API example on `FrameHeader` is exercised by documentation tests.
 Unit tests check upstream bytes, exact DATA sizes 1 and 65,536, every version,
 type and nonzero flag value, stream-ID combinations, oversized lengths and
 short/trailing headers. There is no codec CLI command; `serve` still exits 1
-because networking is unimplemented. See the [Transport README](../README.md)
+because real Identity/Cryptography integration is pending. See the [Transport README](../README.md)
 and [plan](../../../../plans/1_Transport_module/PLAN.md) for subsequent work.

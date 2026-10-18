@@ -1,3 +1,4 @@
+//! Shared concise overview and discoverable per-command/option help definitions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Topic {
     Overview,
@@ -21,10 +22,11 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         topic: Topic::Serve,
         names: &["serve"],
         label: "serve",
-        summary: "Start the server (networking not implemented).",
+        summary: "Start the server (awaiting real Identity/Cryptography).",
         details: "Usage: talksphere serve\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
-                  Transport's public interface is defined, but networking is not implemented.\n\
+                  Transport and TCP adapters are implemented and tested with injected dependencies.\n\
+                  Server startup still requires real Identity and Cryptography integration.\n\
                   This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
                   See plans/1_Transport_module/PLAN.md. There are no server options yet.\n",
@@ -56,14 +58,18 @@ pub(super) const TOPICS: &[HelpTopic] = &[
     },
 ];
 
+// Resolve documented aliases without guessing unsupported options.
 pub(super) fn find_topic(name: &str) -> Option<Topic> {
+    tracing::trace!(function = "help::find_topic", "Resolving a help topic");
     TOPICS
         .iter()
         .find(|entry| entry.names.contains(&name))
         .map(|entry| entry.topic)
 }
 
+// Render the shared overview or full topic with usage and exit behavior.
 pub(super) fn render(topic: Topic) -> String {
+    tracing::trace!(function = "help::render", "Rendering discoverable CLI help");
     if let Some(entry) = TOPICS.iter().find(|entry| entry.topic == topic) {
         return format!("{}\n\n{}", entry.summary, entry.details);
     }
@@ -71,7 +77,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: Transport interface defined; networking is not implemented.\n\n\
+         Status: Transport implemented; real Identity/Cryptography integration pending.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -97,7 +103,10 @@ mod tests {
     fn overview_lists_all_topics_and_how_to_get_details() {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
-        assert!(overview.contains("Transport interface defined; networking is not implemented"));
+        assert!(
+            overview
+                .contains("Transport implemented; real Identity/Cryptography integration pending")
+        );
         for entry in TOPICS {
             assert!(overview.contains(entry.label));
             assert!(overview.contains(entry.summary));

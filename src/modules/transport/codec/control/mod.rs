@@ -1,4 +1,4 @@
-//! Control payload formats used by the future Transport reader and writer.
+//! Control payload formats used by the Transport connection state.
 //! These codecs validate bytes, not authentication or connection/stream state.
 //! Shared diagnostics keep ERROR/CANCEL and GOAWAY text rules consistent.
 

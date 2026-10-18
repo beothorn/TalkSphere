@@ -115,6 +115,7 @@ impl Drop for Lease {
 
 // Read the ownership field when cloning so the opaque guard has an explicit retained purpose.
 impl Reservation {
+    // Keep the reservation alive across an ownership handoff until the final guard is dropped.
     pub(crate) fn retain(&self) -> Self {
         tracing::trace!(
             function = "Reservation::retain",

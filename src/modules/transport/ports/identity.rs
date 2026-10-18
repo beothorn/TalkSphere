@@ -26,7 +26,12 @@ pub struct AuthenticationMessage {
 }
 
 impl AuthenticationMessage {
+    /// Borrow the exact Transport-created signing message without exposing private credentials.
     pub fn as_bytes(&self) -> &[u8] {
+        tracing::trace!(
+            function = "AuthenticationMessage::as_bytes",
+            "Borrowing canonical authentication input"
+        );
         &self.bytes
     }
 }

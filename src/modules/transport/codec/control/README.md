@@ -1,7 +1,7 @@
 # Control payload codecs
 
 Transport step 4 implements PING/PONG tokens, GOAWAY fields and the shared
-ERROR/CANCEL diagnostic format. The future Transport reader/writer calls these
+ERROR/CANCEL diagnostic format. The Transport connection state calls these
 codecs after checking headers and, on protected connections, integrity. They
 depend only on standard byte/text operations and the shared `tracing` facade;
 they do not own sockets, timers, authentication, stream state or error routing.
@@ -42,7 +42,7 @@ The current CLI does not invoke these codecs or expose a runtime logging setup.
 
 Parsing GOAWAY does not check parity, greatest-opened IDs, repeated limits or
 initiate draining. Parsing ERROR/CANCEL does not select stream/connection error
-scope. PING/PONG matching, replies and timeouts also remain future steps. Tests
+scope. PING/PONG matching, replies and timeouts live in stream/session/ping.rs. Tests
 cover payload cases from TR-11/12/13, not complete connection acceptance.
 
 ## Build, run and test

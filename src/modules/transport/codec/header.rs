@@ -1,8 +1,9 @@
+//! Immutable validated frame headers for framing and integrity callers.
 use super::{
     FrameType, HEADER_BYTES, HeaderError, INTEGRITY_TAG_BYTES, MAX_PAYLOAD_BYTES, VERSION,
 };
 
-/// Direction-specific wire overhead, supplied by the future handshake driver.
+/// Direction-specific wire overhead, supplied by the handshake driver.
 /// Selecting Tagged does not authenticate a frame or connection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FrameProtection {

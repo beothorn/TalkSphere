@@ -32,7 +32,7 @@ prevents further work; inspection handles can outlive the socket.
 Connection attempts have one completion, while listeners accept a queue of
 results. Closing or dropping either releases queued sockets but never closes
 one already transferred to its caller. These are simulated adapters, not the
-TCP implementation planned for step 22.
+Mio TCP implementation under adapters/.
 
 The manual clock reads its supplied origin only once; time changes exclusively
 through `advance`. Choose one origin per test, derive deadlines from it, and
@@ -54,7 +54,7 @@ values are valid. Secret labels contain no private material, and observing
 their Drop does not prove real key erasure. Real cryptographic vectors remain
 pending until the real adapters exist.
 
-The recording consumer observes events provided by a future driver or a test;
+The recording consumer observes events provided by the driver or a test;
 it performs no authentication, dispatch or stream-state validation. Its
 event-count limit is a way to simulate a stalled consumer, not production byte
 budget enforcement. Test-only handle constructors in `handles::test_fixtures`

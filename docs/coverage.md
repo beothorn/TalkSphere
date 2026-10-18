@@ -57,3 +57,10 @@ exclusions; the new control codecs covered 166/166 lines. This is line coverage,
 not proof of branch completeness, protocol conformance or cryptographic validity.
 Stable coverage here excludes rustdoc executions; `cargo test --locked` runs
 those separately. Always record a fresh result for later implementation changes.
+
+Transport step 24 measured **2833/3011 executable production lines (94.09%)**.
+The final audit moved the test-only ID-exhaustion fixture into its excluded test
+file; inline test modules and all test-support/fixture files remain excluded.
+All 174 unit/integration/documentation tests pass separately. See the
+[acceptance matrix](../src/modules/transport/ACCEPTANCE.md) for behavior coverage
+and the real-cryptography checks still pending.

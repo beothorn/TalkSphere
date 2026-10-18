@@ -27,4 +27,4 @@ cargo run --locked -- --help
 ```
 
 `serve` is still unavailable. Connection composition and acceptance verification
-remain later steps; source operations log context but never bytes, tags or keys.
+are composed by the connection driver; source operations log context but never bytes, tags or keys.

@@ -78,3 +78,10 @@ fn serialized_concurrent_allocation_has_no_duplicates_or_gaps() {
     allocated.sort_unstable();
     assert_eq!(allocated, vec![1, 3, 5, 7, 9, 11, 13, 15]);
 }
+
+impl StreamIds {
+    // Place exhaustion fixtures in this excluded test file, outside production coverage.
+    pub(crate) fn exhaust_local(&mut self) {
+        self.next_local = None;
+    }
+}

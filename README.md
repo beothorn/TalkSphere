@@ -14,17 +14,19 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–23, its public interface,
-deterministic dependency test helpers, frame headers and control/error payload
-codecs, bounded frame I/O, handshake sequencing and frame integrity state are
-implemented and tested with injected cryptography. There is no
-working server, socket listener or real-cryptography interoperability yet.
-`serve` returns an explicit not-implemented error.
+**Current status:** Transport's planned implementation is complete, including
+TCP adapters, multiplexed streams and bounded control composition. Tests use
+injected Identity/Cryptography substitutes and real loopback TCP. Real
+Cryptography, Identity and the authenticated two-node demonstration remain
+[roadmap steps 3–5](plans/PLAN.md); `serve` reports that missing integration and
+opens no listener. See the [acceptance matrix](src/modules/transport/ACCEPTANCE.md)
+for verified behavior and pending cryptographic evidence.
 
 ## Build and test
 
 Install a current stable Rust toolchain with Cargo, rustfmt and Clippy. The
-project uses Rust edition 2024 and `tracing` for structured codec events.
+project uses Rust edition 2024, `tracing` for structured diagnostics and Mio for
+nonblocking TCP readiness.
 Run these commands from the repository root:
 
 ```sh
@@ -61,8 +63,8 @@ cargo run --locked -- --version
 cargo run --locked -- serve
 ```
 
-The last command currently exits with status **1**, explaining that Transport
-is not implemented. It opens no sockets. With no arguments, the application
+The last command currently exits with status **1**, explaining that real Identity/Cryptography
+and normal server composition are still required. It opens no sockets. With no arguments, the application
 shows its overview and exits successfully. Invalid arguments exit with status
 **2** and a usage hint.
 
@@ -81,7 +83,7 @@ src/
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
   modules/
-    transport/             contracts, wire codecs, dependency ports and tests
+    transport/             protocol state, control driver, TCP adapters and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
 AGENTS.md                  instructions for ongoing implementation
@@ -91,9 +93,8 @@ plans/
     PLAN.md                Transport steps and matching detailed instructions
 ```
 
-Protocol modules own their code and private state. Focused subfolders will be
-added as implementations grow. The [Transport README](src/modules/transport/README.md)
-documents the first boundary and its next steps. VS Code recommendations and
+Protocol modules own their code and private state. Focused subfolders separate codecs, lifecycle, adapters and composition. The [Transport README](src/modules/transport/README.md)
+documents its public boundary, limits and integration handoff. VS Code recommendations and
 build/test/debug tasks use Rust tooling.
 
 ## Protocol reference and issue reporting

@@ -65,3 +65,10 @@ local nodes in both directions. No test substitute is an authenticated service.
 Final acceptance review added explicit checks for EOF immediately after a fully
 completed drain and preservation of nonzero peer GOAWAY reasons. Both now pass;
 the review run passed 174 tests with 94.06% production coverage (2821/2999).
+
+Step 24's final documentation/help and organization checks passed all 174 tests,
+formatting, Clippy, locked build, API documentation and CLI exit/help behavior.
+The final production-only measurement is **94.09% (2833/3011)** after excluding
+the ID-exhaustion fixture from production source accounting. All local Markdown
+links were checked. The normal CLI remains unavailable for real authenticated
+networking until roadmap steps 3–5 are complete.
