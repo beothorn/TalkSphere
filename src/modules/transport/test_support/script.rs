@@ -38,6 +38,11 @@ impl<C: Clone + Debug + PartialEq, R> Script<C, R> {
         reply
     }
 
+    // Extend an exact script for later composed phases without a permissive fallback.
+    pub fn push(&self, call: C, reply: R) {
+        self.0.lock().unwrap().expected.push_back((call, reply));
+    }
+
     pub fn calls(&self) -> Vec<C> {
         self.0.lock().unwrap().calls.clone()
     }

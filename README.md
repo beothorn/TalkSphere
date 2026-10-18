@@ -14,7 +14,7 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** project setup and Transport steps 1–18, its public interface,
+**Current status:** project setup and Transport steps 1–19, its public interface,
 deterministic dependency test helpers, frame headers and control/error payload
 codecs, bounded frame I/O, handshake sequencing and frame integrity state are
 implemented and tested with injected cryptography. There is no

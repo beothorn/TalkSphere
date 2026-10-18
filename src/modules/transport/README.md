@@ -4,12 +4,12 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–18 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–19 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
 deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
 `transport::start()` still returns the typed local error
-`TransportError::NotImplemented`, before any I/O. There is no driver, TCP
-adapter yet; [stream routing](stream/README.md) now provides registration and
+`TransportError::NotImplemented`, before any I/O. A [connection driver](connection/README.md) now composes socket lifecycle and
+protocol state; there is no TCP adapter yet; [stream routing](stream/README.md) now provides registration and
 OPEN dispatch for authenticated composition.
 
 Frame I/O is independently exercised with `cargo test --locked modules::transport::framing`;

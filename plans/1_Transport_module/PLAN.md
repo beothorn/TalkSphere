@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–18 are implemented and checked; steps 19–24 have not been started.
+Status: steps 1–19 are implemented and checked; steps 20–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -36,7 +36,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **16.** Apply the required stream-level and connection-level error responses.
 - [x] **17.** Add ping requests with response matching and timeouts.
 - [x] **18.** Implement graceful connection shutdown with GOAWAY.
-- [ ] **19.** Enforce handshake deadlines and release connection resources on closure.
+- [x] **19.** Enforce handshake deadlines and release connection resources on closure.
 - [ ] **20.** Enforce limits on connections, streams and queued bytes.
 - [ ] **21.** Schedule active streams fairly when consumers or sockets are slow.
 - [ ] **22.** Add TCP adapters for outgoing and incoming connections.
@@ -355,6 +355,8 @@ Test TR-06, TR-14 and TR-15 across timeout, EOF, I/O failure, failed handshake
 and normal drain. Verify cleanup through test adapters now; actual secret
 erasure and fresh-session behavior across restart must also be checked when
 the real adapters are integrated.
+
+Completed: The owned connection driver now composes framing, handshake, integrity and stream dispatch with bounded polling, handshake/error-output deadlines, stable instance authority and deterministic socket/key cleanup. Tests cover both roles, coalesced handshake bytes, stalled deadlines, EOF/truncation, failed writes, safe versus silent errors and unfinished stream failure. All 148 tests and required checks passed; production coverage is 93.88% (1965/2093).
 
 ### 20. Resource limits
 

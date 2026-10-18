@@ -12,6 +12,7 @@
 pub mod api;
 pub mod codec;
 pub mod config;
+pub mod connection;
 mod error;
 pub mod failure;
 pub mod framing;

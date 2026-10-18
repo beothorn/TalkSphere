@@ -84,7 +84,20 @@ impl Session {
             function = "Session::new",
             "Starting authenticated stream routing"
         );
-        let handle = ConnectionHandle::new();
+        Self::with_handle(ConnectionHandle::new(), role, local_identity, peer_identity)
+    }
+
+    // Preserve the authority issued before authentication when handing off driver state.
+    pub(crate) fn with_handle(
+        handle: ConnectionHandle,
+        role: ConnectionRole,
+        local_identity: IdentityId,
+        peer_identity: IdentityId,
+    ) -> Self {
+        tracing::trace!(
+            function = "Session::with_handle",
+            "Attaching authenticated state to connection authority"
+        );
         let context = PeerContext {
             connection: handle.id().clone(),
             role,
