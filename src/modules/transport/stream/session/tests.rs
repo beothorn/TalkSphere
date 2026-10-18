@@ -110,7 +110,124 @@ fn refused_ids_are_consumed_and_others_remain_usable() {
         Err(SessionError::Id(IdError::Unexpected))
     );
     assert_eq!(
-        state.receive_parts(FrameType::Data, 1, vec![1], &registry),
+        state.receive_parts(FrameType::Data, 99, vec![1], &registry),
         Err(SessionError::Protocol)
     );
+}
+
+// Immediate peer DATA follows OPEN without acknowledgement; interleaving preserves each byte sequence.
+#[test]
+fn multiplexed_bidirectional_bytes_preserve_order() {
+    let (mut state, registry, owner) = setup();
+    let local = state.open(&registry, &owner).unwrap();
+    state
+        .receive_parts(
+            FrameType::Open,
+            2,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+            &registry,
+        )
+        .unwrap();
+    let remote = state.streams[&2].clone();
+    for (stream, bytes) in [
+        (&local, b"a".to_vec()),
+        (&remote, b"xyz".to_vec()),
+        (&local, b"bc".to_vec()),
+    ] {
+        state.send(&owner, stream, bytes.clone()).unwrap();
+        state
+            .receive_parts(FrameType::Data, stream.wire_id().get(), bytes, &registry)
+            .unwrap();
+    }
+    let mut received = BTreeMap::<u32, Vec<u8>>::new();
+    while let Some(event) = state.pop_event() {
+        if let Event::Data { stream, bytes } = event {
+            received
+                .entry(stream.wire_id().get())
+                .or_default()
+                .extend(bytes);
+        }
+    }
+    assert_eq!(received[&1], b"abc");
+    assert_eq!(received[&2], b"xyz");
+    let mut sent = BTreeMap::<u32, Vec<u8>>::new();
+    while let Some(frame) = state.pop_outbound() {
+        if frame.header().frame_type() == FrameType::Data {
+            sent.entry(frame.header().stream_id())
+                .or_default()
+                .extend(frame.into_payload());
+        }
+    }
+    assert_eq!(sent, received);
+}
+
+// Full payloads work; empty/oversized local sends and unauthorized callers queue nothing.
+#[test]
+fn data_bounds_authority_and_backpressure() {
+    let (mut state, registry, owner) = setup();
+    let stream = state.open(&registry, &owner).unwrap();
+    state.pop_outbound();
+    assert_eq!(
+        state.send(&owner, &stream, vec![]),
+        Err(SessionError::InvalidData)
+    );
+    assert_eq!(
+        state.send(&owner, &stream, vec![0; MAX_PAYLOAD_BYTES + 1]),
+        Err(SessionError::InvalidData)
+    );
+    assert!(matches!(
+        state.send(&StreamOwner::new(), &stream, vec![1]),
+        Err(SessionError::Authority(_))
+    ));
+    for _ in 0..4 {
+        state
+            .send(&owner, &stream, vec![1; MAX_PAYLOAD_BYTES])
+            .unwrap();
+    }
+    assert_eq!(
+        state.send(&owner, &stream, vec![1]),
+        Err(SessionError::Capacity)
+    );
+    state.pop_outbound();
+    state.send(&owner, &stream, vec![2]).unwrap();
+    state
+        .receive_parts(FrameType::Data, 1, vec![3; MAX_PAYLOAD_BYTES], &registry)
+        .unwrap();
+    assert!(
+        state
+            .events
+            .iter()
+            .any(|e| matches!(e, Event::Data { bytes, .. } if bytes.len() == MAX_PAYLOAD_BYTES))
+    );
+    state
+        .receive_parts(FrameType::Data, 1, vec![3], &registry)
+        .unwrap();
+    assert!(!state.streams.contains_key(&1));
+    assert_eq!(
+        state.send(&owner, &stream, vec![1]),
+        Err(SessionError::Protocol)
+    );
+}
+
+// Invalid empty DATA fails only its active stream and does not produce a data event.
+#[test]
+fn empty_peer_data_is_a_stream_error() {
+    let (mut state, registry, owner) = setup();
+    let first = state.open(&registry, &owner).unwrap();
+    let second = state.open(&registry, &owner).unwrap();
+    state
+        .receive_parts(FrameType::Data, first.wire_id().get(), vec![], &registry)
+        .unwrap();
+    assert!(!state.streams.contains_key(&first.wire_id().get()));
+    state.send(&owner, &second, vec![1]).unwrap();
+    assert!(state.events.iter().any(|e| matches!(
+        e,
+        Event::StreamClosed {
+            outcome: StreamOutcome::Failed(Failure {
+                code: FailureCode::StreamState,
+                ..
+            }),
+            ..
+        }
+    )));
 }

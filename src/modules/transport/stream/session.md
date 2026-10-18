@@ -18,6 +18,18 @@ other streams. Reuse or gaps return a connection-level ID error.
 callback runs under internal state mutation. `pop_outbound` transfers an unsealed
 frame to the serialized integrity/writer path. Both return no value when empty.
 `SessionError` distinguishes ID, ownership, protocol and internal framing errors.
-The connection driver must terminate on connection errors. DATA and lifecycle
-routing are added in subsequent steps; unsupported frames currently fail
-explicitly. Queue enforcement is planned in steps 20–21.
+The connection driver must terminate on connection errors. Lifecycle routing is added in subsequent steps; unsupported frames currently
+fail explicitly. Queue enforcement is planned in steps 20–21.
+
+`send(owner, stream, bytes)` validates connection/owner authority and active
+state, then queues 1–65,536 bytes in order. Empty and oversized local requests
+return `InvalidData`; unknown streams return `Protocol`; bad capabilities
+return `Authority`. The initial outbound budget is four maximum protected
+frames, returning `Capacity` without queueing on overflow. Configurable
+instance-wide enforcement follows in step 20.
+
+Verified incoming DATA queues bytes for the consumer in wire order. Concatenated
+bytes form the application stream; event/frame boundaries are not messages.
+Invalid DATA terminates only its active stream with STREAM_STATE_ERROR.
+Incoming queued DATA is capped at 65,536 bytes per stream; overflow fails that
+stream with RESOURCE_LIMIT. Popping data events releases their buffering.

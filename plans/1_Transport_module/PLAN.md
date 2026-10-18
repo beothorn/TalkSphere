@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–12 are implemented and checked; steps 13–24 have not been started.
+Status: steps 1–13 are implemented and checked; steps 14–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -30,7 +30,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **10.** Implement stream-opening payload encoding and validation.
 - [x] **11.** Allocate and validate stream identifiers in the required order.
 - [x] **12.** Route new streams to registered protocol handlers.
-- [ ] **13.** Exchange ordered data across multiple bidirectional streams.
+- [x] **13.** Exchange ordered data across multiple bidirectional streams.
 - [ ] **14.** Support independent stream half-closing and normal completion.
 - [ ] **15.** Implement stream cancellation and terminal-state handling.
 - [ ] **16.** Apply the required stream-level and connection-level error responses.
@@ -276,6 +276,8 @@ boundaries as application message boundaries.
 Test TR-03 and TR-09 with both peers opening streams and exchanging differently
 sized data, including the maximum frame payload and invalid empty DATA. Keep
 buffers bounded from the outset; configurable limits are completed in step 20.
+
+Completed: DATA supports both stream creators, immediate bytes after OPEN, independent interleaving and ordered byte concatenation. Full-size frames, authority checks, invalid empty data and bounded queue overflow are tested. All 129 tests and required checks passed; production coverage is 96.65% (1297/1342). Configurable instance-wide limits remain step 20.
 
 ### 14. Half-close and normal completion
 

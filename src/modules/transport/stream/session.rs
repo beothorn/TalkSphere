@@ -1,9 +1,12 @@
 //! Authenticated connection stream routing with queued consumer events.
 //! The driver supplies verified frames and drains outbound frames through integrity/I/O.
 use super::super::{
-    api::{ConnectionRole, Event, PeerContext, Protocol},
+    api::{
+        ConnectionRole, Event, Failure, FailureCode, FailureOrigin, PeerContext, Protocol,
+        StreamOutcome,
+    },
     codec::{
-        FrameHeader, FrameType,
+        FrameHeader, FrameType, MAX_PAYLOAD_BYTES,
         control::{ErrorCode, ErrorPayload},
         open::Open,
     },
@@ -28,6 +31,12 @@ pub enum SessionError {
     Id(IdError),
     /// Caller is not registered for the requested protocol.
     Owner,
+    /// Caller supplied a stream from another connection or owner.
+    Authority(super::super::TransportError),
+    /// DATA must contain one to 65,536 bytes.
+    InvalidData,
+    /// A bounded queue cannot currently admit more bytes.
+    Capacity,
     /// Frame is not supported in this state.
     Protocol,
     /// Internal frame construction failed.
@@ -99,6 +108,38 @@ impl Session {
         Ok(handle)
     }
 
+    /// Queue ordered bytes for one owned stream; DATA boundaries are not messages.
+    /// # Errors
+    /// Rejects invalid authority, inactive streams, empty/oversized data or full queues.
+    pub fn send(
+        &mut self,
+        owner: &StreamOwner,
+        stream: &StreamHandle,
+        bytes: Vec<u8>,
+    ) -> Result<(), SessionError> {
+        tracing::trace!(function = "Session::send", "Queueing ordered stream bytes");
+        stream
+            .authorize(self.handle.id(), owner)
+            .map_err(SessionError::Authority)?;
+        if !self.streams.contains_key(&stream.wire_id().get()) {
+            return Err(SessionError::Protocol);
+        }
+        if bytes.is_empty() || bytes.len() > MAX_PAYLOAD_BYTES {
+            return Err(SessionError::InvalidData);
+        }
+        let queued: usize = self
+            .outbound
+            .iter()
+            .map(|frame| frame.payload().len() + 28)
+            .sum();
+        if queued + bytes.len() + 28 > 4 * (MAX_PAYLOAD_BYTES + 28) {
+            return Err(SessionError::Capacity);
+        }
+        self.outbound
+            .push_back(frame(FrameType::Data, stream.wire_id().get(), bytes)?);
+        Ok(())
+    }
+
     /// Dispatch a frame only after successful integrity verification.
     /// # Errors
     /// Reports connection violations; malformed/unsupported OPEN is refused per stream.
@@ -149,6 +190,34 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if kind == FrameType::Data {
+            let stream = self
+                .streams
+                .get(&id)
+                .cloned()
+                .ok_or(SessionError::Protocol)?;
+            if payload.is_empty() || payload.len() > MAX_PAYLOAD_BYTES {
+                return self.fail_stream(id, ErrorCode::StreamStateError, FailureCode::StreamState);
+            }
+            let buffered: usize = self
+                .events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::Data { stream, bytes } if stream.wire_id().get() == id => {
+                        Some(bytes.len())
+                    }
+                    _ => None,
+                })
+                .sum();
+            if buffered + payload.len() > MAX_PAYLOAD_BYTES {
+                return self.fail_stream(id, ErrorCode::ResourceLimit, FailureCode::ResourceLimit);
+            }
+            self.events.push_back(Event::Data {
+                stream,
+                bytes: payload,
+            });
+            return Ok(());
+        }
         if kind != FrameType::Open {
             return Err(SessionError::Protocol);
         }
@@ -191,6 +260,29 @@ impl Session {
             protocol,
         });
         Ok(stream)
+    }
+
+    // Isolate malformed or overflowing active streams and preserve unrelated work.
+    fn fail_stream(
+        &mut self,
+        id: u32,
+        wire: ErrorCode,
+        code: FailureCode,
+    ) -> Result<(), SessionError> {
+        tracing::trace!(
+            function = "Session::fail_stream",
+            "Terminating an affected stream"
+        );
+        if let Some(stream) = self.streams.remove(&id) {
+            self.events.push_back(Event::StreamClosed {
+                stream,
+                outcome: StreamOutcome::Failed(Failure {
+                    origin: FailureOrigin::Local,
+                    code,
+                }),
+            });
+        }
+        self.refuse(id, wire)
     }
 
     // Refused OPENs remain consumed without retaining a terminal stream object.
