@@ -18,6 +18,7 @@ pub mod handles;
 pub mod handshake;
 pub mod integrity;
 pub mod ports;
+pub mod stream;
 
 #[cfg(test)]
 pub(crate) mod test_support;
