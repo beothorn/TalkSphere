@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–9 are implemented and checked; steps 10–24 have not been started.
+Status: steps 1–10 are implemented and checked; steps 11–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -27,7 +27,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **7.** Construct authentication transcripts and directional key derivation requests.
 - [x] **8.** Implement handshake sequencing and peer identity checks.
 - [x] **9.** Add frame integrity verification and replay protection.
-- [ ] **10.** Implement stream-opening payload encoding and validation.
+- [x] **10.** Implement stream-opening payload encoding and validation.
 - [ ] **11.** Allocate and validate stream identifiers in the required order.
 - [ ] **12.** Route new streams to registered protocol handlers.
 - [ ] **13.** Exchange ordered data across multiple bidirectional streams.
@@ -236,6 +236,8 @@ absence of trailing bytes, without assigning new wire frame types.
 Test valid and malformed identifiers/versions from TR-08. Keep malformed OPEN
 separate from a valid but unsupported protocol so later routing emits the
 correct error after consuming the stream identifier.
+
+Completed: OPEN encoding and borrowed decoding enforce exact widths, ASCII namespace grammar and nonzero versions, preserving malformed versus unsupported selection. Independent wire expectations and malformed-input tests pass. All 119 tests, formatting, Clippy, build and help checks passed; production coverage is 97.07% (1027/1058).
 
 ### 11. Stream identifier allocation
 

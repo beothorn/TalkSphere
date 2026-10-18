@@ -16,6 +16,10 @@ and [acceptance case TR-03](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef
 The [pinned fixtures](../test_support/fixtures/README.md) provide independent
 PING/PONG header bytes; DATA expectations follow the wire layout directly.
 
+Step 10 adds [OPEN selection](open.md), enforcing section 7 and TR-08 namespace,
+version and exact-length rules. Valid unknown protocols remain a routing decision.
+Exercise it with `cargo test --locked modules::transport::codec::open`.
+
 ## API and validation
 
 `FrameHeader::new(FrameType, stream_id, payload_len)` validates the outgoing

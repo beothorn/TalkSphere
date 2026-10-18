@@ -10,6 +10,7 @@ mod header;
 
 pub mod control;
 pub mod handshake;
+pub mod open;
 
 pub use error::HeaderError;
 pub use frame_type::FrameType;
