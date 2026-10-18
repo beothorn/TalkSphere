@@ -4,7 +4,7 @@ Transport owns CR2SE connections, authentication, frames and multiplexed
 streams. It consumes Identity, Cryptography, TCP and timers through explicit
 boundaries; it does not own service dispatch, balances or application retries.
 
-**Status:** steps 1–22 are implemented: public contracts, replaceable dependency
+**Status:** steps 1–23 are implemented: public contracts, replaceable dependency
 interfaces, local configuration validation, handle ownership checks and
 deterministic test helpers, frame/control codecs and bounded complete-frame I/O.
 `transport::start()` still returns the typed local error
@@ -161,3 +161,6 @@ and independent expected DATA bytes, payload boundaries and malformed headers.
 They do not prove the pending Transport
 state machine or real cryptographic behavior. Generated API documentation is under
 `target/doc/talksphere/modules/transport/index.html` after `cargo doc`.
+
+See the [acceptance coverage matrix](ACCEPTANCE.md) for executable TR-01–TR-15
+mappings, measured checks and explicitly pending real-cryptography evidence.

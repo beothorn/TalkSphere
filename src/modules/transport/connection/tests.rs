@@ -341,3 +341,6 @@ fn connection_limit_precedes_authentication() {
     assert!(identity.0.calls().is_empty());
     assert!(crypto.0.calls().is_empty());
 }
+
+#[path = "tests/acceptance.rs"]
+mod acceptance;

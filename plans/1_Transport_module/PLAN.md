@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–22 are implemented and checked; steps 23–24 have not been started.
+Status: steps 1–23 are implemented and checked; steps 24–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -40,7 +40,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **20.** Enforce limits on connections, streams and queued bytes.
 - [x] **21.** Schedule active streams fairly when consumers or sockets are slow.
 - [x] **22.** Add TCP adapters for outgoing and incoming connections.
-- [ ] **23.** Verify Transport behavior against the upstream acceptance cases.
+- [x] **23.** Verify Transport behavior against the upstream acceptance cases.
 - [ ] **24.** Document completed coverage and the remaining real-cryptography integration.
 
 ## Reference baseline
@@ -412,6 +412,8 @@ pending assertions passed because a scripted adapter returned a fixture value.
 Run `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets -- -D warnings`,
 `cargo test --locked` and `cargo build --locked`, then repeat the affected
 acceptance/vector cases with real dependencies in roadmap steps 3–5.
+
+Completed: The acceptance matrix maps TR-01–TR-15 to focused and composed tests, explicitly separating scripted orchestration from pending real-crypto evidence. Composed cases cover every protected split, byte-segmented handshake/tag transitions, short output, maximum DATA, malformed protected controls, graceful drain, truncation and slow consumers. All 172 tests and required checks passed; production coverage is 94.00% (2804/2983). See src/modules/transport/ACCEPTANCE.md for exact scope and pending integration assertions.
 
 ### 24. Documentation and integration handoff
 
