@@ -1,7 +1,7 @@
 # Streams
 
-This domain owns per-connection stream numbering and will add routing and
-lifecycle state in subsequent steps. It depends on the TCP role contract;
+This domain owns per-connection stream numbering, authorized protocol
+registration and queued OPEN dispatch; lifecycle state follows in later steps. It depends on the TCP role contract;
 framing and cryptography remain separate responsibilities. The connection
 owner serializes mutations and retains only high-water marks for terminal IDs.
 
@@ -11,3 +11,7 @@ See [ID contracts](ids.md) and the [Transport plan](../../../../plans/1_Transpor
 From the repository root, build with `cargo build --locked`, exercise with
 `cargo test --locked modules::transport::stream`, and inspect application status
 with `cargo run --locked -- help serve`. Runtime networking remains pending.
+
+See [registration](registry.md) and [session routing](session.md) for caller
+authority and event contracts. DATA immediately following OPEN is supported by
+the subsequent data-exchange step, with no OPEN acknowledgement.

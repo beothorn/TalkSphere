@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–11 are implemented and checked; steps 12–24 have not been started.
+Status: steps 1–12 are implemented and checked; steps 13–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -29,7 +29,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **9.** Add frame integrity verification and replay protection.
 - [x] **10.** Implement stream-opening payload encoding and validation.
 - [x] **11.** Allocate and validate stream identifiers in the required order.
-- [ ] **12.** Route new streams to registered protocol handlers.
+- [x] **12.** Route new streams to registered protocol handlers.
 - [ ] **13.** Exchange ordered data across multiple bidirectional streams.
 - [ ] **14.** Support independent stream half-closing and normal completion.
 - [ ] **15.** Implement stream cancellation and terminal-state handling.
@@ -263,6 +263,8 @@ Test TR-08 with a protocol stub, including data arriving immediately after OPEN
 and an ID consumed by refusal. Queue consumer events without invoking
 re-entrant application code while internal locks are held; implementing Peer
 Protocol itself remains a later module.
+
+Completed: Authorized registrations route exact protocol versions to scoped consumers, queue authenticated stream-open events and consume malformed/unsupported OPEN IDs before stream refusal. All 126 tests and required checks passed; production coverage is 96.53% (1225/1269). DATA immediately following OPEN is exercised by the following data step; the full socket driver remains pending.
 
 ### 13. Bidirectional stream data
 

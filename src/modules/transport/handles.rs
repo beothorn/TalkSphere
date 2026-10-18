@@ -44,6 +44,17 @@ pub struct ConnectionHandle {
 }
 
 impl ConnectionHandle {
+    // Issue a fresh instance capability for admitted local composition.
+    pub(crate) fn new() -> Self {
+        tracing::trace!(
+            function = "ConnectionHandle::new",
+            "Issuing connection authority"
+        );
+        Self {
+            id: ConnectionId(Instance(Arc::new(()))),
+        }
+    }
+
     pub fn id(&self) -> &ConnectionId {
         &self.id
     }
@@ -65,6 +76,17 @@ pub struct ListenerHandle(Instance);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StreamOwner(Instance);
 
+impl StreamOwner {
+    // Issue authority only after successful local protocol registration.
+    pub(crate) fn new() -> Self {
+        tracing::trace!(
+            function = "StreamOwner::new",
+            "Issuing protocol owner authority"
+        );
+        Self(Instance(Arc::new(())))
+    }
+}
+
 /// A stream scoped to both a connection instance and its registered owner.
 /// Inspecting this handle does not grant connection-control authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,6 +97,23 @@ pub struct StreamHandle {
 }
 
 impl StreamHandle {
+    // Bind a nonzero wire ID to its connection and authorized consumer.
+    pub(crate) fn new(
+        connection: &ConnectionHandle,
+        owner: &StreamOwner,
+        wire_id: NonZeroU32,
+    ) -> Self {
+        tracing::trace!(
+            function = "StreamHandle::new",
+            "Issuing scoped stream authority"
+        );
+        Self {
+            connection: connection.id.clone(),
+            owner: owner.clone(),
+            wire_id,
+        }
+    }
+
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection
     }
