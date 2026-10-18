@@ -61,6 +61,7 @@ pub struct Session {
     resources: super::super::resources::Resources,
     accepted_remote: u32,
     peer_goaway: Option<u32>,
+    drain_failure: Option<Failure>,
     goaway_sent: bool,
     goaway_written: bool,
     pings: BTreeMap<[u8; 8], (Instant, Instant)>,
@@ -118,6 +119,7 @@ impl Session {
             ),
             accepted_remote: 0,
             peer_goaway: None,
+            drain_failure: None,
             goaway_sent: false,
             goaway_written: false,
             pings: BTreeMap::new(),
@@ -407,6 +409,7 @@ impl Session {
             return;
         }
         self.closed = true;
+        let failure = failure.or(self.drain_failure);
         self.outbound.clear();
         let unfinished = failure.unwrap_or(Failure {
             origin: FailureOrigin::Local,

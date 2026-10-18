@@ -56,6 +56,12 @@ impl Session {
             return Err(SessionError::Protocol);
         }
         self.peer_goaway = Some(last);
+        if goaway.code() != ErrorCode::NoError {
+            self.drain_failure = Some(Failure {
+                origin: FailureOrigin::Peer,
+                code: failure_code(goaway.code()),
+            });
+        }
         let refused: Vec<_> = self
             .streams
             .keys()

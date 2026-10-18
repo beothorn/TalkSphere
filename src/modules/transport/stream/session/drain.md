@@ -15,3 +15,8 @@ IDs and receive REFUSED_STREAM. Local ID exhaustion initiates ID_EXHAUSTED drain
 accepted streams remain and queued output is empty. The owning connection then
 closes normally, preserving completed stream outcomes. It must also ensure no
 frame remains partially written outside the session queue.
+
+A nonzero peer GOAWAY reason is retained in the final typed connection outcome;
+accepted streams can still complete normally. EOF after completed graceful
+output and all accepted streams is normal drain, rather than connection loss.
+EOF while accepted work remains unfinished still fails that work.

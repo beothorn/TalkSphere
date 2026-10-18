@@ -107,7 +107,16 @@ impl<C: Cryptography> Connection<C> {
                 return true;
             }
             Poll::Ready(Ok(None)) => {
-                self.abort(local_failure(FailureCode::ConnectionLost));
+                if self.session.as_ref().is_some_and(Session::ready_to_close)
+                    && !self.writer.is_busy()
+                {
+                    if let Some(session) = &mut self.session {
+                        session.close(None, None);
+                    }
+                    self.release();
+                } else {
+                    self.abort(local_failure(FailureCode::ConnectionLost));
+                }
                 return true;
             }
             Poll::Ready(Ok(Some(frame))) => frame,

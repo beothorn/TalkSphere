@@ -61,3 +61,7 @@ Keep these findings distinct from local Rust choices. Before claiming full
 conformance, integrate real primitives and credentials, compare every pinned
 cryptographic output, run mutation/replay/restart cases and demonstrate two
 local nodes in both directions. No test substitute is an authenticated service.
+
+Final acceptance review added explicit checks for EOF immediately after a fully
+completed drain and preservation of nonzero peer GOAWAY reasons. Both now pass;
+the review run passed 174 tests with 94.06% production coverage (2821/2999).

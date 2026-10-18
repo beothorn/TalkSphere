@@ -631,3 +631,53 @@ fn bounded_slow_consumer_does_not_stop_another_stream() {
     assert!(events.iter().any(|e| matches!(e, Event::Data { stream, bytes } if stream.wire_id().get() == 4 && *bytes == [9])));
     assert!(!h.control.is_closed());
 }
+
+// A peer may close TCP immediately after the drain is complete; EOF must preserve normal completion.
+#[test]
+fn eof_after_completed_goaway_is_normal() {
+    let mut h = Harness::new();
+    h.connection
+        .session()
+        .unwrap()
+        .drain(ShutdownReason::Normal)
+        .unwrap();
+    h.expect_send(
+        FrameType::GoAway,
+        0,
+        &GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+    );
+    h.control.push_read(ReadStep::Eof);
+    assert!(h.poll().is_ready());
+    assert!(
+        h.events()
+            .iter()
+            .any(|e| matches!(e, Event::ConnectionClosed { failure: None, .. }))
+    );
+}
+
+// Nonzero peer GOAWAY reasons survive graceful transport drain as typed connection outcomes.
+#[test]
+fn peer_drain_reason_is_preserved() {
+    let mut h = Harness::new();
+    h.receive(
+        FrameType::GoAway,
+        0,
+        GoAway::new(0, ErrorCode::IdExhausted, "").unwrap().encode(),
+        Some((
+            FrameType::GoAway,
+            0,
+            GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+        )),
+    );
+    assert!(h.control.is_closed());
+    assert!(h.events().iter().any(|e| matches!(
+        e,
+        Event::ConnectionClosed {
+            failure: Some(Failure {
+                origin: FailureOrigin::Peer,
+                code: FailureCode::IdExhausted
+            }),
+            ..
+        }
+    )));
+}
