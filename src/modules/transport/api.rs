@@ -174,6 +174,8 @@ pub enum FailureCode {
     UnsupportedProtocol,
     StreamState,
     Refused,
+    /// Explicit peer cancellation used in an ERROR payload.
+    Cancelled,
     ResourceLimit,
     IdExhausted,
     SequenceExhausted,

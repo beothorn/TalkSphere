@@ -2,8 +2,8 @@
 //! The driver supplies verified frames and drains outbound frames through integrity/I/O.
 use super::super::{
     api::{
-        ConnectionRole, Event, Failure, FailureCode, FailureOrigin, PeerContext, Protocol,
-        StreamOutcome,
+        CancellationReason, ConnectionRole, Event, Failure, FailureCode, FailureOrigin,
+        PeerContext, Protocol, StreamOutcome,
     },
     codec::{
         FrameHeader, FrameType, MAX_PAYLOAD_BYTES,
@@ -175,6 +175,46 @@ impl Session {
         Ok(())
     }
 
+    /// Cancel both stream directions and discard queued local production.
+    /// # Errors
+    /// Rejects foreign authority or an already terminal stream without queueing work.
+    pub fn cancel(
+        &mut self,
+        owner: &StreamOwner,
+        stream: &StreamHandle,
+        reason: CancellationReason,
+    ) -> Result<(), SessionError> {
+        tracing::trace!(
+            function = "Session::cancel",
+            "Cancelling both stream directions"
+        );
+        stream
+            .authorize(self.handle.id(), owner)
+            .map_err(SessionError::Authority)?;
+        let id = stream.wire_id().get();
+        if !self.streams.contains_key(&id) {
+            return Err(SessionError::Protocol);
+        }
+        let code = match reason {
+            CancellationReason::Cancelled => ErrorCode::Cancelled,
+            CancellationReason::ResourceLimit => ErrorCode::ResourceLimit,
+            CancellationReason::InternalError => ErrorCode::InternalError,
+        };
+        self.terminate(
+            id,
+            StreamOutcome::Cancelled {
+                origin: FailureOrigin::Local,
+                reason,
+            },
+        );
+        let payload = ErrorPayload::new(code, "")
+            .map_err(|_| SessionError::Protocol)?
+            .encode();
+        self.outbound
+            .push_back(frame(FrameType::Cancel, id, payload)?);
+        Ok(())
+    }
+
     /// Report a fully written frame; normal completion waits for local END delivery.
     pub fn sent(&mut self, kind: FrameType, id: u32) {
         tracing::trace!(
@@ -239,6 +279,39 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if kind != FrameType::Open && id != 0 {
+            if !self.ids.was_created(id) {
+                return Err(SessionError::Protocol);
+            }
+            if !self.streams.contains_key(&id) {
+                return Ok(());
+            }
+        }
+        if matches!(kind, FrameType::Cancel | FrameType::Error) && id != 0 {
+            let diagnostic = ErrorPayload::decode(&payload).map_err(|_| SessionError::Protocol)?;
+            let code = diagnostic.code();
+            let outcome = if kind == FrameType::Cancel
+                && matches!(
+                    code,
+                    ErrorCode::Cancelled | ErrorCode::ResourceLimit | ErrorCode::InternalError
+                ) {
+                StreamOutcome::Cancelled {
+                    origin: FailureOrigin::Peer,
+                    reason: match code {
+                        ErrorCode::ResourceLimit => CancellationReason::ResourceLimit,
+                        ErrorCode::InternalError => CancellationReason::InternalError,
+                        _ => CancellationReason::Cancelled,
+                    },
+                }
+            } else {
+                StreamOutcome::Failed(Failure {
+                    origin: FailureOrigin::Peer,
+                    code: failure_code(code),
+                })
+            };
+            self.terminate(id, outcome);
+            return Ok(());
+        }
         if kind == FrameType::End {
             let state = self.streams.get_mut(&id).ok_or(SessionError::Protocol)?;
             if !payload.is_empty() || !state.remote_open {
@@ -361,17 +434,31 @@ impl Session {
             function = "Session::fail_stream",
             "Terminating an affected stream"
         );
+        self.terminate(
+            id,
+            StreamOutcome::Failed(Failure {
+                origin: FailureOrigin::Local,
+                code,
+            }),
+        );
+        self.refuse(id, wire)
+    }
+
+    // Keep any unsent OPEN so remote numbering remains contiguous, but stop later production.
+    fn terminate(&mut self, id: u32, outcome: StreamOutcome) {
+        tracing::trace!(
+            function = "Session::terminate",
+            "Releasing terminal stream production"
+        );
+        self.outbound.retain(|frame| {
+            frame.header().stream_id() != id || frame.header().frame_type() == FrameType::Open
+        });
         if let Some(state) = self.streams.remove(&id) {
-            let stream = state.handle;
             self.events.push_back(Event::StreamClosed {
-                stream,
-                outcome: StreamOutcome::Failed(Failure {
-                    origin: FailureOrigin::Local,
-                    code,
-                }),
+                stream: state.handle,
+                outcome,
             });
         }
-        self.refuse(id, wire)
     }
 
     // Refused OPENs remain consumed without retaining a terminal stream object.
@@ -386,6 +473,26 @@ impl Session {
         self.outbound
             .push_back(frame(FrameType::Error, id, payload)?);
         Ok(())
+    }
+}
+
+// Preserve peer error codes as typed local outcomes, never interpret diagnostic text.
+fn failure_code(code: ErrorCode) -> FailureCode {
+    tracing::trace!(
+        function = "session::failure_code",
+        "Mapping a peer failure code"
+    );
+    match code {
+        ErrorCode::AuthenticationFailed => FailureCode::AuthenticationFailed,
+        ErrorCode::FrameSizeError => FailureCode::FrameTooLarge,
+        ErrorCode::UnsupportedProtocol => FailureCode::UnsupportedProtocol,
+        ErrorCode::StreamStateError => FailureCode::StreamState,
+        ErrorCode::RefusedStream => FailureCode::Refused,
+        ErrorCode::InternalError => FailureCode::Internal,
+        ErrorCode::IdExhausted => FailureCode::IdExhausted,
+        ErrorCode::ResourceLimit => FailureCode::ResourceLimit,
+        ErrorCode::Cancelled => FailureCode::Cancelled,
+        ErrorCode::ProtocolError | ErrorCode::NoError => FailureCode::ProtocolViolation,
     }
 }
 

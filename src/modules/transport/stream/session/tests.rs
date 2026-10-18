@@ -317,3 +317,110 @@ fn invalid_peer_half_close_sequences_are_isolated() {
         )));
     }
 }
+
+// Local cancellation keeps OPEN numbering intact but removes queued DATA/END and stops production.
+#[test]
+fn cancellation_stops_production_and_discards_terminal_frames() {
+    for reason in [
+        CancellationReason::Cancelled,
+        CancellationReason::ResourceLimit,
+        CancellationReason::InternalError,
+    ] {
+        let (mut state, registry, owner) = setup();
+        let stream = state.open(&registry, &owner).unwrap();
+        state.send(&owner, &stream, vec![1]).unwrap();
+        state.end(&owner, &stream).unwrap();
+        state.cancel(&owner, &stream, reason).unwrap();
+        assert_eq!(
+            state.cancel(&owner, &stream, reason),
+            Err(SessionError::Protocol)
+        );
+        assert_eq!(
+            state.send(&owner, &stream, vec![1]),
+            Err(SessionError::Protocol)
+        );
+        assert_eq!(
+            state
+                .outbound
+                .iter()
+                .map(|f| f.header().frame_type())
+                .collect::<Vec<_>>(),
+            vec![FrameType::Open, FrameType::Cancel]
+        );
+        for kind in [
+            FrameType::Data,
+            FrameType::End,
+            FrameType::Cancel,
+            FrameType::Error,
+        ] {
+            state.receive_parts(kind, 1, vec![255], &registry).unwrap();
+        }
+        assert_eq!(
+            state
+                .events
+                .iter()
+                .filter(|e| matches!(e, Event::StreamClosed { .. }))
+                .count(),
+            1
+        );
+        assert_eq!(
+            state.receive_parts(FrameType::Data, 3, vec![1], &registry),
+            Err(SessionError::Protocol)
+        );
+    }
+}
+
+// Peer cancellation/error closes both halves once, preserves unrelated streams and forbids OPEN reuse.
+#[test]
+fn peer_terminal_controls_and_id_reuse() {
+    for kind in [FrameType::Cancel, FrameType::Error] {
+        let (mut state, registry, owner) = setup();
+        let unaffected = state.open(&registry, &owner).unwrap();
+        state
+            .receive_parts(
+                FrameType::Open,
+                2,
+                Open::new("cr2se.peer", 1).unwrap().encode(),
+                &registry,
+            )
+            .unwrap();
+        state
+            .receive_parts(
+                kind,
+                2,
+                ErrorPayload::new(ErrorCode::Cancelled, "untrusted")
+                    .unwrap()
+                    .encode(),
+                &registry,
+            )
+            .unwrap();
+        state
+            .receive_parts(FrameType::Data, 2, vec![1], &registry)
+            .unwrap();
+        state.send(&owner, &unaffected, vec![9]).unwrap();
+        assert_eq!(
+            state.receive_parts(FrameType::Open, 2, vec![], &registry),
+            Err(SessionError::Id(IdError::Unexpected))
+        );
+        assert_eq!(
+            state
+                .events
+                .iter()
+                .filter(|e| matches!(e, Event::StreamClosed { .. }))
+                .count(),
+            1
+        );
+    }
+}
+
+// Malformed active terminal payloads are connection violations, not successful cancellation.
+#[test]
+fn malformed_terminal_controls_are_rejected() {
+    let (mut state, registry, owner) = setup();
+    state.open(&registry, &owner).unwrap();
+    assert_eq!(
+        state.receive_parts(FrameType::Cancel, 1, vec![], &registry),
+        Err(SessionError::Protocol)
+    );
+    assert!(state.streams.contains_key(&1));
+}

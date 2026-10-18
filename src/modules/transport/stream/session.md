@@ -45,3 +45,16 @@ Normal completion is emitted exactly once when peer END was received and local
 END was fully written; merely queueing local END is insufficient. The active
 entry is then removed while ID history remains. Connection cleanup of unfinished
 streams is implemented in the later error/cleanup steps.
+
+`cancel(owner, stream, reason)` terminates both directions, stops local
+production, queues CANCEL and emits one local cancellation outcome. Pending
+DATA/END for the affected stream are removed; an unsent OPEN is retained to
+preserve exact remote numbering. An already serialized frame must finish at
+the connection writer, and the peer discards it if that stream is terminal.
+
+Peer CANCEL/ERROR parses its registered diagnostic code, terminates both halves
+and emits an outcome preserving peer origin. Once terminal, later non-OPEN
+frames for that ID are discarded after framing/integrity checks, without
+payload interpretation or duplicate events. OPEN reuse remains a connection
+violation. Non-OPEN references to never-created IDs are connection violations.
+No cancellation outcome implies retry, rollback or absence of remote effects.

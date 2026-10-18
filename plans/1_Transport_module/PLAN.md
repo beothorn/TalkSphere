@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–14 are implemented and checked; steps 15–24 have not been started.
+Status: steps 1–15 are implemented and checked; steps 16–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -32,7 +32,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **12.** Route new streams to registered protocol handlers.
 - [x] **13.** Exchange ordered data across multiple bidirectional streams.
 - [x] **14.** Support independent stream half-closing and normal completion.
-- [ ] **15.** Implement stream cancellation and terminal-state handling.
+- [x] **15.** Implement stream cancellation and terminal-state handling.
 - [ ] **16.** Apply the required stream-level and connection-level error responses.
 - [ ] **17.** Add ping requests with response matching and timeouts.
 - [ ] **18.** Implement graceful connection shutdown with GOAWAY.
@@ -301,6 +301,8 @@ an OPEN reusing an old ID remains invalid.
 Test queued DATA/END after cancellation, repeated terminal controls and reuse
 from TR-10. Never translate cancellation into an application retry, credit
 rollback or a claim that remote work did not happen.
+
+Completed: Local and peer cancellation/error terminate both directions once, stop queued production and preserve unsent OPEN ordering. Verified terminal non-OPEN frames are discarded; never-created references and reused OPENs remain connection violations. All 134 tests and required checks passed; production coverage is 96.16% (1427/1484).
 
 ### 16. Error scope and responses
 
