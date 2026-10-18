@@ -1,6 +1,6 @@
 # Authentication constructions
 
-The future handshake driver uses role-ordered transcripts and directional key
+Handshake state uses role-ordered transcripts and directional key
 derivation here. Identity supplies credentials/signatures; Crypto supplies
 primitives and opaque secret capabilities. This module owns domain separators,
 role bytes, length prefixes, HKDF labels and local send/receive assignment.
@@ -21,5 +21,12 @@ cargo test --locked
 cargo run --locked -- --help
 ```
 
-`serve` remains unavailable. No connection becomes authenticated by calling a
-constructor alone; sequencing, peer checks and dispatch gates are subsequent work.
+Step 8 adds [sequencing and identity gates](state.md), including same-identity
+peers, contact pins, duplicates and independent tag transitions. Tests combine
+AUTH and a tagged frame in one socket chunk. Derivation follows the normative
+post-AUTH ordering; [bug 0002](../../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md)
+records the differing pseudocode order. Tag verification is step 9.
+
+`serve` remains unavailable. Constructors never authenticate by themselves;
+only fully checked state can release connection facts. Real cryptography and
+socket/timeouts/error-response composition remain required for a running node.

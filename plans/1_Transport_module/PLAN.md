@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–7 are implemented and checked; steps 8–24 have not been started.
+Status: steps 1–8 are implemented and checked; steps 9–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -25,7 +25,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **5.** Read and write complete frames across partial socket operations.
 - [x] **6.** Implement HELLO and AUTH handshake payload formats.
 - [x] **7.** Construct authentication transcripts and directional key derivation requests.
-- [ ] **8.** Implement handshake sequencing and peer identity checks.
+- [x] **8.** Implement handshake sequencing and peer identity checks.
 - [ ] **9.** Add frame integrity verification and replay protection.
 - [ ] **10.** Implement stream-opening payload encoding and validation.
 - [ ] **11.** Allocate and validate stream identifiers in the required order.
@@ -209,6 +209,8 @@ Track the tag transition separately in each direction and handle AUTH followed
 by a protected frame in one read. Test TR-04 and TR-05, including the ban on
 ordinary application frames before verifying remote AUTH; integrate actual tag
 verification in step 9 and final timeout/error behavior in steps 16 and 19.
+
+Completed: Handshake state enforces HELLO/AUTH ordering, pinned/same identities, fresh material requests and independent tag transitions. Authenticated facts are transferred only after verification and local AUTH completion. All 111 tests and required checks passed; production coverage is 96.53% (863/894). Bug 0002 records the upstream derivation-order contradiction; the normative post-verification order is followed.
 
 ### 9. Integrity and replay protection
 
