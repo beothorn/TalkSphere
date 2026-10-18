@@ -610,3 +610,135 @@ fn ping_capacity_and_close() {
         Err(SessionError::Closed)
     );
 }
+
+// The peer accepts only streams 1/3, refuses 5, and late remote OPEN is consumed and refused.
+#[test]
+fn goaway_bounds_and_late_open_refusal() {
+    use crate::modules::transport::codec::control::GoAway;
+    let (mut state, registry, owner) = setup();
+    for _ in 0..3 {
+        state.open(&registry, &owner).unwrap();
+    }
+    state
+        .receive_parts(
+            FrameType::GoAway,
+            0,
+            GoAway::new(3, ErrorCode::NoError, "").unwrap().encode(),
+            &registry,
+        )
+        .unwrap();
+    assert!(state.streams.contains_key(&1));
+    assert!(state.streams.contains_key(&3));
+    assert!(!state.streams.contains_key(&5));
+    assert_eq!(state.open(&registry, &owner), Err(SessionError::Draining));
+    state
+        .receive_parts(FrameType::Open, 2, vec![], &registry)
+        .unwrap();
+    assert!(state.ids.was_created(2));
+    assert_eq!(
+        ErrorPayload::decode(state.outbound.back().unwrap().payload())
+            .unwrap()
+            .code(),
+        ErrorCode::RefusedStream
+    );
+    for bound in [2, 7, 5] {
+        assert_eq!(
+            state.receive_parts(
+                FrameType::GoAway,
+                0,
+                GoAway::new(bound, ErrorCode::NoError, "").unwrap().encode(),
+                &registry
+            ),
+            Err(SessionError::Protocol)
+        );
+    }
+    state
+        .receive_parts(
+            FrameType::GoAway,
+            0,
+            GoAway::new(1, ErrorCode::NoError, "").unwrap().encode(),
+            &registry,
+        )
+        .unwrap();
+    assert!(!state.streams.contains_key(&3));
+    assert_eq!(
+        state
+            .outbound
+            .iter()
+            .filter(|f| f.header().frame_type() == FrameType::GoAway)
+            .count(),
+        1
+    );
+}
+
+// A graceful close waits for accepted streams and GOAWAY bytes, ignoring refused IDs in its bound.
+#[test]
+fn graceful_drain_preserves_completed_streams() {
+    use crate::modules::transport::{api::ShutdownReason, codec::control::GoAway};
+    let (mut state, registry, owner) = setup();
+    state
+        .receive_parts(
+            FrameType::Open,
+            2,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+            &registry,
+        )
+        .unwrap();
+    state
+        .receive_parts(FrameType::Open, 4, vec![], &registry)
+        .unwrap();
+    let stream = state.streams[&2].handle.clone();
+    state.drain(ShutdownReason::Normal).unwrap();
+    state.drain(ShutdownReason::Normal).unwrap();
+    assert!(!state.ready_to_close());
+    let goaway = state
+        .outbound
+        .iter()
+        .find(|f| f.header().frame_type() == FrameType::GoAway)
+        .unwrap();
+    assert_eq!(
+        GoAway::decode(goaway.payload())
+            .unwrap()
+            .last_accepted_remote_stream_id(),
+        2
+    );
+    state.end(&owner, &stream).unwrap();
+    state
+        .receive_parts(FrameType::End, 2, vec![], &registry)
+        .unwrap();
+    while let Some(frame) = state.pop_outbound() {
+        state.sent(frame.header().frame_type(), frame.header().stream_id());
+    }
+    assert!(state.ready_to_close());
+    state.close(None, None);
+    assert!(!state.ready_to_close());
+    assert_eq!(
+        state.drain(ShutdownReason::Normal),
+        Err(SessionError::Closed)
+    );
+    assert!(state.events.iter().any(|e| matches!(
+        e,
+        Event::StreamClosed {
+            outcome: StreamOutcome::Completed,
+            ..
+        }
+    )));
+}
+
+// Exhausted local numbering initiates ID_EXHAUSTED GOAWAY instead of wrapping to an old ID.
+#[test]
+fn exhausted_numbering_drains() {
+    use crate::modules::transport::codec::control::GoAway;
+    let (mut state, registry, owner) = setup();
+    state.ids.exhaust_local();
+    assert_eq!(
+        state.open(&registry, &owner),
+        Err(SessionError::Id(IdError::Exhausted))
+    );
+    let frame = state.pop_outbound().unwrap();
+    assert_eq!(
+        GoAway::decode(frame.payload()).unwrap().code(),
+        ErrorCode::IdExhausted
+    );
+    assert_eq!(state.open(&registry, &owner), Err(SessionError::Draining));
+}

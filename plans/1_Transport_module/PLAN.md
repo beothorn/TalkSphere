@@ -1,6 +1,6 @@
 # Transport module plan
 
-Status: steps 1–17 are implemented and checked; steps 18–24 have not been started.
+Status: steps 1–18 are implemented and checked; steps 19–24 have not been started.
 
 This breaks down Transport, the first unfinished module in the
 [main roadmap](../PLAN.md). Its folder is numbered 1; it remains roadmap step 2
@@ -35,7 +35,7 @@ step brings those tests together; it does not defer testing until the end.
 - [x] **15.** Implement stream cancellation and terminal-state handling.
 - [x] **16.** Apply the required stream-level and connection-level error responses.
 - [x] **17.** Add ping requests with response matching and timeouts.
-- [ ] **18.** Implement graceful connection shutdown with GOAWAY.
+- [x] **18.** Implement graceful connection shutdown with GOAWAY.
 - [ ] **19.** Enforce handshake deadlines and release connection resources on closure.
 - [ ] **20.** Enforce limits on connections, streams and queued bytes.
 - [ ] **21.** Schedule active streams fairly when consumers or sockets are slow.
@@ -341,6 +341,8 @@ its boundary, and wire stream-ID exhaustion to `ID_EXHAUSTED` shutdown.
 Test TR-07 and TR-12, including boundary parity/range, refused higher IDs and
 closure only after accepted streams finish or a separate failure requires it.
 Do not automatically replay refused application operations.
+
+Completed: GOAWAY enforces local parity, greatest-opened and non-increasing acceptance bounds, refuses higher local streams and consumes/refuses late remote OPENs. Local exhaustion starts ID_EXHAUSTED drain; closure readiness waits for accepted streams and complete GOAWAY output. All 144 tests and required checks passed; production coverage is 95.62% (1701/1779).
 
 ### 19. Deadlines and connection cleanup
 

@@ -22,6 +22,12 @@ pub struct StreamIds {
 }
 
 impl StreamIds {
+    // Position an orchestration fixture after the final permitted local allocation.
+    #[cfg(test)]
+    pub(super) fn exhaust_local(&mut self) {
+        self.next_local = None;
+    }
+
     /// Start initiator allocation at one and acceptor allocation at two.
     pub fn new(role: ConnectionRole) -> Self {
         tracing::trace!(

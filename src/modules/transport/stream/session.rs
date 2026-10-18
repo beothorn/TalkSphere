@@ -34,6 +34,8 @@ pub enum SessionError {
     Owner,
     /// Connection has already terminated.
     Closed,
+    /// GOAWAY forbids creating additional local streams.
+    Draining,
     /// Caller supplied a stream from another connection or owner.
     Authority(super::super::TransportError),
     /// DATA must contain one to 65,536 bytes.
@@ -55,6 +57,10 @@ pub(super) struct StreamState {
 
 /// One authenticated connection; no socket, key or application callback is retained.
 pub struct Session {
+    accepted_remote: u32,
+    peer_goaway: Option<u32>,
+    goaway_sent: bool,
+    goaway_written: bool,
     pings: BTreeMap<[u8; 8], (Instant, Instant)>,
     now: Option<Instant>,
     pub(super) closed: bool,
@@ -86,6 +92,10 @@ impl Session {
             peer_identity,
         };
         Self {
+            accepted_remote: 0,
+            peer_goaway: None,
+            goaway_sent: false,
+            goaway_written: false,
             pings: BTreeMap::new(),
             now: None,
             closed: false,
@@ -116,11 +126,20 @@ impl Session {
         if self.closed {
             return Err(SessionError::Closed);
         }
+        if self.goaway_sent || self.peer_goaway.is_some() {
+            return Err(SessionError::Draining);
+        }
         let protocol = registry.protocol(owner).ok_or(SessionError::Owner)?;
         let payload = Open::new(&protocol.id, protocol.version)
             .map_err(|_| SessionError::Protocol)?
             .encode();
-        let id = self.ids.allocate().map_err(SessionError::Id)?;
+        let id = match self.ids.allocate() {
+            Ok(id) => id,
+            Err(error) => {
+                self.drain(super::super::api::ShutdownReason::IdExhausted)?;
+                return Err(SessionError::Id(error));
+            }
+        };
         let handle = self.add(id, owner, protocol.clone())?;
         self.outbound
             .push_back(frame(FrameType::Open, id, payload)?);
@@ -242,6 +261,9 @@ impl Session {
             function = "Session::sent",
             "Recording stream output completion"
         );
+        if kind == FrameType::GoAway {
+            self.goaway_written = true;
+        }
         if kind == FrameType::End {
             if let Some(state) = self.streams.get_mut(&id) {
                 state.local_end_written = !state.local_open;
@@ -366,6 +388,9 @@ impl Session {
             function = "Session::receive_parts",
             "Checking stream routing state"
         );
+        if kind == FrameType::GoAway && id == 0 {
+            return self.receive_goaway(&payload);
+        }
         if matches!(kind, FrameType::Ping | FrameType::Pong) && id == 0 {
             return self.receive_ping(kind, &payload);
         }
@@ -457,6 +482,9 @@ impl Session {
             return Err(SessionError::Protocol);
         }
         self.ids.accept(id).map_err(SessionError::Id)?;
+        if self.goaway_sent || self.peer_goaway.is_some() {
+            return self.refuse(id, ErrorCode::RefusedStream);
+        }
         let selection = match Open::decode(&payload) {
             Ok(value) => value,
             Err(_) => return self.refuse(id, ErrorCode::ProtocolError),
@@ -486,6 +514,9 @@ impl Session {
             function = "Session::add",
             "Installing an owned stream before dispatch"
         );
+        if !self.ids.is_local(id) {
+            self.accepted_remote = id;
+        }
         let wire_id = NonZeroU32::new(id).ok_or(SessionError::Protocol)?;
         let stream = StreamHandle::new(&self.handle, owner, wire_id);
         self.streams.insert(
@@ -613,3 +644,5 @@ fn frame(kind: FrameType, id: u32, payload: Vec<u8>) -> Result<WireFrame, Sessio
 mod tests;
 
 mod ping;
+
+mod drain;

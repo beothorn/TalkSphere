@@ -71,3 +71,6 @@ and integrity errors and performs the actual socket close.
 `receive` also takes monotonic `now`, expiring timers before processing input.
 [PING/PONG operations](session/ping.md) use this injected time and expose the next
 deadline for the connection clock. No timer sleeps inside protocol state.
+
+[Graceful draining](session/drain.md) validates GOAWAY bounds, refuses higher
+local streams and prevents new local streams after either endpoint begins drain.
