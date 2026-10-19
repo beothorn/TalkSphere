@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–6 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–7 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -20,7 +20,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **4.** Connect production key generation to secure platform randomness.
 - [x] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
 - [x] **6.** Implement independent Ed25519 and X25519 key generation.
-- [ ] **7.** Implement ordinary Ed25519 signing and verification.
+- [x] **7.** Implement ordinary Ed25519 signing and verification.
 - [ ] **8.** Implement X25519 agreement with all-zero rejection.
 - [ ] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
 - [ ] **10.** Implement authenticated encryption without provisional plaintext release.
@@ -126,6 +126,8 @@ Completed: Independent Ed25519 and X25519 generation matches pinned public keys 
 Sign exact caller-defined bytes through authorized private capabilities and verify 32-byte public keys and 64-byte signatures. Use ordinary Ed25519, not Ed25519ph; document backend validation behavior against the specified algorithm and investigate interoperability ambiguities before choosing extra wire rules.
 
 Match the fixed Transport AUTH signature (CR-02); reject changed messages, signatures, domains, wrong keys and malformed lengths. Test denied key access and ensure no unrestricted remote signing endpoint is introduced.
+
+Completed: Ordinary signing matches both pinned AUTH signatures; exact bytes, sizes, domain/message/signature/key mutations and limits are tested. Bug 0003 records a reproduced weak-point acceptance ambiguity; strict rejection is documented local policy, pending upstream clarification. Full checks pass; coverage 94.36% (2979/3157).
 
 ### 8. Agreement
 

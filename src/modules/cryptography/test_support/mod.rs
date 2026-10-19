@@ -53,6 +53,19 @@ pub fn envelope(label: &str) -> Vec<u8> {
         .collect::<String>())
 }
 
+// Read exact Transport fixture bytes without computing signatures under test.
+pub fn transport(label: &str) -> Vec<u8> {
+    let text = include_str!("fixtures/transport.md");
+    let tail = text
+        .split(&format!("{label}:\n"))
+        .nth(1)
+        .expect("fixture label");
+    hex(&tail
+        .lines()
+        .take_while(|line| !line.is_empty() && line.chars().all(|c| c.is_ascii_hexdigit()))
+        .collect::<String>())
+}
+
 // The deterministic source preserves call order and never invents missing entropy.
 #[test]
 fn entropy_script_rejects_exhaustion_sizes_and_dependency_failure() {
