@@ -1,5 +1,6 @@
 //! Established cryptographic primitives with explicit bounds and secret ownership.
 
+pub mod aead;
 pub mod agreement;
 pub mod hash;
 pub mod kdf;

@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–9 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–10 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -23,7 +23,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **7.** Implement ordinary Ed25519 signing and verification.
 - [x] **8.** Implement X25519 agreement with all-zero rejection.
 - [x] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
-- [ ] **10.** Implement authenticated encryption without provisional plaintext release.
+- [x] **10.** Implement authenticated encryption without provisional plaintext release.
 - [ ] **11.** Implement the Transport integrity-tag construction.
 - [ ] **12.** Implement encryption-key binding and recipient credential validation.
 - [ ] **13.** Implement the generic identity-envelope header codec.
@@ -146,6 +146,8 @@ Completed: Exact HKDF extract and bounded expand match pinned intermediates and 
 Use established XChaCha20-Poly1305 with 32-byte keys, 24-byte nonces, 16-byte tags and exact associated data. Define nonce assignment responsibility explicitly: owning constructions supply their prescribed fresh material or sequence and must not reuse a key/nonce pair. Do not create a competing generic wire format.
 
 Bound input and output lengths before allocation; keep decryption output private until authentication succeeds and discard failed staging buffers. Test empty and nonempty inputs, wrong keys/nonces/AAD, missing or changed tags and limits against independent fixed values.
+
+Completed: Bounded XChaCha20-Poly1305 matches pinned sealed bytes; modified ciphertext/AAD, wrong key/nonce, missing tags, limits and empty plaintext are tested. Private staging releases no provisional output and erases on failure. Full checks pass; coverage 94.59% (3114/3292).
 
 ### 11. Integrity tags
 

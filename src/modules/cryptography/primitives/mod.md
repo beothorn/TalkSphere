@@ -13,3 +13,5 @@ weak-point rejection policy pending upstream clarification.
 mandatory all-zero rejection.
 
 `kdf` extracts protected PRKs and expands exact construction-specific keys/prefixes.
+
+`aead` seals bounded units and releases plaintext only after authentication.
