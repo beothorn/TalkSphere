@@ -8,3 +8,6 @@ require no network, trust, Ledger or Identity runtime.
 
 `signature` signs exact bytes and verifies with an explicitly documented strict
 weak-point rejection policy pending upstream clarification.
+
+`agreement` performs consuming ephemeral and borrowed persistent X25519 with
+mandatory all-zero rejection.

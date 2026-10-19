@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–7 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–8 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -21,7 +21,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
 - [x] **6.** Implement independent Ed25519 and X25519 key generation.
 - [x] **7.** Implement ordinary Ed25519 signing and verification.
-- [ ] **8.** Implement X25519 agreement with all-zero rejection.
+- [x] **8.** Implement X25519 agreement with all-zero rejection.
 - [ ] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
 - [ ] **10.** Implement authenticated encryption without provisional plaintext release.
 - [ ] **11.** Implement the Transport integrity-tag construction.
@@ -132,6 +132,8 @@ Completed: Ordinary signing matches both pinned AUTH signatures; exact bytes, si
 ### 8. Agreement
 
 Support persistent and consuming ephemeral key capabilities while keeping their lifetimes distinct. Reject primitive failures and all-zero shared results with constant-time checking, even if the backend reports success. Compare the fixed envelope shared secret and test low-order inputs, wrong lengths, injected failures and cleanup (CR-08); never return the raw secret as an application encryption key.
+
+Completed: Added consuming ephemeral and borrowed persistent X25519; fixed shared secrets, zero/low-order rejection, malformed lengths, reuse and release on failure pass. The native multiplication backend is infallible for fixed-size inputs; fallible dependencies remain outside it. Full checks pass; coverage 94.39% (2997/3175).
 
 ### 9. Key derivation primitives
 
