@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–12 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–13 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -26,7 +26,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **10.** Implement authenticated encryption without provisional plaintext release.
 - [x] **11.** Implement the Transport integrity-tag construction.
 - [x] **12.** Implement encryption-key binding and recipient credential validation.
-- [ ] **13.** Implement the generic identity-envelope header codec.
+- [x] **13.** Implement the generic identity-envelope header codec.
 - [ ] **14.** Validate complete encrypted objects against resource limits.
 - [ ] **15.** Implement the exact identity-envelope key derivation.
 - [ ] **16.** Implement encryption for a validated recipient.
@@ -166,6 +166,8 @@ Completed: Exact ID derivation and binding bytes/signatures match the pinned cre
 ### 13. Envelope header
 
 Encode and decode the exact 132-byte header: four suite bytes, recipient ID, persistent key, ephemeral key, nonce and unsigned big-endian sealed length. Require version/suite 1 and sealed length at least 16. Compare literal vector bytes and field offsets; test every header truncation, unknown selector and arithmetic boundary. Validate fixed fields before any size-dependent work.
+
+Completed: The exact 132-byte header matches pinned offsets and bytes; every truncation, extra bytes, unknown selectors and sealed-length boundaries are tested. Large unsigned lengths remain metadata until object budget checks. Full checks pass; coverage 94.82% (3259/3437).
 
 ### 14. Object boundaries
 
