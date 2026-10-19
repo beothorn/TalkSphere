@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–14 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–15 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -28,7 +28,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **12.** Implement encryption-key binding and recipient credential validation.
 - [x] **13.** Implement the generic identity-envelope header codec.
 - [x] **14.** Validate complete encrypted objects against resource limits.
-- [ ] **15.** Implement the exact identity-envelope key derivation.
+- [x] **15.** Implement the exact identity-envelope key derivation.
 - [ ] **16.** Implement encryption for a validated recipient.
 - [ ] **17.** Implement authenticated decryption for the intended local identity.
 - [ ] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
@@ -182,6 +182,8 @@ Completed: Checked sealed/total arithmetic, host conversion and independent budg
 Build the 124-byte context from suite, recipient ID, recipient persistent key, ephemeral key and nonce in that order. Hash the specified salt prefix plus explicit zero separator and context, then extract and expand using the distinct key prefix plus zero separator and context.
 
 Compare context, salt, PRK and derived key with CR-04’s fixed values through test-only observation. Mutate each context component and check the expected separation; erase intermediate material on every exit without exposing it in production diagnostics.
+
+Completed: Exact 124-byte contexts, explicit zero-separated labels, salt and content keys match pinned values; every context byte is tested for separation or unsupported-suite rejection. Shared material and PRKs remain scoped. Full checks pass; coverage 94.93% (3331/3509).
 
 ### 16. Envelope encryption
 
