@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–13 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–14 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -27,7 +27,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **11.** Implement the Transport integrity-tag construction.
 - [x] **12.** Implement encryption-key binding and recipient credential validation.
 - [x] **13.** Implement the generic identity-envelope header codec.
-- [ ] **14.** Validate complete encrypted objects against resource limits.
+- [x] **14.** Validate complete encrypted objects against resource limits.
 - [ ] **15.** Implement the exact identity-envelope key derivation.
 - [ ] **16.** Implement encryption for a validated recipient.
 - [ ] **17.** Implement authenticated decryption for the intended local identity.
@@ -174,6 +174,8 @@ Completed: The exact 132-byte header matches pinned offsets and bytes; every tru
 Build complete-object parsing and checked size calculations on the header codec. Require exactly 132 plus sealed length bytes, no trailing bytes, and plaintext length within configured policy. Validate a header before requesting its body; a complete-buffer API may expose this through a bounded caller adapter rather than implementing network I/O.
 
 Test sealed lengths below 16, U64_MAX, host-size conversion, exact limits, one-over limits, truncated bodies and extra bytes (CR-07). Use synthetic lengths rather than enormous allocations; missing tags must never yield plaintext.
+
+Completed: Checked sealed/total arithmetic, host conversion and independent budgets precede body reads; complete parsing borrows exact bytes and rejects every truncation or trailing byte. Synthetic u64 boundaries allocate nothing. Full checks pass; coverage 94.89% (3304/3482).
 
 ### 15. Envelope KDF
 
