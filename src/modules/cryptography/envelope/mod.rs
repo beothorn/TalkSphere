@@ -9,3 +9,7 @@ pub mod object;
 #[cfg(test)]
 #[path = "tests/lifecycle.rs"]
 mod lifecycle_tests;
+
+#[cfg(test)]
+#[path = "tests/separation.rs"]
+mod separation_tests;

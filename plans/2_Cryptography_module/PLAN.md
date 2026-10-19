@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–19 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–20 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -33,7 +33,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **17.** Implement authenticated decryption for the intended local identity.
 - [x] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
 - [x] **19.** Adapt real Cryptography operations to Transport’s dependency port.
-- [ ] **20.** Test envelope separation and independent protected objects.
+- [x] **20.** Test envelope separation and independent protected objects.
 - [ ] **21.** Audit Cryptography against all upstream acceptance cases.
 - [ ] **22.** Document Cryptography coverage and the Identity integration handoff.
 
@@ -220,6 +220,8 @@ Completed: Real Provider implements the public contracts and the external compos
 Cover CR-10 with an actual pinned Messaging-envelope example rejected as a generic envelope and a test-only opaque store/retrieve path requiring no private key at the intermediary. Do not implement Messaging or paid Storage. Verify that successful generic decryption does not produce a sender-authentication claim and that Transport integrity does not imply confidentiality.
 
 For CR-11, authenticate independent objects in swapped order to demonstrate that primitive authentication alone cannot establish sequence completeness. A test-owned manifest binding positions, lengths and hashes must reject reordered or missing objects; clearly label it an application scenario, not a new CR2SE manifest or chunk format.
+
+Completed: An independently generated valid Messaging payload authenticates under its own construction and is rejected as generic. Opaque test storage needs no private key; reordered valid objects decrypt individually while a signed test-application manifest rejects reordering/missing units or altered manifest bytes. No new wire format or sender/confidential-Transport claim is introduced. Full checks pass; coverage 95.23% (3571/3750).
 
 ### 21. Acceptance review
 

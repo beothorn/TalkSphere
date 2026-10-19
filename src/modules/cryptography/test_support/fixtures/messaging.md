@@ -1,0 +1,32 @@
+# Independently generated Messaging separation example
+
+Source construction: https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/messaging/README.md
+
+This local fixture follows the published Messaging payload construction; it is
+not an upstream-supplied fixed vector. Inputs reuse public test keys from the
+Cryptography vector, message ID 00..1f and senderCreatedAt=1000. All private and
+derived values are test-only. Regenerate with Python and PyNaCl using the adjacent
+script; Rust tests consume literal bytes, not a Rust-generated expected result.
+
+Generated with PyNaCl 1.5.0, Python hashlib/HMAC and libsodium AEAD.
+
+```text
+metadata:
+43523253452d4d4553534147452d454e4352595054494f4e2d4d455441444154412d5631000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fd948a9a847999305be609db39d9ca50b7c93184ec36bdf080f6f46415e19925d774504edf47bae28a4f1154bf4516ae74f090ee5b032464586d0c21d24d9b24900000000000003e8
+
+nonce:
+808182838485868788898a8b8c8d8e8f9091929394959697
+
+derived key:
+61aacdf90b7386d9189795bfe73c67f462112fcd4a98bd7e32f18652f1f08be0
+
+plaintext:
+4352325345206964656e7469747920656e6372797074696f6e2074657374
+
+sealed:
+ec43929788719cdaae68cb8f57ceb5a6f42dde59972df62d76646ec7690e6734df2e6ba6e2fd679fb7d4618a63e1
+
+payload:
+01675dd574ed7789310b3d2e7681f3790b466c773b1521fecf36577958371ea52f79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af85a51a808182838485868788898a8b8c8d8e8f9091929394959697ec43929788719cdaae68cb8f57ceb5a6f42dde59972df62d76646ec7690e6734df2e6ba6e2fd679fb7d4618a63e1
+
+```
