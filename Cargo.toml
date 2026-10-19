@@ -8,6 +8,7 @@ repository = "https://github.com/beothorn/TalkSphere"
 readme = "README.md"
 
 [dependencies]
+getrandom = "0.3.4"
 mio = { version = "1.2.4", default-features = false, features = ["net", "os-poll"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 zeroize = { version = "1.8.2", features = ["std"] }

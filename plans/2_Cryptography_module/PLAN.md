@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–3 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–4 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -17,7 +17,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **1.** Define Cryptography’s public contracts and dependency boundaries.
 - [x] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
 - [x] **3.** Add protected secret types with explicit ownership and cleanup.
-- [ ] **4.** Connect production key generation to secure platform randomness.
+- [x] **4.** Connect production key generation to secure platform randomness.
 - [ ] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
 - [ ] **6.** Implement independent Ed25519 and X25519 key generation.
 - [ ] **7.** Implement ordinary Ed25519 signing and verification.
@@ -106,6 +106,8 @@ Completed: Added purpose-specific zeroizing capabilities with no public extracti
 ### 4. Secure entropy
 
 Add a fallible platform CSPRNG adapter with bounded requests and no deterministic fallback. Document dependency/version choices and commit the lockfile when adding crates. Test fresh independent requests, unavailable entropy and partially filled output cleanup with the injected source; add a production adapter smoke test without probabilistic uniqueness assertions. Key generation in later steps must use this boundary.
+
+Completed: Added getrandom platform entropy and bounded zeroizing random buffers; partial failures return no material, request limits and independent scripted calls are tested, and the platform smoke test passes. Full required checks pass; coverage 94.20% (2893/3071).
 
 ### 5. Hashing
 
