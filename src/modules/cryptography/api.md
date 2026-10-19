@@ -56,8 +56,8 @@ separate even though interfaces alone cannot enforce a provider's internal polic
   but borrows persistent authority so it remains usable for other objects.
 
 No raw shared result may be used directly as an encryption key. HKDF, AEAD and
-Transport integrity APIs will be added alongside their focused implementation
-steps; their existing Transport port is not replaced by this scaffold.
+Transport integrity APIs are available under [primitives](primitives/mod.md); the
+real [provider](provider.md) implements these initial public contracts.
 
 ## Generic envelope interface
 

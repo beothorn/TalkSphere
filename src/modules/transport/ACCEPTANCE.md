@@ -21,10 +21,10 @@ rejection is the property being tested.
 
 | Case | Local executable coverage | Remaining independent evidence |
 | --- | --- | --- |
-| TR-01 | `handshake/tests.rs`, `handshake/state/tests.rs`, `integrity/tests.rs`, composed byte-segmented handshake: exact layouts, transcript/signing/KDF requests, directional labels and authenticated IDs | Compute signatures, keys, nonce prefixes and tags with real primitives against pinned vectors |
+| TR-01 | `handshake/tests.rs`, `handshake/state/tests.rs`, `integrity/tests.rs`, composed byte-segmented handshake: exact layouts, transcript/signing/KDF requests, directional labels and authenticated IDs | Real primitive/vector assertions now pass in the supplement below; real Identity and two-node deployment remain pending |
 | TR-02 | `framing/tests.rs` checks every fixture split and short write; composed `every_protected_split_and_coalesced_frames` and `byte_segmented_handshake_and_protected_tail_with_short_writes` check ordered dispatch and exact output | Repeat with real authenticated frames |
-| TR-03 | Header/DATA codec boundaries and composed `malformed_header_response_matrix`; full 65,536-byte receive/send and no dispatch on rejected headers | Real tag calculation for maximum frames |
-| TR-04 | Handshake codec/state tests cover order, widths, selectors, pinning and scripted signature/agreement rejection; connection tests verify safe versus silent closure | Actual invalid Ed25519 proofs and all-zero X25519 rejection in Crypto adapter |
+| TR-03 | Header/DATA codec boundaries and composed `malformed_header_response_matrix`; full 65,536-byte receive/send and no dispatch on rejected headers | Real maximum-frame tagging/verification now passes in the supplement; socket-level two-node repetition remains pending |
+| TR-04 | Handshake codec/state tests cover order, widths, selectors, pinning and scripted signature/agreement rejection; connection tests verify safe versus silent closure | Actual invalid AUTH and all-zero adapter rejection now pass; full Identity-backed rejection matrix remains pending |
 | TR-05 | Role-specific handshake gates, coalesced AUTH/tagged input and same-identity state tests; composed byte-segmented transition | Fresh real ephemeral material for same-identity peers |
 | TR-06 | Integrity tests verify exact AAD/nonces, independent counters, scripted replay/wrong-direction rejection and exhaustion; composed `failed_integrity_closes_silently` verifies no output/dispatch and key release | Real header/payload/tag mutations, replay, reversed keys/prefixes, old-session tags and secret erasure |
 | TR-07 | `stream/ids/tests.rs` covers parity, exact sequence, concurrency and exhaustion; stream/session and composed state violations cover consumed/refused IDs, never-created references and GOAWAY exhaustion | Repeat on real two-node sessions |
@@ -72,3 +72,25 @@ The final production-only measurement is **94.09% (2833/3011)** after excluding
 the ID-exhaustion fixture from production source accounting. All local Markdown
 links were checked. The normal CLI remains unavailable for real authenticated
 networking until roadmap steps 3–5 are complete.
+
+## Real Cryptography supplement
+
+Cryptography step 19 uses [revision 80f6795864ecf060e23482ee42909da4a649ecf0](https://github.com/beothorn/CR2SE/tree/80f6795864ecf060e23482ee42909da4a649ecf0)
+for new evidence; the earlier Transport fixture baseline above is preserved.
+Run `cargo test --locked composition::cryptography` for
+[real handshake/adapter tests](../../composition/cryptography/tests.rs).
+
+Both HELLO and AUTH payloads match fixed bytes, both roles verify actual signatures,
+Transport derives opposite directional material, PING/PONG tags match the pinned
+vectors, a maximum-size DATA frame verifies, and replay closes the integrity state.
+Actual invalid AUTH produces no established context and releases only the initial
+ephemeral capability, demonstrating no shared/PRK/session derivation before proof.
+Adapter tests reject all-zero agreement, entropy failure and oversized inputs.
+The [primitive tests](../cryptography/primitives/) independently pin shared secrets,
+PRKs, keys and tags and test mutations.
+
+These are real cryptographic assertions with test-owned signing credentials, not
+a real persistent Identity service or authenticated two-node deployment. The
+remaining socket/lifecycle matrix and roadmap steps 4–5 remain required. Strict
+Ed25519 validation has the documented [bug 0003](../../../CR2SE%20bugs/0003-ed25519-weak-point-validation.md)
+interoperability caveat. No whole Transport conformance claim is added.

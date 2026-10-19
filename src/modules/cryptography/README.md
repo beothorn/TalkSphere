@@ -13,7 +13,7 @@ owns transient secrets and operations over exact bytes. It can validate Identity
 ID formula without calling a running Identity service.
 
 Transport owns transcript construction, key labels, direction counters and replay
-protection; a later composition adapter will implement its existing crypto port.
+protection; the real composition adapter implements its existing crypto port.
 Content codecs own service-specific constructions, metadata and manifests. The
 generic identity envelope does not replace Messaging's envelope or supply a chunk
 ordering protocol. These boundaries prevent trust, persistence and transport state
@@ -27,6 +27,8 @@ in-process contracts only; it does not claim process-separated deployment.
 
 - [Primitives](primitives/mod.md): hashing, keys, signatures, agreement and derivation.
 - [Credentials](credential.md): exact ID derivation and persistent-key binding.
+- [Provider](provider.md): real in-process composition of the public contracts.
+- [Transport adapter](../../composition/cryptography.md): real primitive port mapping.
 - [API](api.md): capabilities, borrowed requests and owned results.
 - [Resource limits](config.md): immutable per-operation byte budgets.
 - [Errors](error.md): distinct secret-free failure categories.

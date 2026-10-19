@@ -9,3 +9,7 @@ Identity, Transport and content codecs are callers. Platform entropy, authorized
 key access and established algorithm libraries are dependencies. See the
 [module guide](README.md) and [plan](../../../plans/2_Cryptography_module/PLAN.md)
 for currently implemented operations and pending integration work.
+
+`credential` validates public binding, `envelope` implements generic objects, and
+`provider` composes the real local interfaces; the Transport adapter lives outside
+protocol internals under application composition.

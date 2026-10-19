@@ -11,6 +11,7 @@ pub mod envelope;
 pub mod error;
 pub mod ports;
 pub mod primitives;
+pub mod provider;
 pub mod random;
 pub mod secrets;
 

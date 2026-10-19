@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–18 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–19 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -32,7 +32,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **16.** Implement encryption for a validated recipient.
 - [x] **17.** Implement authenticated decryption for the intended local identity.
 - [x] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
-- [ ] **19.** Adapt real Cryptography operations to Transport’s dependency port.
+- [x] **19.** Adapt real Cryptography operations to Transport’s dependency port.
 - [ ] **20.** Test envelope separation and independent protected objects.
 - [ ] **21.** Audit Cryptography against all upstream acceptance cases.
 - [ ] **22.** Document Cryptography coverage and the Identity integration handoff.
@@ -212,6 +212,8 @@ Completed: CR-09 observes four transient capabilities released after encryption 
 Implement the existing Transport Cryptography trait with real primitives and opaque secret types, preserving consumed ephemeral ownership and DependencyError mappings. Keep cross-module wiring at the composition boundary. Test every port operation, 32-byte HELLO randomness, key/prefix sizes, signature rejection, all-zero agreement, tags and failure translation.
 
 Use pinned Transport vectors to exercise transcript-derived material and protected frames with actual crypto and test-owned Identity credentials. Confirm derivation remains after peer AUTH verification and record the new upstream negative cases. Update Transport’s acceptance evidence only for assertions actually executed; real Identity persistence and the authenticated two-node server stay in roadmap steps 4–5.
+
+Completed: Real Provider implements the public contracts and the external composition adapter implements every Transport primitive operation. Both actual handshake roles, AUTH ordering, pinned PING/PONG tags, maximum-size frames, replay, failure mapping and public envelope/provider limits pass. Transport acceptance evidence is updated precisely; persistent Identity/two-node startup remain later work. Full checks/API docs pass; coverage 95.23% (3571/3750).
 
 ### 20. Construction boundaries
 

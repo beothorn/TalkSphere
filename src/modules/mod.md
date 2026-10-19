@@ -1,8 +1,8 @@
 # Protocol module exports
 
 `transport` exports Transport framing, state, dependency ports and adapters.
-`cryptography` exports the initial cryptographic contracts and validated policy;
-it supplies no production cryptographic operations yet.
+`cryptography` exports implemented primitives, generic envelopes, a real provider
+and validated policy, with its acceptance audit tracked in the detailed plan.
 
 Modules communicate through explicit contracts. Application composition selects
 adapters; exporting a module does not start a listener or enable a capability.
