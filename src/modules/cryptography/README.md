@@ -26,6 +26,7 @@ in-process contracts only; it does not claim process-separated deployment.
 ## Public contracts
 
 - [Primitives](primitives/mod.md): hashing, keys, signatures, agreement and derivation.
+- [Credentials](credential.md): exact ID derivation and persistent-key binding.
 - [API](api.md): capabilities, borrowed requests and owned results.
 - [Resource limits](config.md): immutable per-operation byte budgets.
 - [Errors](error.md): distinct secret-free failure categories.

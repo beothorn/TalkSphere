@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod config;
+pub mod credential;
 pub mod error;
 pub mod ports;
 pub mod primitives;

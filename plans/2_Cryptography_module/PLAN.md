@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–11 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–12 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -25,7 +25,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
 - [x] **10.** Implement authenticated encryption without provisional plaintext release.
 - [x] **11.** Implement the Transport integrity-tag construction.
-- [ ] **12.** Implement encryption-key binding and recipient credential validation.
+- [x] **12.** Implement encryption-key binding and recipient credential validation.
 - [ ] **13.** Implement the generic identity-envelope header codec.
 - [ ] **14.** Validate complete encrypted objects against resource limits.
 - [ ] **15.** Implement the exact identity-envelope key derivation.
@@ -160,6 +160,8 @@ Completed: Empty-plaintext frame tags match the fixed upstream PING vector; muta
 Construct exactly ASCII("CR2SE-ENCRYPTION-KEY-V1") followed by the 32-byte X25519 public key, without a zero separator or length prefix. Sign through the authorized capability and verify SHA-256(0x01 || 0x01 || Ed25519 public key) against the claimed ID before accepting the binding.
 
 Match the pinned binding and test altered ID, signing key, encryption key, signature and 63/65-byte signatures (CR-03). Credential validation does not assign trust or select between conflicting persistent keys; persistent credential/cache conflict policy belongs to Identity.
+
+Completed: Exact ID derivation and binding bytes/signatures match the pinned credential; every changed ID/key/signature byte and malformed field lengths are rejected. Validated recipients grant no trust or rotation authority. Full checks pass; coverage 94.76% (3218/3396).
 
 ### 13. Envelope header
 
