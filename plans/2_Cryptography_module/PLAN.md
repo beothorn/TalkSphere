@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–10 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–11 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -24,7 +24,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **8.** Implement X25519 agreement with all-zero rejection.
 - [x] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
 - [x] **10.** Implement authenticated encryption without provisional plaintext release.
-- [ ] **11.** Implement the Transport integrity-tag construction.
+- [x] **11.** Implement the Transport integrity-tag construction.
 - [ ] **12.** Implement encryption-key binding and recipient credential validation.
 - [ ] **13.** Implement the generic identity-envelope header codec.
 - [ ] **14.** Validate complete encrypted objects against resource limits.
@@ -152,6 +152,8 @@ Completed: Bounded XChaCha20-Poly1305 matches pinned sealed bytes; modified ciph
 ### 11. Integrity tags
 
 Add the empty-plaintext AEAD construction over the exact Transport header/payload associated data, returning or verifying only the 16-byte tag. Compare upstream frame tags and test mutations and wrong directional material. Payloads remain visible; Transport owns nonce-prefix plus big-endian sequence construction, replay rejection and counter exhaustion.
+
+Completed: Empty-plaintext frame tags match the fixed upstream PING vector; mutation, direction, nonce and bounds checks pass with constant-time backend verification. Fixed fixture lookup to match complete labels so payload never selects AUTH payload. Full checks pass; coverage 94.65% (3152/3330).
 
 ### 12. Recipient credentials
 

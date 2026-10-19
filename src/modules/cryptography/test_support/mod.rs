@@ -44,7 +44,7 @@ pub fn hex(value: &str) -> Vec<u8> {
 pub fn envelope(label: &str) -> Vec<u8> {
     let text = include_str!("fixtures/envelope.md");
     let tail = text
-        .split(&format!("{label}:\n"))
+        .split(&format!("\n{label}:\n"))
         .nth(1)
         .expect("fixture label");
     hex(&tail
@@ -57,7 +57,7 @@ pub fn envelope(label: &str) -> Vec<u8> {
 pub fn transport(label: &str) -> Vec<u8> {
     let text = include_str!("fixtures/transport.md");
     let tail = text
-        .split(&format!("{label}:\n"))
+        .split(&format!("\n{label}:\n"))
         .nth(1)
         .expect("fixture label");
     hex(&tail
