@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–15 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–16 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -29,7 +29,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **13.** Implement the generic identity-envelope header codec.
 - [x] **14.** Validate complete encrypted objects against resource limits.
 - [x] **15.** Implement the exact identity-envelope key derivation.
-- [ ] **16.** Implement encryption for a validated recipient.
+- [x] **16.** Implement encryption for a validated recipient.
 - [ ] **17.** Implement authenticated decryption for the intended local identity.
 - [ ] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
 - [ ] **19.** Adapt real Cryptography operations to Transport’s dependency port.
@@ -190,6 +190,8 @@ Completed: Exact 124-byte contexts, explicit zero-separated labels, salt and con
 Compose credential validation, checked limits, fresh ephemeral key and nonce, agreement, exact KDF, header and AEAD into one bounded operation. Authenticate the full header and append the exact sealed bytes; provide no additional external AAD parameter. Check the complete pinned object (CR-04) and empty/nonempty recipient and self-encryption (CR-05).
 
 Validate failures before unnecessary work and test entropy failure after ephemeral generation, agreement failure and subsequent construction failures. Every new object consumes fresh material; cleanup must already work on every error path, including before all temporaries exist.
+
+Completed: Complete recipient encryption matches the pinned object and handles empty/UTF-8 input, limits and entropy failures without partial output. Bug 0004 records cleanup guards that miss pre-try failures; scoped secrets follow the normative lifecycle rule. Decryption round trips follow in step 17. Full checks pass; coverage 94.95% (3366/3545).
 
 ### 17. Envelope decryption
 

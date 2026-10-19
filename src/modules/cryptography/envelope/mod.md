@@ -7,3 +7,5 @@ separate from Messaging's service-specific envelope and has no external AAD fiel
 `object` validates checked lengths and complete bounded borrowed object views.
 
 `derivation` constructs exact context, salt and a protected content key.
+
+`encrypt` validates recipients and returns complete independently protected objects.

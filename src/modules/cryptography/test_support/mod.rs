@@ -66,6 +66,25 @@ pub fn transport(label: &str) -> Vec<u8> {
         .collect::<String>())
 }
 
+// Assemble untrusted public fixture fields without deriving expected cryptographic values.
+pub fn recipient() -> super::api::RecipientCredential {
+    super::credential::parse(
+        &envelope("recipient CR2SE ID"),
+        &envelope("recipient Ed25519 public key"),
+        &envelope("recipient persistent X25519 public key"),
+        &envelope("encryption-key binding signature"),
+    )
+    .unwrap()
+}
+
+// Supply exactly the pinned ephemeral private input and public nonce for one object.
+pub fn object_entropy() -> ScriptedEntropy {
+    ScriptedEntropy(VecDeque::from([
+        Ok(envelope("raw ephemeral X25519 private-key input")),
+        Ok(envelope("nonce")),
+    ]))
+}
+
 // The deterministic source preserves call order and never invents missing entropy.
 #[test]
 fn entropy_script_rejects_exhaustion_sizes_and_dependency_failure() {

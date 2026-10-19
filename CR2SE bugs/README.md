@@ -9,6 +9,8 @@ Confirmed reports:
 
 - [0003: Ed25519 weak-point validation is not specified](0003-ed25519-weak-point-validation.md) — open.
 
+- [0004: Secret cleanup guards start too late](0004-secret-cleanup-guards.md) — open.
+
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision
 and sections. Include a minimal trace, conflicting statements or vector that
