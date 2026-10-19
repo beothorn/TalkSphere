@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: step 1 is implemented, tested and documented; steps 2–22 remain pending.
+Status: steps 1–2 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -15,7 +15,7 @@ The final audit consolidates evidence rather than postponing tests.
 ## Steps
 
 - [x] **1.** Define Cryptography’s public contracts and dependency boundaries.
-- [ ] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
+- [x] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
 - [ ] **3.** Add protected secret types with explicit ownership and cleanup.
 - [ ] **4.** Connect production key generation to secure platform randomness.
 - [ ] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
@@ -92,6 +92,8 @@ identified; the reference revision remains unchanged.
 ### 2. Test helpers and fixtures
 
 Add test-only scripted entropy, fault injection, protected-handle lifecycle observation and literal fixtures from the pinned envelope and Transport vectors. Record source URLs, revision and expected lengths; never derive expected bytes using the implementation under test. Test helper exhaustion and failure behavior. Deterministic private keys and constructors must remain unavailable in ordinary production configuration.
+
+Completed: Added test-only exact-length entropy scripting, release probes and literal envelope/Transport fixtures pinned to the reference revision; helper exhaustion, errors and fixture lengths pass the full required checks (185 tests), with production coverage 94.14%.
 
 ### 3. Secret ownership
 

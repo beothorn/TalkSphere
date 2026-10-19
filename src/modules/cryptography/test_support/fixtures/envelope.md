@@ -1,0 +1,74 @@
+# Fixed identity-encryption test vector
+
+Source: https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/pseudocode/README.md#19-fixed-identity-encryption-test-vector
+
+
+These deterministic values test the exact version 1 binding, KDF, header, and
+AEAD construction. Private values are test data only and must never be used by
+a real identity or encrypted object.
+
+```text
+recipient Ed25519 seed:
+202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
+
+recipient Ed25519 public key:
+29acbae141bccaf0b22e1a94d34d0bc7361e526d0bfe12c89794bc9322966dd7
+
+recipient CR2SE ID:
+774504edf47bae28a4f1154bf4516ae74f090ee5b032464586d0c21d24d9b249
+
+recipient raw persistent X25519 private-key input:
+606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f
+
+recipient persistent X25519 public key:
+675dd574ed7789310b3d2e7681f3790b466c773b1521fecf36577958371ea52f
+
+encryption-key binding signature:
+180898213e453d8621f8168c6fb893bfd6603c3d4e7ef980825f69c0646187ef
+7855b8538f6314fbe6da2e7ba5bb90fd34dbf94793784ef9d434b2586a1f4a00
+
+raw ephemeral X25519 private-key input:
+404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f
+
+ephemeral X25519 public key:
+79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af85a51a
+
+X25519 shared secret:
+d6fb939511b2381bc8599b4b8edc5968829450dfd7a87aebe78a703cd04cd54e
+
+KDF context:
+01010101774504edf47bae28a4f1154bf4516ae74f090ee5b032464586d0c21d2
+4d9b249675dd574ed7789310b3d2e7681f3790b466c773b1521fecf3657795837
+1ea52f79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af
+85a51a808182838485868788898a8b8c8d8e8f9091929394959697
+
+HKDF salt:
+0226a47d56431007781920ad9af236cb362e3b47863e49c71ddb97d679e437ec
+
+HKDF extract PRK:
+6efc6962876f9ae5ec0405a32814395f7a275c3cc8654ee71a9bea39815c5e5c
+
+derived encryption key:
+15fdb51cf1366090a57b5235d5af7b3fb5e7b844f4e38d8f39719fbdbe99d92e
+
+nonce:
+808182838485868788898a8b8c8d8e8f9091929394959697
+
+plaintext ASCII("CR2SE identity encryption test"):
+4352325345206964656e7469747920656e6372797074696f6e2074657374
+
+132-byte header:
+01010101774504edf47bae28a4f1154bf4516ae74f090ee5b032464586d0c21d2
+4d9b249675dd574ed7789310b3d2e7681f3790b466c773b1521fecf3657795837
+1ea52f79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af
+85a51a808182838485868788898a8b8c8d8e8f9091929394959697000000000000
+002e
+
+sealed ciphertext plus tag (46 bytes):
+e63419659e5234ee137b4d1f4efdb8db29a209310386ccfca7137f7c55cb440a
+b2354765a9e06b466aef06931940
+```
+
+Whitespace and line breaks in these hexadecimal displays are not bytes. The
+header's final eight bytes encode sealed length 46 as `uint64_be`. Decryption
+must recover the exact 30-byte plaintext above.
