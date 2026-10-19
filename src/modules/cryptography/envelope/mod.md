@@ -9,3 +9,5 @@ separate from Messaging's service-specific envelope and has no external AAD fiel
 `derivation` constructs exact context, salt and a protected content key.
 
 `encrypt` validates recipients and returns complete independently protected objects.
+
+`decrypt` verifies intended recipients and authentication before returning plaintext.

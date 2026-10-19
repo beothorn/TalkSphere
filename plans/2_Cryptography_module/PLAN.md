@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–16 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–17 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -30,7 +30,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **14.** Validate complete encrypted objects against resource limits.
 - [x] **15.** Implement the exact identity-envelope key derivation.
 - [x] **16.** Implement encryption for a validated recipient.
-- [ ] **17.** Implement authenticated decryption for the intended local identity.
+- [x] **17.** Implement authenticated decryption for the intended local identity.
 - [ ] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
 - [ ] **19.** Adapt real Cryptography operations to Transport’s dependency port.
 - [ ] **20.** Test envelope separation and independent protected objects.
@@ -196,6 +196,8 @@ Completed: Complete recipient encryption matches the pinned object and handles e
 ### 17. Envelope decryption
 
 Validate the complete object and compare recipient ID and persistent public key before agreement. Derive the exact key and authenticate the entire header before returning any plaintext. Test the fixed object, self/other-recipient round trips, wrong private keys, recipient mismatches, truncation and a one-bit mutation at every header/ciphertext/tag position (CR-04 through CR-07). Return no provisional plaintext and document the externally visible failure mapping.
+
+Completed: Complete decryption matches the fixed object; every header/ciphertext/tag byte mutation, wrong recipient/key, missing tag and low-order ephemeral input fails without plaintext. Self/other recipient empty and UTF-8 round trips pass. Full checks pass; coverage 94.97% (3382/3561).
 
 ### 18. Lifecycle and privacy
 
