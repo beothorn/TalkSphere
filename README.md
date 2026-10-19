@@ -23,9 +23,9 @@ Cryptography, Identity and the authenticated two-node demonstration remain
 opens no listener. See the [acceptance matrix](src/modules/transport/ACCEPTANCE.md)
 for verified behavior and pending cryptographic evidence.
 
-[Cryptography](src/modules/cryptography/README.md) now has public contracts,
-validated resource policy and an entropy dependency interface; cryptographic
-operations and production adapters remain unimplemented. Exercise its scaffold
+[Cryptography](src/modules/cryptography/README.md) is in progress with public contracts,
+protected secrets, platform randomness and bounded hashing. Signing, agreement
+and envelopes remain pending. Exercise its current implementation
 with `cargo test --locked modules::cryptography`.
 
 ## Build and test

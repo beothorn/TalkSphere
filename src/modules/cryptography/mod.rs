@@ -9,6 +9,7 @@ pub mod api;
 pub mod config;
 pub mod error;
 pub mod ports;
+pub mod primitives;
 pub mod random;
 pub mod secrets;
 

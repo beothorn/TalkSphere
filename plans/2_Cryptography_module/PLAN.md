@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–4 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–5 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -18,7 +18,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
 - [x] **3.** Add protected secret types with explicit ownership and cleanup.
 - [x] **4.** Connect production key generation to secure platform randomness.
-- [ ] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
+- [x] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
 - [ ] **6.** Implement independent Ed25519 and X25519 key generation.
 - [ ] **7.** Implement ordinary Ed25519 signing and verification.
 - [ ] **8.** Implement X25519 agreement with all-zero rejection.
@@ -112,6 +112,8 @@ Completed: Added getrandom platform entropy and bounded zeroizing random buffers
 ### 5. Hashing
 
 Use an established implementation for exact bytes and incremental ordered input, with documented limits and finalization behavior. Check empty and abc known answers and multiple chunk partitions (CR-01), including empty chunks and invalid lifecycle use where representable. Do not normalize text or serialize objects implicitly.
+
+Completed: Added bounded SHA-256 and consuming incremental state; CR-01 fixed answers, every abc partition, empty chunks and atomic rejection of oversized updates pass. Updated detailed help and documentation for implementation progress. Full checks pass; production coverage 94.25% (2919/3097).
 
 ### 6. Key generation
 

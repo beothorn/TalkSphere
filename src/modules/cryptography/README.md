@@ -1,8 +1,8 @@
 # Cryptography
 
-Status: step 1 defines contracts and validated local resource policy only.
-There are no working cryptographic primitives, production entropy adapters or
-envelope operations yet. The interfaces alone cannot authenticate networking.
+Status: protected secret ownership, platform randomness and bounded SHA-256 are
+implemented alongside the public contracts. Signing, agreement and envelopes
+remain pending; this is not yet a complete cryptographic provider.
 See the [module plan](../../../plans/2_Cryptography_module/PLAN.md).
 
 ## Callers and boundaries
@@ -31,9 +31,9 @@ in-process contracts only; it does not claim process-separated deployment.
 - [Secrets](secrets.md): purpose-scoped ownership and cleanup.
 - [Entropy](ports.md): fallible injectable platform randomness.
 
-Concrete secret types, deterministic test helpers and cryptographic algorithms
-remain later steps. No algorithm or key-store dependencies were added for the
-scaffold. Logging uses existing `tracing` configuration and records no input bytes.
+See [secret ownership](secrets.md), [platform randomness](random.md),
+[hashing](primitives/hash.md) and [test support](test_support/README.md).
+Cargo.lock pins deliberate established-library dependencies; no key store exists yet. Logging uses existing `tracing` configuration and records no input bytes.
 
 ## Build, exercise and test
 

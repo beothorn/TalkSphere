@@ -26,7 +26,7 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         details: "Usage: talksphere serve\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
                   Transport and TCP adapters are implemented and tested with injected dependencies.\n\
-                  Cryptography currently defines contracts only; its algorithms are not implemented.\n\
+                  Cryptography implementation is in progress; server integration remains pending.\n\
                   See plans/2_Cryptography_module/PLAN.md for the next implementation steps.\n\
                   Server startup still requires real Identity and Cryptography integration.\n\
                   This command opens no sockets,\n\
@@ -115,11 +115,11 @@ mod tests {
         }
     }
 
-    // Serve help distinguishes the new contracts from a working crypto backend.
+    // Serve help explains implementation progress without claiming a working server.
     #[test]
-    fn serve_help_explains_cryptography_scaffold_and_links_its_plan() {
+    fn serve_help_explains_cryptography_progress_and_links_its_plan() {
         let details = render(Topic::Serve);
-        assert!(details.contains("Cryptography currently defines contracts only"));
+        assert!(details.contains("Cryptography implementation is in progress"));
         assert!(details.contains("plans/2_Cryptography_module/PLAN.md"));
         assert!(details.contains("opens no sockets"));
     }
