@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: proposed for review; no implementation steps are complete.
+Status: step 1 is implemented, tested and documented; steps 2–22 remain pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -14,7 +14,7 @@ The final audit consolidates evidence rather than postponing tests.
 
 ## Steps
 
-- [ ] **1.** Define Cryptography’s public contracts and dependency boundaries.
+- [x] **1.** Define Cryptography’s public contracts and dependency boundaries.
 - [ ] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
 - [ ] **3.** Add protected secret types with explicit ownership and cleanup.
 - [ ] **4.** Connect production key generation to secure platform randomness.
@@ -72,6 +72,22 @@ with reproducing evidence rather than silently inventing wire behavior.
 Define typed requests, results, errors, resource limits, protected key capabilities and an injectable entropy boundary under `src/modules/cryptography/`. Distinguish malformed input, authentication failure, denied key access and unavailable dependencies without exposing secrets. Test invalid configuration and capability boundaries with the scaffold.
 
 Cryptography owns primitives, generic identity envelopes and transient secrets; Identity owns persistent credential storage, recovery and contacts. Use the shared version-1 ID formula without a running Identity module. Transport retains transcripts, directional sequencing and replay state. Keep composition adapters outside primitive internals and document direct in-process support without claiming process separation.
+
+Completed: [the module scaffold](../../src/modules/cryptography/README.md)
+exports validated resource policy, secret-free failures, injectable entropy,
+purpose-scoped provider capabilities and typed borrowed envelope requests.
+Concrete secret storage and primitive/envelope implementations remain later steps;
+HKDF/AEAD interfaces will grow with their focused implementations. No provider or
+runtime authentication substitute was introduced. Composition remains in-process.
+
+Five new unit tests cover minimum/invalid policy, fixed errors, dependency failure
+and unavailable envelope results. Three rustdoc examples cover valid configuration,
+key-purpose misuse and consumed ephemeral authority; a CLI test verifies the
+updated detailed help. All 183 unit/integration/documentation tests, formatting,
+Clippy with warnings denied, build, generated API docs and overview/serve help
+checks passed. Production line coverage is **2862/3040 (94.14%)** using the
+repository's test-code exclusions. No additional confirmed upstream defect was
+identified; the reference revision remains unchanged.
 
 ### 2. Test helpers and fixtures
 

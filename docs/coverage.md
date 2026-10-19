@@ -64,3 +64,9 @@ file; inline test modules and all test-support/fixture files remain excluded.
 All 174 unit/integration/documentation tests pass separately. See the
 [acceptance matrix](../src/modules/transport/ACCEPTANCE.md) for behavior coverage
 and the real-cryptography checks still pending.
+
+Cryptography step 1 measured **2862/3040 executable production lines (94.14%)**.
+The new configuration/error implementation accounts for 29 covered production
+lines; contract declarations do not execute cryptographic operations. All 183
+unit/integration/documentation tests pass separately. This scaffold measurement
+does not claim algorithm or envelope conformance.

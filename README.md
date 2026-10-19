@@ -3,8 +3,8 @@
 TalkSphere is a Rust server implementation and proof of concept for
 [CR2SE](https://github.com/beothorn/CR2SE). It will grow module by module into a
 node that exchanges services and storage, followed by messaging, public boards,
-pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md)
-the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the proposed
+pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md),
+the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the
 [Cryptography breakdown](plans/2_Cryptography_module/PLAN.md).
 
 The intended model is ad-free social features supported by shared device
@@ -22,6 +22,11 @@ Cryptography, Identity and the authenticated two-node demonstration remain
 [roadmap steps 3–5](plans/PLAN.md); `serve` reports that missing integration and
 opens no listener. See the [acceptance matrix](src/modules/transport/ACCEPTANCE.md)
 for verified behavior and pending cryptographic evidence.
+
+[Cryptography](src/modules/cryptography/README.md) now has public contracts,
+validated resource policy and an entropy dependency interface; cryptographic
+operations and production adapters remain unimplemented. Exercise its scaffold
+with `cargo test --locked modules::cryptography`.
 
 ## Build and test
 
@@ -84,6 +89,7 @@ src/
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
   modules/
+    cryptography/          public contracts, resource policy and scaffold tests
     transport/             protocol state, control driver, TCP adapters and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
@@ -93,7 +99,7 @@ plans/
   1_Transport_module/
     PLAN.md                Transport steps and matching detailed instructions
   2_Cryptography_module/
-    PLAN.md                Proposed Cryptography steps and matching details
+    PLAN.md                Cryptography steps and matching details
 ```
 
 Protocol modules own their code and private state. Focused subfolders separate codecs, lifecycle, adapters and composition. The [Transport README](src/modules/transport/README.md)

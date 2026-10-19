@@ -26,6 +26,8 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         details: "Usage: talksphere serve\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
                   Transport and TCP adapters are implemented and tested with injected dependencies.\n\
+                  Cryptography currently defines contracts only; its algorithms are not implemented.\n\
+                  See plans/2_Cryptography_module/PLAN.md for the next implementation steps.\n\
                   Server startup still requires real Identity and Cryptography integration.\n\
                   This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
@@ -113,6 +115,16 @@ mod tests {
         }
     }
 
+    // Serve help distinguishes the new contracts from a working crypto backend.
+    #[test]
+    fn serve_help_explains_cryptography_scaffold_and_links_its_plan() {
+        let details = render(Topic::Serve);
+        assert!(details.contains("Cryptography currently defines contracts only"));
+        assert!(details.contains("plans/2_Cryptography_module/PLAN.md"));
+        assert!(details.contains("opens no sockets"));
+    }
+
+    // Every detailed topic preserves discoverable usage and exit behavior.
     #[test]
     fn detailed_topics_explain_usage_and_exit_behavior() {
         for entry in TOPICS {

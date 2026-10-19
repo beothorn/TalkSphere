@@ -16,9 +16,10 @@ The first module to implement has a
 [detailed Transport plan](1_Transport_module/PLAN.md), with single-sentence
 checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
-step 2 in this roadmap. The next module has a proposed
+step 2 in this roadmap. The next module has a
 [Cryptography plan](2_Cryptography_module/PLAN.md), in folder 2 and roadmap step 3;
-its implementation steps remain unchecked for review.
+its first step provides tested contracts and resource policy, while cryptographic
+operations and the remaining steps are still pending.
 
 Transport substeps 1–24 are complete with injected Identity/Cryptography and
 real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTANCE.md)
