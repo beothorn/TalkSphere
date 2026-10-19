@@ -9,6 +9,7 @@ pub mod api;
 pub mod config;
 pub mod error;
 pub mod ports;
+pub mod secrets;
 
 #[cfg(test)]
 mod tests;

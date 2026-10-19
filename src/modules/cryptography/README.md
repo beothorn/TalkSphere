@@ -28,6 +28,7 @@ in-process contracts only; it does not claim process-separated deployment.
 - [API](api.md): capabilities, borrowed requests and owned results.
 - [Resource limits](config.md): immutable per-operation byte budgets.
 - [Errors](error.md): distinct secret-free failure categories.
+- [Secrets](secrets.md): purpose-scoped ownership and cleanup.
 - [Entropy](ports.md): fallible injectable platform randomness.
 
 Concrete secret types, deterministic test helpers and cryptographic algorithms

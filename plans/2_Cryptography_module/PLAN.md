@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–2 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–3 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -16,7 +16,7 @@ The final audit consolidates evidence rather than postponing tests.
 
 - [x] **1.** Define Cryptography’s public contracts and dependency boundaries.
 - [x] **2.** Add deterministic dependency helpers and pinned cryptographic fixtures.
-- [ ] **3.** Add protected secret types with explicit ownership and cleanup.
+- [x] **3.** Add protected secret types with explicit ownership and cleanup.
 - [ ] **4.** Connect production key generation to secure platform randomness.
 - [ ] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
 - [ ] **6.** Implement independent Ed25519 and X25519 key generation.
@@ -100,6 +100,8 @@ Completed: Added test-only exact-length entropy scripting, release probes and li
 Introduce purpose-specific signing, persistent and ephemeral agreement, shared-secret, PRK and derived-key capabilities, adding concrete backend storage as subsequent steps need it. Prevent accidental public serialization, diagnostic exposure and signing/agreement interchange. Select established zeroization support and document its guarantees and limitations.
 
 Test release on ordinary drop, failed construction and early return; instrument lifecycle behavior without claiming a unit test proves physical memory erasure. Keep persistent key-store format and atomic credential installation for Identity.
+
+Completed: Added purpose-specific zeroizing capabilities with no public extraction, cloning or diagnostics; normal/early-error release and compile-time diagnostic rejection tests pass. Full required checks pass; production coverage is 94.17% (2875/3053).
 
 ### 4. Secure entropy
 
