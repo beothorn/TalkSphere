@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–5 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–6 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -19,7 +19,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **3.** Add protected secret types with explicit ownership and cleanup.
 - [x] **4.** Connect production key generation to secure platform randomness.
 - [x] **5.** Implement SHA-256 hashing for bytes and ordered chunks.
-- [ ] **6.** Implement independent Ed25519 and X25519 key generation.
+- [x] **6.** Implement independent Ed25519 and X25519 key generation.
 - [ ] **7.** Implement ordinary Ed25519 signing and verification.
 - [ ] **8.** Implement X25519 agreement with all-zero rejection.
 - [ ] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
@@ -118,6 +118,8 @@ Completed: Added bounded SHA-256 and consuming incremental state; CR-01 fixed an
 ### 6. Key generation
 
 Generate each pair from separate secure entropy requests using established implementations, returning public bytes and purpose-scoped private capabilities. Never convert between signing and agreement keys. Test pinned public keys from fixture inputs, independent entropy consumption, generation failure and cleanup if the second generation fails. Identity will compose these operations with persistent storage later.
+
+Completed: Independent Ed25519 and X25519 generation matches pinned public keys using separate entropy requests; second-generation failure releases the first capability. Established zeroizing Dalek backends are locked. Full checks pass; coverage 94.31% (2950/3128).
 
 ### 7. Signatures
 
