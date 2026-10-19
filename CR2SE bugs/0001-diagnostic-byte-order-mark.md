@@ -1,12 +1,12 @@
 # 0001: Diagnostic payload pseudocode accepts a leading byte-order mark
 
-- Status: open
+- Status: resolved
 - Affected CR2SE module(s): Transport
 - Upstream revision: [8e848eb2e70ef7cd4490a753f9e647fdddcd99fd](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd)
 - Specification/pseudocode: [wire section 2](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md#2-integer-and-text-encoding),
   [wire sections 10–11](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md#11-error-and-cancellation-payloads),
   [payload pseudocode section 10](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/README.md#10-payload-codecs)
-- Upstream issue/fix: not filed upstream
+- Upstream fix: [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0)
 
 ## Problem and evidence
 
@@ -68,4 +68,9 @@ cargo test --locked leading_byte_order_marks_are_rejected_but_interior_character
 
 ## Resolution
 
-Open against the pinned revision; no upstream fix has been verified.
+Verified by source review at [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0).
+
+The diagnostic parser and both encoders now reject leading EF BB BF bytes; upstream acceptance cases and vectors cover rejection and preservation of interior U+FEFF.
+
+The evidence above describes the original affected revision. This resolution
+records the upstream correction, not a new full Transport conformance run.

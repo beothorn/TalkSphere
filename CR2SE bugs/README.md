@@ -4,8 +4,8 @@ Keep one confirmed, language-independent issue per Markdown file here so
 [CR2SE](https://github.com/beothorn/CR2SE) can be corrected as TalkSphere grows.
 Confirmed reports:
 
-- [0001: Diagnostic payload pseudocode accepts a leading byte-order mark](0001-diagnostic-byte-order-mark.md) — open.
-- [0002: Key derivation precedes AUTH verification in pseudocode](0002-key-derivation-before-auth-verification.md) — open.
+- [0001: Diagnostic payload pseudocode accepts a leading byte-order mark](0001-diagnostic-byte-order-mark.md) — resolved in [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0).
+- [0002: Key derivation precedes AUTH verification in pseudocode](0002-key-derivation-before-auth-verification.md) — resolved in [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0).
 
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision

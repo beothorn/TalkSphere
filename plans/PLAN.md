@@ -16,7 +16,9 @@ The first module to implement has a
 [detailed Transport plan](1_Transport_module/PLAN.md), with single-sentence
 checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
-step 2 in this roadmap. No other module has been broken down yet.
+step 2 in this roadmap. The next module has a proposed
+[Cryptography plan](2_Cryptography_module/PLAN.md), in folder 2 and roadmap step 3;
+its implementation steps remain unchecked for review.
 
 Transport substeps 1–24 are complete with injected Identity/Cryptography and
 real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTANCE.md)
@@ -35,7 +37,7 @@ remain required for a working authenticated server and full Transport conformanc
   and resource limits. Exercise upstream TR-01 through TR-15 with test-owned
   socket, clock, Identity and Cryptography adapters. Keep authentication
   substitutes test-only; real-crypto vector checks remain gated on steps 3–5.
-- [ ] **3. Cryptography module.** Implement specified primitives and canonical
+- [ ] **3. [Cryptography module](2_Cryptography_module/PLAN.md).** Implement specified primitives and canonical
   constructions, fixed vectors, key lifecycle, content encryption and tamper
   rejection. Use established cryptographic libraries and bounded inputs.
 - [ ] **4. Identity module.** Implement identity creation, protected credentials,

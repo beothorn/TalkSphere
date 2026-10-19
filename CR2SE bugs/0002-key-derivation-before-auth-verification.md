@@ -1,11 +1,11 @@
 # 0002: Complete-handshake pseudocode derives keys before peer AUTH verification
 
-- Status: open
+- Status: resolved
 - Affected CR2SE module(s): Transport
 - Upstream revision: [8e848eb2e70ef7cd4490a753f9e647fdddcd99fd](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd)
 - Specification: [section 5.3](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/README.md#53-session-key-derivation)
 - Pseudocode: [section 7](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport/pseudocode/README.md#7-complete-connection-handshake)
-- Upstream issue/fix: not filed upstream
+- Upstream fix: [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0)
 
 ## Problem and evidence
 
@@ -58,4 +58,9 @@ This follows the specification and is not a new protocol extension.
 
 ## Resolution
 
-Open against the pinned revision; no upstream correction has been verified.
+Verified by source review at [80f6795](https://github.com/beothorn/CR2SE/commit/80f6795864ecf060e23482ee42909da4a649ecf0).
+
+The handshake now derives session material only after peer AUTH verification, tracks the outbound AUTH boundary separately and cleans up ephemeral material on handshake exit.
+
+The evidence above describes the original affected revision. This resolution
+records the upstream correction, not a new full Transport conformance run.
