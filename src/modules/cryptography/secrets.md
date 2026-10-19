@@ -17,3 +17,10 @@ registers, swapped pages or persistent backing stores. Identity owns persistence
 The production dependency uses zeroize's portable volatile-write/compiler-fence
 mechanism. Cargo.lock pins the resolved version; no custom unsafe erasure is added.
 Tests observe lifetime release, not inaccessible freed memory.
+
+CR-09 tests attach thread-local release observers only in test builds, including
+successful composed encryption/decryption, entropy failure after acquisition,
+authentication failure and abandoned capability ownership. Synchronous calls do
+not advertise mid-call cancellation; dropping unused material or completed local
+results is the supported abandonment boundary. Trace capture exercises the real
+public workflow and checks that private bytes and plaintext never enter diagnostics.

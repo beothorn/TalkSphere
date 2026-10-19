@@ -46,7 +46,7 @@ impl<P> Secret<P> {
             bytes,
             purpose: PhantomData,
             #[cfg(test)]
-            release: None,
+            release: super::test_support::release_probe(),
         }
     }
 }
