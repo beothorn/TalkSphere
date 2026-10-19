@@ -1,10 +1,11 @@
 # Cryptography module contract
 
-The module exports `api` (local requests and capabilities), `config` (validated
-resource policy), `error` (fixed failure categories) and `ports` (platform entropy).
-This scaffold provides no production primitive or envelope implementation and
-claims no cryptographic conformance. No backend is selected automatically.
+The module exports `api` (local contracts), `config` (validated resource policy),
+`error` (fixed failures), `ports` (entropy interface), `random` (platform adapter),
+`secrets` (protected ownership) and `primitives` (implemented algorithms).
+No backend or network listener is started by importing the module.
 
-Identity, Transport and future content codecs are callers; only platform entropy,
-protected key access and established algorithm implementations are dependencies.
-See [the module guide](README.md) for ownership and implementation status.
+Identity, Transport and content codecs are callers. Platform entropy, authorized
+key access and established algorithm libraries are dependencies. See the
+[module guide](README.md) and [plan](../../../plans/2_Cryptography_module/PLAN.md)
+for currently implemented operations and pending integration work.

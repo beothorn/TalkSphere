@@ -1,9 +1,9 @@
 # Cryptography
 
-Status: protected secret ownership, platform randomness and bounded SHA-256 are
-implemented alongside the public contracts. Signing, agreement and envelopes
-remain pending; this is not yet a complete cryptographic provider.
-See the [module plan](../../../plans/2_Cryptography_module/PLAN.md).
+Status: implementation is progressing step by step; completed operations and
+verification evidence are recorded in the [module plan](../../../plans/2_Cryptography_module/PLAN.md).
+Primitives are exercised through local library calls; they do not start a server.
+Identity persistence and authenticated server composition remain later work.
 
 ## Callers and boundaries
 
@@ -25,6 +25,7 @@ in-process contracts only; it does not claim process-separated deployment.
 
 ## Public contracts
 
+- [Primitives](primitives/mod.md): hashing, keys, signatures, agreement and derivation.
 - [API](api.md): capabilities, borrowed requests and owned results.
 - [Resource limits](config.md): immutable per-operation byte budgets.
 - [Errors](error.md): distinct secret-free failure categories.

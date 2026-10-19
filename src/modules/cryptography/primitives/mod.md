@@ -11,3 +11,5 @@ weak-point rejection policy pending upstream clarification.
 
 `agreement` performs consuming ephemeral and borrowed persistent X25519 with
 mandatory all-zero rejection.
+
+`kdf` extracts protected PRKs and expands exact construction-specific keys/prefixes.

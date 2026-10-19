@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–8 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–9 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -22,7 +22,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **6.** Implement independent Ed25519 and X25519 key generation.
 - [x] **7.** Implement ordinary Ed25519 signing and verification.
 - [x] **8.** Implement X25519 agreement with all-zero rejection.
-- [ ] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
+- [x] **9.** Implement bounded HKDF-SHA-256 extraction and expansion.
 - [ ] **10.** Implement authenticated encryption without provisional plaintext release.
 - [ ] **11.** Implement the Transport integrity-tag construction.
 - [ ] **12.** Implement encryption-key binding and recipient credential validation.
@@ -138,6 +138,8 @@ Completed: Added consuming ephemeral and borrowed persistent X25519; fixed share
 ### 9. Key derivation primitives
 
 Preserve exact salt and info bytes and explicit output sizes, including Transport’s 32-byte keys and 16-byte nonce prefixes. Keep PRKs and key outputs protected; validate the algorithm’s output bound before allocating. Compare pinned extract/expand results and independent algorithm vectors, and test boundary lengths, changed context, errors and cleanup. Domain labels belong to the owning construction.
+
+Completed: Exact HKDF extract and bounded expand match pinned intermediates and RFC5869 case 1; zero/maximum/over-limit outputs and context separation are tested. Upgraded SHA/HMAC dependencies enable keyed-state cleanup. Full checks pass; coverage 94.48% (3048/3226).
 
 ### 10. AEAD primitives
 
