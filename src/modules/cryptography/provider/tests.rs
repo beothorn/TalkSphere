@@ -100,3 +100,48 @@ fn public_envelope_contracts_and_provider_ceiling() {
             .is_err()
     );
 }
+
+// A failed dependency is never automatically retried, and successful results do not borrow mutable input.
+#[test]
+fn no_hidden_retry_and_owned_result_snapshot() {
+    let recipient = recipient();
+    let limits = ResourceLimits::new(1024, 1172).unwrap();
+    let mut entropy = object_entropy();
+    entropy.0.push_front(Err(CryptoError::Unavailable));
+    let mut provider = Provider::new(entropy, 1172).unwrap();
+    let mut plaintext = b"original".to_vec();
+    assert_eq!(
+        provider.encrypt(api::EncryptRequest {
+            plaintext: &plaintext,
+            recipient: &recipient,
+            limits
+        }),
+        Err(CryptoError::Unavailable)
+    );
+    assert_eq!(provider.entropy.0.len(), 2);
+    let object = provider
+        .encrypt(api::EncryptRequest {
+            plaintext: &plaintext,
+            recipient: &recipient,
+            limits,
+        })
+        .unwrap();
+    plaintext.fill(0);
+    let key = Secret::new(Zeroizing::new(
+        envelope("recipient raw persistent X25519 private-key input")
+            .try_into()
+            .unwrap(),
+    ));
+    assert_eq!(
+        provider
+            .decrypt(api::DecryptRequest {
+                object: &object,
+                identity_id: recipient.identity_id,
+                encryption_public_key: recipient.encryption_public_key,
+                private_key: &key,
+                limits
+            })
+            .unwrap(),
+        b"original"
+    );
+}

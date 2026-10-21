@@ -16,7 +16,8 @@ The filename exclusions remove integration tests, separate unit-test files and
 dependency substitutes from the metric, while still executing those tests.
 
 LLVM also reports test code embedded in production source files. Exclude the
-inline `#[cfg(test)]` modules when calculating production line coverage. The
+inline `#[cfg(test)]` modules and single-line test-only fields/initializers when
+calculating production line coverage. The
 following calculation uses LLVM's executable-line counts; it includes uncovered
 production lines and excludes neither inconvenient branches nor whole production
 files. It matches this repository's top-level inline test/fixture modules, whose
@@ -42,6 +43,13 @@ for record in Path('target/production-coverage.lcov').read_text().split('end_of_
         first = source[:block.start()].count('\n') + 1
         last = source[:block.end()].count('\n') + 1
         excluded.update(range(first, last + 1))
+    # Secret lifecycle observers add cfg(test)-only fields and initializers.
+    # Match only the currently used single-line field syntax, not production code.
+    for field in re.finditer(
+        r'^[ \t]*#\[cfg\(test\)\]\n[ \t]+(?:pub(?:\([^)]*\))? )?\w+:[^\n]+,',
+        source, re.M,
+    ):
+        excluded.add(source[:field.end()].count('\n') + 1)
     for line, count in re.findall(r'^DA:(\d+),(\d+)', record, re.M):
         if int(line) not in excluded:
             total += 1
@@ -70,3 +78,8 @@ The new configuration/error implementation accounts for 29 covered production
 lines; contract declarations do not execute cryptographic operations. All 183
 unit/integration/documentation tests pass separately. This scaffold measurement
 does not claim algorithm or envelope conformance.
+
+The Cryptography step 21 audit additionally excludes single-line `cfg(test)`
+fields/initializers used by secret-release probes. Historical measurements retain
+the procedure used at their recorded step; current measurements use this stricter
+filter. Review it if future conditional items use a different layout.

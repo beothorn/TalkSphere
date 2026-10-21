@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–20 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–21 are implemented, tested and documented; remaining steps are pending.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -34,7 +34,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **18.** Verify secret cleanup and diagnostic privacy across composed operations.
 - [x] **19.** Adapt real Cryptography operations to Transport’s dependency port.
 - [x] **20.** Test envelope separation and independent protected objects.
-- [ ] **21.** Audit Cryptography against all upstream acceptance cases.
+- [x] **21.** Audit Cryptography against all upstream acceptance cases.
 - [ ] **22.** Document Cryptography coverage and the Identity integration handoff.
 
 ## Reference baseline and scope
@@ -228,6 +228,8 @@ Completed: An independently generated valid Messaging payload authenticates unde
 Maintain an acceptance matrix for every CR-01 through CR-11 assertion and applicable AT-C01 through AT-C04 rows, linking executable tests, fixture revisions and outcomes. Include capability misuse, limits, unavailable dependencies, immutable outputs and output discipline. Record why durability, remote commit uncertainty or serialized adapters are inapplicable to the supported in-process boundary rather than marking unexecuted rows passed.
 
 Recheck pseudocode section 18 and cross-module responsibilities, including persistent installation/conflict handling deferred to Identity. Add missing focused tests and investigate discrepancies; local round trips alone are insufficient. Record only confirmed language-independent upstream defects in CR2SE bugs.
+
+Completed: Audited every CR-01–CR-11 and applicable common acceptance assertion, adding malformed-object, forgery, immutable-output and no-hidden-retry checks. Full checks pass with 226 tests; production coverage is 95.23% (3570/3749), excluding test-only fields and helpers. ACCEPTANCE.md records supported scope and unresolved protocol reports.
 
 ### 22. Completion and handoff
 
