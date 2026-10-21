@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–3 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–4 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -12,7 +12,7 @@ start the server or implement later roadmap modules.
 - [x] **1.** Define Identity’s public contracts and dependency boundaries.
 - [x] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
 - [x] **3.** Validate public signing keys against the updated CR2SE profile.
-- [ ] **4.** Align signature verification with the updated CR2SE acceptance rules.
+- [x] **4.** Align signature verification with the updated CR2SE acceptance rules.
 - [ ] **5.** Derive binary IDs and validate claimed public identities.
 - [ ] **6.** Format binary IDs as canonical Base32 text.
 - [ ] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
@@ -120,6 +120,8 @@ Completed: Added canonical non-small-order VerificationKey parsing with explicit
 Review the current `verify_strict` path against every rule in the new profile rather than assuming its name establishes equivalence. Enforce canonical R, S < L, small-order rejection and the uncofactored exact equation using established primitives, reusing step 3. Preserve ordinary Ed25519 and exact honest AUTH/binding vectors.
 
 Execute the new CR-02 negative rows and equivalent individual decisions for a collection containing valid and invalid signatures; do not advertise an unsupported batch API. Record regression evidence and the adopted revision in Cryptography's acceptance report, resolving its historical local-policy caveat only after validation. This is a focused dependency correction required by Identity, not reopening unrelated Cryptography work.
+
+Completed: Aligned canonical A/R validation with backend scalar bounds and the uncofactored equation; all new negative rows, mixed-order acceptance/rejection and existing AUTH/binding vectors pass. All 236 tests and required checks pass; production coverage 95.35% (3674/3853).
 
 ### 5. Binary identities
 

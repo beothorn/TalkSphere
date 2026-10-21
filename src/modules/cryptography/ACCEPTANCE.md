@@ -73,3 +73,15 @@ unit/integration/documentation tests, including an executable Provider example.
 [Production coverage](../../../docs/coverage.md) is **95.23% (3570/3749 lines)**
 with test modules, helpers and test-only observer fields excluded. All 22 planned
 Cryptography steps are complete within the scope and open findings recorded above.
+
+## Identity dependency update: signature profile
+
+Identity steps 3–4 adopt revision d40b6278's explicit Ed25519 verification profile.
+[Public-key validation](primitives/verification_key.rs) and
+[profile regressions](primitives/tests/signature_profile.rs) check canonical
+encoding, all small-order points, published negative A/R/S rows, collection
+rejection and mixed-order cases separating exact from cofactored equations.
+Existing honest AUTH/binding vectors remain required. The historical CR-02
+local-policy caveat above is superseded for this boundary; no batch API or
+process-separated adapter is claimed. Newly expanded cleanup cases involving
+persistent Identity storage remain in the Identity lifecycle plan.

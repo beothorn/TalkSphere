@@ -7,7 +7,7 @@ require no network, trust, Ledger or Identity runtime.
 `keys` generates independent Ed25519 and persistent/ephemeral X25519 pairs.
 
 `signature` signs exact bytes and verifies with an explicitly documented strict
-weak-point rejection policy pending upstream clarification.
+canonical verification profile adopted at upstream revision d40b6278.
 
 `agreement` performs consuming ephemeral and borrowed persistent X25519 with
 mandatory all-zero rejection.

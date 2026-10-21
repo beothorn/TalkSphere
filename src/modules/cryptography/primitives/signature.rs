@@ -22,7 +22,7 @@ pub fn sign(
 }
 
 /// Verify a 32-byte key and 64-byte ordinary Ed25519 signature over exact bytes.
-/// Strict weak-point rejection is a documented local policy pending upstream clarification.
+/// Canonical decoding, small-order rejection and the uncofactored equation follow CR2SE d40b6278.
 /// # Errors
 /// Returns `InvalidInput` for malformed key/signature sizes, `ResourceLimit` for
 /// excessive message size, or `AuthenticationFailed` for rejected signatures/weak points.
@@ -39,6 +39,11 @@ pub fn verify(
     let bytes: &[u8; 32] = public_key
         .try_into()
         .map_err(|_| CryptoError::InvalidInput)?;
+    super::verification_key::VerificationKey::parse(bytes)?;
+    if signature.len() != 64 {
+        return Err(CryptoError::InvalidInput);
+    }
+    super::verification_key::VerificationKey::parse(&signature[..32])?;
     let key = VerifyingKey::from_bytes(bytes).map_err(|_| CryptoError::InvalidInput)?;
     let signature = Signature::from_slice(signature).map_err(|_| CryptoError::InvalidInput)?;
     key.verify_strict(message, &signature)
@@ -122,3 +127,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "tests/signature_profile.rs"]
+mod profile_tests;

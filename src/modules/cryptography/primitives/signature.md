@@ -10,7 +10,13 @@ endpoint is provided. Excessive messages return `ResourceLimit`.
 `ResourceLimit`, and signature rejection `AuthenticationFailed`. Success proves
 only authorization of those bytes and grants no trust or resource permission.
 
-The backend's strict verification rejects weak points. CR2SE does not yet fix
-this edge-case acceptance profile: see [bug 0003](../../../../CR2SE%20bugs/0003-ed25519-weak-point-validation.md).
-This is documented local rejection policy, not an invented normative wire rule.
-Fixed upstream AUTH vectors match for both roles; mutation tests reject changes.
+Verification first checks canonical public-key and R encodings and rejects small-order
+points, then delegates scalar bounds and the exact uncofactored equation to
+ed25519-dalek. This implements the [updated CR2SE profile](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/cryptography/README.md#ed25519-verification-profile),
+including mixed-order acceptance when the equation holds. Canonical decoding
+errors may return InvalidInput or AuthenticationFailed; every rejection returns
+no successful proof. There is no batch API; collections verify each member.
+
+Tests preserve both fixed AUTH signatures and bindings, execute every published
+negative signature row and distinguish mixed-order signatures satisfying the
+uncofactored equation from those accepted only after clearing the cofactor.

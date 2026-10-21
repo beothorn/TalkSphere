@@ -65,9 +65,9 @@ Use its [specification](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e
 [pseudocode/vector](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/pseudocode/README.md)
 and [acceptance suite](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/acceptanceTests/README.md).
 The acceptance matrix links fixed-vector, failure, lifecycle and cross-module tests.
-Open protocol findings concern Ed25519 weak-point validation (0003) and pseudocode
-cleanup guards (0004); see the [bug index](../../../CR2SE%20bugs/README.md).
-Strict signature rejection is a documented local policy pending clarification, so
+Protocol findings 0003/0004 are fixed upstream; see the [bug index](../../../CR2SE%20bugs/README.md).
+Identity steps 3–4 adopt and test the updated signature profile. Broader cleanup
+and Identity storage acceptance additions remain tracked by the Identity plan;
 these results do not establish unconditional interoperability or node conformance.
 
 ## Limits, dependencies and Identity handoff
@@ -99,4 +99,4 @@ and `cargo test --locked --test cryptography_privacy` for trace privacy.
 Identity dependency work adds [canonical verification-key validation](primitives/verification_key.md)
 for the updated d40b6278 profile. It uses curve25519-dalek directly (already used
 by the signing backend) for decode/re-encode and small-order checks. Signature
-alignment and refreshed acceptance evidence follow in the next Identity step.
+alignment now follows the same profile; see the acceptance supplement.
