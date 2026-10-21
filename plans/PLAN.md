@@ -26,6 +26,11 @@ real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTA
 records local evidence and the real Cryptography supplement. Roadmap steps 4–5
 remain required for a working authenticated server and full Transport conformance.
 
+Identity now has a [detailed plan](3_Identity_module/PLAN.md) in module folder 3,
+using upstream revision `d40b6278f24430e814d7fa82094f57261bfcac9f`. All 30 proposed
+steps remain unchecked; this is a planning handoff, not an implementation claim.
+Confirmed new protocol defects are also filed upstream under the contributor instructions.
+
 ## Setup and required node modules
 
 - [x] **1. Project setup.** Cargo application/library, module layout, Rust
@@ -41,7 +46,7 @@ remain required for a working authenticated server and full Transport conformanc
 - [x] **3. [Cryptography module](2_Cryptography_module/PLAN.md).** Implement specified primitives and canonical
   constructions, fixed vectors, key lifecycle, content encryption and tamper
   rejection. Use established cryptographic libraries and bounded inputs.
-- [ ] **4. Identity module.** Implement identity creation, protected credentials,
+- [ ] **4. [Identity module](3_Identity_module/PLAN.md).** Implement identity creation, protected credentials,
   binary/text formats, contact representation and signing capabilities. Verify
   round trips, normalization, invalid input and expected-identity checks.
 - [ ] **5. Transport integration milestone.** Compose real Identity with

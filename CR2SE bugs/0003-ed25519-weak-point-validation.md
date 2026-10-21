@@ -1,11 +1,11 @@
 # 0003: Ed25519 weak-point validation is not specified
 
-- Status: open
+- Status: resolved
 - Affected CR2SE modules: Cryptography, Identity and signature-consuming modules
 - Upstream revision: [80f6795864ecf060e23482ee42909da4a649ecf0](https://github.com/beothorn/CR2SE/tree/80f6795864ecf060e23482ee42909da4a649ecf0)
 - Specification: [algorithms and key separation](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/README.md#algorithms-and-key-separation)
 - Pseudocode: [general signing boundary](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/pseudocode/README.md#5-general-signing-and-identity-proof-boundary)
-- Upstream issue/fix: not filed upstream
+- Upstream issue/fix: [CR2SE #6](https://github.com/beothorn/CR2SE/issues/6)
 
 ## Problem and evidence
 
@@ -68,4 +68,11 @@ edge-case validation profile is interoperable with all other implementations.
 
 ## Resolution
 
-Open; source review and the executable reproducer confirm the missing rule.
+Resolution verified at upstream revision [d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/cryptography/README.md#ed25519-verification-profile).
+The specification now requires canonical decoding, small-order rejection, scalar bounds and the exact uncofactored equation; the acceptance suite supplies negative vectors and applies public-key validation before proof verification.
+
+Verified by reviewing the specification, pseudocode and acceptance cases; this
+is protocol-source verification, not execution of the new tests in TalkSphere.
+The [Identity plan](../plans/3_Identity_module/PLAN.md) schedules the dependency
+alignment and lifecycle evidence. Historical implementation evidence above
+remains tied to its original baseline.

@@ -167,6 +167,19 @@ fabricate reports to populate the directory. Keep documented workarounds
 separate from the normative protocol, and update reports when upstream fixes
 them.
 
+For each newly confirmed protocol defect, search open and closed issues in
+[beothorn/CR2SE](https://github.com/beothorn/CR2SE/issues) before filing it.
+Create a GitHub issue when no existing issue covers the defect; this is standing
+user authorization to file these protocol reports during planning or implementation.
+Keep the local Markdown report and index as the evidence record, set the status
+to `reported upstream` and add the issue URL after creation succeeds. Use absolute
+GitHub links for local reproducer sources in the issue body. Link matching issues
+instead of duplicating them, and do not reopen resolved findings without new evidence.
+If filing is unavailable or fails, retain status `open`, record the blocker and
+report it to the user; never claim an issue was filed without a confirmed URL.
+Verify upstream fixes before updating local resolution status, and distinguish
+protocol resolution from any outstanding TalkSphere implementation changes.
+
 ## Tests, documentation and help
 
 - Always add or update unit tests with implementation changes, including module

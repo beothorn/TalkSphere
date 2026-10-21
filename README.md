@@ -5,7 +5,9 @@ TalkSphere is a Rust server implementation and proof of concept for
 node that exchanges services and storage, followed by messaging, public boards,
 pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md),
 the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the
-[Cryptography breakdown](plans/2_Cryptography_module/PLAN.md).
+[Cryptography breakdown](plans/2_Cryptography_module/PLAN.md). The next module has
+an [Identity plan](plans/3_Identity_module/PLAN.md) ready for review; implementation
+has not started.
 
 The intended model is ad-free social features supported by shared device
 storage and paid backup space. Compatibility with CR2SE clients is an
@@ -101,6 +103,8 @@ plans/
     PLAN.md                Transport steps and matching detailed instructions
   2_Cryptography_module/
     PLAN.md                Cryptography steps and matching details
+  3_Identity_module/
+    PLAN.md                proposed Identity steps and matching details
 ```
 
 Protocol modules own their code and private state. Focused subfolders separate codecs, lifecycle, adapters and composition. The [Transport README](src/modules/transport/README.md)
