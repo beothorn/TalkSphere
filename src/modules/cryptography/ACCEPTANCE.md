@@ -63,3 +63,13 @@ two-node Transport integration remain roadmap steps 4–5.
 
 These open upstream issues limit unconditional interoperability claims. Passing
 this suite is implementation evidence, not a security audit or full node conformance.
+
+## Completion validation
+
+Step 22 passes the repository's formatting, Clippy (`-D warnings`), locked tests,
+build and overview/detailed help checks, plus generated API documentation and the
+expected unavailable `serve` behavior. The complete suite contains 227 passing
+unit/integration/documentation tests, including an executable Provider example.
+[Production coverage](../../../docs/coverage.md) is **95.23% (3570/3749 lines)**
+with test modules, helpers and test-only observer fields excluded. All 22 planned
+Cryptography steps are complete within the scope and open findings recorded above.

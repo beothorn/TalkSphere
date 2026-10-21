@@ -13,6 +13,37 @@ use super::{
 
 /// Real cryptography with trusted injected entropy and one immutable local byte ceiling.
 /// It has no persistent key store, remote authority endpoint or implicit network access.
+///
+/// # Example
+/// Generate local credentials and authenticate an independently encrypted object.
+/// Persistent credential protection remains the caller's responsibility.
+/// ```
+/// use talksphere::modules::cryptography::{
+///     api::{DecryptRequest, EncryptRequest, IdentityEncryption, KeyAgreement,
+///           RecipientCredential, Signatures},
+///     config::ResourceLimits, credential, provider::Provider,
+/// };
+/// let mut provider = Provider::system(4096)?;
+/// let signing = provider.generate_signing_key()?;
+/// let encryption = provider.generate_persistent_key()?;
+/// let recipient = RecipientCredential {
+///     identity_id: credential::identity_id(&signing.public_key)?,
+///     signing_public_key: signing.public_key,
+///     encryption_public_key: encryption.public_key,
+///     binding_signature: credential::bind(&signing.private_key, &encryption.public_key)?,
+/// };
+/// let limits = ResourceLimits::new(1024, 1172)?;
+/// let object = provider.encrypt(EncryptRequest {
+///     plaintext: b"local example", recipient: &recipient, limits,
+/// })?;
+/// let plaintext = provider.decrypt(DecryptRequest {
+///     object: &object, identity_id: recipient.identity_id,
+///     encryption_public_key: encryption.public_key,
+///     private_key: &encryption.private_key, limits,
+/// })?;
+/// assert_eq!(plaintext, b"local example");
+/// # Ok::<(), talksphere::modules::cryptography::error::CryptoError>(())
+/// ```
 pub struct Provider<E = SystemEntropy> {
     entropy: E,
     maximum_bytes: usize,

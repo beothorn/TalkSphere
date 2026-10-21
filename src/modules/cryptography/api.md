@@ -1,10 +1,10 @@
 # Cryptography local API contracts
 
-These are in-process interfaces, not working algorithms or serialized messages.
+These in-process interfaces are implemented by the real Provider; they are not serialized messages.
 All operations use exact bytes and must enforce bounded input before expensive
 work. Unimplemented operations fail with `Unavailable`; none may fabricate output.
 Private capabilities need no diagnostic formatting, cloning or byte extraction.
-Concrete protected types and cleanup implementations arrive in step 3.
+Purpose-specific protected types and scoped cleanup are documented in [secrets](secrets.md).
 
 ## Values and requests
 
@@ -16,7 +16,7 @@ It has no automatic serialization or diagnostic representation.
 and `encryption_public_key` (32 bytes each), and a 64-byte `binding_signature`.
 Possessing these public values grants no private authority. The ID is
 SHA-256(0x01 || 0x01 || signing public key); no running Identity module is needed
-to verify that formula. Verification is deferred to its planned implementation.
+to verify that formula. The credential validator checks that formula and the key binding before encryption.
 
 `EncryptRequest` borrows `plaintext` and `recipient` for the call and carries
 validated `limits`. There is no external associated-data input for this envelope.
@@ -28,8 +28,8 @@ Borrowing does not transfer or consume persistent private authority.
 ## Primitive interfaces
 
 `Hashing.sha256(bytes)` returns a 32-byte digest over exact bounded bytes or a
-resource/dependency error. Ordered incremental hashing will extend this interface
-when implemented; the scaffold does not concatenate or normalize input.
+resource/dependency error. Ordered incremental hashing is available separately as `Sha256State` under
+[hash primitives](primitives/hash.md); neither operation normalizes input.
 
 `Signatures` defines a protected `SigningKey` capability:
 

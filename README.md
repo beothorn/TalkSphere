@@ -15,17 +15,18 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** Transport's planned implementation is complete, including
-TCP adapters, multiplexed streams and bounded control composition. Tests use
-injected Identity/Cryptography substitutes and real loopback TCP. Real
-Cryptography, Identity and the authenticated two-node demonstration remain
-[roadmap steps 3–5](plans/PLAN.md); `serve` reports that missing integration and
-opens no listener. See the [acceptance matrix](src/modules/transport/ACCEPTANCE.md)
-for verified behavior and pending cryptographic evidence.
+**Current status:** Transport and Cryptography's planned implementations are complete.
+Real primitives verify both Transport handshake roles and fixed protected-frame
+vectors; generic recipient encryption authenticates complete bounded objects.
+Identity persistence and the authenticated two-node demonstration remain
+[roadmap steps 4–5](plans/PLAN.md); `serve` reports the missing integration and
+opens no listener. See the [Transport evidence](src/modules/transport/ACCEPTANCE.md)
+and [Cryptography acceptance matrix](src/modules/cryptography/ACCEPTANCE.md) for
+verified behavior, scope and unresolved protocol findings.
 
-[Cryptography](src/modules/cryptography/README.md) is being implemented step by
-step; its module guide and plan describe the available operations and verified
-vectors. Exercise it with `cargo test --locked modules::cryptography`.
+The [Cryptography guide](src/modules/cryptography/README.md) describes available
+operations and verified vectors. Exercise it with
+`cargo test --locked modules::cryptography`.
 
 ## Build and test
 
@@ -68,7 +69,7 @@ cargo run --locked -- --version
 cargo run --locked -- serve
 ```
 
-The last command currently exits with status **1**, explaining that real Identity/Cryptography
+The last command currently exits with status **1**, explaining that Identity
 and normal server composition are still required. It opens no sockets. With no arguments, the application
 shows its overview and exits successfully. Invalid arguments exit with status
 **2** and a usage hint.
@@ -87,8 +88,9 @@ src/
   main.rs                  executable entry point
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
+  composition/             real Cryptography adapter for Transport
   modules/
-    cryptography/          public contracts, resource policy and scaffold tests
+    cryptography/          primitives, recipient envelopes, provider and tests
     transport/             protocol state, control driver, TCP adapters and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports

@@ -1,6 +1,6 @@
 //! Typed primitive and envelope contracts for authorized in-process callers.
 //!
-//! These traits define capabilities, not working algorithms. Implementations
+//! These traits define capabilities implemented by the real Provider. Implementations
 //! must bound inputs, log entry without secret fields and erase transient secrets
 //! on every exit. No trait requires private material to be Clone, Debug or bytes.
 //! Persistent key authorization and storage belong to Identity/key-store adapters.

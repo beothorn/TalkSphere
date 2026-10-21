@@ -18,12 +18,12 @@ checklist steps followed by matching details in the same order. Its folder
 number starts at 1 because project setup is already complete; Transport remains
 step 2 in this roadmap. The next module has a
 [Cryptography plan](2_Cryptography_module/PLAN.md), in folder 2 and roadmap step 3;
-its first step provides tested contracts and resource policy, while cryptographic
-operations and the remaining steps are still pending.
+all 22 steps are complete, including real primitives, bounded recipient envelopes,
+secret lifecycle checks and the Transport adapter; see its [acceptance evidence](../src/modules/cryptography/ACCEPTANCE.md).
 
 Transport substeps 1–24 are complete with injected Identity/Cryptography and
 real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTANCE.md)
-records local evidence and pending cryptographic assertions. Roadmap steps 3–5
+records local evidence and the real Cryptography supplement. Roadmap steps 4–5
 remain required for a working authenticated server and full Transport conformance.
 
 ## Setup and required node modules
@@ -37,16 +37,16 @@ remain required for a working authenticated server and full Transport conformanc
   exact stream-ID allocation, half-close, cancellation, ping, GOAWAY, deadlines
   and resource limits. Exercise upstream TR-01 through TR-15 with test-owned
   socket, clock, Identity and Cryptography adapters. Keep authentication
-  substitutes test-only; real-crypto vector checks remain gated on steps 3–5.
-- [ ] **3. [Cryptography module](2_Cryptography_module/PLAN.md).** Implement specified primitives and canonical
+  substitutes test-only; real-crypto vector checks now pass through the step 3 adapter.
+- [x] **3. [Cryptography module](2_Cryptography_module/PLAN.md).** Implement specified primitives and canonical
   constructions, fixed vectors, key lifecycle, content encryption and tamper
   rejection. Use established cryptographic libraries and bounded inputs.
 - [ ] **4. Identity module.** Implement identity creation, protected credentials,
   binary/text formats, contact representation and signing capabilities. Verify
   round trips, normalization, invalid input and expected-identity checks.
-- [ ] **5. Transport integration milestone.** Replace test substitutes with
-  Identity/Cryptography adapters. Match upstream handshake/frame vectors with
-  real cryptography and connect two local nodes in both directions. Reject
+- [ ] **5. Transport integration milestone.** Compose real Identity with
+  the implemented Cryptography adapter and connect two local nodes in both directions.
+  Extend the passing cryptographic vectors to full server integration. Reject
   tampering and replay before dispatch; complete TR-01 through TR-15.
 - [ ] **6. Board module.** Publish atomic provided/wanted offerings and definition
   snapshots, using Services schema formats without requiring its runtime.

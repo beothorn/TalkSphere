@@ -1,7 +1,7 @@
 # Cryptography
 
-Status: implementation is progressing step by step; completed operations and
-verification evidence are recorded in the [module plan](../../../plans/2_Cryptography_module/PLAN.md).
+Status: all 22 planned steps are complete; verification evidence is recorded in
+the [acceptance matrix](ACCEPTANCE.md) and [module plan](../../../plans/2_Cryptography_module/PLAN.md).
 Primitives are exercised through local library calls; they do not start a server.
 Identity persistence and authenticated server composition remain later work.
 
@@ -19,8 +19,8 @@ generic identity envelope does not replace Messaging's envelope or supply a chun
 ordering protocol. These boundaries prevent trust, persistence and transport state
 from becoming hidden dependencies of primitive operations.
 
-Local composition will provide secure entropy and authorized protected key access,
-using established cryptographic libraries. This scaffold supports direct
+Local composition supplies secure platform entropy and authorized protected key access,
+using established cryptographic libraries. The implemented provider supports direct
 in-process contracts only; it does not claim process-separated deployment.
 
 ## Public contracts
@@ -53,8 +53,8 @@ cargo run --locked -- help serve
 ```
 
 There is no Cryptography CLI command yet. `cargo run --locked -- serve` still
-exits with status 1 and opens no listener because real Identity/Cryptography
-integration is absent. See [coverage instructions](../../../docs/coverage.md).
+exits with status 1 and opens no listener because Identity and normal server
+composition are absent. See [coverage instructions](../../../docs/coverage.md).
 
 ## Upstream baseline
 
@@ -64,4 +64,34 @@ Use its [specification](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e
 [output contract](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/outputs/README.md),
 [pseudocode/vector](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/pseudocode/README.md)
 and [acceptance suite](https://github.com/beothorn/CR2SE/blob/80f6795864ecf060e23482ee42909da4a649ecf0/modules/cryptography/acceptanceTests/README.md).
-Scaffold tests are boundary checks, not CR-01–CR-11 conformance evidence.
+The acceptance matrix links fixed-vector, failure, lifecycle and cross-module tests.
+Open protocol findings concern Ed25519 weak-point validation (0003) and pseudocode
+cleanup guards (0004); see the [bug index](../../../CR2SE%20bugs/README.md).
+Strict signature rejection is a documented local policy pending clarification, so
+these results do not establish unconditional interoperability or node conformance.
+
+## Limits, dependencies and Identity handoff
+
+Callers choose immutable plaintext/object budgets; the Provider ceiling must be
+at least 148 bytes and intersects every envelope request budget. An object adds
+132 header bytes and a 16-byte tag to its plaintext. Length checks precede
+allocation and expensive work. Platform entropy requests are bounded at 4096
+bytes; HKDF expansion is bounded at 255 SHA-256 blocks. No implicit network retry
+or plaintext streaming is provided.
+
+The implementation uses sha2, ed25519-dalek, x25519-dalek, hkdf/hmac and
+chacha20poly1305 with getrandom for entropy and zeroize for owned secret cleanup.
+Cargo.lock records exact versions. Purpose-specific capabilities prevent accidental
+key reuse across operations; ephemeral authority is consumed and transient keys
+are erased on exit. This does not guarantee erasure of every compiler/backend
+copy. Generic envelopes provide neither sender authentication nor forward secrecy;
+Transport integrity does not encrypt its payloads.
+
+Identity must next create and protect persistent credentials, authorize private
+operations, handle installation/conflicts and supply the Transport Identity port.
+Server composition then wires those credentials, the real Cryptography adapter,
+TCP and lifecycle management into `serve`. The module's tested in-process provider
+can already be used by library callers; its generated API documentation includes
+an executable recipient-encryption example. Run
+`cargo test --locked composition::cryptography` for real handshake/vector checks
+and `cargo test --locked --test cryptography_privacy` for trace privacy.

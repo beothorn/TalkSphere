@@ -22,13 +22,13 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         topic: Topic::Serve,
         names: &["serve"],
         label: "serve",
-        summary: "Start the server (awaiting real Identity/Cryptography).",
+        summary: "Start the server (awaiting Identity/server integration).",
         details: "Usage: talksphere serve\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
                   Transport and TCP adapters are implemented and tested with injected dependencies.\n\
-                  Cryptography implementation is in progress; server integration remains pending.\n\
-                  See plans/2_Cryptography_module/PLAN.md for the next implementation steps.\n\
-                  Server startup still requires real Identity and Cryptography integration.\n\
+                  Cryptography implementation is complete; Identity/server integration remains pending.\n\
+                  See plans/2_Cryptography_module/PLAN.md for completed Cryptography steps; plans/PLAN.md lists the Identity handoff.\n\
+                  Server startup still requires Identity and normal server composition.\n\
                   This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
                   See plans/1_Transport_module/PLAN.md. There are no server options yet.\n",
@@ -79,7 +79,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: Transport implemented; real Identity/Cryptography integration pending.\n\n\
+         Status: Transport and Cryptography implemented; Identity/server integration pending.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -105,10 +105,9 @@ mod tests {
     fn overview_lists_all_topics_and_how_to_get_details() {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
-        assert!(
-            overview
-                .contains("Transport implemented; real Identity/Cryptography integration pending")
-        );
+        assert!(overview.contains(
+            "Transport and Cryptography implemented; Identity/server integration pending"
+        ));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));
             assert!(overview.contains(entry.summary));
@@ -117,10 +116,12 @@ mod tests {
 
     // Serve help explains implementation progress without claiming a working server.
     #[test]
-    fn serve_help_explains_cryptography_progress_and_links_its_plan() {
+    fn serve_help_explains_cryptography_completion_and_links_its_plan() {
         let details = render(Topic::Serve);
-        assert!(details.contains("Cryptography implementation is in progress"));
+        assert!(details.contains("Cryptography implementation is complete"));
         assert!(details.contains("plans/2_Cryptography_module/PLAN.md"));
+        assert!(details.contains("plans/PLAN.md"));
+        assert!(details.contains("Identity and normal server composition"));
         assert!(details.contains("opens no sockets"));
     }
 

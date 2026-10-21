@@ -1,6 +1,6 @@
 # Cryptography module plan
 
-Status: steps 1–21 are implemented, tested and documented; remaining steps are pending.
+Status: all 22 steps are implemented, tested and documented.
 
 Cryptography is the next required module in the [main roadmap](../PLAN.md),
 where it is step 3; its module folder number is 2 because setup is not a module.
@@ -35,7 +35,7 @@ The final audit consolidates evidence rather than postponing tests.
 - [x] **19.** Adapt real Cryptography operations to Transport’s dependency port.
 - [x] **20.** Test envelope separation and independent protected objects.
 - [x] **21.** Audit Cryptography against all upstream acceptance cases.
-- [ ] **22.** Document Cryptography coverage and the Identity integration handoff.
+- [x] **22.** Document Cryptography coverage and the Identity integration handoff.
 
 ## Reference baseline and scope
 
@@ -64,6 +64,9 @@ this planning review does not claim its implementation was revalidated against
 every upstream change. No additional confirmed protocol defect was identified
 in this review; investigate contradictions during implementation and report them
 with reproducing evidence rather than silently inventing wire behavior.
+
+Implementation subsequently confirmed reports 0003 (Ed25519 weak-point policy)
+and 0004 (pseudocode cleanup guards), linked in the [acceptance matrix](../../src/modules/cryptography/ACCEPTANCE.md).
 
 ## Step details
 
@@ -236,3 +239,5 @@ Completed: Audited every CR-01–CR-11 and applicable common acceptance assertio
 Update the module README, companion contract documents, root README, roadmap and affected CLI overview/detailed help together. Document build/run/test commands, dependencies, limits, secret lifecycle, verified vectors and the absence of sender authentication or forward secrecy in the generic envelope. Preserve the explicit unavailable server behavior until real Identity and composition are implemented.
 
 Run formatting, Clippy with warnings denied, unit/integration/doc tests, build and overview/detailed help checks required by AGENTS.md. Measure production line coverage using docs/coverage.md and keep it above 80%, recording the percentage or an explicit measurement blocker. Mark steps complete only after evidence and documentation are current; list remaining Identity and real-node integration work without claiming node conformance.
+
+Completed: Updated the module contracts, runnable Provider example, READMEs, roadmap and overview/detailed help for the Identity handoff. All 227 tests pass, along with formatting, Clippy, build, API docs and CLI/runtime checks. Production coverage is 95.23% (3570/3749); all planned Cryptography steps are complete within ACCEPTANCE.md scope and its documented protocol findings.

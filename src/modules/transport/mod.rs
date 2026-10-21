@@ -34,7 +34,7 @@ pub use error::TransportError;
 ///
 /// # Errors
 ///
-/// Always returns [`TransportError::RuntimeUnavailable`] until real Identity/Cryptography and normal server composition are integrated.
+/// Always returns [`TransportError::RuntimeUnavailable`] until Identity and normal server composition are integrated.
 /// This function performs no network I/O and creates no runtime state.
 pub fn start() -> Result<(), TransportError> {
     tracing::trace!(

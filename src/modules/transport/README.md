@@ -5,7 +5,7 @@ wire codecs, bounded fragmented I/O, handshake and directional integrity
 orchestration, multiplexed streams, cancellation, ping, graceful drain, deadlines,
 resource limits, fair scheduling, TCP adapters and the public control driver.
 
-Real Identity and Cryptography modules are still pending. The normal `serve`
+Real Cryptography and its Transport adapter are implemented; Identity remains pending. The normal `serve`
 command returns `TransportError::RuntimeUnavailable`, opens no sockets and exits
 1. Test substitutes are unavailable in production builds. Local test success
 does not establish cryptographic conformance or an authenticated deployment.
@@ -98,11 +98,11 @@ Generated API documentation is under `target/doc/talksphere/`.
 Behavior and fixtures use [CR2SE revision
 8e848eb2e70ef7cd4490a753f9e647fdddcd99fd](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport).
 The [acceptance matrix](ACCEPTANCE.md) maps TR-01–TR-15 to executable tests and
-explicitly identifies real-crypto assertions still pending. The [Transport
+records the real Cryptography adapter supplement at revision 80f6795 and the remaining server integration assertions. The [Transport
 plan](../../../plans/1_Transport_module/PLAN.md) records each step's validation.
-[Roadmap steps 3–5](../../../plans/PLAN.md) implement real primitives/credentials,
-verify cryptographic vectors and mutations, and demonstrate two local nodes.
+[Roadmap steps 4–5](../../../plans/PLAN.md) supply persistent Identity credentials
+and compose two authenticated local nodes using the implemented Cryptography adapter.
 
-Two language-independent findings remain documented: [diagnostic BOM handling](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md)
+Two language-independent findings, fixed upstream in revision 80f6795, remain documented historically: [diagnostic BOM handling](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md)
 and [key derivation order](../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md).
 The implementation follows the normative specification in both cases.

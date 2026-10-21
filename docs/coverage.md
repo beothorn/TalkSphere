@@ -83,3 +83,10 @@ The Cryptography step 21 audit additionally excludes single-line `cfg(test)`
 fields/initializers used by secret-release probes. Historical measurements retain
 the procedure used at their recorded step; current measurements use this stricter
 filter. Review it if future conditional items use a different layout.
+
+Cryptography completion (step 22) measured **3570/3749 executable production
+lines (95.23%)**, using the current exclusions above. All **227** unit,
+integration and documentation tests pass separately. Formatting, Clippy with
+warnings denied, build, generated API docs and overview/detailed help checks also
+pass. See [Cryptography acceptance evidence](../src/modules/cryptography/ACCEPTANCE.md)
+for fixed vectors, limits, lifecycle coverage and the Identity integration handoff.

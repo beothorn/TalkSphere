@@ -13,3 +13,11 @@ failures. Envelope request budgets are intersected with the provider ceiling;
 callers cannot enlarge the provider budget. It owns no persistent credentials,
 trust state, network endpoint or remote signing service. Private capabilities are
 authority supplied by authorized local composition.
+
+A local caller can generate independent signing and persistent encryption keys,
+derive the identity ID, bind the encryption public key with signing authority,
+and assemble a recipient credential. Encrypt with explicit resource limits, then
+decrypt using the expected recipient ID, public key and borrowed private capability.
+The executable example on Provider in generated API documentation exercises this
+sequence. It retains keys only for the call sequence; persistent storage and trust
+are the Identity module's responsibility.
