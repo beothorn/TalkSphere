@@ -6,8 +6,8 @@ node that exchanges services and storage, followed by messaging, public boards,
 pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md),
 the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the
 [Cryptography breakdown](plans/2_Cryptography_module/PLAN.md). The next module has
-an [Identity plan](plans/3_Identity_module/PLAN.md) ready for review; implementation
-has not started.
+an [Identity plan](plans/3_Identity_module/PLAN.md) under implementation; its [module guide](src/modules/identity/README.md)
+records available operations.
 
 The intended model is ad-free social features supported by shared device
 storage and paid backup space. Compatibility with CR2SE clients is an
@@ -93,6 +93,7 @@ src/
   composition/             real Cryptography adapter for Transport
   modules/
     cryptography/          primitives, recipient envelopes, provider and tests
+    identity/              local identity contracts and staged implementation
     transport/             protocol state, control driver, TCP adapters and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports

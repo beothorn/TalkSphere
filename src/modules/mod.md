@@ -9,3 +9,6 @@ adapters; exporting a module does not start a listener or enable a capability.
 
 Identity and the remaining roadmap modules are future implementations; absent
 modules must never be replaced with production authentication substitutes.
+
+Identity now exposes its initial contracts and resource policy; durable credentials
+and operations are pending the Identity plan.

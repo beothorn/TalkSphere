@@ -27,8 +27,9 @@ records local evidence and the real Cryptography supplement. Roadmap steps 4–5
 remain required for a working authenticated server and full Transport conformance.
 
 Identity now has a [detailed plan](3_Identity_module/PLAN.md) in module folder 3,
-using upstream revision `d40b6278f24430e814d7fa82094f57261bfcac9f`. All 30 proposed
-steps remain unchecked; this is a planning handoff, not an implementation claim.
+using upstream revision `d40b6278f24430e814d7fa82094f57261bfcac9f`. The detailed
+checklist records implementation progress; Identity is not complete until every
+required step has verified evidence.
 Confirmed new protocol defects are also filed upstream under the contributor instructions.
 
 ## Setup and required node modules

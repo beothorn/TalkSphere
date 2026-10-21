@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: planning only; all implementation steps await review and authorization.
+Status: steps 1–1 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -9,7 +9,7 @@ start the server or implement later roadmap modules.
 
 ## Steps
 
-- [ ] **1.** Define Identity’s public contracts and dependency boundaries.
+- [x] **1.** Define Identity’s public contracts and dependency boundaries.
 - [ ] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
 - [ ] **3.** Validate public signing keys against the updated CR2SE profile.
 - [ ] **4.** Align signature verification with the updated CR2SE acceptance rules.
@@ -96,6 +96,8 @@ Recheck upstream before implementation and record any newly adopted revision.
 Define exact binary IDs, validated public identities, complete public credentials, contacts, immutable limits, opaque identity handles and typed failures under `src/modules/identity/`. Keep malformed input, mismatched identity, invalid binding, unavailable storage, denied authority, conflict and uncertain local installation distinguishable without revealing protected resource existence.
 
 Declare Cryptography, protected key-store and configured-contact storage ports, with local caller authority and contract version checked before effects. Bound text, contacts, signing bytes, envelopes and local records. Add scaffold tests for limits and unsupported/unavailable operations; no successful placeholder creation. Describe direct in-process support without promising IPC or platform coverage.
+
+Completed: Defined typed identity/contact snapshots, immutable budgets, fixed failures and explicit crypto/store ports; unavailable lifecycle defaults return no credentials. All required checks and 230 tests pass; production coverage 95.33% (3654/3833).
 
 ### 2. Dependency helpers and fixtures
 

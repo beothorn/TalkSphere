@@ -1,0 +1,3 @@
+# Identity ports contract
+
+Cryptography supplies sha256, validate_signing_key and exact verify operations with bounded inputs, current profile validation and typed failures. KeyStore owns opaque Record and Administration types; install consumes a complete protected record and succeeds only after atomic durable installation, while open returns existing scoped material without regeneration. ContactStore owns its Authority type; get returns a copied optional Contact by binary ID, and put replaces a bounded contact snapshot. Every adapter checks authority before effects or existence disclosure. Platform records and private state are not cross-module APIs; denied, unavailable, invalid and uncertain outcomes remain explicit.
