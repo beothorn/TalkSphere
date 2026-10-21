@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–1 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–2 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -10,7 +10,7 @@ start the server or implement later roadmap modules.
 ## Steps
 
 - [x] **1.** Define Identity’s public contracts and dependency boundaries.
-- [ ] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
+- [x] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
 - [ ] **3.** Validate public signing keys against the updated CR2SE profile.
 - [ ] **4.** Align signature verification with the updated CR2SE acceptance rules.
 - [ ] **5.** Derive binary IDs and validate claimed public identities.
@@ -104,6 +104,8 @@ Completed: Defined typed identity/contact snapshots, immutable budgets, fixed fa
 Provide test-only scripted Cryptography, entropy, key-store and contact-store substitutes with ordered calls, restart simulation and injected failures. Record acquisitions, cleanup and durable state without exposing secrets through production APIs.
 
 Pin both Transport identities/text forms, AUTH bytes and the generic envelope/binding vector to the reviewed revision. Add the new Ed25519 negative vectors with provenance and literal expected values. Test helper scripts and rejection of exhausted fixtures; never let fixture entropy reach production composition.
+
+Completed: Pinned current Transport/envelope/negative-signature fixtures and added strict ordered crypto scripts, entropy, restart/failure storage and immutable contact substitutes. All required checks and 233 tests pass; production coverage remains 95.33% (3654/3833), excluding test support.
 
 ### 3. Public verification-key validation
 

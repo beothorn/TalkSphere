@@ -31,3 +31,6 @@ cargo run --locked -- help serve
 There is no Identity CLI command yet. `cargo run --locked -- serve` returns status 1
 until Identity and normal server composition exist. No listener is opened.
 Production coverage follows [the shared procedure](../../../docs/coverage.md).
+
+[Test helpers](test_support/README.md) pin the reviewed upstream fixtures and
+provide ordered dependency scripts and restart/failure substitutes.
