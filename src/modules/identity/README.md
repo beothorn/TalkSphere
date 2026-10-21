@@ -37,3 +37,6 @@ provide ordered dependency scripts and restart/failure substitutes.
 
 Cryptography now exposes canonical public signing-key validation for Identity;
 ID derivation and the Identity-facing provider remain subsequent steps.
+
+[Binary identity operations](id.md) derive the pinned IDs and validate public-key
+relations through the [real Cryptography adapter](crypto.md), without claiming possession.

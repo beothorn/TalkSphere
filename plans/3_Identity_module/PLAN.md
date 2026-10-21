@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–4 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–5 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -13,7 +13,7 @@ start the server or implement later roadmap modules.
 - [x] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
 - [x] **3.** Validate public signing keys against the updated CR2SE profile.
 - [x] **4.** Align signature verification with the updated CR2SE acceptance rules.
-- [ ] **5.** Derive binary IDs and validate claimed public identities.
+- [x] **5.** Derive binary IDs and validate claimed public identities.
 - [ ] **6.** Format binary IDs as canonical Base32 text.
 - [ ] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
 - [ ] **8.** Format identity and contact QR payloads.
@@ -128,6 +128,8 @@ Completed: Aligned canonical A/R validation with backend scalar bounds and the u
 Implement version/algorithm checks and SHA-256 over exactly 0x01 || 0x01 || the 32-byte signing key through Cryptography. Use binary IDs for equality and map the existing Transport ID at the composition boundary instead of reading another module's internals.
 
 Public identity validation compares the claimed ID and applies step 3 key validation; derivation alone hashes bytes and establishes no possession. Cover ID-01, ID-06 and pseudocode length/version/algorithm cases, both fixed IDs, mismatches and no authenticated-connection or trust side effects.
+
+Completed: Implemented exact version/algorithm ID derivation and claimed-key validation through scripted and real public Cryptography ports. Both fixed IDs, malformed fields, weak keys and dependency errors pass. All 239 tests and required checks pass; production coverage 95.43% (3734/3913).
 
 ### 6. Text formatting
 
