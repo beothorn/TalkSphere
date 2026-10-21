@@ -17,3 +17,7 @@ mandatory all-zero rejection.
 `aead` seals bounded units and releases plaintext only after authentication.
 
 `integrity` constructs and verifies empty-plaintext Transport frame tags.
+
+[verification_key](verification_key.md) validates canonical non-small-order public
+points under the updated CR2SE profile. It permits mixed-order points and performs
+no identity hashing or possession proof.

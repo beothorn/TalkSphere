@@ -95,3 +95,8 @@ can already be used by library callers; its generated API documentation includes
 an executable recipient-encryption example. Run
 `cargo test --locked composition::cryptography` for real handshake/vector checks
 and `cargo test --locked --test cryptography_privacy` for trace privacy.
+
+Identity dependency work adds [canonical verification-key validation](primitives/verification_key.md)
+for the updated d40b6278 profile. It uses curve25519-dalek directly (already used
+by the signing backend) for decode/re-encode and small-order checks. Signature
+alignment and refreshed acceptance evidence follow in the next Identity step.

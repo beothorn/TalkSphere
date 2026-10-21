@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–2 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–3 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -11,7 +11,7 @@ start the server or implement later roadmap modules.
 
 - [x] **1.** Define Identity’s public contracts and dependency boundaries.
 - [x] **2.** Add deterministic Identity helpers and pinned upstream fixtures.
-- [ ] **3.** Validate public signing keys against the updated CR2SE profile.
+- [x] **3.** Validate public signing keys against the updated CR2SE profile.
 - [ ] **4.** Align signature verification with the updated CR2SE acceptance rules.
 - [ ] **5.** Derive binary IDs and validate claimed public identities.
 - [ ] **6.** Format binary IDs as canonical Base32 text.
@@ -112,6 +112,8 @@ Completed: Pinned current Transport/envelope/negative-signature fixtures and add
 Add the missing Cryptography public-key validation contract needed by Identity; keep curve operations in Cryptography and use established libraries. Check exact width, canonical compressed encoding, on-curve decoding, re-encoding and small-order rejection before returning a validated verification key. Hashing a key into an ID remains a separate operation.
 
 Exercise upstream invalid A values even when their claimed IDs hash correctly, including noncanonical y and the forbidden x=0 sign bit. Do not impose prime-subgroup-only rejection: the new profile explicitly permits mixed-order points subject to its equation. Test valid fixture keys, malformed lengths and dependency failures; update affected companion contracts.
+
+Completed: Added canonical non-small-order VerificationKey parsing with explicit decode/re-encode checks and mixed-order acceptance. Both fixed keys and invalid width/point/encoding cases pass. All 234 tests and required checks pass; production coverage 95.35% (3669/3848).
 
 ### 4. Cryptography dependency alignment
 

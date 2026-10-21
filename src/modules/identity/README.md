@@ -34,3 +34,6 @@ Production coverage follows [the shared procedure](../../../docs/coverage.md).
 
 [Test helpers](test_support/README.md) pin the reviewed upstream fixtures and
 provide ordered dependency scripts and restart/failure substitutes.
+
+Cryptography now exposes canonical public signing-key validation for Identity;
+ID derivation and the Identity-facing provider remain subsequent steps.

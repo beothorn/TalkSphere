@@ -7,3 +7,4 @@ pub mod integrity;
 pub mod kdf;
 pub mod keys;
 pub mod signature;
+pub mod verification_key;
