@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–10 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–11 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -19,7 +19,7 @@ start the server or implement later roadmap modules.
 - [x] **8.** Format identity and contact QR payloads.
 - [x] **9.** Parse contact payloads with strict endpoint validation.
 - [x] **10.** Manage configured contact snapshots without changing their expected identities.
-- [ ] **11.** Restrict identity operations to purpose-scoped local capabilities.
+- [x] **11.** Restrict identity operations to purpose-scoped local capabilities.
 - [ ] **12.** Provide protected key-store access through explicit Cryptography contracts.
 - [ ] **13.** Encode complete local credential records within fixed bounds.
 - [ ] **14.** Implement protected credential reads for the supported platform.
@@ -174,6 +174,8 @@ Completed: Added bounded book-specific contact authority, copied lookup/snapshot
 Issue opaque capabilities only from trusted local composition for public credential access, signing, decryption and privileged backup/import. Separate administrative authority from operation authority; bind each capability to its identity and purpose, with documented lifetime and resource limits. Peer payload fields cannot manufacture authority.
 
 Use compile-fail and runtime tests for wrong-purpose/wrong-identity access, denied calls, expired or released handles where supported and checks before crypto/storage effects. Cover ID-09 and AT-C01/C03 without introducing Node API tokens, remote administrative endpoints or hidden network calls.
+
+Completed: Introduced opaque typed capabilities bound to issuer, identity, lifetime and byte budget, with explicit administrative authority and revocation. Foreign, wrong-identity, expired and wrong-purpose uses are rejected. All 246 tests and required checks pass; production coverage 95.75% (4034/4213).
 
 ### 12. Key-store and Cryptography bridge
 

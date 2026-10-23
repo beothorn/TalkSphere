@@ -1,6 +1,7 @@
 //! Persistent identity contracts for local callers; Cryptography owns algorithms and Transport owns sessions.
 
 pub mod api;
+pub mod authority;
 pub mod config;
 pub mod contact;
 pub mod contacts;
