@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–12 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–13 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -21,7 +21,7 @@ start the server or implement later roadmap modules.
 - [x] **10.** Manage configured contact snapshots without changing their expected identities.
 - [x] **11.** Restrict identity operations to purpose-scoped local capabilities.
 - [x] **12.** Provide protected key-store access through explicit Cryptography contracts.
-- [ ] **13.** Encode complete local credential records within fixed bounds.
+- [x] **13.** Encode complete local credential records within fixed bounds.
 - [ ] **14.** Implement protected credential reads for the supported platform.
 - [ ] **15.** Install both identity key pairs atomically and durably.
 - [ ] **16.** Create identities from independent keys and a valid binding.
@@ -190,6 +190,8 @@ Completed: Added protected independent key generation/import, exact public crede
 Define a versioned implementation-specific record containing both protected key representations and their public association, including enough cached metadata to detect mismatches. This is not a CR2SE wire or portable backup format. Use bounded zeroizing staging buffers and exact checked lengths; reject unknown versions, truncation and trailing bytes.
 
 Test deterministic records and malformed fields without recording production secrets. The codec does not publish or install keys; record validation and atomic storage remain separate. Document how the record version can be rejected safely instead of silently migrating or regenerating an identity.
+
+Completed: Added a bounded zeroizing local record for both private inputs and their public association; loading reconstructs keys and rejects mismatched cached fields. Truncation, version, limits and mutation tests pass. All 250 tests and required checks pass; production coverage 95.87% (4152/4331).
 
 ### 14. Protected filesystem adapter
 

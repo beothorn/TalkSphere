@@ -9,6 +9,7 @@ pub mod crypto;
 pub mod error;
 pub mod id;
 pub mod ports;
+pub mod record;
 pub mod text;
 
 #[cfg(test)]

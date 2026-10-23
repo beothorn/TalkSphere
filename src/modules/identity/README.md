@@ -59,3 +59,6 @@ lifetime and byte budget; revocation does not erase durable credentials.
 
 Cryptography supplies [protected identity material](../cryptography/identity_keys.md)
 for guarded platform import/storage; Identity does not inspect private primitive fields.
+
+[Local credential records](record.md) stage both keys and verify their cached
+public association; records are not durable until the protected store commits them.
