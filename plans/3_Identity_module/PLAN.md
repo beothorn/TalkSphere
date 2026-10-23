@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–8 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–9 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -17,7 +17,7 @@ start the server or implement later roadmap modules.
 - [x] **6.** Format binary IDs as canonical Base32 text.
 - [x] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
 - [x] **8.** Format identity and contact QR payloads.
-- [ ] **9.** Parse contact payloads with strict endpoint validation.
+- [x] **9.** Parse contact payloads with strict endpoint validation.
 - [ ] **10.** Manage configured contact snapshots without changing their expected identities.
 - [ ] **11.** Restrict identity operations to purpose-scoped local capabilities.
 - [ ] **12.** Provide protected key-store access through explicit Cryptography contracts.
@@ -158,6 +158,8 @@ Completed: Canonical ID-only and IP/port QR text matches exact IPv4/IPv6 outputs
 Accept ID alone or exactly one address and one port in either order. Decode percent escapes once; validate an IPv4/IPv6 literal and canonical decimal port. Reject missing/duplicate/unknown parameters, fragments, DNS names, brackets, zones, malformed escapes, signs, leading zeros, double escaping and invalid UTF-8. Apply a finite input bound before parsing.
 
 Cover ID-07/08 and exact expected-ID preservation. A parsed contact is an immutable hint and performs no socket, DNS, Discovery or trust operation. Follow the specification's encoding requirements without inventing additional peer wire formats.
+
+Completed: Added bounded contact parsing with exact IDs, either field order, one-time percent decoding and strict IP/port validation. Invalid fields, encodings, fragments, DNS and limits are tested. All 243 tests and required checks pass; production coverage 95.59% (3880/4059).
 
 ### 10. Configured contact ownership
 

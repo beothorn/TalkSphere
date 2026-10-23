@@ -47,3 +47,6 @@ ASCII case variations; normalization never repairs invalid input.
 
 [Contact formatting](contact.md) emits ID-only or canonical IP/port QR payload
 text, including percent-encoded IPv6; no QR image or network call is produced.
+
+Contact parsing accepts either query order, decodes once and rejects malformed
+fields or non-IP endpoints within an explicit input budget.
