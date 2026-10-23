@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–9 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–10 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -18,7 +18,7 @@ start the server or implement later roadmap modules.
 - [x] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
 - [x] **8.** Format identity and contact QR payloads.
 - [x] **9.** Parse contact payloads with strict endpoint validation.
-- [ ] **10.** Manage configured contact snapshots without changing their expected identities.
+- [x] **10.** Manage configured contact snapshots without changing their expected identities.
 - [ ] **11.** Restrict identity operations to purpose-scoped local capabilities.
 - [ ] **12.** Provide protected key-store access through explicit Cryptography contracts.
 - [ ] **13.** Encode complete local credential records within fixed bounds.
@@ -166,6 +166,8 @@ Completed: Added bounded contact parsing with exact IDs, either field order, one
 Implement authorized bounded contact lookup and in-memory updates through an explicit contact-store port, independently of optional Discovery and paid Storage. Key contacts by binary ID; snapshot results must remain unchanged after later edits. Address changes must not replace an expected ID or grant trust.
 
 Test duplicate/conflicting input, unauthorized mutation, capacity limits and immutable snapshots. This step defines the contact core and dependency port; durable production storage is a separate later step and is not advertised here. ID-only contacts remain valid but cannot locate an unknown network without a bootstrap hint.
+
+Completed: Added bounded book-specific contact authority, copied lookup/snapshots and atomic in-memory replacement. Denied, duplicate, malformed and capacity failures preserve existing state. All 244 tests and required checks pass; production coverage 95.66% (3950/4129).
 
 ### 11. Authority and capability lifetime
 

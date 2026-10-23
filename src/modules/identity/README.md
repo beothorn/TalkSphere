@@ -50,3 +50,6 @@ text, including percent-encoded IPv6; no QR image or network call is produced.
 
 Contact parsing accepts either query order, decodes once and rejects malformed
 fields or non-IP endpoints within an explicit input budget.
+
+[Configured contacts](contacts.md) support bounded authorized in-memory updates
+and immutable snapshots; durable contact persistence remains a later step.
