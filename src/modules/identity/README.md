@@ -40,3 +40,6 @@ ID derivation and the Identity-facing provider remain subsequent steps.
 
 [Binary identity operations](id.md) derive the pinned IDs and validate public-key
 relations through the [real Cryptography adapter](crypto.md), without claiming possession.
+
+[Canonical text formatting](text.md) emits exact RFC 4648 Base32 identities and
+matches both published textual vectors; parsing follows separately.

@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–5 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–6 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -14,7 +14,7 @@ start the server or implement later roadmap modules.
 - [x] **3.** Validate public signing keys against the updated CR2SE profile.
 - [x] **4.** Align signature verification with the updated CR2SE acceptance rules.
 - [x] **5.** Derive binary IDs and validate claimed public identities.
-- [ ] **6.** Format binary IDs as canonical Base32 text.
+- [x] **6.** Format binary IDs as canonical Base32 text.
 - [ ] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
 - [ ] **8.** Format identity and contact QR payloads.
 - [ ] **9.** Parse contact payloads with strict endpoint validation.
@@ -134,6 +134,8 @@ Completed: Implemented exact version/algorithm ID derivation and claimed-key val
 ### 6. Text formatting
 
 Emit the exact lowercase `cr2se:` prefix and 52 uppercase RFC 4648 Base32 symbols with no padding for 32 bytes. Document the 58-byte output and zero unused final bits. Test both upstream textual vectors, all-zero/all-one IDs and binary boundaries against independent expectations, not only local round trips.
+
+Completed: Canonical text formatting matches both fixed vectors and all single-bit/extreme IDs with exact prefix, alphabet, length and unused bits. All 240 tests and required checks pass; production coverage 95.45% (3755/3934).
 
 ### 7. Text parsing
 
