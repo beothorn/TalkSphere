@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod config;
+pub mod contact;
 pub mod crypto;
 pub mod error;
 pub mod id;

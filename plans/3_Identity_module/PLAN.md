@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–7 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–8 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -16,7 +16,7 @@ start the server or implement later roadmap modules.
 - [x] **5.** Derive binary IDs and validate claimed public identities.
 - [x] **6.** Format binary IDs as canonical Base32 text.
 - [x] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
-- [ ] **8.** Format identity and contact QR payloads.
+- [x] **8.** Format identity and contact QR payloads.
 - [ ] **9.** Parse contact payloads with strict endpoint validation.
 - [ ] **10.** Manage configured contact snapshots without changing their expected identities.
 - [ ] **11.** Restrict identity operations to purpose-scoped local capabilities.
@@ -150,6 +150,8 @@ Completed: Strict parsing and normalization cover casing, whitespace, lengths, p
 Return textual payloads rather than generating QR images. An ID alone uses canonical text; a contact adds one IP literal and a decimal port in 1..65535. Emit address then port as a documented local ordering, percent-encoding non-unreserved UTF-8 bytes so IPv6 colons are escaped; omit IPv6 brackets and zones.
 
 Test exact IPv4/IPv6 and port-boundary outputs, ID-only output and no private information. Contact hints never alter the ID; no general URL library may silently normalize forbidden input.
+
+Completed: Canonical ID-only and IP/port QR text matches exact IPv4/IPv6 outputs and rejects port zero or scoped IPv6 metadata. All 242 tests and required checks pass; production coverage 95.51% (3805/3984).
 
 ### 9. Contact parsing
 

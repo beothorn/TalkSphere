@@ -44,3 +44,6 @@ relations through the [real Cryptography adapter](crypto.md), without claiming p
 [Canonical text formatting](text.md) emits exact RFC 4648 Base32 identities and
 matches both published textual vectors. Strict parsing accepts only the specified
 ASCII case variations; normalization never repairs invalid input.
+
+[Contact formatting](contact.md) emits ID-only or canonical IP/port QR payload
+text, including percent-encoded IPv6; no QR image or network call is produced.
