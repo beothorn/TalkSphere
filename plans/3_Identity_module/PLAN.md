@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–6 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–7 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -15,7 +15,7 @@ start the server or implement later roadmap modules.
 - [x] **4.** Align signature verification with the updated CR2SE acceptance rules.
 - [x] **5.** Derive binary IDs and validate claimed public identities.
 - [x] **6.** Format binary IDs as canonical Base32 text.
-- [ ] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
+- [x] **7.** Parse and normalize textual IDs without accepting ambiguous spellings.
 - [ ] **8.** Format identity and contact QR payloads.
 - [ ] **9.** Parse contact payloads with strict endpoint validation.
 - [ ] **10.** Manage configured contact snapshots without changing their expected identities.
@@ -142,6 +142,8 @@ Completed: Canonical text formatting matches both fixed vectors and all single-b
 Require the exact prefix and byte length; accept ASCII case variations only in Base32. Reject whitespace, padding, Unicode lookalikes, invalid characters and nonzero unused final bits without trimming or Unicode normalization. Normalize by parsing then canonical formatting.
 
 Cover every ID-02/03 mutation, all unused-bit alternatives for a final symbol and binary equality across letter casing. Keep bounded parsing independent of entropy, storage and networking.
+
+Completed: Strict parsing and normalization cover casing, whitespace, lengths, prefix, alphabet, Unicode and all final-symbol unused-bit cases. All 241 tests and required checks pass; production coverage 95.49% (3787/3966).
 
 ### 8. QR payload formatting
 

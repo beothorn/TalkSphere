@@ -42,4 +42,5 @@ ID derivation and the Identity-facing provider remain subsequent steps.
 relations through the [real Cryptography adapter](crypto.md), without claiming possession.
 
 [Canonical text formatting](text.md) emits exact RFC 4648 Base32 identities and
-matches both published textual vectors; parsing follows separately.
+matches both published textual vectors. Strict parsing accepts only the specified
+ASCII case variations; normalization never repairs invalid input.
