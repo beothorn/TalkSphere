@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–13 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–14 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -22,7 +22,7 @@ start the server or implement later roadmap modules.
 - [x] **11.** Restrict identity operations to purpose-scoped local capabilities.
 - [x] **12.** Provide protected key-store access through explicit Cryptography contracts.
 - [x] **13.** Encode complete local credential records within fixed bounds.
-- [ ] **14.** Implement protected credential reads for the supported platform.
+- [x] **14.** Implement protected credential reads for the supported platform.
 - [ ] **15.** Install both identity key pairs atomically and durably.
 - [ ] **16.** Create identities from independent keys and a valid binding.
 - [ ] **17.** Load existing identities without replacing missing or inconsistent keys.
@@ -198,6 +198,8 @@ Completed: Added a bounded zeroizing local record for both private inputs and th
 Provide an initial Linux/Unix local key-store adapter using an owner-only directory and owner-only regular files, with no-follow, directory-anchored access and explicit owner/mode validation. Acquire an exclusive writer lock for the active identity store; unsupported platforms return an explicit error until a protected adapter exists. Document the threat boundary: OS access protection is not file encryption or protection from the same account/root.
 
 Test permissions, symlinks, path traversal, oversized files, missing/corrupt records, lock contention and unavailable storage using temporary directories. Never accept peer-supplied paths. Check protection before loading secret bytes and erase temporary buffers on failure.
+
+Completed: Implemented owner-only Linux directory/file checks, anchored no-follow access, bounded guarded reads and exclusive writer locking; unsupported platforms fail explicitly. Permission, symlink, hard-link, malformed, oversized and contention tests pass. All 252 tests and required checks pass; production coverage 95.91% (4271/4453).
 
 ### 15. Atomic installation and restart
 

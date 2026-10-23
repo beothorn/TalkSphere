@@ -20,6 +20,9 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 x25519-dalek = { version = "2.0.1", features = ["static_secrets"] }
 zeroize = { version = "1.8.2", features = ["std"] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "1.1.4", features = ["fs", "process"] }
+
 [lints.rust]
 unsafe_code = "forbid"
 
