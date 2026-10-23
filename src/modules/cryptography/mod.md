@@ -13,3 +13,6 @@ for currently implemented operations and pending integration work.
 `credential` validates public binding, `envelope` implements generic objects, and
 `provider` composes the real local interfaces; the Transport adapter lives outside
 protocol internals under application composition.
+
+identity_keys provides protected generation/import, public credential derivation
+and authorized platform sink transfer for Identity persistence.

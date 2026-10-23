@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–11 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–12 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -20,7 +20,7 @@ start the server or implement later roadmap modules.
 - [x] **9.** Parse contact payloads with strict endpoint validation.
 - [x] **10.** Manage configured contact snapshots without changing their expected identities.
 - [x] **11.** Restrict identity operations to purpose-scoped local capabilities.
-- [ ] **12.** Provide protected key-store access through explicit Cryptography contracts.
+- [x] **12.** Provide protected key-store access through explicit Cryptography contracts.
 - [ ] **13.** Encode complete local credential records within fixed bounds.
 - [ ] **14.** Implement protected credential reads for the supported platform.
 - [ ] **15.** Install both identity key pairs atomically and durably.
@@ -182,6 +182,8 @@ Completed: Introduced opaque typed capabilities bound to issuer, identity, lifet
 Extend only the public Cryptography contracts needed to derive public keys from authorized protected pairs and transfer generated/imported material directly into a guarded platform store. Do not reach into private Secret fields, add general raw-key getters or weaken purpose separation. A privileged backup transfer must remain distinct from ordinary module results.
 
 Document ownership for generated, opened and serialized keys, zeroizing staging and failure cleanup. Test known seeds/public values, invalid key representations, denied access, partial dependency failure and signing/encryption purpose separation. Keep portable protocol bytes independent of the selected local storage representation.
+
+Completed: Added protected independent key generation/import, exact public credential reconstruction and authorized sink transfer without raw getters. Denied sinks receive no bytes and acquired keys are released on failures. All 249 tests and required checks pass; production coverage 95.80% (4085/4264).
 
 ### 13. Local credential record codec
 

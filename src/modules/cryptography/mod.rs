@@ -9,6 +9,7 @@ pub mod config;
 pub mod credential;
 pub mod envelope;
 pub mod error;
+pub mod identity_keys;
 pub mod ports;
 pub mod primitives;
 pub mod provider;

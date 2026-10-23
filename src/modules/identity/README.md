@@ -56,3 +56,6 @@ and immutable snapshots; durable contact persistence remains a later step.
 
 [Local capabilities](authority.md) bind an issuing domain, identity, purpose,
 lifetime and byte budget; revocation does not erase durable credentials.
+
+Cryptography supplies [protected identity material](../cryptography/identity_keys.md)
+for guarded platform import/storage; Identity does not inspect private primitive fields.
