@@ -25,3 +25,5 @@ pub mod selection;
 pub mod operations;
 
 pub mod proof;
+
+mod recovery;

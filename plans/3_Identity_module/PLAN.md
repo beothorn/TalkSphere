@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–22 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–23 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -31,7 +31,7 @@ start the server or implement later roadmap modules.
 - [x] **20.** Sign exact protocol bytes through authorized identity handles.
 - [x] **21.** Verify identity proofs without confusing key relations with possession.
 - [x] **22.** Decrypt generic envelopes through authorized persistent-key handles.
-- [ ] **23.** Back up both identity key pairs through a privileged local operation.
+- [x] **23.** Back up both identity key pairs through a privileged local operation.
 - [ ] **24.** Restore protected backups without silently changing identity authority.
 - [ ] **25.** Verify recovery boundaries with a separate application catalog.
 - [ ] **26.** Verify cleanup and restart behavior across identity failures.
@@ -272,6 +272,8 @@ Completed: Implemented explicit generic-envelope decryption through purpose-scop
 Provide an explicitly authorized platform backup operation that snapshots both pairs and their association together into a protected local destination using the documented local format. Do not export private keys through ordinary public credentials, logs, stdout or peer protocols. Require the same access protection and atomic publication as the key store.
 
 Test unauthorized backup denial, both pairs present, destination conflicts, write failure, cleanup and a stable snapshot while public state changes. Document that copying a permission-protected file to an unprotected destination is not encrypted backup; the caller must secure the independent backup location.
+
+Completed: Implemented purpose-scoped complete-key backup through an independently authorized protected store, preserving source state and refusing overwrite. Unit and real Linux durability tests cover denial, budgets, conflicts, write-stage failures, cleanup and uncertain-install reconciliation. Documented permission protection and independent application-state boundaries. Required checks pass; production coverage: 4689/4874 = 96.20%.
 
 ### 24. Validated restore
 

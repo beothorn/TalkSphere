@@ -384,3 +384,53 @@ fn decryption_checks_recipient_authority_format_and_complete_authentication() {
         Err(IdentityError::AccessDenied)
     );
 }
+
+// Backup requires both scoped source authority and destination administration; failure never modifies the live handle.
+#[test]
+fn backup_is_complete_authorized_and_preserves_source() {
+    use crate::modules::identity::authority::Backup;
+    let mut provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let (handle, public) = provider.create(&true).unwrap();
+    let cap = provider
+        .grant::<Backup>(&true, &handle, RECORD_BYTES)
+        .unwrap();
+    let mut destination = Store::default();
+    assert_eq!(
+        provider.backup(&handle, &cap, &mut destination, &false),
+        Err(IdentityError::AccessDenied)
+    );
+    let foreign = Authority::new()
+        .grant::<Backup>(public.identity.id(), RECORD_BYTES)
+        .unwrap();
+    assert_eq!(
+        provider.backup(&handle, &foreign, &mut destination, &true),
+        Err(IdentityError::AccessDenied)
+    );
+    let small = provider.grant::<Backup>(&true, &handle, 1).unwrap();
+    assert_eq!(
+        provider.backup(&handle, &small, &mut destination, &true),
+        Err(IdentityError::ResourceLimit)
+    );
+    for error in [IdentityError::Unavailable, IdentityError::OutcomeUnknown] {
+        destination.failure = Some(error);
+        assert_eq!(
+            provider.backup(&handle, &cap, &mut destination, &true),
+            Err(error)
+        );
+        assert!(destination.durable.lock().unwrap().is_none());
+    }
+    destination.failure = None;
+    provider
+        .backup(&handle, &cap, &mut destination, &true)
+        .unwrap();
+    assert_eq!(
+        destination.open(&true).unwrap().protected_bytes(),
+        provider.store.open(&true).unwrap().protected_bytes()
+    );
+    assert_eq!(
+        provider.backup(&handle, &cap, &mut destination, &true),
+        Err(IdentityError::Conflict)
+    );
+    let read = provider.grant::<ReadPublic>(&true, &handle, 1).unwrap();
+    assert_eq!(provider.public(&handle, &read).unwrap(), public);
+}

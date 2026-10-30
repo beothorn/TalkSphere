@@ -87,3 +87,7 @@ signature. It grants no trust and leaves freshness, replay and session state to 
 
 [Scoped decryption](operations.md) explicitly selects generic envelopes and returns
 only fully authenticated guarded plaintext; service-specific formats are unsupported.
+
+[Protected backup](recovery.md) snapshots both pairs to an independently protected
+store through Backup authority, without returning private bytes or overwriting an
+existing destination. The local format is permission-protected, not encrypted.

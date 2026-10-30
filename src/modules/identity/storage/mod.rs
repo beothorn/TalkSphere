@@ -19,3 +19,7 @@ mod tests;
 mod contact_tests;
 #[cfg(target_os = "linux")]
 mod contacts;
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "tests/recovery.rs"]
+mod recovery_tests;
