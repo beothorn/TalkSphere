@@ -20,3 +20,6 @@ sync/rename guarantees. Private in-memory staging remains zeroizing.
 
 Contact snapshots use the same protected atomic publication machinery with
 replacement explicitly permitted only for contacts.bin; that adapter is separate.
+
+The KeyStore authorize method checks scoped local administrative authority before
+lifecycle callers request randomness or inspect protected state.

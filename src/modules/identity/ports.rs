@@ -26,6 +26,14 @@ pub trait KeyStore {
     type Administration;
     /// Protected record, with scoped cleanup and no required serialization or Debug.
     type Record;
+    /// Check local administration and byte authority before entropy, existence checks or effects.
+    /// # Errors
+    /// Returns denied or resource failures without disclosing protected state.
+    fn authorize(
+        &self,
+        authority: &Self::Administration,
+        bytes: usize,
+    ) -> Result<(), IdentityError>;
     /// Install both keys and their association once, with durable success.
     /// # Errors
     /// Denial precedes effects; existing state conflicts; uncertain commit must be reconciled.

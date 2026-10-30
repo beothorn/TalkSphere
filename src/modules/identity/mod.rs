@@ -9,6 +9,7 @@ pub mod crypto;
 pub mod error;
 pub mod id;
 pub mod ports;
+pub mod provider;
 pub mod record;
 pub mod storage;
 pub mod text;

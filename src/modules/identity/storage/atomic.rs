@@ -107,6 +107,15 @@ impl FileStore {
 impl KeyStore for FileStore {
     type Administration = Capability<Administration>;
     type Record = CredentialRecord;
+    /// Validate local administration before a caller generates keys or inspects the store.
+    fn authorize(
+        &self,
+        authority: &Self::Administration,
+        bytes: usize,
+    ) -> Result<(), IdentityError> {
+        tracing::trace!("Checking protected-store administrative authority before work");
+        self.authority.check_administration(authority, bytes)
+    }
     /// Commit a validated complete association without replacing an existing identity.
     fn install(
         &mut self,

@@ -72,6 +72,14 @@ impl MemoryStore {
 impl KeyStore for MemoryStore {
     type Administration = bool;
     type Record = zeroize::Zeroizing<Vec<u8>>;
+    // Deny unauthorized scripted storage work before any key generation or lookup.
+    fn authorize(&self, authority: &bool, _bytes: usize) -> Result<(), IdentityError> {
+        if *authority {
+            Ok(())
+        } else {
+            Err(IdentityError::AccessDenied)
+        }
+    }
     // Refuse unauthorized/faulted installation without exposing partial persistent state.
     fn install(&mut self, authority: &bool, record: Self::Record) -> Result<(), IdentityError> {
         if !authority {

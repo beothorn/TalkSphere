@@ -1,7 +1,7 @@
 # Identity
 
-Status: public contracts and resource policy are implemented; identity creation,
-protected storage and operations remain pending the [plan](../../../plans/3_Identity_module/PLAN.md).
+Status: durable identity creation, protected storage and format operations are
+implemented; loading and remaining private operations follow the [plan](../../../plans/3_Identity_module/PLAN.md).
 No scaffold returns fake credentials. This is a direct in-process boundary.
 
 Identity owns persistent credentials, scoped authority and configured contacts.
@@ -66,3 +66,6 @@ public association; records are not durable until the protected store commits th
 [Protected storage](storage/README.md) now supports owner-only Linux reads and
 exclusive writer locking and atomic complete credential installation. Other platforms
 return Unsupported. OS access controls protect against other users, not the same account/root.
+
+The [Identity provider](provider.md) composes authorized creation from independent
+Cryptography keys and the protected store, returning no usable identity before commit.

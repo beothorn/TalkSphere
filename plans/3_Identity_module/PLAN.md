@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–15 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–16 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -24,7 +24,7 @@ start the server or implement later roadmap modules.
 - [x] **13.** Encode complete local credential records within fixed bounds.
 - [x] **14.** Implement protected credential reads for the supported platform.
 - [x] **15.** Install both identity key pairs atomically and durably.
-- [ ] **16.** Create identities from independent keys and a valid binding.
+- [x] **16.** Create identities from independent keys and a valid binding.
 - [ ] **17.** Load existing identities without replacing missing or inconsistent keys.
 - [ ] **18.** Persist configured contacts with atomic snapshot updates.
 - [ ] **19.** Reject unsupported identity and encryption-key changes.
@@ -88,6 +88,8 @@ QR image rendering, Node API and full server startup remain outside this module.
 Dependencies follow checklist order: contact handling is introduced as an explicit
 core/port before the later durable adapter, and creation follows atomic storage.
 Recheck upstream before implementation and record any newly adopted revision.
+
+Upstream recheck during step 16: [b7cfce5](https://github.com/beothorn/CR2SE/commit/b7cfce52f97249e4427bee6dac89a7931848349f) adds website/motivation material; comparison against the pinned baseline changes no Identity, Cryptography, Transport or shared contract files, so behavior and fixtures retain the reviewed revision.
 
 ## Step details
 
@@ -214,6 +216,8 @@ Completed: Atomic no-overwrite installation validates both pairs, syncs contents
 Compose authorized generation of independent Ed25519 and persistent X25519 pairs, ID derivation, exact key binding and atomic storage. Acquire cleanup ownership immediately; return the public credential and scoped handles only after both pairs and their association are durable. Grant no trust, credits or inherited service state.
 
 Cover ID-04/05 with real Cryptography and scripted entropy/storage failures after each acquisition, including binding failure and second-pair failure. Verify no key conversion, no registration/network call, correct binding bytes, no incomplete public success and no automatic retry that creates another identity.
+
+Completed: Creation checks administration before entropy, generates independent pairs and publishes usable handles only after complete durable installation. Denial, entropy/storage failures and uncertain outcomes release staging without retry. All 256 tests and required checks pass; production coverage 95.64% (4455/4658).
 
 ### 17. Validated loading
 
