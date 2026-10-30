@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–20 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–21 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -29,7 +29,7 @@ start the server or implement later roadmap modules.
 - [x] **18.** Persist configured contacts with atomic snapshot updates.
 - [x] **19.** Reject unsupported identity and encryption-key changes.
 - [x] **20.** Sign exact protocol bytes through authorized identity handles.
-- [ ] **21.** Verify identity proofs without confusing key relations with possession.
+- [x] **21.** Verify identity proofs without confusing key relations with possession.
 - [ ] **22.** Decrypt generic envelopes through authorized persistent-key handles.
 - [ ] **23.** Back up both identity key pairs through a privileged local operation.
 - [ ] **24.** Restore protected backups without silently changing identity authority.
@@ -256,6 +256,8 @@ Completed: Implemented exact-byte signing through purpose-scoped authority and l
 Combine validated claimed identities with exact-message signature verification. Require the caller's protocol-defined bytes and reject wrong IDs, keys, messages, domains and roles; retain the separation between public-key relation checks and fresh possession proofs.
 
 Cover ID-06 and malformed/weak-key negatives under the adopted profile. Test dependency failures and confirm no connection-authenticated event or replay state is invented by the helper; Transport remains responsible for its transcript and freshness state machine.
+
+Completed: Implemented bounded exact proof verification after public ID/key validation, preserving typed dependency failures and leaving freshness/replay state to Transport. Pinned AUTH tests reject wrong IDs, keys, domains, role bytes, transcript mutations, weak keys and malformed signatures; ordered substitutes cover each dependency failure. Required checks pass, including corrected role-byte test; production coverage: 4649/4834 = 96.17%.
 
 ### 22. Local decryption
 

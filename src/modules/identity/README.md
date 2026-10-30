@@ -81,3 +81,6 @@ writer lock cannot coordinate independent machines.
 [Scoped signing](operations.md) signs exact caller-defined protocol messages through
 loaded handles. Transport and other consuming protocols retain responsibility for
 transcripts, role/domain separation, freshness and authentication state.
+
+[Proof verification](proof.md) validates the claimed ID/key relation before the exact
+signature. It grants no trust and leaves freshness, replay and session state to callers.
