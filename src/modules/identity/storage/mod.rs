@@ -1,5 +1,7 @@
 //! Protected platform storage adapters; algorithms and credential validation remain at explicit boundaries.
 #[cfg(target_os = "linux")]
+mod atomic;
+#[cfg(target_os = "linux")]
 mod file;
 #[cfg(target_os = "linux")]
 pub use file::FileStore;

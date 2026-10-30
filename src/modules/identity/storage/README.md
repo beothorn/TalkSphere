@@ -5,7 +5,8 @@ anchored no-follow access and an exclusive writer lock. It supplies local platfo
 persistence, separate from paid Storage. It protects against other users, not
 root or another process under the same account; records are not encrypted.
 
-Status: protected reads are implemented; atomic key installation is next.
+Status: protected reads and [atomic key installation](atomic.md) are implemented,
+including uncertain-outcome reconciliation and fresh-process restart tests.
 [Contracts](file.md) describe authority, limits and failures. The platform's
 responsibility is safe durable storage; Identity validates key associations and
 Cryptography handles private operations. No secret is returned in diagnostics.

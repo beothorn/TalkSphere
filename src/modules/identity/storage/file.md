@@ -20,4 +20,4 @@ also decode it before treating it as a validated identity. Missing files never
 cause replacement keys to be generated. Errors are fixed categories without paths.
 
 Protection relies on filesystem permissions, not encryption, and does not defend
-against the same account or root. This step does not yet install credentials.
+against the same account or root. Atomic installation and restart cleanup are documented in [atomic](atomic.md).

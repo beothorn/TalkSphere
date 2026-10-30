@@ -19,6 +19,8 @@ pub struct FileStore {
     _lock: File,
     pub(super) authority: Authority,
     pub(super) limits: Limits,
+    #[cfg(test)]
+    pub(super) fault: Option<super::atomic::Cut>,
 }
 impl FileStore {
     /// Open or create the final owner-only directory using no-follow anchored traversal.
@@ -49,6 +51,7 @@ impl FileStore {
         validate_metadata(&lock, false)?;
         fs::flock(&lock, FlockOperation::NonBlockingLockExclusive)
             .map_err(|_| IdentityError::Conflict)?;
+        super::atomic::cleanup_staging(&directory)?;
         let authority = Authority::new();
         let admin = authority.administration(limits.record_bytes())?;
         Ok((
@@ -57,6 +60,8 @@ impl FileStore {
                 _lock: lock,
                 authority,
                 limits,
+                #[cfg(test)]
+                fault: None,
             },
             admin,
         ))

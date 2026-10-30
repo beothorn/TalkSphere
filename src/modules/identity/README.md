@@ -64,5 +64,5 @@ for guarded platform import/storage; Identity does not inspect private primitive
 public association; records are not durable until the protected store commits them.
 
 [Protected storage](storage/README.md) now supports owner-only Linux reads and
-exclusive writer locking; atomic credential installation follows next. Other platforms
+exclusive writer locking and atomic complete credential installation. Other platforms
 return Unsupported. OS access controls protect against other users, not the same account/root.

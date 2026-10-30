@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–14 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–15 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -23,7 +23,7 @@ start the server or implement later roadmap modules.
 - [x] **12.** Provide protected key-store access through explicit Cryptography contracts.
 - [x] **13.** Encode complete local credential records within fixed bounds.
 - [x] **14.** Implement protected credential reads for the supported platform.
-- [ ] **15.** Install both identity key pairs atomically and durably.
+- [x] **15.** Install both identity key pairs atomically and durably.
 - [ ] **16.** Create identities from independent keys and a valid binding.
 - [ ] **17.** Load existing identities without replacing missing or inconsistent keys.
 - [ ] **18.** Persist configured contacts with atomic snapshot updates.
@@ -206,6 +206,8 @@ Completed: Implemented owner-only Linux directory/file checks, anchored no-follo
 Stage one complete credential record under the protected directory, sync required contents, install without overwriting an existing identity, and sync directory metadata before reporting durable success. Define status/reconciliation for a lost acknowledgement or a failure after the commit point: never claim rollback or silently generate replacement keys when installation may have committed.
 
 Test each write/sync/install cut, fresh-process restart, no partial usable pair, no-overwrite races, and cleanup of abandoned protected staging. Document platform guarantees and the distinction between uncommitted failure and uncertain completion.
+
+Completed: Atomic no-overwrite installation validates both pairs, syncs contents and directory metadata, and distinguishes uncertain publication from uncommitted failure. Fault cuts, no-overwrite, orphan cleanup and fresh-process restart pass. All 254 tests and required checks pass; production coverage 95.75% (4372/4566).
 
 ### 16. Identity creation
 
