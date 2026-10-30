@@ -84,3 +84,6 @@ transcripts, role/domain separation, freshness and authentication state.
 
 [Proof verification](proof.md) validates the claimed ID/key relation before the exact
 signature. It grants no trust and leaves freshness, replay and session state to callers.
+
+[Scoped decryption](operations.md) explicitly selects generic envelopes and returns
+only fully authenticated guarded plaintext; service-specific formats are unsupported.

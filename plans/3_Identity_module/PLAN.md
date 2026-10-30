@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–21 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–22 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -30,7 +30,7 @@ start the server or implement later roadmap modules.
 - [x] **19.** Reject unsupported identity and encryption-key changes.
 - [x] **20.** Sign exact protocol bytes through authorized identity handles.
 - [x] **21.** Verify identity proofs without confusing key relations with possession.
-- [ ] **22.** Decrypt generic envelopes through authorized persistent-key handles.
+- [x] **22.** Decrypt generic envelopes through authorized persistent-key handles.
 - [ ] **23.** Back up both identity key pairs through a privileged local operation.
 - [ ] **24.** Restore protected backups without silently changing identity authority.
 - [ ] **25.** Verify recovery boundaries with a separate application catalog.
@@ -264,6 +264,8 @@ Completed: Implemented bounded exact proof verification after public ID/key vali
 Expose explicit generic-envelope decryption with expected local ID/key and bounded requests, delegating to the existing Cryptography construction. Grant authority only to the intended local identity; select formats explicitly and return unsupported for unimplemented service-specific formats instead of guessing.
 
 Test the fixed envelope and generated round trips, wrong identity/key/purpose, denied authority, malformed/tampered objects, missing tag, limits and unavailable storage. No provisional plaintext or secret logging is allowed; valid decryption does not establish sender authentication or trust.
+
+Completed: Implemented explicit generic-envelope decryption through purpose-scoped loaded handles, enforcing recipient identity/key and both size budgets. Fixed and generated envelope tests cover wrong authority/recipient, malformed or tampered objects, missing tags, unsupported service formats and no provisional plaintext. Required checks pass; production coverage: 4673/4858 = 96.19%.
 
 ### 23. Protected backup
 

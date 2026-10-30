@@ -14,3 +14,18 @@ the loaded handle and Cryptography. The fixed-size native signing backend is
 infallible after authorization and bounds checks; unavailable/denied storage prevents
 loading a handle in the first place. There is no fictitious remote-signing dependency
 to fault-inject. Successful signing grants neither trust nor an authenticated session.
+
+Identity.decrypt(handle, Decrypt capability, format, complete object) checks handle
+ownership, scoped authority and the capability's complete-object byte budget before
+format handling. EnvelopeFormat.GenericV1 selects the existing generic construction;
+ServiceSpecific returns Unsupported without guessing a service format from bytes.
+The configured envelope-byte limit bounds the whole object and therefore plaintext.
+
+Decryption supplies the loaded ID, persistent public key and borrowed private handle
+to Cryptography. Structure, recipient fields and the complete authentication tag
+must pass before any plaintext is returned. The result is an owned guarded plaintext
+buffer erased when dropped; callers must likewise protect any copies they create.
+Malformed, excessive, mismatched or tampered objects return typed errors with no
+provisional output. Decryption does not authenticate the sender or confer trust.
+Unavailable storage prevents loading a usable handle; loaded operations perform no
+storage lookup and do not reinterpret backend failures as successful empty plaintext.

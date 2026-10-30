@@ -263,3 +263,124 @@ fn signing_preserves_exact_protocol_bytes_and_local_authority() {
         Err(IdentityError::AccessDenied)
     );
 }
+
+// Fixed and freshly encrypted objects decrypt only with the intended loaded recipient and authorized format.
+#[test]
+fn decryption_checks_recipient_authority_format_and_complete_authentication() {
+    use crate::modules::{
+        cryptography::{
+            api::EncryptRequest, config::ResourceLimits, envelope::encrypt, random::SystemEntropy,
+        },
+        identity::{
+            authority::Decrypt,
+            operations::EnvelopeFormat,
+            test_support::{ENVELOPE, vector},
+        },
+    };
+    let provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let keys = IdentityKeys::import(
+        vector(ENVELOPE, "recipient Ed25519 seed").into(),
+        vector(
+            ENVELOPE,
+            "recipient raw persistent X25519 private-key input",
+        )
+        .into(),
+    )
+    .unwrap();
+    let recipient = keys.credential().unwrap();
+    let (handle, _) = provider.handle(keys).unwrap();
+    let cap = provider.grant::<Decrypt>(&true, &handle, 16384).unwrap();
+    let mut object = vector(ENVELOPE, "132-byte header");
+    object.extend(vector(ENVELOPE, "sealed ciphertext plus tag (46 bytes)"));
+    assert_eq!(
+        provider
+            .decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &object)
+            .unwrap()
+            .as_slice(),
+        vector(
+            ENVELOPE,
+            "plaintext ASCII(\"CR2SE identity encryption test\")"
+        )
+    );
+    for index in [0, 4, 36, object.len() - 1] {
+        object[index] ^= 1;
+        assert!(
+            provider
+                .decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &object)
+                .is_err()
+        );
+        object[index] ^= 1;
+    }
+    assert!(
+        provider
+            .decrypt(
+                &handle,
+                &cap,
+                EnvelopeFormat::GenericV1,
+                &object[..object.len() - 16]
+            )
+            .is_err()
+    );
+    assert_eq!(
+        provider.decrypt(&handle, &cap, EnvelopeFormat::ServiceSpecific, &object),
+        Err(IdentityError::Unsupported)
+    );
+    assert_eq!(
+        provider.decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &vec![0; 8193]),
+        Err(IdentityError::ResourceLimit)
+    );
+    let small = provider.grant::<Decrypt>(&true, &handle, 1).unwrap();
+    assert_eq!(
+        provider.decrypt(&handle, &small, EnvelopeFormat::GenericV1, &object),
+        Err(IdentityError::ResourceLimit)
+    );
+    let wrong = provider
+        .authority
+        .grant::<Decrypt>(IdentityId([0; 32]), 8192)
+        .unwrap();
+    assert_eq!(
+        provider.decrypt(&handle, &wrong, EnvelopeFormat::GenericV1, &object),
+        Err(IdentityError::AccessDenied)
+    );
+    let other = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    assert_eq!(
+        other.decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &object),
+        Err(IdentityError::AccessDenied)
+    );
+    let wrong_keys = IdentityKeys::import(vec![9; 32].into(), vec![8; 32].into()).unwrap();
+    let (wrong_handle, _) = provider.handle(wrong_keys).unwrap();
+    let wrong_cap = provider
+        .grant::<Decrypt>(&true, &wrong_handle, 8192)
+        .unwrap();
+    assert!(
+        provider
+            .decrypt(
+                &wrong_handle,
+                &wrong_cap,
+                EnvelopeFormat::GenericV1,
+                &object
+            )
+            .is_err()
+    );
+    let generated = encrypt::encrypt(
+        EncryptRequest {
+            plaintext: b"application data",
+            recipient: &recipient,
+            limits: ResourceLimits::new(1024, 8192).unwrap(),
+        },
+        &mut SystemEntropy,
+    )
+    .unwrap();
+    assert_eq!(
+        provider
+            .decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &generated)
+            .unwrap()
+            .as_slice(),
+        b"application data"
+    );
+    provider.authority.revoke();
+    assert_eq!(
+        provider.decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &object),
+        Err(IdentityError::AccessDenied)
+    );
+}
