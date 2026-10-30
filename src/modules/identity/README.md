@@ -1,7 +1,7 @@
 # Identity
 
-Status: durable identity creation, protected storage and format operations are
-implemented; loading and remaining private operations follow the [plan](../../../plans/3_Identity_module/PLAN.md).
+Status: durable identity creation and validated loading, protected storage and format operations are
+implemented; remaining private operations follow the [plan](../../../plans/3_Identity_module/PLAN.md).
 No scaffold returns fake credentials. This is a direct in-process boundary.
 
 Identity owns persistent credentials, scoped authority and configured contacts.
@@ -69,3 +69,6 @@ return Unsupported. OS access controls protect against other users, not the same
 
 The [Identity provider](provider.md) composes authorized creation from independent
 Cryptography keys and the protected store, returning no usable identity before commit.
+
+Loading validates the complete protected association without key generation or repair.
+Run `cargo test --locked --test identity_persistence` for real Linux restart evidence.

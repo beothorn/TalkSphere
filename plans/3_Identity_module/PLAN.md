@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–16 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–17 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -25,7 +25,7 @@ start the server or implement later roadmap modules.
 - [x] **14.** Implement protected credential reads for the supported platform.
 - [x] **15.** Install both identity key pairs atomically and durably.
 - [x] **16.** Create identities from independent keys and a valid binding.
-- [ ] **17.** Load existing identities without replacing missing or inconsistent keys.
+- [x] **17.** Load existing identities without replacing missing or inconsistent keys.
 - [ ] **18.** Persist configured contacts with atomic snapshot updates.
 - [ ] **19.** Reject unsupported identity and encryption-key changes.
 - [ ] **20.** Sign exact protocol bytes through authorized identity handles.
@@ -224,6 +224,8 @@ Completed: Creation checks administration before entropy, generates independent 
 Open the configured pair through the protected store, derive both public keys and ID, validate/recompute the binding and compare all cached public fields. Reject missing keys, wrong private/public association, corrupted metadata, unavailable storage and invalid bindings. Do not repair an existing identity by silently creating new keys.
 
 Test restart returns the same exact credential, both private authorities remain usable, wrong/partial records fail and all opened staging is cleaned. Exercise the protected platform adapter as well as fault substitutes; tests cover ID-04/05 and the pseudocode cached-field requirements.
+
+Completed: Implemented authorized loading with complete private/public association validation and no entropy consumption or replacement. Unit failures cover missing, denied, partial and mismatched records and key cleanup; a real Linux fresh-process restart preserves the exact credential. Formatting, Clippy, locked tests/build and overview/detailed help pass. Production line coverage: 4480/4667 = 95.99%.
 
 ### 18. Durable configured contacts
 

@@ -114,6 +114,18 @@ impl<S: KeyStore<Record = CredentialRecord>, E: Entropy> Identity<S, E> {
 impl<S: KeyStore<Record = CredentialRecord>, E: Entropy> IdentityProvider for Identity<S, E> {
     type Handle = IdentityHandle;
     type Administration = S::Administration;
+    /// Load a complete existing credential after authorization, without consuming entropy.
+    /// # Errors
+    /// Preserves store failures and rejects malformed or inconsistent records without repair.
+    fn load(
+        &mut self,
+        admin: &S::Administration,
+    ) -> Result<(IdentityHandle, PublicCredential), IdentityError> {
+        tracing::trace!("Loading and validating an existing protected identity");
+        self.store.authorize(admin, RECORD_BYTES)?;
+        let record = self.store.open(admin)?;
+        self.handle(record.decode()?)
+    }
     /// Create both independent pairs and report success only after complete durable installation.
     /// # Errors
     /// Checks authority before entropy; propagates failures and uncertain outcomes without retries or replacement.

@@ -11,7 +11,11 @@ record, and prepares all fallible public output before committing. Only durable
 installation success returns an opaque IdentityHandle and PublicCredential.
 Failures release acquired staging, preserve their typed category and never retry
 or silently replace keys. OutcomeUnknown requires store reconciliation, not
-another identity creation. Loading remains explicitly unavailable until implemented.
+another identity creation. load checks administrative authority before opening the existing record, derives
+both public keys and the binding from the private pair, and compares every cached
+public field before returning a handle. Missing, partial or inconsistent records
+fail without generating keys, changing durable bytes or repairing metadata.
+Loading consumes no entropy; opened staging is released on every failure.
 
 IdentityHandle has no diagnostic, serialization or raw key access. It is bound
 to this provider's domain and retains private authority with scoped cleanup.

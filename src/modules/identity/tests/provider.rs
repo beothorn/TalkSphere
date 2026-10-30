@@ -134,3 +134,54 @@ fn creation_failures_erase_staging_without_automatic_replacement() {
         assert!(durable.lock().unwrap().is_none());
     }
 }
+
+// Restart restores the exact credential, while denied, partial and mismatched records never consume entropy.
+#[test]
+fn loading_validates_without_replacement() {
+    let mut provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    assert!(matches!(
+        provider.load(&true),
+        Err(IdentityError::Unavailable)
+    ));
+    assert!(matches!(
+        provider.load(&false),
+        Err(IdentityError::AccessDenied)
+    ));
+    assert_eq!(provider.entropy.0.len(), 2);
+    let (_, expected) = provider.create(&true).unwrap();
+    let original = provider.store.durable.lock().unwrap().clone().unwrap();
+    let mut restored = Identity::new(provider.store, entropy(), limits(), 1).unwrap();
+    let (handle, public) = restored.load(&true).unwrap();
+    assert_eq!(public, expected);
+    let read = restored.grant::<ReadPublic>(&true, &handle, 1).unwrap();
+    assert_eq!(restored.public(&handle, &read).unwrap(), expected);
+    // Both private authorities reproduce the original complete protected association.
+    let encoded = CredentialRecord::encode(&handle.keys, limits()).unwrap();
+    assert_eq!(encoded.protected_bytes(), original.as_slice());
+    drop(handle);
+    for index in [8, 40, 72, 104, 136, 168] {
+        let mut corrupted = original.clone();
+        corrupted[index] ^= 0x10;
+        *restored.store.durable.lock().unwrap() = Some(corrupted.clone());
+        let (result, released) = observe_releases(|| restored.load(&true));
+        assert!(matches!(result, Err(IdentityError::IdentityMismatch)));
+        assert_eq!(released.load(Ordering::SeqCst), 2);
+        assert_eq!(
+            restored
+                .store
+                .durable
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap()
+                .as_slice(),
+            corrupted.as_slice()
+        );
+    }
+    *restored.store.durable.lock().unwrap() = Some(original[..100].to_vec().into());
+    assert!(matches!(
+        restored.load(&true),
+        Err(IdentityError::InvalidInput)
+    ));
+    assert_eq!(restored.entropy.0.len(), 2);
+}
