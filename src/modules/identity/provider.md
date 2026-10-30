@@ -28,3 +28,6 @@ Operations must also enforce their configured policy limits when implemented.
 Creation grants no network authentication, trust, credits or service state.
 The provider relies on the store's durable contract and does not pretend that
 test-only persistence is production storage; the Linux FileStore supplies it.
+
+[Scoped private operations](operations.md) use the loaded handle and purpose-specific
+capabilities; signing preserves caller-supplied bytes and enforces both byte budgets.

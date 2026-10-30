@@ -21,3 +21,5 @@ mod tests;
 pub(crate) mod test_support;
 
 pub mod selection;
+
+mod operations;

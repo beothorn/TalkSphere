@@ -77,3 +77,7 @@ Run `cargo test --locked --test identity_persistence` for real Linux restart evi
 rejects transparent signing/encryption-key changes. Bounded recipient pins reject
 competing valid bindings. Key copies do not copy service state, and the local
 writer lock cannot coordinate independent machines.
+
+[Scoped signing](operations.md) signs exact caller-defined protocol messages through
+loaded handles. Transport and other consuming protocols retain responsibility for
+transcripts, role/domain separation, freshness and authentication state.

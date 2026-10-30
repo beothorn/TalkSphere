@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–19 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–20 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -28,7 +28,7 @@ start the server or implement later roadmap modules.
 - [x] **17.** Load existing identities without replacing missing or inconsistent keys.
 - [x] **18.** Persist configured contacts with atomic snapshot updates.
 - [x] **19.** Reject unsupported identity and encryption-key changes.
-- [ ] **20.** Sign exact protocol bytes through authorized identity handles.
+- [x] **20.** Sign exact protocol bytes through authorized identity handles.
 - [ ] **21.** Verify identity proofs without confusing key relations with possession.
 - [ ] **22.** Decrypt generic envelopes through authorized persistent-key handles.
 - [ ] **23.** Back up both identity key pairs through a privileged local operation.
@@ -248,6 +248,8 @@ Completed: Added exactly-one validated configuration selection, explicit key-cha
 Delegate bounded, caller-defined canonical bytes to Cryptography using the purpose-scoped signing authority. The consuming protocol owns domain separation, roles and freshness; Identity must not introduce serialization, a generic challenge exchange or a reusable signature over only the ID.
 
 Test fixed signatures, exact-byte mutation, wrong authority/identity, oversize inputs, inaccessible keys and dependency failures. Return only complete signatures and preserve distinct secret-free failures; grant no trust or authenticated connection merely because a local signature was produced.
+
+Completed: Implemented exact-byte signing through purpose-scoped authority and loaded private handles, enforcing capability and configured budgets. Tests match pinned AUTH signatures and reject changed bytes, foreign/wrong-identity/revoked authority and limits; inaccessible-storage failures are covered by lifecycle tests. The native backend is infallible after checks, documented explicitly. Required checks pass; production coverage: 4627/4812 = 96.16%.
 
 ### 21. Proof validation
 

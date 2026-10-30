@@ -185,3 +185,81 @@ fn loading_validates_without_replacement() {
     ));
     assert_eq!(restored.entropy.0.len(), 2);
 }
+
+// Scoped signing matches pinned Transport bytes and rejects changed bytes, mismatched handles and exhausted authority.
+#[test]
+fn signing_preserves_exact_protocol_bytes_and_local_authority() {
+    use crate::modules::cryptography::primitives::signature;
+    use crate::modules::identity::{
+        authority::Sign,
+        test_support::{TRANSPORT, vector},
+    };
+    let provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let keys = IdentityKeys::import(
+        vector(TRANSPORT, "initiator Ed25519 seed").into(),
+        vec![2; 32].into(),
+    )
+    .unwrap();
+    let (handle, public) = provider.handle(keys).unwrap();
+    let mut message = b"CR2SE-NETWORK-AUTH-V1\0".to_vec();
+    message.push(1);
+    for role in ["initiator", "acceptor"] {
+        let hello = vector(TRANSPORT, &format!("{role} HELLO"));
+        message.extend_from_slice(&(hello.len() as u32).to_be_bytes());
+        message.extend(hello);
+    }
+    let capability = provider.grant::<Sign>(&true, &handle, 8192).unwrap();
+    let signed = provider.sign(&handle, &capability, &message).unwrap();
+    assert_eq!(
+        signed.as_slice(),
+        vector(TRANSPORT, "initiator AUTH payload")
+    );
+    message[0] ^= 1;
+    assert!(
+        signature::verify(
+            &public.identity.signing_public_key(),
+            &message,
+            &signed,
+            8192
+        )
+        .is_err()
+    );
+    let changed = provider.sign(&handle, &capability, &message).unwrap();
+    assert_ne!(signed, changed);
+    let small = provider.grant::<Sign>(&true, &handle, 1).unwrap();
+    assert_eq!(
+        provider.sign(&handle, &small, &message),
+        Err(IdentityError::ResourceLimit)
+    );
+    assert_eq!(
+        provider.sign(&handle, &capability, &vec![0; 4097]),
+        Err(IdentityError::ResourceLimit)
+    );
+    let wrong = provider
+        .authority
+        .grant::<Sign>(IdentityId([0; 32]), 8192)
+        .unwrap();
+    assert_eq!(
+        provider.sign(&handle, &wrong, &message),
+        Err(IdentityError::AccessDenied)
+    );
+    let foreign = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    assert_eq!(
+        foreign.sign(&handle, &capability, &message),
+        Err(IdentityError::AccessDenied)
+    );
+    let other_cap = foreign
+        .authority
+        .grant::<Sign>(public.identity.id(), 8192)
+        .unwrap();
+    assert_eq!(
+        provider.sign(&handle, &other_cap, &message),
+        Err(IdentityError::AccessDenied)
+    );
+    assert!(provider.sign(&handle, &capability, b"").is_ok());
+    provider.authority.revoke();
+    assert_eq!(
+        provider.sign(&handle, &capability, &message),
+        Err(IdentityError::AccessDenied)
+    );
+}
