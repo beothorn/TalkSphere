@@ -1,4 +1,4 @@
-//! Authorized bounded in-memory contact ownership; durable snapshots are supplied by a later adapter.
+//! Authorized bounded in-memory contact ownership; durable snapshots use the protected platform adapter.
 use super::{
     api::{Contact, IdentityId},
     config::Limits,

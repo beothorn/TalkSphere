@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–17 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–18 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -26,7 +26,7 @@ start the server or implement later roadmap modules.
 - [x] **15.** Install both identity key pairs atomically and durably.
 - [x] **16.** Create identities from independent keys and a valid binding.
 - [x] **17.** Load existing identities without replacing missing or inconsistent keys.
-- [ ] **18.** Persist configured contacts with atomic snapshot updates.
+- [x] **18.** Persist configured contacts with atomic snapshot updates.
 - [ ] **19.** Reject unsupported identity and encryption-key changes.
 - [ ] **20.** Sign exact protocol bytes through authorized identity handles.
 - [ ] **21.** Verify identity proofs without confusing key relations with possession.
@@ -232,6 +232,8 @@ Completed: Implemented authorized loading with complete private/public associati
 Connect the contact core to the protected filesystem adapter using a separate bounded, versioned local record. Publish complete snapshots atomically and acknowledge success only after durability; keep private key records and contact ownership separate. This is implementation-specific persistence, not a new contact wire format.
 
 Test reload in a fresh process, write/sync failures, corrupted records, concurrent updates, denied access and unchanged previously returned snapshots. Preserve each expected binary ID across endpoint updates and reconcile uncertain writes without hidden Discovery or paid Storage calls.
+
+Completed: Implemented separate bounded canonical contact records with authorized atomic publication, copied snapshots and explicit uncertain-write reconciliation. Tests cover durability cuts, corrupt/duplicate records, limits, denied access, writer contention and fresh-process reload. Required formatting, Clippy, locked tests/build and help checks pass; production line coverage: 4543/4728 = 96.09%.
 
 ### 19. Identity selection and key conflicts
 

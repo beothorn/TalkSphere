@@ -52,7 +52,7 @@ Contact parsing accepts either query order, decodes once and rejects malformed
 fields or non-IP endpoints within an explicit input budget.
 
 [Configured contacts](contacts.md) support bounded authorized in-memory updates
-and immutable snapshots; durable contact persistence remains a later step.
+and immutable snapshots; the Linux store persists complete snapshots atomically in a separate record.
 
 [Local capabilities](authority.md) bind an issuing domain, identity, purpose,
 lifetime and byte budget; revocation does not erase durable credentials.

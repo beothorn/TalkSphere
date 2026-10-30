@@ -3,15 +3,25 @@
 use std::{fs, os::unix::fs::PermissionsExt, process::Command};
 use talksphere::modules::{
     cryptography::random::SystemEntropy,
-    identity::{api::IdentityProvider, config::Limits, provider::Identity, storage::FileStore},
+    identity::{
+        api::{Contact, IdentityId, IdentityProvider},
+        config::Limits,
+        provider::Identity,
+        storage::FileStore,
+    },
 };
 
 // A fresh process must load the same public association without creating a new identity.
 #[test]
 fn restart_preserves_identity() {
     let limits = Limits::new(256, 8, 4096, 8192, 4096).unwrap();
+    let contact = Contact {
+        expected_id: IdentityId([42; 32]),
+        endpoint: Some("[::1]:42".parse().unwrap()),
+    };
     if let Some(path) = std::env::var_os("TALKSPHERE_LOAD_TEST_STORE") {
         let (store, admin) = FileStore::open(std::path::Path::new(&path), limits).unwrap();
+        assert_eq!(store.read_contacts(&admin).unwrap(), vec![contact]);
         let mut identity = Identity::new(store, SystemEntropy, limits, 1).unwrap();
         let (_, public) = identity.load(&admin).unwrap();
         assert_eq!(
@@ -23,7 +33,8 @@ fn restart_preserves_identity() {
     let path = std::env::temp_dir().join(format!("talksphere-load-{}", std::process::id()));
     fs::create_dir(&path).unwrap();
     fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
-    let (store, admin) = FileStore::open(&path, limits).unwrap();
+    let (mut store, admin) = FileStore::open(&path, limits).unwrap();
+    store.replace_contacts(&admin, &[contact]).unwrap();
     let mut identity = Identity::new(store, SystemEntropy, limits, 1).unwrap();
     assert!(identity.load(&admin).is_err());
     assert!(!path.join("identity.bin").exists());
