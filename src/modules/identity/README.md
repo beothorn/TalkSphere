@@ -72,3 +72,8 @@ Cryptography keys and the protected store, returning no usable identity before c
 
 Loading validates the complete protected association without key generation or repair.
 Run `cargo test --locked --test identity_persistence` for real Linux restart evidence.
+
+[Selection policy](selection.md) validates exactly one configured identity and
+rejects transparent signing/encryption-key changes. Bounded recipient pins reject
+competing valid bindings. Key copies do not copy service state, and the local
+writer lock cannot coordinate independent machines.

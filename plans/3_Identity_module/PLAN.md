@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–18 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–19 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -27,7 +27,7 @@ start the server or implement later roadmap modules.
 - [x] **16.** Create identities from independent keys and a valid binding.
 - [x] **17.** Load existing identities without replacing missing or inconsistent keys.
 - [x] **18.** Persist configured contacts with atomic snapshot updates.
-- [ ] **19.** Reject unsupported identity and encryption-key changes.
+- [x] **19.** Reject unsupported identity and encryption-key changes.
 - [ ] **20.** Sign exact protocol bytes through authorized identity handles.
 - [ ] **21.** Verify identity proofs without confusing key relations with possession.
 - [ ] **22.** Decrypt generic envelopes through authorized persistent-key handles.
@@ -240,6 +240,8 @@ Completed: Implemented separate bounded canonical contact records with authorize
 Validate configuration selecting exactly one active local identity. Classify unchanged keys, a new signing identity and the same ID with a different persistent encryption key; reject transparent replacement/rotation and never select among conflicting valid bindings silently. Apply the same conflict policy to retained recipient credentials.
 
 Test zero/one/multiple configured identities, validly signed competing encryption keys, independent nodes loaded with identical pairs and distinct signing keys yielding distinct IDs. Document one active writer per identity for the PoC and that copying keys does not replicate Ledger, Board or service state; this module cannot enforce coordination across unknown machines.
+
+Completed: Added exactly-one validated configuration selection, explicit key-change classification and rejection of transparent replacement, plus a bounded recipient cache that refuses competing valid bindings. Real-key tests cover copied pairs, distinct signing IDs, ambiguous selection, invalid bindings and capacity. All required checks pass; production line coverage: 4611/4796 = 96.14%.
 
 ### 20. Scoped signing
 
