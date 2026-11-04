@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–24 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–25 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -33,7 +33,7 @@ start the server or implement later roadmap modules.
 - [x] **22.** Decrypt generic envelopes through authorized persistent-key handles.
 - [x] **23.** Back up both identity key pairs through a privileged local operation.
 - [x] **24.** Restore protected backups without silently changing identity authority.
-- [ ] **25.** Verify recovery boundaries with a separate application catalog.
+- [x] **25.** Verify recovery boundaries with a separate application catalog.
 - [ ] **26.** Verify cleanup and restart behavior across identity failures.
 - [ ] **27.** Verify private data stays out of diagnostics and public results.
 - [ ] **28.** Adapt real Identity operations to Transport’s dependency port.
@@ -288,6 +288,8 @@ Completed: Implemented explicit identity-bound import authority and validated no
 Cover ID-10 with a test-owned independent catalog containing provider/contact/lease/hash/format metadata and both restored key pairs. Confirm the catalog remains the application's responsibility, not Identity's database or a newly implemented Storage enumeration service.
 
 Test keys without a catalog make no recovery-location claim; signing-only recovery cannot decrypt old ciphertext; changing signing keys creates a new ID without inherited obligations. Restore keys and the catalog from separate test locations and distinguish successful cryptographic recovery from the later paid multi-node recovery milestone.
+
+Completed: Extended real protected restore with a separate application-owned provider/contact/lease/hash/format catalog and fresh-process recovery. Tests assert keys alone create no catalog, missing encryption authority fails, replacement encryption keys cannot decrypt old objects and changed signing keys create a new ID. Required checks pass; production coverage: 4721/4907 = 96.21%.
 
 ### 26. Lifecycle and fault audit
 

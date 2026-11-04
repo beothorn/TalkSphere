@@ -479,3 +479,45 @@ fn restore_rejects_denied_corrupt_and_conflicting_imports() {
         Err(IdentityError::Conflict)
     ));
 }
+
+// A signing-only replacement cannot decrypt old objects; changing signing authority cannot preserve an ID.
+#[test]
+fn signing_only_recovery_cannot_claim_old_decryption_or_inherited_identity() {
+    use crate::modules::{
+        cryptography::identity_keys::IdentityKeys,
+        identity::{
+            authority::Decrypt,
+            operations::EnvelopeFormat,
+            test_support::{ENVELOPE, vector},
+        },
+    };
+    let provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let seed = vector(ENVELOPE, "recipient Ed25519 seed");
+    let signing_only = IdentityKeys::import(seed.clone().into(), Vec::new().into());
+    assert!(signing_only.is_err());
+    let keys = IdentityKeys::import(seed.into(), vec![7; 32].into()).unwrap();
+    let (handle, public) = provider.handle(keys).unwrap();
+    assert_eq!(
+        public.identity.id().0.as_slice(),
+        vector(ENVELOPE, "recipient CR2SE ID")
+    );
+    let cap = provider.grant::<Decrypt>(&true, &handle, 8192).unwrap();
+    let mut object = vector(ENVELOPE, "132-byte header");
+    object.extend(vector(ENVELOPE, "sealed ciphertext plus tag (46 bytes)"));
+    assert!(
+        provider
+            .decrypt(&handle, &cap, EnvelopeFormat::GenericV1, &object)
+            .is_err()
+    );
+    let changed = IdentityKeys::import(
+        vec![9; 32].into(),
+        vector(
+            ENVELOPE,
+            "recipient raw persistent X25519 private-key input",
+        )
+        .into(),
+    )
+    .unwrap();
+    let (_, new_public) = provider.handle(changed).unwrap();
+    assert_ne!(public.identity.id(), new_public.identity.id());
+}

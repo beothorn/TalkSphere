@@ -21,6 +21,11 @@ fn protected_restore_survives_restart() {
     let limits = Limits::new(256, 8, 4096, 8192, 4096).unwrap();
     if let Some(root) = std::env::var_os("TALKSPHERE_RECOVERY_ROOT") {
         let root = std::path::PathBuf::from(root);
+        // Provider/lease locations come only from the independently restored application catalog.
+        assert_eq!(
+            fs::read_to_string(root.join("restored-catalog/catalog")).unwrap(),
+            "provider=example-provider\ncontact=127.0.0.1:4242\nlease=lease-17\nhash=application-object-digest\nformat=generic-v1\n"
+        );
         let (store, admin) = FileStore::open(&root.join("restored"), limits).unwrap();
         let mut provider = Identity::new(store, SystemEntropy, limits, 1).unwrap();
         let (handle, _) = provider.load(&admin).unwrap();
@@ -71,6 +76,10 @@ fn protected_restore_survives_restart() {
     )
     .unwrap();
     fs::write(root.join("object"), object).unwrap();
+    // The catalog is an application fixture, stored and restored separately from either key store.
+    fs::create_dir(root.join("catalog-backup")).unwrap();
+    fs::write(root.join("catalog-backup/catalog"),
+        "provider=example-provider\ncontact=127.0.0.1:4242\nlease=lease-17\nhash=application-object-digest\nformat=generic-v1\n").unwrap();
     let (mut backup, backup_admin) = FileStore::open(&root.join("backup"), limits).unwrap();
     let cap = provider.grant::<Backup>(&admin, &handle, 4096).unwrap();
     provider
@@ -91,6 +100,15 @@ fn protected_restore_survives_restart() {
         )
         .unwrap();
     assert_eq!(public, restored_public);
+    // Keys recover cryptographic authority but supply no invented application catalog.
+    assert!(!root.join("restored/catalog").exists());
+    assert!(!root.join("restored-catalog").exists());
+    fs::create_dir(root.join("restored-catalog")).unwrap();
+    fs::copy(
+        root.join("catalog-backup/catalog"),
+        root.join("restored-catalog/catalog"),
+    )
+    .unwrap();
     drop(restored_handle);
     drop(restored);
     assert!(

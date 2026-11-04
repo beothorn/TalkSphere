@@ -31,3 +31,12 @@ and returns a usable handle only after durable success. Failures drop temporary
 private authority. An uncertain installation must be reconciled through the store.
 Existing identities conflict even when their keys match; restoration never implies
 rotation, replacement or recovery of independent application state.
+
+Recovery evidence: `cargo test --locked --test identity_recovery` restores both
+pairs and a test-owned catalog from separate locations, then restarts and decrypts
+an object made before backup. The catalog explicitly supplies provider, contact,
+lease, digest and format metadata. Before that separate restore, the key destination
+has no catalog or location claim. The signing-only unit scenario rejects missing
+encryption authority and fails old-object decryption with a replacement encryption
+key; a replacement signing pair produces a different ID. These tests exercise local
+cryptographic recovery, not paid multi-node retrieval or service-state reconstruction.
