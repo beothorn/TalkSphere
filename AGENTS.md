@@ -77,6 +77,12 @@ to Rust and TalkSphere's module boundaries.
   helpers where practical. Keep internals private and expose only the contract
   callers need; a caller should understand usage without reading implementation
   details. Use `pub(crate)` or narrower visibility for internal collaboration.
+- Commit often in focused, coherent changes after their relevant checks pass.
+  Give each commit a clear, descriptive title and a useful description explaining
+  what changed, why it changed and how it was verified. Preserve enough context
+  for future contributors to reconstruct decisions through Git history and
+  `git blame`, investigate regressions and revert individual changes safely.
+  Keep unrelated work in separate commits so history remains useful for these tasks.
 - Consult Git history, `git blame` and the relevant plan details when existing
   behavior is unclear. Preserve intentional behavior unless the task calls for
   changing it; document the reason for meaningful design choices.
