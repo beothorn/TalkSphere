@@ -97,3 +97,8 @@ validates the complete backup association and refuses to overwrite existing keys
 
 The [lifecycle audit](LIFECYCLE.md) maps secret acquisition/release and durable restart
 boundaries to tests and describes synchronous cancellation and native backend limits.
+
+The [Transport adapter](../../../src/composition/identity.md) owns loaded scoped
+Identity authority and retains the protected writer lock. Tests use persisted and
+reloaded credentials with real Cryptography for both handshake roles and pinned
+AUTH/frame vectors; denied signing and contact mismatches prevent session publication.

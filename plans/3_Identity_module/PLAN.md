@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–27 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–28 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -36,7 +36,7 @@ start the server or implement later roadmap modules.
 - [x] **25.** Verify recovery boundaries with a separate application catalog.
 - [x] **26.** Verify cleanup and restart behavior across identity failures.
 - [x] **27.** Verify private data stays out of diagnostics and public results.
-- [ ] **28.** Adapt real Identity operations to Transport’s dependency port.
+- [x] **28.** Adapt real Identity operations to Transport’s dependency port.
 - [ ] **29.** Audit Identity against every applicable upstream acceptance case.
 - [ ] **30.** Document Identity completion and the server integration handoff.
 
@@ -312,6 +312,8 @@ Completed: Added TRACE-level capture of real protected Identity creation, signin
 Implement the existing Identity port under `src/composition/`, mapping validated public identity, binary derivation and the Transport-created AuthenticationMessage to scoped authority. Keep raw key material inside protected storage/Cryptography contracts and preserve typed dependency failures.
 
 Use real persisted/reloaded Identity and real Cryptography to exercise both handshake roles, pinned AUTH vectors, invalid proofs, denied key access and contact expected-ID mismatch before application dispatch. Confirm no new session keys or authenticated state are published before verification. This adapter does not enable `serve`; the full socket/node demonstration remains roadmap step 5.
+
+Completed: Implemented the real Transport Identity port with owned loaded provider/handle and separate read/sign capabilities. Persisted/reloaded keys and real Cryptography match both handshake roles, AUTH vectors and bidirectional protected frames; denied signing and expected-contact mismatch publish no session. Required checks pass; production coverage: 4767/4956 = 96.19%.
 
 ### 29. Acceptance review
 
