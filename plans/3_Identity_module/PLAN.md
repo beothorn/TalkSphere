@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–26 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–27 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -35,7 +35,7 @@ start the server or implement later roadmap modules.
 - [x] **24.** Restore protected backups without silently changing identity authority.
 - [x] **25.** Verify recovery boundaries with a separate application catalog.
 - [x] **26.** Verify cleanup and restart behavior across identity failures.
-- [ ] **27.** Verify private data stays out of diagnostics and public results.
+- [x] **27.** Verify private data stays out of diagnostics and public results.
 - [ ] **28.** Adapt real Identity operations to Transport’s dependency port.
 - [ ] **29.** Audit Identity against every applicable upstream acceptance case.
 - [ ] **30.** Document Identity completion and the server integration handoff.
@@ -304,6 +304,8 @@ Completed: Added release observations for abandoned live handles, denied restore
 Capture trace events, formatted errors, public credentials, textual IDs, QR payloads and denied-operation results during real workflows and failure cases. Check fixture secrets, backup bytes and decrypted payloads never appear outside authorized results; public keys and IDs alone do not grant private authority.
 
 Test bounded diagnostics for hostile text and filesystem failures without echoing secrets or trusted claims from unvalidated input. Exercise immutable snapshots and released-handle behavior for AT-C03/C04; do not add production diagnostic byte extraction for tests.
+
+Completed: Added TRACE-level capture of real protected Identity creation, signing, decryption, backup, restore, denied operations and drops. Recognizable private keys in multiple representations, backup magic, protocol payload and plaintext markers are absent; public QR output remains a textual ID. Required checks pass; production coverage: 4721/4907 = 96.21%.
 
 ### 28. Transport composition adapter
 

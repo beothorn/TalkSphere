@@ -38,3 +38,9 @@ cancellation and process-separated key-store deployment are not supported claims
 
 Run `cargo test --locked modules::identity` and the two Identity integration suites
 from the repository root. The final acceptance matrix tracks conformance separately.
+
+`cargo test --locked --test identity_privacy` captures all structured fields at
+TRACE across real creation, signing, encryption/decryption, backup, restore,
+failures and drops. Recognizable fixture keys, private record magic, plaintext and
+protocol message markers must be absent. Public QR output is exactly a textual ID.
+Authority failures disclose only typed secret-free categories, before store reads.
