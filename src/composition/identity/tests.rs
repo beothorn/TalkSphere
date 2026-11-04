@@ -252,3 +252,27 @@ fn denied_authority_and_contact_mismatch_stop_authentication() {
     assert!(!hi.is_authenticated());
     assert!(hi.take_established().is_none());
 }
+
+// Every local Identity error maps to the distinct category available at Transport's dependency boundary.
+#[test]
+fn dependency_mapping_preserves_available_failure_classes() {
+    for (error, expected) in [
+        (IdentityError::AccessDenied, DependencyError::Denied),
+        (
+            IdentityError::IdentityMismatch,
+            DependencyError::VerificationFailed,
+        ),
+        (
+            IdentityError::InvalidProof,
+            DependencyError::VerificationFailed,
+        ),
+        (IdentityError::InvalidInput, DependencyError::InvalidInput),
+        (IdentityError::Unsupported, DependencyError::InvalidInput),
+        (IdentityError::ResourceLimit, DependencyError::InvalidInput),
+        (IdentityError::Unavailable, DependencyError::Unavailable),
+        (IdentityError::Conflict, DependencyError::Unavailable),
+        (IdentityError::OutcomeUnknown, DependencyError::Unavailable),
+    ] {
+        assert_eq!(map_error(error), expected);
+    }
+}

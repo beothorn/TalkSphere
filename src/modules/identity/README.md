@@ -102,3 +102,6 @@ The [Transport adapter](../../../src/composition/identity.md) owns loaded scoped
 Identity authority and retains the protected writer lock. Tests use persisted and
 reloaded credentials with real Cryptography for both handshake roles and pinned
 AUTH/frame vectors; denied signing and contact mismatches prevent session publication.
+
+The [acceptance matrix](ACCEPTANCE.md) maps ID-01–ID-10 and applicable shared cases
+to executed tests, reviewed revisions, supported adapters and scope limits.

@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–28 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–29 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -37,7 +37,7 @@ start the server or implement later roadmap modules.
 - [x] **26.** Verify cleanup and restart behavior across identity failures.
 - [x] **27.** Verify private data stays out of diagnostics and public results.
 - [x] **28.** Adapt real Identity operations to Transport’s dependency port.
-- [ ] **29.** Audit Identity against every applicable upstream acceptance case.
+- [x] **29.** Audit Identity against every applicable upstream acceptance case.
 - [ ] **30.** Document Identity completion and the server integration handoff.
 
 ## Reference baseline and scope
@@ -320,6 +320,8 @@ Completed: Implemented the real Transport Identity port with owned loaded provid
 Create an evidence matrix for ID-01 through ID-10, the additional minimum cases in pseudocode section 15, applicable AT-C01–AT-C04 and the adopted Cryptography dependency regressions. Map every assertion to an executed test, fixture revision, platform and outcome; keep unsupported process-separated deployment and full-node recovery distinct.
 
 Review the public contracts and failure paths for missing assertions; use real restart evidence for durability and fixed vectors rather than only round trips. Search upstream before filing any confirmed protocol issue, retain a local report with the issue URL and record unresolved blockers honestly. No module completion claim may rest on test-only storage.
+
+Completed: Reviewed ID-01 through ID-10, pseudocode section 15 and applicable AT-C01 through AT-C04 against executed evidence at pinned d40b6278. Added acceptance matrix with direct/Linux scope, real restart and native backend limits, and complete Transport dependency-error mapping assertions. No new protocol defect confirmed. Required checks pass; production coverage: 4770/4956 = 96.25%.
 
 ### 30. Completion and handoff
 
