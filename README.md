@@ -22,7 +22,8 @@ Real primitives verify both Transport handshake roles and fixed protected-frame
 vectors; generic recipient encryption authenticates complete bounded objects.
 Protected Linux identity creation/loading, scoped signing/decryption, contact snapshots
 and backup/restore are implemented and tested with real Transport handshakes.
-The authenticated socket-node demonstration remains [roadmap step 5](plans/PLAN.md); `serve` reports the missing integration and
+The authenticated socket-node demonstration has a [detailed integration plan](plans/4_Transport_integration/PLAN.md)
+for roadmap step 5; `serve` reports the missing integration and
 opens no listener. See the [Transport evidence](src/modules/transport/ACCEPTANCE.md)
 and [Cryptography acceptance matrix](src/modules/cryptography/ACCEPTANCE.md) for
 verified behavior, scope and unresolved protocol findings.

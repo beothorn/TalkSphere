@@ -50,7 +50,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
 - [x] **4. [Identity module](3_Identity_module/PLAN.md).** Implement identity creation, protected credentials,
   binary/text formats, contact representation and signing capabilities. Verify
   round trips, normalization, invalid input and expected-identity checks.
-- [ ] **5. Transport integration milestone.** Compose real Identity with
+- [ ] **5. [Transport integration milestone](4_Transport_integration/PLAN.md).** Compose real Identity with
   the implemented Cryptography adapter and connect two local nodes in both directions.
   Extend the passing cryptographic vectors to full server integration. Reject
   tampering and replay before dispatch; complete TR-01 through TR-15.
