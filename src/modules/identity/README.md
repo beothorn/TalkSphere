@@ -94,3 +94,6 @@ existing destination. The local format is permission-protected, not encrypted.
 
 [Validated restore](recovery.md) requires explicit identity-bound Import authority,
 validates the complete backup association and refuses to overwrite existing keys.
+
+The [lifecycle audit](LIFECYCLE.md) maps secret acquisition/release and durable restart
+boundaries to tests and describes synchronous cancellation and native backend limits.

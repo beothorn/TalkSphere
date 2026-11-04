@@ -521,3 +521,57 @@ fn signing_only_recovery_cannot_claim_old_decryption_or_inherited_identity() {
     let (_, new_public) = provider.handle(changed).unwrap();
     assert_ne!(public.identity.id(), new_public.identity.id());
 }
+
+// Abandoning a live handle releases both keys; failed and successful restores release each acquired pair.
+#[test]
+fn lifecycle_releases_private_authority_on_abandonment_and_restore_failures() {
+    let (_, released) = observe_releases(|| {
+        let mut provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+        let (handle, _) = provider.create(&true).unwrap();
+        drop(handle);
+    });
+    assert_eq!(released.load(Ordering::SeqCst), 2);
+    let mut source = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let (_, public) = source.create(&true).unwrap();
+    for failure in [
+        Some(IdentityError::Unavailable),
+        Some(IdentityError::OutcomeUnknown),
+        None,
+    ] {
+        let (_, released) = observe_releases(|| {
+            let mut target = Identity::new(
+                Store {
+                    failure,
+                    ..Store::default()
+                },
+                entropy(),
+                limits(),
+                1,
+            )
+            .unwrap();
+            let cap = target
+                .grant_import(&true, public.identity.id(), RECORD_BYTES)
+                .unwrap();
+            let result = target.restore(&true, &cap, public.identity.id(), &source.store, &true);
+            if let Some(error) = failure {
+                assert!(matches!(result,Err(actual) if actual==error));
+            } else {
+                let (handle, _) = result.unwrap();
+                drop(handle);
+            }
+        });
+        assert_eq!(released.load(Ordering::SeqCst), 2);
+    }
+    let (_, released) = observe_releases(|| {
+        let mut target = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+        let cap = target
+            .grant_import(&true, public.identity.id(), RECORD_BYTES)
+            .unwrap();
+        assert!(
+            target
+                .restore(&false, &cap, public.identity.id(), &source.store, &true)
+                .is_err()
+        );
+    });
+    assert_eq!(released.load(Ordering::SeqCst), 0);
+}

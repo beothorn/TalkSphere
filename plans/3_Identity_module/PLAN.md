@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–25 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–26 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -34,7 +34,7 @@ start the server or implement later roadmap modules.
 - [x] **23.** Back up both identity key pairs through a privileged local operation.
 - [x] **24.** Restore protected backups without silently changing identity authority.
 - [x] **25.** Verify recovery boundaries with a separate application catalog.
-- [ ] **26.** Verify cleanup and restart behavior across identity failures.
+- [x] **26.** Verify cleanup and restart behavior across identity failures.
 - [ ] **27.** Verify private data stays out of diagnostics and public results.
 - [ ] **28.** Adapt real Identity operations to Transport’s dependency port.
 - [ ] **29.** Audit Identity against every applicable upstream acceptance case.
@@ -296,6 +296,8 @@ Completed: Extended real protected restore with a separate application-owned pro
 Consolidate acquisition-to-release observations across creation, loading, signing, decryption, backup and restore. Extend the new CR-09 fault cases that apply to Identity, including generation, public derivation, binding and atomic storage; document infallible backend boundaries rather than inventing unsupported fault injection.
 
 Exercise restart at durable cuts, denied/abandoned calls and cancellation before work or after a commit point. Synchronous calls do not promise mid-call interruption; acknowledged state must survive, uncertain outcomes must be reconciled, and partial keys must not become usable. Tests throughout earlier steps remain required; this step closes coverage gaps.
+
+Completed: Added release observations for abandoned live handles, denied restore before acquisition, and successful/failed restore after acquisition. Lifecycle audit maps generation, loading, signing, decryption, backup, restore and durable restart evidence, documenting native infallibility, synchronous cancellation and cleanup limits. Required checks pass; production coverage: 4721/4907 = 96.21%.
 
 ### 27. Output privacy
 
