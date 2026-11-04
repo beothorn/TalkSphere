@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–23 are implemented, tested and documented; remaining steps are pending.
+Status: steps 1–24 are implemented, tested and documented; remaining steps are pending.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -32,7 +32,7 @@ start the server or implement later roadmap modules.
 - [x] **21.** Verify identity proofs without confusing key relations with possession.
 - [x] **22.** Decrypt generic envelopes through authorized persistent-key handles.
 - [x] **23.** Back up both identity key pairs through a privileged local operation.
-- [ ] **24.** Restore protected backups without silently changing identity authority.
+- [x] **24.** Restore protected backups without silently changing identity authority.
 - [ ] **25.** Verify recovery boundaries with a separate application catalog.
 - [ ] **26.** Verify cleanup and restart behavior across identity failures.
 - [ ] **27.** Verify private data stays out of diagnostics and public results.
@@ -280,6 +280,8 @@ Completed: Implemented purpose-scoped complete-key backup through an independent
 Import through privileged local administration into a new protected store, validating both pairs, binding, metadata and format before atomic installation. Reject incomplete/corrupt backups, cached mismatches and conflicting existing identities; do not invent encryption-key rotation or overwrite a live identity implicitly.
 
 Test restore in a fresh process/store yields the same ID, signature capability and decryption of an object encrypted before backup. Inject failures before and after installation and reconcile uncertain completion without regenerating keys. Backup format portability is local and documented, not an asserted CR2SE export standard.
+
+Completed: Implemented explicit identity-bound import authority and validated no-overwrite restore from protected backups without entropy consumption. Tests cover denied administration, wrong IDs, cached mismatches, existing destinations, real filesystem durability cuts and a fresh process reproducing signatures and decrypting a pre-backup object. Required checks pass; production coverage: 4721/4907 = 96.21%.
 
 ### 25. Recovery scenarios
 

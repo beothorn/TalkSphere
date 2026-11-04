@@ -48,3 +48,46 @@ fn backups_obey_protected_destination_durability() {
         }
     }
 }
+
+// Restore cuts publish no partial authority and uncertain completion reconciles to the original identity.
+#[test]
+fn restore_failure_cuts_never_replace_or_regenerate() {
+    let root = Fixture::new();
+    let (source, source_admin) = FileStore::open(&root.0.join("source"), limits()).unwrap();
+    let mut original = Identity::new(source, SystemEntropy, limits(), 1).unwrap();
+    let (_, public) = original.create(&source_admin).unwrap();
+    drop(original);
+    let (source, source_admin) = FileStore::open(&root.0.join("source"), limits()).unwrap();
+    for (index, cut) in [Cut::Created, Cut::Written, Cut::Synced, Cut::Installed]
+        .into_iter()
+        .enumerate()
+    {
+        let path = root.0.join(format!("restore-{index}"));
+        let (mut store, admin) = FileStore::open(&path, limits()).unwrap();
+        store.fault = Some(cut);
+        let mut target = Identity::new(store, SystemEntropy, limits(), 1).unwrap();
+        let cap = target
+            .grant_import(&admin, public.identity.id(), 4096)
+            .unwrap();
+        assert!(
+            matches!(target.restore(&admin,&cap,public.identity.id(),&source,&source_admin),Err(error) if error==if cut==Cut::Installed {IdentityError::OutcomeUnknown} else {IdentityError::Unavailable})
+        );
+        drop(target);
+        let (store, admin) = FileStore::open(&path, limits()).unwrap();
+        if cut == Cut::Installed {
+            assert_eq!(
+                store
+                    .reconcile(&admin)
+                    .unwrap()
+                    .decode()
+                    .unwrap()
+                    .credential()
+                    .unwrap()
+                    .identity_id,
+                public.identity.id().0
+            );
+        } else {
+            assert!(store.read(&admin).is_err());
+        }
+    }
+}

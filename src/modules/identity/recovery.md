@@ -20,3 +20,14 @@ backup location and any later copies; moving this file to an unprotected destina
 removes its access protection. A holder of both private keys can impersonate the
 identity and decrypt its encrypted objects. Backup does not capture contacts,
 Ledger, Board, provider/lease catalogs or service commitments.
+
+Identity.grant_import(destination administration, expected binary ID, byte budget)
+issues purpose-scoped Import authority before an empty destination has a handle.
+Identity.restore takes destination administration, that capability, the expected
+ID, a protected source store and its administration. Both boundaries are checked
+before reading private records. Restore validates both pairs and every cached field,
+requires the expected ID, then installs without overwrite. It consumes no entropy
+and returns a usable handle only after durable success. Failures drop temporary
+private authority. An uncertain installation must be reconciled through the store.
+Existing identities conflict even when their keys match; restoration never implies
+rotation, replacement or recovery of independent application state.

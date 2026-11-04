@@ -91,3 +91,6 @@ only fully authenticated guarded plaintext; service-specific formats are unsuppo
 [Protected backup](recovery.md) snapshots both pairs to an independently protected
 store through Backup authority, without returning private bytes or overwriting an
 existing destination. The local format is permission-protected, not encrypted.
+
+[Validated restore](recovery.md) requires explicit identity-bound Import authority,
+validates the complete backup association and refuses to overwrite existing keys.

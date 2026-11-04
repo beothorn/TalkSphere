@@ -434,3 +434,48 @@ fn backup_is_complete_authorized_and_preserves_source() {
     let read = provider.grant::<ReadPublic>(&true, &handle, 1).unwrap();
     assert_eq!(provider.public(&handle, &read).unwrap(), public);
 }
+
+// Import checks both administrative boundaries, validates cached associations and never consumes fresh entropy.
+#[test]
+fn restore_rejects_denied_corrupt_and_conflicting_imports() {
+    let mut original = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let (_, public) = original.create(&true).unwrap();
+    let mut target = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let expected = public.identity.id();
+    assert!(target.grant_import(&false, expected, RECORD_BYTES).is_err());
+    let cap = target.grant_import(&true, expected, RECORD_BYTES).unwrap();
+    assert!(matches!(
+        target.restore(&false, &cap, expected, &original.store, &true),
+        Err(IdentityError::AccessDenied)
+    ));
+    assert!(matches!(
+        target.restore(&true, &cap, expected, &original.store, &false),
+        Err(IdentityError::AccessDenied)
+    ));
+    let wrong = IdentityId([0; 32]);
+    assert!(matches!(
+        target.restore(&true, &cap, wrong, &original.store, &true),
+        Err(IdentityError::AccessDenied)
+    ));
+    let wrong_cap = target.grant_import(&true, wrong, RECORD_BYTES).unwrap();
+    assert!(matches!(
+        target.restore(&true, &wrong_cap, wrong, &original.store, &true),
+        Err(IdentityError::IdentityMismatch)
+    ));
+    let bytes = original.store.durable.lock().unwrap().clone().unwrap();
+    original.store.durable.lock().unwrap().as_mut().unwrap()[168] ^= 1;
+    assert!(matches!(
+        target.restore(&true, &cap, expected, &original.store, &true),
+        Err(IdentityError::IdentityMismatch)
+    ));
+    *original.store.durable.lock().unwrap() = Some(bytes);
+    let (_, restored) = target
+        .restore(&true, &cap, expected, &original.store, &true)
+        .unwrap();
+    assert_eq!(restored, public);
+    assert_eq!(target.entropy.0.len(), 2);
+    assert!(matches!(
+        target.restore(&true, &cap, expected, &original.store, &true),
+        Err(IdentityError::Conflict)
+    ));
+}
