@@ -39,3 +39,10 @@ adapter, full socket node, Ledger/Board state recovery, paid remote retrieval,
 minimum-profile node or full-feature conformance is claimed. Those require later
 roadmap milestones. No new language-independent protocol defect was confirmed in
 this audit; previously reported upstream fixes remain tracked in CR2SE bugs.
+
+Completion verification: formatting, Clippy with warnings denied, locked unit,
+integration and doctests, build, API documentation and overview/detailed CLI help
+pass. Production line coverage using docs/coverage.md exclusions is **96.25%**
+(4770/4956 lines). Runtime `serve` still exits 1 with the server composition handoff;
+no arguments and help topics exit successfully. Coverage measures the repository's
+production Rust, not a claim that unimplemented roadmap capabilities are covered.

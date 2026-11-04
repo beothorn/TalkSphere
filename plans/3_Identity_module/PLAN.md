@@ -1,6 +1,6 @@
 # Identity module plan
 
-Status: steps 1–29 are implemented, tested and documented; remaining steps are pending.
+Status: all 30 steps are implemented, tested and documented.
 
 Identity is the next required module, roadmap step 4 and module folder 3.
 It uses the completed Cryptography implementation and supplies protected local
@@ -38,7 +38,7 @@ start the server or implement later roadmap modules.
 - [x] **27.** Verify private data stays out of diagnostics and public results.
 - [x] **28.** Adapt real Identity operations to Transport’s dependency port.
 - [x] **29.** Audit Identity against every applicable upstream acceptance case.
-- [ ] **30.** Document Identity completion and the server integration handoff.
+- [x] **30.** Document Identity completion and the server integration handoff.
 
 ## Reference baseline and scope
 
@@ -328,3 +328,5 @@ Completed: Reviewed ID-01 through ID-10, pseudocode section 15 and applicable AT
 Update the module README, public-contract companions, root README, roadmap, overview/detailed help and affected CLI tests with actual supported capabilities. Explain build/test/library usage, configured protection, limits, backup/restore, single-writer policy and remaining server composition. Do not advertise administrative commands unless implemented and tested; runnable library examples can exercise the module before CLI integration.
 
 Run formatting, Clippy with warnings denied, locked unit/integration/doc tests, build and overview/detailed help checks from AGENTS.md. Measure production line coverage above 80% using docs/coverage.md and publish the measured result. Only then check off completed work and hand off to roadmap step 5; minimum-node conformance, service recovery and optional modules remain later work.
+
+Completed: Completed Identity guides, public-contract documentation, acceptance evidence, main roadmap and overview/detailed CLI help with server integration as the next milestone. Formatting, warnings-denied Clippy, locked unit/integration/doctests, build and API docs pass; changed help topics and serve exit 1 exercised. Production coverage: 4770/4956 = 96.25%. Protected filesystem support is Linux; process-separated deployment and full socket node remain outside this module.

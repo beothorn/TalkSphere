@@ -5,8 +5,8 @@ TalkSphere is a Rust server implementation and proof of concept for
 node that exchanges services and storage, followed by messaging, public boards,
 pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md),
 the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the
-[Cryptography breakdown](plans/2_Cryptography_module/PLAN.md). The next module has
-an [Identity plan](plans/3_Identity_module/PLAN.md) under implementation; its [module guide](src/modules/identity/README.md)
+[Cryptography breakdown](plans/2_Cryptography_module/PLAN.md). The completed
+[Identity plan](plans/3_Identity_module/PLAN.md); its [module guide](src/modules/identity/README.md)
 records available operations.
 
 The intended model is ad-free social features supported by shared device
@@ -17,11 +17,12 @@ This implementation is focused on being a server (always running), but will also
 features for testing and for advanced users. Better clients with ui that are not using the cli must
 be implemented separetely.
 
-**Current status:** Transport and Cryptography's planned implementations are complete.
+**Current status:** Transport, Cryptography and Identity's planned implementations are complete.
 Real primitives verify both Transport handshake roles and fixed protected-frame
 vectors; generic recipient encryption authenticates complete bounded objects.
-Identity persistence and the authenticated two-node demonstration remain
-[roadmap steps 4–5](plans/PLAN.md); `serve` reports the missing integration and
+Protected Linux identity creation/loading, scoped signing/decryption, contact snapshots
+and backup/restore are implemented and tested with real Transport handshakes.
+The authenticated socket-node demonstration remains [roadmap step 5](plans/PLAN.md); `serve` reports the missing integration and
 opens no listener. See the [Transport evidence](src/modules/transport/ACCEPTANCE.md)
 and [Cryptography acceptance matrix](src/modules/cryptography/ACCEPTANCE.md) for
 verified behavior, scope and unresolved protocol findings.
@@ -71,8 +72,7 @@ cargo run --locked -- --version
 cargo run --locked -- serve
 ```
 
-The last command currently exits with status **1**, explaining that Identity
-and normal server composition are still required. It opens no sockets. With no arguments, the application
+The last command currently exits with status **1**, explaining that normal server composition is still required. It opens no sockets. With no arguments, the application
 shows its overview and exits successfully. Invalid arguments exit with status
 **2** and a usage hint.
 
@@ -90,10 +90,10 @@ src/
   main.rs                  executable entry point
   lib.rs                   module exports
   cli/                     argument parsing and shared help definitions
-  composition/             real Cryptography adapter for Transport
+  composition/             real Identity and Cryptography adapters for Transport
   modules/
     cryptography/          primitives, recipient envelopes, provider and tests
-    identity/              local identity contracts and staged implementation
+    identity/              protected credentials, scoped operations, contacts and recovery
     transport/             protocol state, control driver, TCP adapters and tests
 tests/                     executable integration tests
 CR2SE bugs/                language-independent protocol bug reports
@@ -105,7 +105,7 @@ plans/
   2_Cryptography_module/
     PLAN.md                Cryptography steps and matching details
   3_Identity_module/
-    PLAN.md                proposed Identity steps and matching details
+    PLAN.md                completed Identity steps and matching evidence
 ```
 
 Protocol modules own their code and private state. Focused subfolders separate codecs, lifecycle, adapters and composition. The [Transport README](src/modules/transport/README.md)
@@ -125,3 +125,24 @@ Record protocol, pseudocode, contract and vector defects in
 [`CR2SE bugs/`](CR2SE%20bugs/README.md). Reports must apply across implementation
 languages; Rust-specific issues belong in this project's implementation work.
 See [AGENTS.md](AGENTS.md) for development and validation requirements.
+
+## Exercise Identity
+
+See the [Identity guide](src/modules/identity/README.md) and
+[acceptance matrix](src/modules/identity/ACCEPTANCE.md). Run from the root:
+
+```sh
+cargo test --locked modules::identity
+cargo test --locked composition::identity
+cargo test --locked --test identity_persistence
+cargo test --locked --test identity_recovery
+cargo test --locked --test identity_privacy
+cargo doc --locked --no-deps
+```
+
+The protected filesystem adapter currently supports Linux. It uses owner-only
+permissions and one exclusive writer per store; backup files are not encrypted.
+Trusted application composition grants separate read, sign, decrypt, backup and
+import capabilities. Inputs have explicit byte/count budgets. Restore never
+overwrites an existing identity, and uncertain durable writes require reconciliation.
+Application recovery catalogs remain separate. No administrative CLI is exposed yet.

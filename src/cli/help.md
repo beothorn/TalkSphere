@@ -5,6 +5,6 @@ Aliases include option spellings. Rendering explains usage, current server
 availability and exit status; adding a command/option requires updating the
 table, parser and CLI integration tests together.
 
-Overview and serve help report completed Transport/Cryptography modules and link
-the Cryptography plan and main roadmap for the Identity handoff. The serve command
-continues to explain missing Identity/server composition and exits with status 1.
+Overview and serve help report completed Transport/Cryptography/Identity modules and link
+the Cryptography/Identity plans and main roadmap for server integration. The serve command
+continues to explain missing server composition and exits with status 1.

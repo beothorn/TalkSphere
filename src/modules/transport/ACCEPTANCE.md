@@ -94,3 +94,14 @@ a real persistent Identity service or authenticated two-node deployment. The
 remaining socket/lifecycle matrix and roadmap steps 4–5 remain required. Strict
 Ed25519 validation has the documented [bug 0003](../../../CR2SE%20bugs/0003-ed25519-weak-point-validation.md)
 interoperability caveat. No whole Transport conformance claim is added.
+
+
+## Real persistent Identity supplement
+
+Identity step 28 adds `composition::identity` with protected Linux credentials
+created, closed and loaded again before both handshake roles. Tests reproduce
+pinned AUTH and directional frame vectors, reject denied signing and unexpected
+contact IDs, and assert no session publication on failure. This supersedes earlier
+pending-Identity notes for these assertions. Full socket-node deployment and its
+remaining Transport rejection matrix belong to roadmap step 5. The Identity
+[acceptance matrix](../identity/ACCEPTANCE.md) records platform and recovery scope.

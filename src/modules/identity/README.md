@@ -1,8 +1,8 @@
 # Identity
 
-Status: durable identity creation and validated loading, protected storage and format operations are
-implemented; remaining private operations follow the [plan](../../../plans/3_Identity_module/PLAN.md).
-No scaffold returns fake credentials. This is a direct in-process boundary.
+Status: all 30 planned steps are implemented and verified for the direct in-process
+binding and protected Linux filesystem adapter. See the [plan](../../../plans/3_Identity_module/PLAN.md)
+and [acceptance matrix](ACCEPTANCE.md). Server composition is roadmap step 5.
 
 Identity owns persistent credentials, scoped authority and configured contacts.
 It calls Cryptography for algorithms and a protected platform store for durability;
@@ -29,14 +29,14 @@ cargo run --locked -- help serve
 ```
 
 There is no Identity CLI command yet. `cargo run --locked -- serve` returns status 1
-until Identity and normal server composition exist. No listener is opened.
+until normal server composition exists. No listener is opened.
 Production coverage follows [the shared procedure](../../../docs/coverage.md).
 
 [Test helpers](test_support/README.md) pin the reviewed upstream fixtures and
 provide ordered dependency scripts and restart/failure substitutes.
 
 Cryptography now exposes canonical public signing-key validation for Identity;
-ID derivation and the Identity-facing provider remain subsequent steps.
+ID derivation and the protected Identity-facing provider use that validation.
 
 [Binary identity operations](id.md) derive the pinned IDs and validate public-key
 relations through the [real Cryptography adapter](crypto.md), without claiming possession.
@@ -98,7 +98,7 @@ validates the complete backup association and refuses to overwrite existing keys
 The [lifecycle audit](LIFECYCLE.md) maps secret acquisition/release and durable restart
 boundaries to tests and describes synchronous cancellation and native backend limits.
 
-The [Transport adapter](../../../src/composition/identity.md) owns loaded scoped
+The [Transport adapter](../../composition/identity.md) owns loaded scoped
 Identity authority and retains the protected writer lock. Tests use persisted and
 reloaded credentials with real Cryptography for both handshake roles and pinned
 AUTH/frame vectors; denied signing and contact mismatches prevent session publication.

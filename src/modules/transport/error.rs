@@ -9,7 +9,7 @@ use super::{
 /// Local request failure; these variants are not CR2SE wire error codes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransportError {
-    /// Server startup awaits Identity credentials and application composition.
+    /// Server startup awaits application composition.
     RuntimeUnavailable,
     InvalidConfig(ConfigError),
     WrongConnection,
@@ -35,7 +35,7 @@ impl fmt::Display for TransportError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RuntimeUnavailable => formatter.write_str(
-                "Server runtime requires Identity and normal server composition; no server was started. See plans/PLAN.md.",
+                "Server runtime requires normal server composition; no server was started. See plans/PLAN.md.",
             ),
             Self::InvalidConfig(error) => write!(formatter, "invalid Transport configuration: {error}"),
             Self::WrongConnection => formatter.write_str("stream belongs to a different connection"),
@@ -75,7 +75,7 @@ mod tests {
     fn runtime_error_explains_missing_integration() {
         let error: &dyn Error = &TransportError::RuntimeUnavailable;
         let message = error.to_string();
-        assert!(message.contains("Identity and normal server composition"));
+        assert!(message.contains("normal server composition"));
         assert!(message.contains("no server was started"));
         assert!(message.contains("plans/PLAN.md"));
         assert!(error.source().is_none());

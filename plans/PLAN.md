@@ -23,13 +23,13 @@ secret lifecycle checks and the Transport adapter; see its [acceptance evidence]
 
 Transport substeps 1–24 are complete with injected Identity/Cryptography and
 real TCP adapter tests. The [acceptance matrix](../src/modules/transport/ACCEPTANCE.md)
-records local evidence and the real Cryptography supplement. Roadmap steps 4–5
-remain required for a working authenticated server and full Transport conformance.
+records local evidence and the real Cryptography supplement. Roadmap step 5
+remains required for a working authenticated server and full Transport conformance.
 
 Identity now has a [detailed plan](3_Identity_module/PLAN.md) in module folder 3,
 using upstream revision `d40b6278f24430e814d7fa82094f57261bfcac9f`. The detailed
-checklist records implementation progress; Identity is not complete until every
-required step has verified evidence.
+checklist records all 30 completed steps and verified evidence; see its acceptance matrix
+for direct binding, protected Linux storage and recovery scope.
 Confirmed new protocol defects are also filed upstream under the contributor instructions.
 
 ## Setup and required node modules
@@ -47,7 +47,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
 - [x] **3. [Cryptography module](2_Cryptography_module/PLAN.md).** Implement specified primitives and canonical
   constructions, fixed vectors, key lifecycle, content encryption and tamper
   rejection. Use established cryptographic libraries and bounded inputs.
-- [ ] **4. [Identity module](3_Identity_module/PLAN.md).** Implement identity creation, protected credentials,
+- [x] **4. [Identity module](3_Identity_module/PLAN.md).** Implement identity creation, protected credentials,
   binary/text formats, contact representation and signing capabilities. Verify
   round trips, normalization, invalid input and expected-identity checks.
 - [ ] **5. Transport integration milestone.** Compose real Identity with

@@ -22,7 +22,7 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("--version"));
     assert!(
         overview.contains(
-            "Transport and Cryptography implemented; Identity/server integration pending"
+            "Transport, Cryptography and Identity implemented; server integration pending"
         )
     );
     for arguments in [&[][..], &["-h"], &["help"]] {
@@ -70,7 +70,7 @@ fn serve_fails_explicitly_until_real_dependencies_are_integrated() {
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
     let error = String::from_utf8(output.stderr).unwrap();
-    assert!(error.contains("Server runtime requires Identity and normal server composition"));
+    assert!(error.contains("Server runtime requires normal server composition"));
     assert!(error.contains("no server was started"));
     assert!(error.contains("talksphere help serve"));
 }
