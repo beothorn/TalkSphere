@@ -76,3 +76,13 @@ signature over the actual zero-ephemeral transcript reaches agreement, rejects z
 and never extracts keys. Ordering/selector/width failures and withheld AUTH timeout
 publish no session or authenticated event. Existing state tests retain the complete
 duplicate/width matrix; the real persisted adapter also checks contact-ID mismatch.
+
+## Native integrity rejection
+
+real_wire verifies header/payload/tag mutation, replay at the next sequence,
+reversed direction key and nonce prefix, and an old connection tag after a newly
+signed transcript changes the session keys. Each closes without output or payload
+routing. Release observations count all eleven acquired native credential/session
+owners after integrity failure and drop; compiler/register copies are outside this
+observation. Existing controlled-state sequence exhaustion tests retain wrap/no-nonce-
+reuse assertions without impractical traffic or production counter setters.

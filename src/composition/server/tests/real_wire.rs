@@ -304,3 +304,119 @@ fn partial_auth_write_and_expected_identity_failure_do_not_derive() {
         assert!(h.connection.session().is_none());
     }
 }
+
+// Actual AEAD failures close silently before OPEN or DATA dispatch, including replay and wrong directional material.
+#[test]
+fn integrity_mutation_replay_and_direction_confusion_close_silently() {
+    use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce, aead::AeadInPlace};
+    let open = Open::new("cr2se.peer", 1).unwrap().encode();
+    for case in 0..6 {
+        let mut h = Harness::new();
+        let mut bytes = h.expect_receive(FrameType::Open, 2, &open, true);
+        match case {
+            0 => bytes[7] ^= 4,
+            1 => bytes[12] ^= 1,
+            2 => *bytes.last_mut().unwrap() ^= 1,
+            3 => {
+                h.control.push_read(ReadStep::Bytes(bytes.clone()));
+                assert!(h.poll().is_pending());
+                assert!(matches!(h.events()[0], Event::StreamOpened { .. }));
+            }
+            4 => bytes = protected(FrameType::Open, 2, &open, 0, "initiator-to-acceptor"),
+            _ => {
+                let body = aad(FrameType::Open, 2, &open);
+                let mut nonce = vector("initiator-to-acceptor nonce prefix");
+                nonce.extend(0u64.to_be_bytes());
+                let cipher =
+                    XChaCha20Poly1305::new_from_slice(&vector("acceptor-to-initiator key"))
+                        .unwrap();
+                let tag = cipher
+                    .encrypt_in_place_detached(XNonce::from_slice(&nonce), &body, &mut [])
+                    .unwrap();
+                bytes = [body, tag.to_vec()].concat();
+            }
+        }
+        let before = h.control.written().len();
+        h.control.push_read(ReadStep::Bytes(bytes));
+        assert!(h.poll().is_ready());
+        assert!(h.control.is_closed());
+        assert_eq!(h.control.written().len(), before);
+        assert!(
+            !h.events()
+                .iter()
+                .any(|event| matches!(event, Event::StreamOpened { .. } | Event::Data { .. }))
+        );
+    }
+}
+
+// A changed signed HELLO nonce installs different session keys, so a prior connection's valid tag cannot authenticate.
+#[test]
+fn old_connection_tag_is_rejected_under_new_signed_transcript() {
+    use crate::modules::cryptography::{
+        primitives::signature,
+        secrets::{Secret, Signing},
+    };
+    let mut h = Harness::pending(ConnectionRole::Initiator, usize::MAX);
+    let local = vector("initiator HELLO");
+    let mut remote = vector("acceptor HELLO");
+    remote[68] ^= 1;
+    let mut message = b"CR2SE-NETWORK-AUTH-V1\0".to_vec();
+    message.push(2);
+    for hello in [&local, &remote] {
+        message.extend((hello.len() as u32).to_be_bytes());
+        message.extend(hello);
+    }
+    let key = Secret::<Signing>::new(zeroize::Zeroizing::new(
+        vector("acceptor Ed25519 seed").try_into().unwrap(),
+    ));
+    let proof = signature::sign(&key, &message, 4096).unwrap();
+    h.control.push_read(ReadStep::Bytes(
+        [
+            aad(FrameType::Hello, 0, &remote),
+            aad(FrameType::Auth, 0, &proof),
+        ]
+        .concat(),
+    ));
+    for _ in 0..16 {
+        let _ = h.poll();
+    }
+    assert!(h.connection.session().is_some());
+    assert!(matches!(h.events()[0], Event::Authenticated(_)));
+    let before = h.control.written().len();
+    let bytes = protected(
+        FrameType::Open,
+        2,
+        &Open::new("cr2se.peer", 1).unwrap().encode(),
+        0,
+        "acceptor-to-initiator",
+    );
+    h.control.push_read(ReadStep::Bytes(bytes));
+    assert!(h.poll().is_ready());
+    assert_eq!(h.control.written().len(), before);
+    assert!(h.control.is_closed());
+    assert!(
+        !h.events()
+            .iter()
+            .any(|event| matches!(event, Event::StreamOpened { .. } | Event::Data { .. }))
+    );
+}
+
+// Acquired native key owners are all released when an authenticated connection fails integrity and its identity drops.
+#[test]
+fn native_connection_failure_releases_acquired_secret_owners() {
+    use crate::modules::cryptography::test_support::observe_releases;
+    let (_, released) = observe_releases(|| {
+        let mut h = Harness::new();
+        let bytes = h.expect_receive(
+            FrameType::Open,
+            2,
+            &Open::new("cr2se.peer", 1).unwrap().encode(),
+            false,
+        );
+        h.control.push_read(ReadStep::Bytes(bytes));
+        assert!(h.poll().is_ready());
+        drop(h);
+    });
+    // Four credential staging owners, two loaded identity owners and five ephemeral/derived owners were acquired.
+    assert_eq!(released.load(std::sync::atomic::Ordering::SeqCst), 11);
+}

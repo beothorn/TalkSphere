@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–17 are complete.
+Status: execution started; steps 1–18 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -25,7 +25,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **15.** Authenticate two independent server processes in both connection directions.
 - [x] **16.** Verify protected framing across fragmented and coalesced socket traffic.
 - [x] **17.** Verify real handshake failures before session key publication.
-- [ ] **18.** Reject tampering and replay before application dispatch.
+- [x] **18.** Reject tampering and replay before application dispatch.
 - [ ] **19.** Verify stream allocation and protocol selection on authenticated connections.
 - [ ] **20.** Verify multiplexing, half-close and cancellation across real peers.
 - [ ] **21.** Verify probes and graceful draining across real peers.
@@ -290,6 +290,8 @@ unauthenticated dispatch and no sequence advance on incomplete/invalid frames.
 Use controlled state injection for uint64 exhaustion instead of enormous traffic;
 keep it test-only. Observe ephemeral/session secret release on every applicable
 exit, retaining the documented limitations of memory-erasure evidence.
+
+Completed: Native connection tests reject header/payload/tag mutation, replay, reversed key/prefix and old-session tags under a newly signed transcript without output or dispatch. Release probes observe all eleven acquired native credential/session owners after failure/drop; existing controlled-state tests verify sequence exhaustion without wrap. Required checks pass; production coverage: 5322/5541 = 96.05%.
 
 ### 19. Stream IDs and OPEN
 
