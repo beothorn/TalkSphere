@@ -35,3 +35,7 @@ verify port-zero readiness and that dropping the composition releases the port.
 [Contact startup](contacts.md) initiates each configured contact once with its exact
 expected ID and preserves per-attempt failures without taking down the listener.
 Admission is not authentication; no implicit reconnect or Discovery is performed.
+
+[Consumer routing](routing.md) requires locally registered owner capabilities and
+cancels a failed consumer's stream without automatic application retries. The
+production router remains empty until later application protocols are implemented.

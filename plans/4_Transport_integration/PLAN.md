@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–11 are complete.
+Status: execution started; steps 1–12 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -19,7 +19,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **9.** Drive Transport events with a wakeable runtime loop.
 - [x] **10.** Start the configured listener and report its actual bound address.
 - [x] **11.** Connect configured contacts while preserving their expected identities.
-- [ ] **12.** Route authenticated events to authorized local consumers.
+- [x] **12.** Route authenticated events to authorized local consumers.
 - [ ] **13.** Drain connections and release resources on shutdown.
 - [ ] **14.** Enable the serve command through the composed runtime.
 - [ ] **15.** Authenticate two independent server processes in both connection directions.
@@ -224,6 +224,8 @@ handshake data. Register test protocols only in test composition and exercise re
 stream exchange there; production unsupported protocols follow Transport errors.
 Test owner isolation, callback/consumer failure, bounded event handling and unknown
 protocol rejection without introducing Peer Protocol semantics.
+
+Completed: Added bounded trusted consumer registration and stream routing by owner capability; non-stream observations return to composition. Foreign owner events are rejected before delivery and failed consumers request stream cancellation without retries. Production starts with no fake application protocols. Required checks pass; production coverage: 5140/5344 = 96.18%.
 
 ### 13. Controlled shutdown
 
