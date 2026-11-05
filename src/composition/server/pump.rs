@@ -15,6 +15,7 @@ struct State {
     pending: Mutex<bool>,
     ready: Condvar,
     shutdown: AtomicBool,
+    force: AtomicBool,
 }
 /// Cloneable local wake/shutdown authority; no peer bytes can construct runtime control requests.
 #[derive(Clone)]
@@ -27,6 +28,7 @@ impl Default for Signal {
             pending: Mutex::new(false),
             ready: Condvar::new(),
             shutdown: AtomicBool::new(false),
+            force: AtomicBool::new(false),
         }))
     }
 }
@@ -34,8 +36,15 @@ impl Signal {
     /// Request controlled shutdown and interrupt an idle runtime wait.
     pub fn shutdown(&self) {
         tracing::trace!("Requesting server shutdown through local control");
-        self.0.shutdown.store(true, Ordering::SeqCst);
+        if self.0.shutdown.swap(true, Ordering::SeqCst) {
+            self.0.force.store(true, Ordering::SeqCst);
+        }
         self.notify();
+    }
+    /// Read whether repeated shutdown requested immediate forced closure.
+    pub fn forcing(&self) -> bool {
+        tracing::trace!("Checking forced shutdown state");
+        self.0.force.load(Ordering::SeqCst)
     }
     /// Read whether local shutdown was requested without consuming the request.
     pub fn stopping(&self) -> bool {
@@ -95,6 +104,15 @@ impl<T: TransportControl> Pump<T> {
         &mut self,
         mut consume: impl FnMut(Event) -> Result<(), Failure>,
     ) -> Result<usize, Failure> {
+        self.turn_with(|_, event| consume(event))
+    }
+    /// Poll a bounded turn while giving trusted routing access to its owned control boundary.
+    /// # Errors
+    /// Propagates consumer failure and unexpected driver termination.
+    pub fn turn_with(
+        &mut self,
+        mut consume: impl FnMut(&mut T, Event) -> Result<(), Failure>,
+    ) -> Result<usize, Failure> {
         tracing::trace!("Polling a bounded server event turn");
         let waker = Waker::from(self.signal.0.clone());
         let mut context = Context::from_waker(&waker);
@@ -102,7 +120,7 @@ impl<T: TransportControl> Pump<T> {
             match self.transport.poll_event(&mut context) {
                 Poll::Pending => return Ok(count),
                 Poll::Ready(None) => return Err(Failure::Runtime),
-                Poll::Ready(Some(event)) => consume(event)?,
+                Poll::Ready(Some(event)) => consume(&mut self.transport, event)?,
             }
         }
         Ok(EVENTS_PER_TURN)
@@ -149,6 +167,9 @@ mod tests {
         signal.wait(Duration::ZERO).unwrap();
         signal.shutdown();
         assert!(signal.stopping());
+        assert!(!signal.forcing());
+        signal.shutdown();
+        assert!(signal.forcing());
         signal.wait(Duration::ZERO).unwrap();
     }
     // A busy driver yields after the finite event budget; pending, consumer failure and terminal driver are distinct.

@@ -39,3 +39,8 @@ Admission is not authentication; no implicit reconnect or Discovery is performed
 [Consumer routing](routing.md) requires locally registered owner capabilities and
 cancels a failed consumer's stream without automatic application retries. The
 production router remains empty until later application protocols are implemented.
+
+[Shutdown composition](shutdown.md) stops admission, drains accepted sessions to a
+finite deadline and closes incomplete handshakes. SIGINT/SIGTERM are forwarded by
+a safe iterator thread; repeated requests force closure. Driver drop releases keys
+and sockets before completion is reported.

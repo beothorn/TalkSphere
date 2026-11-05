@@ -33,6 +33,7 @@ pub struct Transport {
     pub stage: Stage,
     pub(super) connections: Vec<crate::modules::transport::handles::ConnectionHandle>,
     pub(super) contacts_started: bool,
+    pub(super) shutdown_deadline: Option<std::time::Instant>,
     pub(super) listener: Option<crate::modules::transport::handles::ListenerHandle>,
 }
 /// Compose real dependencies after successful protected identity loading.
@@ -62,6 +63,7 @@ pub fn compose(config: Config, credentials: Credentials) -> Result<Transport, Fa
         listener: None,
         connections: Vec::new(),
         contacts_started: false,
+        shutdown_deadline: None,
     })
 }
 

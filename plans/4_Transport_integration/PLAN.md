@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–12 are complete.
+Status: execution started; steps 1–13 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -20,7 +20,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **10.** Start the configured listener and report its actual bound address.
 - [x] **11.** Connect configured contacts while preserving their expected identities.
 - [x] **12.** Route authenticated events to authorized local consumers.
-- [ ] **13.** Drain connections and release resources on shutdown.
+- [x] **13.** Drain connections and release resources on shutdown.
 - [ ] **14.** Enable the serve command through the composed runtime.
 - [ ] **15.** Authenticate two independent server processes in both connection directions.
 - [ ] **16.** Verify protected framing across fragmented and coalesced socket traffic.
@@ -235,6 +235,8 @@ streams to finish within a finite deadline, then close remaining connections and
 release keys, locks and readiness resources. Define repeated signals and force-close
 behavior. Test idle/busy shutdown, deadline expiry and idempotent cleanup; process
 signal handlers must not perform blocking protocol operations.
+
+Completed: Added admission stop, finite GOAWAY/drain and forced-close policy, connection authority cleanup and safe SIGINT/SIGTERM iterator forwarding. Unit/runtime tests cover repeated requests and deadline failure; an isolated real SIGTERM test verifies notification and worker cleanup. Required checks pass; measured production coverage before the additional signal test: 5195/5462 = 95.11%.
 
 ### 14. Executable server activation
 

@@ -46,3 +46,6 @@ pub mod pump;
 pub mod contacts;
 
 pub mod routing;
+
+#[cfg(target_os = "linux")]
+pub mod shutdown;

@@ -92,6 +92,15 @@ fn server_credentials_are_existing_scoped_and_exclusive() {
         usize::from(attempts[0].admitted.is_ok())
     );
     assert!(node.connect_contacts().is_err());
+    node.begin_shutdown(std::time::Instant::now()).unwrap();
+    node.begin_shutdown(std::time::Instant::now()).unwrap();
+    assert!(
+        node.shutdown_progress(
+            std::time::Instant::now() + std::time::Duration::from_secs(6),
+            false
+        )
+        .is_err()
+    );
     drop(node);
     std::fs::write(path.join("identity.bin"), b"corrupt").unwrap();
     assert!(credentials::load(&config, false).is_err());

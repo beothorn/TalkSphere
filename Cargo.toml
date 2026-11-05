@@ -23,6 +23,7 @@ zeroize = { version = "1.8.2", features = ["std"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 rustix = { version = "1.1.4", features = ["fs", "process"] }
+signal-hook = "0.3"
 
 [lints.rust]
 unsafe_code = "forbid"
