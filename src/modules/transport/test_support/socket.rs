@@ -82,6 +82,17 @@ impl SocketControl {
         }
     }
 
+    // Replace pending test write steps and wake a blocked writer to exercise precise failure boundaries.
+    pub fn replace_writes(&self, steps: impl IntoIterator<Item = WriteStep>) {
+        let wake = {
+            let mut state = self.0.lock().unwrap();
+            state.writes = steps.into_iter().collect();
+            state.write_waker.take()
+        };
+        if let Some(waker) = wake {
+            waker.wake();
+        }
+    }
     pub fn written(&self) -> Vec<u8> {
         self.0.lock().unwrap().written.clone()
     }

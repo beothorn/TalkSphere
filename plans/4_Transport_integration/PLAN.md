@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–16 are complete.
+Status: execution started; steps 1–17 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -24,7 +24,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **14.** Enable the serve command through the composed runtime.
 - [x] **15.** Authenticate two independent server processes in both connection directions.
 - [x] **16.** Verify protected framing across fragmented and coalesced socket traffic.
-- [ ] **17.** Verify real handshake failures before session key publication.
+- [x] **17.** Verify real handshake failures before session key publication.
 - [ ] **18.** Reject tampering and replay before application dispatch.
 - [ ] **19.** Verify stream allocation and protocol selection on authenticated connections.
 - [ ] **20.** Verify multiplexing, half-close and cancellation across real peers.
@@ -279,6 +279,8 @@ Use an observing wrapper around real cryptography to prove successful peer AUTH
 and complete local AUTH write precede shared-secret/HKDF work. Invalid AUTH must
 win over a zero ephemeral point. Test withheld AUTH, partial local AUTH write failure,
 timeouts and same-identity peers with independently fresh ephemeral material.
+
+Completed: Added observing wrappers that delegate native crypto and assert verified peer AUTH plus complete local AUTH precede agreement. Both roles cover invalid AUTH, weak A/R/S, zero-agreement precedence, widths/order/selectors, timeout, partial AUTH write failure and wrong pinned IDs with no key publication. Full required checks and expanded focused suite pass; production coverage: 5322/5541 = 96.05%.
 
 ### 18. Integrity and replay
 

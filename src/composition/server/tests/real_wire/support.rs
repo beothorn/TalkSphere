@@ -43,7 +43,123 @@ impl Drop for Root {
     }
 }
 pub(super) type RealIdentity = TransportIdentity<FileStore, SystemEntropy>;
-pub(super) type Crypto = TransportCrypto<ScriptedEntropy>;
+type BaseCrypto = TransportCrypto<ScriptedEntropy>;
+use crate::modules::transport::ports::{
+    DependencyError,
+    crypto::{Cryptography, EphemeralKey},
+};
+use std::sync::{Arc, Mutex};
+pub(super) struct Crypto {
+    inner: BaseCrypto,
+    pub calls: Arc<Mutex<Vec<&'static str>>>,
+    control: SocketControl,
+}
+impl Crypto {
+    // Observe real primitive ordering without replacing any verification or derivation result.
+    fn new(inner: BaseCrypto, control: SocketControl) -> Self {
+        Self {
+            inner,
+            calls: Arc::new(Mutex::new(Vec::new())),
+            control,
+        }
+    }
+}
+impl Cryptography for Crypto {
+    type EphemeralSecret = <BaseCrypto as Cryptography>::EphemeralSecret;
+    type SharedSecret = <BaseCrypto as Cryptography>::SharedSecret;
+    type PseudorandomKey = <BaseCrypto as Cryptography>::PseudorandomKey;
+    type IntegrityKey = <BaseCrypto as Cryptography>::IntegrityKey;
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn random_nonce(&mut self) -> Result<[u8; 32], DependencyError> {
+        self.calls.lock().unwrap().push("nonce");
+        self.inner.random_nonce()
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn ephemeral_key(&mut self) -> Result<EphemeralKey<Self::EphemeralSecret>, DependencyError> {
+        self.calls.lock().unwrap().push("ephemeral");
+        self.inner.ephemeral_key()
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn sha256(&self, bytes: &[u8]) -> Result<[u8; 32], DependencyError> {
+        self.calls.lock().unwrap().push("hash");
+        self.inner.sha256(bytes)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn agree(
+        &mut self,
+        key: Self::EphemeralSecret,
+        remote: &[u8; 32],
+    ) -> Result<Self::SharedSecret, DependencyError> {
+        self.calls.lock().unwrap().push("agree");
+        assert!(self.calls.lock().unwrap().contains(&"verified"));
+        assert!(self.control.written().len() >= 188);
+        self.inner.agree(key, remote)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn extract(
+        &mut self,
+        salt: &[u8; 32],
+        shared: Self::SharedSecret,
+    ) -> Result<Self::PseudorandomKey, DependencyError> {
+        self.calls.lock().unwrap().push("extract");
+        self.inner.extract(salt, shared)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn expand_key(
+        &mut self,
+        key: &Self::PseudorandomKey,
+        info: &[u8],
+    ) -> Result<Self::IntegrityKey, DependencyError> {
+        self.calls.lock().unwrap().push("expand");
+        self.inner.expand_key(key, info)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn expand_nonce_prefix(
+        &self,
+        key: &Self::PseudorandomKey,
+        info: &[u8],
+    ) -> Result<[u8; 16], DependencyError> {
+        self.calls.lock().unwrap().push("prefix");
+        self.inner.expand_nonce_prefix(key, info)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn tag(
+        &self,
+        key: &Self::IntegrityKey,
+        nonce: &[u8; 24],
+        aad: &[u8],
+    ) -> Result<[u8; 16], DependencyError> {
+        self.calls.lock().unwrap().push("tag");
+        self.inner.tag(key, nonce, aad)
+    }
+    // Record this boundary and delegate to the actual native cryptographic provider.
+    fn verify_tag(
+        &self,
+        key: &Self::IntegrityKey,
+        nonce: &[u8; 24],
+        aad: &[u8],
+        tag: &[u8; 16],
+    ) -> Result<(), DependencyError> {
+        self.calls.lock().unwrap().push("verify-tag");
+        self.inner.verify_tag(key, nonce, aad, tag)
+    }
+
+    // Record successful verification separately so agreement cannot precede authenticated peer proof.
+    fn verify_signature(
+        &self,
+        key: &[u8; 32],
+        message: &[u8],
+        signature: &[u8; 64],
+    ) -> Result<(), DependencyError> {
+        self.calls.lock().unwrap().push("verify");
+        let result = self.inner.verify_signature(key, message, signature);
+        if result.is_ok() {
+            self.calls.lock().unwrap().push("verified");
+        }
+        result
+    }
+}
+
 pub(super) struct Harness {
     pub connection: Connection<Crypto>,
     pub control: SocketControl,
@@ -96,6 +212,10 @@ pub(super) fn protected(
 impl Harness {
     // Persist deterministic signing authority, reload it, and compose a real crypto connection before peer input.
     pub fn pending(role: ConnectionRole, write_limit: usize) -> Self {
+        Self::configured(role, write_limit, ExpectedPeer::Unpinned)
+    }
+    // Select explicit expected-ID policy while keeping all primitives and stored credentials real.
+    pub fn configured(role: ConnectionRole, write_limit: usize, expected: ExpectedPeer) -> Self {
         let local = role_name(role);
         let path = std::env::temp_dir().join(format!(
             "talksphere-real-wire-{}-{}",
@@ -123,17 +243,20 @@ impl Harness {
         let read = provider.grant::<ReadPublic>(&admin, &handle, 1).unwrap();
         let sign = provider.grant::<Sign>(&admin, &handle, 65548).unwrap();
         let identity = TransportIdentity::new(provider, handle, read, sign).unwrap();
-        let mut crypto = TransportCrypto::new(
-            Provider::new(
-                ScriptedEntropy(VecDeque::from([
-                    Ok(transport(&format!("{local} raw X25519 private-key input"))),
-                    Ok(transport(&format!("{local} HELLO nonce"))),
-                ])),
-                65548,
-            )
-            .unwrap(),
-        );
         let (socket, control) = ScriptedSocket::new();
+        let mut crypto = Crypto::new(
+            TransportCrypto::new(
+                Provider::new(
+                    ScriptedEntropy(VecDeque::from([
+                        Ok(transport(&format!("{local} raw X25519 private-key input"))),
+                        Ok(transport(&format!("{local} HELLO nonce"))),
+                    ])),
+                    65548,
+                )
+                .unwrap(),
+            ),
+            control.clone(),
+        );
         for _ in 0..1024 {
             control.push_write(WriteStep::Accept(write_limit));
         }
@@ -152,7 +275,7 @@ impl Harness {
             Box::new(socket),
             Options {
                 role,
-                expected_peer: ExpectedPeer::Unpinned,
+                expected_peer: expected,
             },
             config,
             now,

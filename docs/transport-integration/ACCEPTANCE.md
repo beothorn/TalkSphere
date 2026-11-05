@@ -65,3 +65,14 @@ matches the literal upstream tag, then supplies correct tags for state tests.
 Every OPEN/DATA split and one-byte handshake/coalesced protected tail run with
 one-to-three-byte writes and exact pinned HELLO/AUTH output assertions. Real socket
 and separate-process behavior are separately covered by server_peers and runtime tests.
+
+## Authentication failure ordering
+
+The real_wire crypto observer delegates actual native results and asserts at each
+agreement call that successful peer verification and all 188 local HELLO/AUTH bytes
+preceded it. Both roles reject bad signatures, zero-ephemeral plus invalid AUTH,
+small-order public/R points and noncanonical S before agreement/HKDF. A valid
+signature over the actual zero-ephemeral transcript reaches agreement, rejects zero
+and never extracts keys. Ordering/selector/width failures and withheld AUTH timeout
+publish no session or authenticated event. Existing state tests retain the complete
+duplicate/width matrix; the real persisted adapter also checks contact-ID mismatch.

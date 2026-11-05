@@ -85,3 +85,222 @@ fn segmented_handshake_and_tag_transition_match_vectors() {
         );
     }
 }
+
+// Both roles reject bad signatures and canonical-profile negatives before agreement or HKDF, including zero ephemeral points.
+#[test]
+fn real_handshake_failure_precedes_agreement_for_both_roles() {
+    use crate::modules::cryptography::{
+        primitives::signature,
+        secrets::{Secret, Signing},
+    };
+    use zeroize::Zeroizing;
+    for role in [ConnectionRole::Initiator, ConnectionRole::Acceptor] {
+        let peer = if role == ConnectionRole::Initiator {
+            "acceptor"
+        } else {
+            "initiator"
+        };
+        for case in 0..6 {
+            let mut h = Harness::pending(role, 3);
+            let mut hello = vector(&format!("{peer} HELLO"));
+            let mut auth = vector(&format!("{peer} AUTH payload"));
+            match case {
+                0 => auth[0] ^= 1,
+                1 => {
+                    hello[36..68].fill(0);
+                    auth[0] ^= 1;
+                }
+                2 => {
+                    hello[3..35].fill(0);
+                    hello[3] = 1;
+                    auth.fill(0);
+                    auth[0] = 1;
+                }
+                3 => {
+                    auth[..32].fill(0);
+                    auth[0] = 1;
+                }
+                4 => {
+                    auth[32..].copy_from_slice(&crate::modules::cryptography::test_support::hex(
+                        "edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010",
+                    ));
+                }
+                _ => {
+                    hello[36..68].fill(0);
+                    let local = vector(&format!("{} HELLO", role_name(role)));
+                    let (i, a) = if role == ConnectionRole::Initiator {
+                        (&local, &hello)
+                    } else {
+                        (&hello, &local)
+                    };
+                    let mut message = b"CR2SE-NETWORK-AUTH-V1\0".to_vec();
+                    message.push(if role == ConnectionRole::Initiator {
+                        2
+                    } else {
+                        1
+                    });
+                    for bytes in [i, a] {
+                        message.extend((bytes.len() as u32).to_be_bytes());
+                        message.extend(bytes);
+                    }
+                    let key = Secret::<Signing>::new(Zeroizing::new(
+                        vector(&format!("{peer} Ed25519 seed")).try_into().unwrap(),
+                    ));
+                    auth = signature::sign(&key, &message, 4096).unwrap().to_vec();
+                }
+            }
+            h.control.push_read(ReadStep::Bytes(
+                [
+                    aad(FrameType::Hello, 0, &hello),
+                    aad(FrameType::Auth, 0, &auth),
+                ]
+                .concat(),
+            ));
+            for _ in 0..32 {
+                if h.poll().is_ready() {
+                    break;
+                }
+            }
+            assert!(h.control.is_closed());
+            assert!(h.connection.session().is_none());
+            assert!(
+                !h.events()
+                    .iter()
+                    .any(|e| matches!(e, Event::Authenticated(_) | Event::Data { .. }))
+            );
+            let calls = h.crypto.calls.lock().unwrap();
+            assert!(!calls.contains(&"extract"));
+            if case == 5 {
+                assert!(calls.contains(&"verified"));
+                assert!(calls.contains(&"agree"));
+            } else {
+                assert!(!calls.contains(&"agree"));
+            }
+        }
+    }
+}
+
+// Malformed ordering/width/selectors and withheld proof never produce an authenticated session or agreement.
+#[test]
+fn malformed_and_timed_out_handshakes_do_not_publish_keys() {
+    for role in [ConnectionRole::Initiator, ConnectionRole::Acceptor] {
+        let peer = if role == ConnectionRole::Initiator {
+            "acceptor"
+        } else {
+            "initiator"
+        };
+        for case in 0..9 {
+            let mut h = Harness::pending(role, usize::MAX);
+            let hello = vector(&format!("{peer} HELLO"));
+            let bytes = match case {
+                0 => aad(FrameType::Auth, 0, &vector(&format!("{peer} AUTH payload"))),
+                1 => aad(FrameType::Hello, 0, &hello[..99]),
+                2 => {
+                    let mut changed = hello.clone();
+                    changed.push(0);
+                    aad(FrameType::Hello, 0, &changed)
+                }
+                3 => {
+                    let mut changed = hello.clone();
+                    changed[0] = 2;
+                    aad(FrameType::Hello, 0, &changed)
+                }
+                4 => [
+                    aad(FrameType::Hello, 0, &hello),
+                    aad(FrameType::Hello, 0, &hello),
+                ]
+                .concat(),
+                6 => [
+                    aad(FrameType::Hello, 0, &hello),
+                    aad(
+                        FrameType::Auth,
+                        0,
+                        &vector(&format!("{peer} AUTH payload"))[..63],
+                    ),
+                ]
+                .concat(),
+                7 => {
+                    let mut auth = vector(&format!("{peer} AUTH payload"));
+                    auth.push(0);
+                    [
+                        aad(FrameType::Hello, 0, &hello),
+                        aad(FrameType::Auth, 0, &auth),
+                    ]
+                    .concat()
+                }
+                8 => aad(FrameType::Data, 2, b"early"),
+                _ => aad(FrameType::Hello, 0, &hello),
+            };
+            h.control.push_read(ReadStep::Bytes(bytes));
+            for _ in 0..8 {
+                let _ = h.poll();
+            }
+            if case == 5 {
+                assert!(h.connection.session().is_none());
+                h.now += std::time::Duration::from_secs(4);
+                let _ = h.poll();
+            }
+            assert!(h.control.is_closed());
+            assert!(h.connection.session().is_none());
+            assert!(!h.crypto.calls.lock().unwrap().contains(&"agree"));
+            assert!(
+                !h.events()
+                    .iter()
+                    .any(|event| matches!(event, Event::Authenticated(_)))
+            );
+        }
+    }
+}
+
+// Partial local AUTH output and wrong pinned identity both fail without raw response or session derivation.
+#[test]
+fn partial_auth_write_and_expected_identity_failure_do_not_derive() {
+    use crate::modules::transport::test_support::socket::WriteStep;
+    for role in [ConnectionRole::Initiator, ConnectionRole::Acceptor] {
+        let peer = if role == ConnectionRole::Initiator {
+            "acceptor"
+        } else {
+            "initiator"
+        };
+        let mut h = Harness::pending(role, usize::MAX);
+        h.control.replace_writes([
+            WriteStep::Accept(112),
+            WriteStep::Accept(3),
+            WriteStep::Error(std::io::ErrorKind::BrokenPipe),
+        ]);
+        h.control.push_read(ReadStep::Bytes(aad(
+            FrameType::Hello,
+            0,
+            &vector(&format!("{peer} HELLO")),
+        )));
+        for _ in 0..32 {
+            if h.poll().is_ready() {
+                break;
+            }
+        }
+        assert!(h.control.is_closed());
+        assert_eq!(h.control.written().len(), 115);
+        assert!(!h.crypto.calls.lock().unwrap().contains(&"agree"));
+        assert!(h.connection.session().is_none());
+        let mut h = Harness::configured(
+            role,
+            usize::MAX,
+            ExpectedPeer::Known(crate::modules::transport::ports::identity::IdentityId(
+                [0; 32],
+            )),
+        );
+        h.control.push_read(ReadStep::Bytes(aad(
+            FrameType::Hello,
+            0,
+            &vector(&format!("{peer} HELLO")),
+        )));
+        for _ in 0..32 {
+            if h.poll().is_ready() {
+                break;
+            }
+        }
+        assert!(h.control.is_closed());
+        assert!(!h.crypto.calls.lock().unwrap().contains(&"agree"));
+        assert!(h.connection.session().is_none());
+    }
+}
