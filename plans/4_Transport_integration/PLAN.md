@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–18 are complete.
+Status: execution started; steps 1–19 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -26,7 +26,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **16.** Verify protected framing across fragmented and coalesced socket traffic.
 - [x] **17.** Verify real handshake failures before session key publication.
 - [x] **18.** Reject tampering and replay before application dispatch.
-- [ ] **19.** Verify stream allocation and protocol selection on authenticated connections.
+- [x] **19.** Verify stream allocation and protocol selection on authenticated connections.
 - [ ] **20.** Verify multiplexing, half-close and cancellation across real peers.
 - [ ] **21.** Verify probes and graceful draining across real peers.
 - [ ] **22.** Verify truncation, resource bounds and slow-consumer isolation.
@@ -300,6 +300,8 @@ IDs, reuse/skips and never-created references. Exercise valid registration, unkn
 protocol/version and malformed OPEN independently of integrity by signing malformed
 fixtures with correct real tags. Controlled uint32 exhaustion must produce the
 specified GOAWAY without wrap. Keep application protocol handlers test-owned.
+
+Completed: Native protected tests verify local 1/3/5 and remote 2/4/6 allocation, malformed/unknown protocol rejection with ID consumption and next-stream progress, plus parity/skip/reuse/never-created failures. Existing controlled allocator tests retain uint32 exhaustion/no-wrap evidence without production overrides. Required checks pass; production coverage: 5322/5541 = 96.05%.
 
 ### 20. Multiplexing and terminal behavior
 

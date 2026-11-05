@@ -86,3 +86,13 @@ routing. Release observations count all eleven acquired native credential/sessio
 owners after integrity failure and drop; compiler/register copies are outside this
 observation. Existing controlled-state sequence exhaustion tests retain wrap/no-nonce-
 reuse assertions without impractical traffic or production counter setters.
+
+## Native stream allocation and protocol selection
+
+real_wire checks local IDs 1/3/5 and remote IDs 2/4/6, correct real tags over
+malformed/unknown protocol OPENs, consumption of refused IDs, and continued use of
+the next stream. Wrong parity, skips, reuse and never-created DATA close the
+connection after native integrity checks. The original allocator's controlled uint32
+exhaustion tests retain GOAWAY/no-wrap evidence; no production counter override is
+introduced. Registrations here are isolated test consumers, not a production Peer
+Protocol implementation or advertised application service.

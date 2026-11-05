@@ -420,3 +420,106 @@ fn native_connection_failure_releases_acquired_secret_owners() {
     // Four credential staging owners, two loaded identity owners and five ephemeral/derived owners were acquired.
     assert_eq!(released.load(std::sync::atomic::Ordering::SeqCst), 11);
 }
+
+// Exact local and remote allocation retain parity and consume malformed/refused OPEN IDs under valid real tags.
+#[test]
+fn native_stream_allocation_and_protocol_selection_are_exact() {
+    use crate::modules::transport::codec::control::{ErrorCode, ErrorPayload};
+    let open = Open::new("cr2se.peer", 1).unwrap().encode();
+    let mut h = Harness::new();
+    for id in [1, 3, 5] {
+        let stream = h
+            .connection
+            .session()
+            .unwrap()
+            .open(&h.registry, &h.owner)
+            .unwrap();
+        assert_eq!(stream.wire_id().get(), id);
+        let expected = h.expect_send(FrameType::Open, id, &open);
+        let start = h.control.written().len();
+        let _ = h.poll();
+        assert_eq!(&h.control.written()[start..], expected);
+    }
+    for id in [2, 4, 6] {
+        h.receive(FrameType::Open, id, open.clone(), None);
+        assert!(h.events().iter().any(
+            |event| matches!(event,Event::StreamOpened{stream,..} if stream.wire_id().get()==id)
+        ));
+    }
+    let mut trailing = open.clone();
+    trailing.push(0);
+    let mut invalid_utf8 = open.clone();
+    invalid_utf8[2] = 255;
+    let mut zero_version = open.clone();
+    let len = zero_version.len();
+    zero_version[len - 4..].fill(0);
+    for (payload, code) in [
+        (vec![], ErrorCode::ProtocolError),
+        (trailing, ErrorCode::ProtocolError),
+        (invalid_utf8, ErrorCode::ProtocolError),
+        (zero_version, ErrorCode::ProtocolError),
+        (
+            Open::new("unknown", 1).unwrap().encode(),
+            ErrorCode::UnsupportedProtocol,
+        ),
+        (
+            Open::new("cr2se.peer", 2).unwrap().encode(),
+            ErrorCode::UnsupportedProtocol,
+        ),
+    ] {
+        let mut h = Harness::new();
+        h.receive(
+            FrameType::Open,
+            2,
+            payload,
+            Some((
+                FrameType::Error,
+                2,
+                ErrorPayload::new(code, "").unwrap().encode(),
+            )),
+        );
+        h.receive(FrameType::Open, 4, open.clone(), None);
+        assert!(!h.control.is_closed());
+        assert!(
+            h.events()
+                .iter()
+                .any(|e| matches!(e,Event::StreamOpened{stream,..} if stream.wire_id().get()==4))
+        );
+    }
+}
+
+// Wrong parity, skipped IDs, reuse and data for never-created streams remain connection failures after native integrity succeeds.
+#[test]
+fn native_stream_id_violations_close_connection() {
+    use crate::modules::transport::codec::control::{ErrorCode, ErrorPayload};
+    for (kind, id, reuse) in [
+        (FrameType::Open, 1, false),
+        (FrameType::Open, 4, false),
+        (FrameType::Open, 2, true),
+        (FrameType::Data, 2, false),
+    ] {
+        let mut h = Harness::new();
+        let open = Open::new("cr2se.peer", 1).unwrap().encode();
+        if reuse {
+            h.receive(FrameType::Open, 2, open.clone(), None);
+            h.events();
+        }
+        h.receive(
+            kind,
+            id,
+            if kind == FrameType::Open {
+                open
+            } else {
+                vec![1]
+            },
+            Some((
+                FrameType::Error,
+                0,
+                ErrorPayload::new(ErrorCode::ProtocolError, "")
+                    .unwrap()
+                    .encode(),
+            )),
+        );
+        assert!(h.control.is_closed());
+    }
+}

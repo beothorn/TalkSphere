@@ -373,3 +373,23 @@ impl Harness {
         std::iter::from_fn(|| self.connection.pop_event()).collect()
     }
 }
+
+impl Harness {
+    // Deliver a correctly tagged state fixture and compare any response against the independent AEAD oracle.
+    pub fn receive(
+        &mut self,
+        kind: FrameType,
+        id: u32,
+        payload: Vec<u8>,
+        response: Option<(FrameType, u32, Vec<u8>)>,
+    ) {
+        let bytes = self.expect_receive(kind, id, &payload, true);
+        let start = self.control.written().len();
+        let expected = response
+            .map(|(kind, id, payload)| self.expect_send(kind, id, &payload))
+            .unwrap_or_default();
+        self.control.push_read(ReadStep::Bytes(bytes));
+        let _ = self.poll();
+        assert_eq!(&self.control.written()[start..], expected);
+    }
+}
