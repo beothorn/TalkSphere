@@ -19,3 +19,7 @@ remain available for deterministic timing and I/O; authentication tests use real
 [Credential startup](credentials.md) loads existing keys and explicitly selected
 contacts before networking; `cargo test --locked --test server_credentials` checks
 missing/corrupt state, scoped public projection and exclusive lock lifetime.
+
+[Real dependency composition](transport.md) shares TCP readiness with the monotonic
+clock and supplies production CSPRNG Cryptography plus scoped Identity to Driver.
+Construction binds no sockets and retains private authority until the driver drops.

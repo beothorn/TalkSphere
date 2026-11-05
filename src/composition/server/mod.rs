@@ -36,3 +36,6 @@ mod test_support;
 
 #[cfg(target_os = "linux")]
 pub mod credentials;
+
+#[cfg(target_os = "linux")]
+pub mod transport;

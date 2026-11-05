@@ -40,7 +40,15 @@ fn server_credentials_are_existing_scoped_and_exclusive() {
         loaded.local_id
     );
     assert!(credentials::load(&config, false).is_err());
-    drop(loaded);
+    let transport = talksphere::composition::server::transport::compose(
+        Config::new(Options::local(path.clone()).unwrap()).unwrap(),
+        loaded,
+    )
+    .unwrap();
+    assert_eq!(transport.driver.resources().connections(), 0);
+    assert_eq!(transport.driver.resources().outbound_bytes(), 0);
+    assert!(credentials::load(&config, false).is_err());
+    drop(transport);
     assert!(credentials::load(&config, true).is_err());
     let limits = Limits::new(1024, 64, 65548, 65536, 65536).unwrap();
     let (mut store, admin) = FileStore::open(&path, limits).unwrap();

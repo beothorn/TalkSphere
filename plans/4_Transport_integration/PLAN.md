@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–7 are complete.
+Status: execution started; steps 1–8 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -15,7 +15,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **5.** Parse server options and document every option in detailed help.
 - [x] **6.** Configure structured operational logging at application startup.
 - [x] **7.** Load one protected identity and grant the server scoped authority.
-- [ ] **8.** Compose the real Transport driver and platform adapters.
+- [x] **8.** Compose the real Transport driver and platform adapters.
 - [ ] **9.** Drive Transport events with a wakeable runtime loop.
 - [ ] **10.** Start the configured listener and report its actual bound address.
 - [ ] **11.** Connect configured contacts while preserving their expected identities.
@@ -183,6 +183,8 @@ SystemClock, then the configured Driver through public contracts. Check how the
 clock and socket adapters share the readiness worker. No test-only substitute may
 be selected from CLI configuration. Test constructor failure cleanup, capability
 lifetimes and that construction itself opens no listener.
+
+Completed: Composed real SystemEntropy Cryptography, protected scoped Identity, TcpProvider and its shared SystemClock into Driver. Integration evidence checks zero initial socket occupancy and retention/release of the identity lock; no listener is bound by construction. All required checks pass; production coverage: 4990/5184 = 96.26%.
 
 ### 9. Wakeable event loop
 
