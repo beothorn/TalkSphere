@@ -1,15 +1,14 @@
 # Transport integration plan
 
-Status: proposed for review; implementation has not started.
+Status: execution started; step 1 is complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
-executable authenticated Transport node. Another agent will execute this plan;
-creating it does not authorize implementation.
+executable authenticated Transport node. Implementation was subsequently authorized by the user.
 
 ## Steps
 
-- [ ] **1.** Reconcile the existing Transport evidence with the reviewed upstream contracts.
+- [x] **1.** Reconcile the existing Transport evidence with the reviewed upstream contracts.
 - [ ] **2.** Define the server lifecycle and validated configuration contracts.
 - [ ] **3.** Add deterministic runtime helpers and isolated process fixtures.
 - [ ] **4.** Add explicit local identity initialization and inspection commands.
@@ -101,6 +100,10 @@ using the later Identity/Cryptography supplements. Record a TR-01–TR-15 and
 AT-C01–AT-C04 gap inventory, including authentication-before-key-derivation order,
 weak-point negatives and diagnostic vectors. Preserve earlier fixture provenance;
 never silently replace expected wire bytes to match implementation output.
+
+Completed: compared upstream main on 2026-11-05, retained d40b6278 because no
+protocol files changed, re-read the upstream contracts and recorded the
+[acceptance gap inventory](../../docs/transport-integration/ACCEPTANCE.md).
 
 ### 2. Runtime configuration and lifecycle
 
