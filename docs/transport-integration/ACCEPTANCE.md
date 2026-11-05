@@ -46,3 +46,12 @@ No automatic identity replacement, generic signing interface, fake cr2se.peer
 handler, service retry or later module behavior is authorized by this milestone.
 Independent implementation interoperability, paid recovery and minimum-useful-node
 conformance remain later work. No new protocol defect was confirmed by this review.
+
+## Separate-process authentication
+
+`cargo test --locked --test server_peers` creates two distinct protected identities,
+starts the actual executable twice and verifies both reported authenticated IDs and
+TCP roles. Both processes are restarted with their roles reversed and retain their
+public identities. Readiness and shutdown are observed with bounded pipe reads;
+SIGTERM completes normally. This is same-implementation process evidence, not
+independent interoperability or a service protocol demonstration.

@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–14 are complete.
+Status: execution started; steps 1–15 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -22,7 +22,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **12.** Route authenticated events to authorized local consumers.
 - [x] **13.** Drain connections and release resources on shutdown.
 - [x] **14.** Enable the serve command through the composed runtime.
-- [ ] **15.** Authenticate two independent server processes in both connection directions.
+- [x] **15.** Authenticate two independent server processes in both connection directions.
 - [ ] **16.** Verify protected framing across fragmented and coalesced socket traffic.
 - [ ] **17.** Verify real handshake failures before session key publication.
 - [ ] **18.** Reject tampering and replay before application dispatch.
@@ -257,6 +257,8 @@ peer IDs and absence of application dispatch before verification. Restart with t
 same keys and verify stable identity plus fresh sessions. Use the real driver with
 a test-owned consumer for payload evidence; keep that harness out of the production
 CLI. Distinguish process tests from fixed-vector checks below.
+
+Completed: Added actual two-process authentication with distinct protected stores and CSPRNG identities, exact authenticated peer IDs and TCP roles, then restart with reversed initiator/acceptor roles and stable identities. Bounded readiness/shutdown helpers reap both children. Required checks pass; production coverage: 5321/5541 = 96.03%.
 
 ### 16. Framing and fixed-vector integration
 
