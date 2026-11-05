@@ -5,6 +5,7 @@ pub(super) enum Topic {
     Help,
     Version,
     Serve,
+    Identity,
 }
 
 pub(super) struct HelpTopic {
@@ -18,6 +19,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Identity,
+        names: &["identity-init", "identity-show", "--identity-store"],
+        label: "identity-init | identity-show",
+        summary: "Create or inspect a protected local identity.",
+        details: "Usage: talksphere identity-init --identity-store DIRECTORY | talksphere identity-show --identity-store DIRECTORY\n\nExplicit initialization installs both key pairs without overwrite; inspection never generates keys.\n--identity-store requires an explicit owner-only Linux directory; parents must exist.\nOutput is only the public canonical CR2SE ID. Files are permission-protected, not encrypted.\nMissing/corrupt/insecure stores and conflicting initialization exit with status 1; invalid syntax exits with status 2.\nHelp exits with status 0. See plans/4_Transport_integration/PLAN.md.\n",
+    },
     HelpTopic {
         topic: Topic::Serve,
         names: &["serve"],

@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–3 are complete.
+Status: execution started; steps 1–4 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -11,7 +11,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **1.** Reconcile the existing Transport evidence with the reviewed upstream contracts.
 - [x] **2.** Define the server lifecycle and validated configuration contracts.
 - [x] **3.** Add deterministic runtime helpers and isolated process fixtures.
-- [ ] **4.** Add explicit local identity initialization and inspection commands.
+- [x] **4.** Add explicit local identity initialization and inspection commands.
 - [ ] **5.** Parse server options and document every option in detailed help.
 - [ ] **6.** Configure structured operational logging at application startup.
 - [ ] **7.** Load one protected identity and grant the server scoped authority.
@@ -141,6 +141,8 @@ creation is explicit and refuses existing state, while inspection never creates 
 Expose only public IDs/credentials as intentional output. Test duplicate creation,
 denied/insecure stores, missing/corrupt records and unsupported platforms. Document
 protection, storage location and usage; keep backup/import CLI out of this milestone.
+
+Completed: Added explicit identity-init/identity-show with required store selection and discoverable command/option help. Parser unit and real executable tests cover creation, inspection, duplicate creation, missing and corrupt state without replacement. Required checks pass; production coverage: 4843/5032 = 96.24%.
 
 ### 5. Server CLI and discoverability
 

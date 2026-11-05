@@ -151,3 +151,15 @@ Application recovery catalogs remain separate. No administrative CLI is exposed 
 Server composition progress and validated local policy are documented in the
 [server guide](src/composition/server/README.md); runtime activation follows the
 [integration checklist](plans/4_Transport_integration/PLAN.md).
+
+Initialize and inspect protected local keys explicitly (Linux):
+
+```sh
+cargo run --locked -- identity-init --identity-store ./node-a
+cargo run --locked -- identity-show --identity-store ./node-a
+cargo run --locked -- help --identity-store
+```
+
+Initialization refuses existing credentials; inspection never replaces missing or
+corrupt keys. Output is the public ID only. Protect this owner-only directory and
+its backups; records are not encrypted at rest.

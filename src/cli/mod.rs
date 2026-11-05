@@ -2,6 +2,7 @@
 
 mod args;
 mod help;
+mod identity;
 
 use std::{ffi::OsString, process::ExitCode};
 
@@ -30,6 +31,16 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
             println!("talksphere {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Ok(Command::Identity { path, create }) => match identity::execute(&path, create) {
+            Ok(public) => {
+                println!("{public}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                eprintln!("error: {error}");
+                ExitCode::FAILURE
+            }
+        },
         Ok(Command::Serve) => match transport::start() {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {

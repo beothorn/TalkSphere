@@ -6,12 +6,32 @@ pub(super) enum Command {
     Help(Topic),
     Version,
     Serve,
+    Identity {
+        path: std::path::PathBuf,
+        create: bool,
+    },
 }
 
 // Match supported forms and reject unknown or extra arguments with a usage error.
 pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
     tracing::trace!(function = "args::parse", "Parsing CLI command forms");
     match arguments {
+        [command, option]
+            if matches!(command.as_str(), "identity-init" | "identity-show")
+                && matches!(option.as_str(), "--help" | "-h") =>
+        {
+            Ok(Command::Help(Topic::Identity))
+        }
+        [command, option, path]
+            if matches!(command.as_str(), "identity-init" | "identity-show")
+                && option == "--identity-store"
+                && !path.is_empty() =>
+        {
+            Ok(Command::Identity {
+                path: path.into(),
+                create: command == "identity-init",
+            })
+        }
         [] => Ok(Command::Help(Topic::Overview)),
         [argument] => match argument.as_str() {
             "help" | "--help" | "-h" => Ok(Command::Help(Topic::Overview)),
@@ -77,6 +97,29 @@ mod tests {
     fn both_version_flags_select_version_output() {
         for flag in ["-V", "--version"] {
             assert_eq!(parse_words(&[flag]), Ok(Command::Version));
+        }
+    }
+
+    // Administration requires an explicit nonempty directory and never accepts implicit creation syntax.
+    #[test]
+    fn identity_commands_require_explicit_store() {
+        for command in ["identity-init", "identity-show"] {
+            assert!(
+                matches!(parse_words(&[command,"--identity-store","fixture"]),Ok(Command::Identity{create,..}) if create==(command=="identity-init"))
+            );
+            for tail in [
+                vec![],
+                vec!["--identity-store"],
+                vec!["--identity-store", ""],
+            ] {
+                let mut words = vec![command];
+                words.extend(tail);
+                assert!(parse_words(&words).is_err());
+            }
+            assert_eq!(
+                parse_words(&[command, "--help"]),
+                Ok(Command::Help(Topic::Identity))
+            );
         }
     }
 
