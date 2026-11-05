@@ -30,3 +30,6 @@ pub enum Failure {
     /// Controlled draining exceeded its configured deadline.
     ShutdownTimeout,
 }
+
+#[cfg(test)]
+mod test_support;

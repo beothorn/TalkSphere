@@ -10,3 +10,8 @@ From the root, run `cargo build --locked`, `cargo test --locked composition::ser
 and `cargo run --locked -- --help`. The serve command remains explicitly unavailable
 until runtime startup and shutdown are implemented. See [policy](config.md),
 [lifecycle](mod.md) and the [upstream evidence inventory](../../../docs/transport-integration/ACCEPTANCE.md).
+
+Runtime fixtures are test-only: `cargo test --locked --test runtime_helpers` checks
+isolated child output/cleanup, and `cargo test --locked composition::server` checks
+wake/shutdown probes. Existing Transport ManualClock and scripted socket boundaries
+remain available for deterministic timing and I/O; authentication tests use real keys.

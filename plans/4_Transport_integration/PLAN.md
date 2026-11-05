@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–2 are complete.
+Status: execution started; steps 1–3 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -10,7 +10,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 
 - [x] **1.** Reconcile the existing Transport evidence with the reviewed upstream contracts.
 - [x] **2.** Define the server lifecycle and validated configuration contracts.
-- [ ] **3.** Add deterministic runtime helpers and isolated process fixtures.
+- [x] **3.** Add deterministic runtime helpers and isolated process fixtures.
 - [ ] **4.** Add explicit local identity initialization and inspection commands.
 - [ ] **5.** Parse server options and document every option in detailed help.
 - [ ] **6.** Configure structured operational logging at application startup.
@@ -126,6 +126,12 @@ runtime tests; use real cryptography whenever authentication is asserted. Build
 fresh-process helpers with owner-only temporary stores, OS-assigned ports, bounded
 readiness waits, captured outputs and guaranteed child cleanup. Avoid fixed sleeps
 and shared ports. Separate deterministic wire fixtures from production CSPRNG use.
+
+Completed: added test-only deterministic wake/shutdown probes and isolated child
+fixtures with bounded stdout/stderr records, readiness waits and owned cleanup.
+Self-checks execute real CLI children; existing ManualClock/socket substitutes are
+reused. All required checks pass; production coverage excludes the helpers and is
+4812/4999 = 96.26%.
 
 ### 4. Explicit identity administration
 
