@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–4 are complete.
+Status: execution started; steps 1–5 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -12,7 +12,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **2.** Define the server lifecycle and validated configuration contracts.
 - [x] **3.** Add deterministic runtime helpers and isolated process fixtures.
 - [x] **4.** Add explicit local identity initialization and inspection commands.
-- [ ] **5.** Parse server options and document every option in detailed help.
+- [x] **5.** Parse server options and document every option in detailed help.
 - [ ] **6.** Configure structured operational logging at application startup.
 - [ ] **7.** Load one protected identity and grant the server scoped authority.
 - [ ] **8.** Compose the real Transport driver and platform adapters.
@@ -153,6 +153,8 @@ parser; define whether explicit options or a stored snapshot supplies contacts a
 reject ambiguous merging. ID-only contacts require an explicit resolution error
 because Discovery is absent. Every new command/option needs `help <topic>` including
 option spellings, parser tests and README examples. Syntax errors exit 2 with no I/O.
+
+Completed: Added bounded exact server option parsing, validated finite budgets and endpoint-bearing contacts, mutually exclusive stored/explicit contact selection, and per-spelling detailed help. Parser unit and existing CLI tests pass with required checks; help --listen exercised. Production coverage: 4906/5098 = 96.23%.
 
 ### 6. Application logging
 

@@ -11,3 +11,8 @@ They return only the public canonical ID; initialization never overwrites keys a
 inspection never generates them. The Linux protected store enforces ownership and
 permissions; unsupported platforms fail explicitly. Detailed command/option help
 is available through help identity-init, help identity-show and help --identity-store.
+
+serve options are exact flag/value pairs validated without I/O. They select an
+explicit identity directory, listener, explicit or stored contacts, finite Transport
+budgets and handshake/shutdown milliseconds. Detailed help for every spelling
+shares the server-options topic. Invalid syntax or policy exits 2 before startup.

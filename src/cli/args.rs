@@ -6,6 +6,7 @@ pub(super) enum Command {
     Help(Topic),
     Version,
     Serve,
+    ServeConfigured(super::server_args::ServerArgs),
     Identity {
         path: std::path::PathBuf,
         create: bool,
@@ -31,6 +32,9 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
                 path: path.into(),
                 create: command == "identity-init",
             })
+        }
+        [command, tail @ ..] if command == "serve" && tail.len() > 1 => {
+            super::server_args::parse(tail).map(Command::ServeConfigured)
         }
         [] => Ok(Command::Help(Topic::Overview)),
         [argument] => match argument.as_str() {

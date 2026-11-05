@@ -6,6 +6,7 @@ pub(super) enum Topic {
     Version,
     Serve,
     Identity,
+    ServerOptions,
 }
 
 pub(super) struct HelpTopic {
@@ -19,6 +20,23 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::ServerOptions,
+        names: &[
+            "--listen",
+            "--contact",
+            "--stored-contacts",
+            "--max-connections",
+            "--max-streams",
+            "--outbound-bytes",
+            "--buffered-bytes",
+            "--handshake-ms",
+            "--shutdown-ms",
+        ],
+        label: "serve options",
+        summary: "Configure listening, contacts, limits and shutdown.",
+        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\n--listen IP:PORT defaults to 127.0.0.1:0; zero selects an assigned listening port.\n--contact CONTACT repeats up to 64 times; requires a canonical ID with an IP/port, no Discovery.\n--stored-contacts yes|no defaults to no; yes selects the protected snapshot instead of explicit contacts.\n--max-connections COUNT defaults to 64; --max-streams COUNT defaults to 128 per connection.\n--outbound-bytes BYTES defaults to 4196096; --buffered-bytes BYTES defaults to 65536 per stream.\n--handshake-ms MILLISECONDS defaults to 10000; --shutdown-ms MILLISECONDS defaults to 5000.\nBudgets must support maximum protocol frames, durations must be positive; duplicate non-contact options are invalid.\nOptions are validated before I/O; invalid arguments exit with status 2. Runtime activation follows the integration plan.\n",
+    },
     HelpTopic {
         topic: Topic::Identity,
         names: &["identity-init", "identity-show", "--identity-store"],
@@ -39,7 +57,7 @@ pub(super) const TOPICS: &[HelpTopic] = &[
                   Server startup still requires normal server composition.\n\
                   This command opens no sockets,\n\
                   creates no identity or runtime state, and exits with status 1.\n\
-                  See plans/1_Transport_module/PLAN.md. There are no server options yet.\n",
+                  See plans/1_Transport_module/PLAN.md. Options: talksphere help --listen.\n",
     },
     HelpTopic {
         topic: Topic::Help,

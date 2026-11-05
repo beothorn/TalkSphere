@@ -163,3 +163,9 @@ cargo run --locked -- help --identity-store
 Initialization refuses existing credentials; inspection never replaces missing or
 corrupt keys. Output is the public ID only. Protect this owner-only directory and
 its backups; records are not encrypted at rest.
+
+Server options are documented by `cargo run --locked -- help --listen` and each
+individual option spelling. Example configuration (runtime activation pending):
+`cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000`.
+Explicit `--contact` payloads and `--stored-contacts yes` are mutually exclusive;
+no Discovery or automatic reconnect is implied.

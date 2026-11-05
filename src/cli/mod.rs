@@ -3,6 +3,7 @@
 mod args;
 mod help;
 mod identity;
+mod server_args;
 
 use std::{ffi::OsString, process::ExitCode};
 
@@ -41,7 +42,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Ok(Command::Serve) => match transport::start() {
+        Ok(Command::Serve | Command::ServeConfigured(_)) => match transport::start() {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 tracing::error!(%error, "Server startup failed; exiting without a listener");
