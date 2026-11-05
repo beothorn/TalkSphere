@@ -1,5 +1,5 @@
 //! Real server Transport composition; constructing the driver does not bind listeners.
-use super::{Failure, config::Config, credentials::Credentials};
+use super::{Failure, Stage, config::Config, credentials::Credentials};
 use crate::{
     composition::{cryptography::TransportCrypto, identity::TransportIdentity},
     modules::{
@@ -29,6 +29,9 @@ pub struct Transport {
     pub local_id: IdentityId,
     /// Copied startup contacts with pinned expected IDs.
     pub contacts: Vec<Contact>,
+    /// Application lifecycle stage; Ready follows successful listener binding.
+    pub stage: Stage,
+    pub(super) listener: Option<crate::modules::transport::handles::ListenerHandle>,
 }
 /// Compose real dependencies after successful protected identity loading.
 /// # Errors
@@ -53,5 +56,44 @@ pub fn compose(config: Config, credentials: Credentials) -> Result<Transport, Fa
         config,
         local_id: credentials.local_id,
         contacts: credentials.contacts,
+        stage: Stage::Starting,
+        listener: None,
     })
+}
+
+/// Complete public readiness result; addresses are the actual OS-bound endpoint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ready {
+    /// Canonical local public identity.
+    pub local_id: IdentityId,
+    /// Actual listening IP and assigned port.
+    pub address: std::net::SocketAddr,
+}
+impl Transport {
+    /// Bind the configured listener and report readiness only after successful admission.
+    /// # Errors
+    /// Repeated/late startup returns Runtime; bind or listener admission failure returns Network.
+    pub fn listen(&mut self) -> Result<Ready, Failure> {
+        use crate::modules::transport::api::{Accepted, Request, TransportControl};
+        tracing::trace!("Binding the configured server listener");
+        if self.stage != Stage::Starting || self.listener.is_some() {
+            return Err(Failure::Runtime);
+        }
+        let Accepted::Listener { handle, local_addr } = self
+            .driver
+            .submit(Request::Listen {
+                endpoint: self.config.options().listen,
+            })
+            .map_err(|_| Failure::Network)?
+        else {
+            return Err(Failure::Runtime);
+        };
+        self.listener = Some(handle);
+        self.stage = Stage::Ready;
+        tracing::info!(address=%local_addr,"Server listener is ready");
+        Ok(Ready {
+            local_id: self.local_id,
+            address: local_addr,
+        })
+    }
 }

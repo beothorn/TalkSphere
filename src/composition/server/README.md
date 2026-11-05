@@ -27,3 +27,7 @@ Construction binds no sockets and retains private authority until the driver dro
 [Bounded event polling](pump.md) retains readiness notifications and local shutdown
 requests, yields after 64 events and waits on a condition variable instead of spinning.
 Run `cargo test --locked composition::server::pump` for deterministic scheduling checks.
+
+Transport.listen returns the actual bound address and public ID after binding and
+retains listener ownership. Lifecycle transitions prevent duplicate startup; tests
+verify port-zero readiness and that dropping the composition releases the port.

@@ -40,15 +40,32 @@ fn server_credentials_are_existing_scoped_and_exclusive() {
         loaded.local_id
     );
     assert!(credentials::load(&config, false).is_err());
-    let transport = talksphere::composition::server::transport::compose(
+    let mut transport = talksphere::composition::server::transport::compose(
         Config::new(Options::local(path.clone()).unwrap()).unwrap(),
         loaded,
     )
     .unwrap();
     assert_eq!(transport.driver.resources().connections(), 0);
     assert_eq!(transport.driver.resources().outbound_bytes(), 0);
+    let occupied = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let mut conflict = Options::local(path.clone()).unwrap();
+    conflict.listen = occupied.local_addr().unwrap();
+    transport.config = Config::new(conflict).unwrap();
+    assert!(matches!(
+        transport.listen(),
+        Err(talksphere::composition::server::Failure::Network)
+    ));
+    drop(occupied);
+    transport.config = Config::new(Options::local(path.clone()).unwrap()).unwrap();
+    let ready = transport.listen().unwrap();
+    assert!(ready.address.ip().is_loopback());
+    assert_ne!(ready.address.port(), 0);
+    assert!(std::net::TcpListener::bind(ready.address).is_err());
+    assert!(transport.listen().is_err());
     assert!(credentials::load(&config, false).is_err());
     drop(transport);
+    let rebound = std::net::TcpListener::bind(ready.address).unwrap();
+    drop(rebound);
     assert!(credentials::load(&config, true).is_err());
     let limits = Limits::new(1024, 64, 65548, 65536, 65536).unwrap();
     let (mut store, admin) = FileStore::open(&path, limits).unwrap();
