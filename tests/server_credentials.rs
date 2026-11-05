@@ -1,0 +1,65 @@
+//! Protected startup checks retain key authority and immutable contacts before network composition.
+#![cfg(target_os = "linux")]
+#[path = "support/runtime.rs"]
+mod runtime;
+use std::process::Command;
+use talksphere::{
+    composition::server::{
+        config::{Config, Options},
+        credentials,
+    },
+    modules::{
+        identity::{
+            api::{Contact, IdentityId},
+            config::Limits,
+            storage::FileStore,
+        },
+        transport::ports::identity::Identity,
+    },
+};
+// Missing/corrupt keys fail without creation; successful loading owns the writer lock and copied contact snapshot.
+#[test]
+fn server_credentials_are_existing_scoped_and_exclusive() {
+    let fixture = runtime::ProcessFixture::spawn(&["--version"]);
+    assert!(fixture.line().is_ok());
+    let path = fixture.root.join("identity");
+    let config = Config::new(Options::local(path.clone()).unwrap()).unwrap();
+    assert!(credentials::load(&config, false).is_err());
+    assert!(!path.exists());
+    assert!(
+        Command::new(env!("CARGO_BIN_EXE_talksphere"))
+            .args(["identity-init", "--identity-store"])
+            .arg(&path)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let loaded = credentials::load(&config, false).unwrap();
+    assert_eq!(
+        loaded.identity.public_identity().unwrap().id,
+        loaded.local_id
+    );
+    assert!(credentials::load(&config, false).is_err());
+    drop(loaded);
+    assert!(credentials::load(&config, true).is_err());
+    let limits = Limits::new(1024, 64, 65548, 65536, 65536).unwrap();
+    let (mut store, admin) = FileStore::open(&path, limits).unwrap();
+    let contact = Contact {
+        expected_id: IdentityId([1; 32]),
+        endpoint: Some("127.0.0.1:42".parse().unwrap()),
+    };
+    store.replace_contacts(&admin, &[contact]).unwrap();
+    drop(store);
+    let loaded = credentials::load(&config, true).unwrap();
+    assert_eq!(loaded.contacts, vec![contact]);
+    drop(loaded);
+    std::fs::write(path.join("identity.bin"), b"corrupt").unwrap();
+    assert!(credentials::load(&config, false).is_err());
+    assert_eq!(
+        std::fs::read(path.join("identity.bin")).unwrap(),
+        b"corrupt"
+    );
+    // Exercise independent stderr capture too, keeping the shared fixture contract checked in this suite.
+    let invalid = runtime::ProcessFixture::spawn(&["--unknown"]);
+    assert!(invalid.error().is_ok());
+}

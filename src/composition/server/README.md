@@ -15,3 +15,7 @@ Runtime fixtures are test-only: `cargo test --locked --test runtime_helpers` che
 isolated child output/cleanup, and `cargo test --locked composition::server` checks
 wake/shutdown probes. Existing Transport ManualClock and scripted socket boundaries
 remain available for deterministic timing and I/O; authentication tests use real keys.
+
+[Credential startup](credentials.md) loads existing keys and explicitly selected
+contacts before networking; `cargo test --locked --test server_credentials` checks
+missing/corrupt state, scoped public projection and exclusive lock lifetime.

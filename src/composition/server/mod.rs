@@ -33,3 +33,6 @@ pub enum Failure {
 
 #[cfg(test)]
 mod test_support;
+
+#[cfg(target_os = "linux")]
+pub mod credentials;
