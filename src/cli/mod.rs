@@ -3,11 +3,11 @@
 mod args;
 mod help;
 mod identity;
+mod serve;
 mod server_args;
 
 use std::{ffi::OsString, process::ExitCode};
 
-use crate::modules::transport;
 use args::Command;
 
 /// Run the CLI with arguments excluding the executable name.
@@ -25,7 +25,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
 
     if matches!(
         &command,
-        Ok(Command::Serve | Command::ServeConfigured(_) | Command::Identity { .. })
+        Ok(Command::ServeConfigured(_) | Command::Identity { .. })
     ) && let Err(error) = crate::composition::logging::initialize()
     {
         eprintln!("error: {error}");
@@ -51,14 +51,14 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Ok(Command::Serve | Command::ServeConfigured(_)) => match transport::start() {
+        Ok(Command::ServeConfigured(args)) => match serve::execute(&args) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
-                tracing::error!(%error, "Server startup failed; exiting without a listener");
-                eprintln!("Try 'talksphere help serve' for details.");
+                tracing::error!(%error,"Server failed; releasing resources and exiting");
                 ExitCode::FAILURE
             }
         },
+
         Err(error) => {
             eprintln!("error: {error}\nTry 'talksphere --help' for usage.");
             ExitCode::from(2)

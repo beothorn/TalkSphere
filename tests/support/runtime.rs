@@ -48,6 +48,21 @@ impl ProcessFixture {
             errors,
         }
     }
+    // Deliver a signal only to this owned unreaped child; already exited children need no signal.
+    #[cfg(target_os = "linux")]
+    pub fn signal(&mut self, signal: rustix::process::Signal) -> std::io::Result<()> {
+        if self.child.try_wait()?.is_none() {
+            let raw = i32::try_from(self.child.id()).map_err(std::io::Error::other)?;
+            let pid = rustix::process::Pid::from_raw(raw)
+                .ok_or_else(|| std::io::Error::other("invalid owned child ID"))?;
+            rustix::process::kill_process(pid, signal)?;
+        }
+        Ok(())
+    }
+    // Reap a child after observed completion; fixture drop first kills unfinished children.
+    pub fn finish(&mut self) -> std::io::Result<std::process::ExitStatus> {
+        self.child.wait()
+    }
     // Capture bounded stderr diagnostics independently so neither output pipe can fill silently.
     pub fn error(&self) -> Result<String, mpsc::RecvTimeoutError> {
         self.errors.recv_timeout(Duration::from_secs(5))
@@ -60,8 +75,11 @@ impl ProcessFixture {
 impl Drop for ProcessFixture {
     // Kill an unfinished child, reap it and remove only this fixture's owned tree.
     fn drop(&mut self) {
+        #[cfg(target_os = "linux")]
+        let _ = self.signal(rustix::process::Signal::KILL);
+        #[cfg(not(target_os = "linux"))]
         let _ = self.child.kill();
-        let _ = self.child.wait();
+        let _ = self.finish();
         let _ = fs::remove_dir_all(&self.root);
     }
 }

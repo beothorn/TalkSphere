@@ -10,14 +10,23 @@ fn logging_filters_and_output_streams() {
             .output()
             .unwrap()
     };
-    let invalid = run("talksphere=not_a_level", &["serve"]);
+    let invalid = run(
+        "talksphere=not_a_level",
+        &["serve", "--identity-store", "missing-logging-fixture"],
+    );
     assert_eq!(invalid.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&invalid.stderr).contains("invalid RUST_LOG"));
     assert!(invalid.stdout.is_empty());
     assert!(run("bad=not_a_level", &["--help"]).status.success());
-    let trace = run("talksphere=trace", &["serve"]);
+    let trace = run(
+        "talksphere=trace",
+        &["serve", "--identity-store", "missing-logging-fixture"],
+    );
     assert!(String::from_utf8_lossy(&trace.stderr).contains("TRACE"));
     assert!(trace.stdout.is_empty());
-    let off = run("off", &["serve"]);
+    let off = run(
+        "off",
+        &["serve", "--identity-store", "missing-logging-fixture"],
+    );
     assert!(!String::from_utf8_lossy(&off.stderr).contains("TRACE"));
 }

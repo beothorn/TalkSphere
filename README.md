@@ -73,7 +73,7 @@ cargo run --locked -- --version
 cargo run --locked -- serve
 ```
 
-The last command currently exits with status **1**, explaining that normal server composition is still required. It opens no sockets. With no arguments, the application
+The unconfigured serve command exits with status **2**, requiring explicit --identity-store selection. It opens no sockets. With no arguments, the application
 shows its overview and exits successfully. Invalid arguments exit with status
 **2** and a usage hint.
 
@@ -165,7 +165,7 @@ corrupt keys. Output is the public ID only. Protect this owner-only directory an
 its backups; records are not encrypted at rest.
 
 Server options are documented by `cargo run --locked -- help --listen` and each
-individual option spelling. Example configuration (runtime activation pending):
+individual option spelling. Example configuration:
 `cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000`.
 Explicit `--contact` payloads and `--stored-contacts yes` are mutually exclusive;
 no Discovery or automatic reconnect is implied.
@@ -173,3 +173,15 @@ no Discovery or automatic reconnect is implied.
 Operational logging uses stderr and defaults to `RUST_LOG=info`. Use
 `RUST_LOG=talksphere=trace` for diagnosis or `RUST_LOG=off` to disable logs;
 `talksphere help logging` describes target filters and startup failures.
+
+Authenticated Transport startup is now available on Linux after explicit initialization:
+
+```sh
+cargo run --locked -- identity-init --identity-store ./node-a
+cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000
+```
+
+The server prints `ready <public-id> <actual-address>`, then public `authenticated`
+connection observations. SIGINT/SIGTERM stop admission and drain connections;
+`stopped` is printed after resources are released. Runtime failure exits 1.
+The production router has no application protocols yet; unsupported OPENs are refused.

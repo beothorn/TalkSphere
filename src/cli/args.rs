@@ -5,7 +5,6 @@ use super::help::{self, Topic};
 pub(super) enum Command {
     Help(Topic),
     Version,
-    Serve,
     ServeConfigured(super::server_args::ServerArgs),
     Identity {
         path: std::path::PathBuf,
@@ -40,7 +39,7 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
         [argument] => match argument.as_str() {
             "help" | "--help" | "-h" => Ok(Command::Help(Topic::Overview)),
             "--version" | "-V" => Ok(Command::Version),
-            "serve" => Ok(Command::Serve),
+            "serve" => super::server_args::parse(&[]).map(Command::ServeConfigured),
             _ => Err(format!("unknown command or option {argument:?}")),
         },
         [command, topic] if command == "help" => help::find_topic(topic)
@@ -94,7 +93,7 @@ mod tests {
                 Ok(Command::Help(Topic::Serve))
             );
         }
-        assert_eq!(parse_words(&["serve"]), Ok(Command::Serve));
+        assert!(parse_words(&["serve"]).is_err());
     }
 
     #[test]

@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–13 are complete.
+Status: execution started; steps 1–14 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -21,7 +21,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **11.** Connect configured contacts while preserving their expected identities.
 - [x] **12.** Route authenticated events to authorized local consumers.
 - [x] **13.** Drain connections and release resources on shutdown.
-- [ ] **14.** Enable the serve command through the composed runtime.
+- [x] **14.** Enable the serve command through the composed runtime.
 - [ ] **15.** Authenticate two independent server processes in both connection directions.
 - [ ] **16.** Verify protected framing across fragmented and coalesced socket traffic.
 - [ ] **17.** Verify real handshake failures before session key publication.
@@ -246,6 +246,8 @@ Runtime failures exit 1 with secret-free stderr explanations; normal shutdown ex
 successfully. Test executable startup and termination, no-argument help, invalid
 arguments and all new detailed help topics. Retain explicit errors for unavailable
 platforms and capabilities.
+
+Completed: Enabled configured Linux serve with real credentials/adapters, bounded event routing, public readiness/authentication status and controlled SIGTERM shutdown. Executable tests verify actual bind, normal exit and port release; missing required identity selection exits 2 before I/O and runtime failures exit 1. Required checks pass; production coverage: 5303/5541 = 95.70%.
 
 ### 15. Independent two-process authentication
 

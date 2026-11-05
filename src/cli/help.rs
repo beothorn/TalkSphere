@@ -43,7 +43,7 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         ],
         label: "serve options",
         summary: "Configure listening, contacts, limits and shutdown.",
-        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\n--listen IP:PORT defaults to 127.0.0.1:0; zero selects an assigned listening port.\n--contact CONTACT repeats up to 64 times; requires a canonical ID with an IP/port, no Discovery.\n--stored-contacts yes|no defaults to no; yes selects the protected snapshot instead of explicit contacts.\n--max-connections COUNT defaults to 64; --max-streams COUNT defaults to 128 per connection.\n--outbound-bytes BYTES defaults to 4196096; --buffered-bytes BYTES defaults to 65536 per stream.\n--handshake-ms MILLISECONDS defaults to 10000; --shutdown-ms MILLISECONDS defaults to 5000.\nBudgets must support maximum protocol frames, durations must be positive; duplicate non-contact options are invalid.\nOptions are validated before I/O; invalid arguments exit with status 2. Runtime activation follows the integration plan.\n",
+        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\n--listen IP:PORT defaults to 127.0.0.1:0; zero selects an assigned listening port.\n--contact CONTACT repeats up to 64 times; requires a canonical ID with an IP/port, no Discovery.\n--stored-contacts yes|no defaults to no; yes selects the protected snapshot instead of explicit contacts.\n--max-connections COUNT defaults to 64; --max-streams COUNT defaults to 128 per connection.\n--outbound-bytes BYTES defaults to 4196096; --buffered-bytes BYTES defaults to 65536 per stream.\n--handshake-ms MILLISECONDS defaults to 10000; --shutdown-ms MILLISECONDS defaults to 5000.\nBudgets must support maximum protocol frames, durations must be positive; duplicate non-contact options are invalid.\nOptions are validated before I/O; invalid arguments exit with status 2. SIGINT/SIGTERM stop admission and drain to --shutdown-ms; a repeated signal forces closure.\n",
     },
     HelpTopic {
         topic: Topic::Identity,
@@ -56,15 +56,15 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         topic: Topic::Serve,
         names: &["serve"],
         label: "serve",
-        summary: "Start the server (awaiting server integration).",
-        details: "Usage: talksphere serve\n\
+        summary: "Start an authenticated Transport server (Linux).",
+        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\
                   Help:  talksphere help serve | talksphere serve --help\n\n\
                   Transport and TCP adapters are implemented and tested with injected dependencies.\n\
                   Cryptography implementation is complete; Identity and its scoped Transport adapter are implemented.\n\
                   See plans/2_Cryptography_module/PLAN.md for completed Cryptography steps; plans/3_Identity_module/PLAN.md records completed Identity steps; plans/PLAN.md lists server integration.\n\
-                  Server startup still requires normal server composition.\n\
-                  This command opens no sockets,\n\
-                  creates no identity or runtime state, and exits with status 1.\n\
+                  Configured startup loads existing keys and runs real authenticated Transport.\n\
+                  Without --identity-store this command opens no sockets,\n\
+                  creates no identity or runtime state, and exits with status 2.\n\
                   See plans/1_Transport_module/PLAN.md. Options: talksphere help --listen.\n",
     },
     HelpTopic {
@@ -113,7 +113,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: Transport, Cryptography and Identity implemented; server integration pending.\n\n\
+         Status: authenticated Transport server available on Linux; application services pending.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -140,7 +140,7 @@ mod tests {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
         assert!(overview.contains(
-            "Transport, Cryptography and Identity implemented; server integration pending"
+            "authenticated Transport server available on Linux; application services pending"
         ));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));
@@ -148,14 +148,14 @@ mod tests {
         }
     }
 
-    // Serve help explains implementation progress without claiming a working server.
+    // Serve help distinguishes configured authenticated startup from a missing identity selection.
     #[test]
     fn serve_help_explains_cryptography_completion_and_links_its_plan() {
         let details = render(Topic::Serve);
         assert!(details.contains("Cryptography implementation is complete"));
         assert!(details.contains("plans/2_Cryptography_module/PLAN.md"));
         assert!(details.contains("plans/PLAN.md"));
-        assert!(details.contains("normal server composition"));
+        assert!(details.contains("existing keys"));
         assert!(details.contains("opens no sockets"));
     }
 

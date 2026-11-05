@@ -96,6 +96,9 @@ pub(super) fn parse(words: &[String]) -> Result<ServerArgs, String> {
     if args.stored_contacts && !args.contacts.is_empty() {
         return Err("choose explicit or stored contacts, not both".into());
     }
+    if args.store.as_os_str().is_empty() {
+        return Err("--identity-store DIRECTORY is required".into());
+    }
     args.config()?;
     Ok(args)
 }

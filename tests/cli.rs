@@ -20,11 +20,9 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("talksphere help <topic>"));
     assert!(overview.contains("serve"));
     assert!(overview.contains("--version"));
-    assert!(
-        overview.contains(
-            "Transport, Cryptography and Identity implemented; server integration pending"
-        )
-    );
+    assert!(overview.contains(
+        "authenticated Transport server available on Linux; application services pending"
+    ));
     for arguments in [&[][..], &["-h"], &["help"]] {
         assert_eq!(successful_stdout(arguments), overview);
     }
@@ -63,16 +61,15 @@ fn version_is_derived_from_package_metadata() {
     assert_eq!(successful_stdout(&["-V"]), expected);
 }
 
-// Missing real credentials/primitives must fail explicitly without opening a server.
+// Missing required store selection is a syntax error and cannot start a server.
 #[test]
-fn serve_fails_explicitly_until_real_dependencies_are_integrated() {
+fn serve_requires_explicit_identity_selection() {
     let output = run(&["serve"]);
-    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
     let error = String::from_utf8(output.stderr).unwrap();
-    assert!(error.contains("Server runtime requires normal server composition"));
-    assert!(error.contains("no server was started"));
-    assert!(error.contains("talksphere help serve"));
+    assert!(error.contains("--identity-store"));
+    assert!(error.contains("talksphere --help"));
 }
 
 #[test]

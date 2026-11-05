@@ -44,3 +44,8 @@ production router remains empty until later application protocols are implemente
 finite deadline and closes incomplete handshakes. SIGINT/SIGTERM are forwarded by
 a safe iterator thread; repeated requests force closure. Driver drop releases keys
 and sockets before completion is reported.
+
+[Runtime orchestration](run.md) runs real Transport until controlled shutdown.
+The configured serve command is enabled on Linux; use --identity-store with existing
+keys and consult `talksphere help --listen` for defaults and startup contacts.
+Public stdout status never contains application payloads or private records.
