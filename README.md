@@ -147,3 +147,7 @@ Trusted application composition grants separate read, sign, decrypt, backup and
 import capabilities. Inputs have explicit byte/count budgets. Restore never
 overwrites an existing identity, and uncertain durable writes require reconciliation.
 Application recovery catalogs remain separate. No administrative CLI is exposed yet.
+
+Server composition progress and validated local policy are documented in the
+[server guide](src/composition/server/README.md); runtime activation follows the
+[integration checklist](plans/4_Transport_integration/PLAN.md).

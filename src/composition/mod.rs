@@ -3,3 +3,5 @@
 pub mod cryptography;
 
 pub mod identity;
+
+pub mod server;

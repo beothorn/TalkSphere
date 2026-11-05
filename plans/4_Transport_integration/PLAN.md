@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; step 1 is complete.
+Status: execution started; steps 1–2 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -9,7 +9,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 ## Steps
 
 - [x] **1.** Reconcile the existing Transport evidence with the reviewed upstream contracts.
-- [ ] **2.** Define the server lifecycle and validated configuration contracts.
+- [x] **2.** Define the server lifecycle and validated configuration contracts.
 - [ ] **3.** Add deterministic runtime helpers and isolated process fixtures.
 - [ ] **4.** Add explicit local identity initialization and inspection commands.
 - [ ] **5.** Parse server options and document every option in detailed help.
@@ -113,6 +113,11 @@ identity-store path and explicit contact sources. Use loopback as the documented
 default bind policy; allow port zero for tests and report the assigned address.
 Distinguish configured budgets from protocol maxima. Test invalid combinations and
 ensure validation precedes filesystem changes and network effects.
+
+Completed: added effect-free validated server options, finite defaults, contact
+validation, lifecycle stages and typed failure contracts with companion docs and
+unit tests. Required formatting, Clippy, locked tests/build and help checks pass;
+production coverage is 4812/4999 = 96.26%.
 
 ### 3. Runtime and process fixtures
 
