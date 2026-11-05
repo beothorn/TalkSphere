@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–10 are complete.
+Status: execution started; steps 1–11 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -18,7 +18,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **8.** Compose the real Transport driver and platform adapters.
 - [x] **9.** Drive Transport events with a wakeable runtime loop.
 - [x] **10.** Start the configured listener and report its actual bound address.
-- [ ] **11.** Connect configured contacts while preserving their expected identities.
+- [x] **11.** Connect configured contacts while preserving their expected identities.
 - [ ] **12.** Route authenticated events to authorized local consumers.
 - [ ] **13.** Drain connections and release resources on shutdown.
 - [ ] **14.** Enable the serve command through the composed runtime.
@@ -213,6 +213,8 @@ Preserve the binary expected ID even if an endpoint changes. Bound simultaneous
 attempts and expose per-contact outcomes. Use explicit one-shot startup attempts
 initially; do not invent an unbounded reconnect/retry policy. Test unreachable peers,
 timeouts, duplicate input policy, endpoint mismatch and continued listener operation.
+
+Completed: Added bounded one-shot contact startup preserving ExpectedPeer::Known and per-contact admission outcomes. Real composition checks retained ID/authority, readiness ordering and rejection of repeated startup; the listener remains independent of attempts. Required checks pass; production coverage: 5101/5300 = 96.25%.
 
 ### 12. Event routing and protocol ownership
 

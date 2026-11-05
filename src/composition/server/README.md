@@ -31,3 +31,7 @@ Run `cargo test --locked composition::server::pump` for deterministic scheduling
 Transport.listen returns the actual bound address and public ID after binding and
 retains listener ownership. Lifecycle transitions prevent duplicate startup; tests
 verify port-zero readiness and that dropping the composition releases the port.
+
+[Contact startup](contacts.md) initiates each configured contact once with its exact
+expected ID and preserves per-attempt failures without taking down the listener.
+Admission is not authentication; no implicit reconnect or Discovery is performed.

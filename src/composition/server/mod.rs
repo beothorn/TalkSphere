@@ -41,3 +41,6 @@ pub mod credentials;
 pub mod transport;
 
 pub mod pump;
+
+#[cfg(target_os = "linux")]
+pub mod contacts;

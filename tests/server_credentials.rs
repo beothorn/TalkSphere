@@ -77,7 +77,22 @@ fn server_credentials_are_existing_scoped_and_exclusive() {
     drop(store);
     let loaded = credentials::load(&config, true).unwrap();
     assert_eq!(loaded.contacts, vec![contact]);
-    drop(loaded);
+    let mut node = talksphere::composition::server::transport::compose(
+        Config::new(Options::local(path.clone()).unwrap()).unwrap(),
+        loaded,
+    )
+    .unwrap();
+    assert!(node.connect_contacts().is_err());
+    node.listen().unwrap();
+    let attempts = node.connect_contacts().unwrap();
+    assert_eq!(attempts.len(), 1);
+    assert_eq!(attempts[0].expected_id.0, contact.expected_id.0);
+    assert_eq!(
+        node.connection_count(),
+        usize::from(attempts[0].admitted.is_ok())
+    );
+    assert!(node.connect_contacts().is_err());
+    drop(node);
     std::fs::write(path.join("identity.bin"), b"corrupt").unwrap();
     assert!(credentials::load(&config, false).is_err());
     assert_eq!(
