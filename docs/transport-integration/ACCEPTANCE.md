@@ -55,3 +55,13 @@ TCP roles. Both processes are restarted with their roles reversed and retain the
 public identities. Readiness and shutdown are observed with bounded pipe reads;
 SIGTERM completes normally. This is same-implementation process evidence, not
 independent interoperability or a service protocol demonstration.
+
+## Real protected framing
+
+The server real_wire suite uses persisted/reloaded native Identity and real
+Cryptography through Connection's actual framing/session boundary. Only socket
+segmentation and monotonic time are controlled. An independent direct AEAD oracle
+matches the literal upstream tag, then supplies correct tags for state tests.
+Every OPEN/DATA split and one-byte handshake/coalesced protected tail run with
+one-to-three-byte writes and exact pinned HELLO/AUTH output assertions. Real socket
+and separate-process behavior are separately covered by server_peers and runtime tests.

@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–15 are complete.
+Status: execution started; steps 1–16 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -23,7 +23,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **13.** Drain connections and release resources on shutdown.
 - [x] **14.** Enable the serve command through the composed runtime.
 - [x] **15.** Authenticate two independent server processes in both connection directions.
-- [ ] **16.** Verify protected framing across fragmented and coalesced socket traffic.
+- [x] **16.** Verify protected framing across fragmented and coalesced socket traffic.
 - [ ] **17.** Verify real handshake failures before session key publication.
 - [ ] **18.** Reject tampering and replay before application dispatch.
 - [ ] **19.** Verify stream allocation and protocol selection on authenticated connections.
@@ -268,6 +268,8 @@ wrappers, since TCP does not guarantee read segmentation. Cover every split,
 one-byte chunks, coalesced AUTH plus protected frames, serialized partial writes,
 DATA lengths 1/65536 and oversized/invalid headers. Repeat representative scenarios
 through real loopback sockets; retain exact-byte assertions for TR-01–TR-03/05.
+
+Completed: Added a persisted/reloaded real-Identity/native-Cryptography connection harness with controlled socket segmentation. Independent direct AEAD matches the literal first-tag vector; every protected OPEN/DATA split and one-byte handshake/coalesced tail with one-to-three-byte writes preserve exact vectors and event order. Required checks pass; production coverage: 5322/5541 = 96.05%.
 
 ### 17. Handshake rejection and derivation order
 

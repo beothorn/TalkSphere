@@ -52,3 +52,7 @@ pub mod shutdown;
 
 #[cfg(target_os = "linux")]
 pub mod run;
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "tests/real_wire.rs"]
+mod real_wire;
