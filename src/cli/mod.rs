@@ -23,6 +23,15 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
         Err(_) => Err("arguments must be valid UTF-8".to_owned()),
     };
 
+    if matches!(
+        &command,
+        Ok(Command::Serve | Command::ServeConfigured(_) | Command::Identity { .. })
+    ) && let Err(error) = crate::composition::logging::initialize()
+    {
+        eprintln!("error: {error}");
+        return ExitCode::FAILURE;
+    }
+
     match command {
         Ok(Command::Help(topic)) => {
             print!("{}", help::render(topic));
@@ -46,7 +55,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 tracing::error!(%error, "Server startup failed; exiting without a listener");
-                eprintln!("error: {error}\nTry 'talksphere help serve' for details.");
+                eprintln!("Try 'talksphere help serve' for details.");
                 ExitCode::FAILURE
             }
         },

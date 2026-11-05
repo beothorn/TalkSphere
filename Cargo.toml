@@ -17,6 +17,7 @@ hmac = { version = "0.13.0", features = ["zeroize"] }
 mio = { version = "1.2.4", default-features = false, features = ["net", "os-poll"] }
 sha2 = { version = "0.11.1", default-features = false, features = ["zeroize"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
 x25519-dalek = { version = "2.0.1", features = ["static_secrets"] }
 zeroize = { version = "1.8.2", features = ["std"] }
 

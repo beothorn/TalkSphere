@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–5 are complete.
+Status: execution started; steps 1–6 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -13,7 +13,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **3.** Add deterministic runtime helpers and isolated process fixtures.
 - [x] **4.** Add explicit local identity initialization and inspection commands.
 - [x] **5.** Parse server options and document every option in detailed help.
-- [ ] **6.** Configure structured operational logging at application startup.
+- [x] **6.** Configure structured operational logging at application startup.
 - [ ] **7.** Load one protected identity and grant the server scoped authority.
 - [ ] **8.** Compose the real Transport driver and platform adapters.
 - [ ] **9.** Drive Transport events with a wakeable runtime loop.
@@ -163,6 +163,8 @@ and level filtering, a documented default, and stderr output. Keep stdout for
 intentional command results. Bound peer-controlled diagnostic text and repetitive
 failures; exclude private stores, keys and payload contents. Test filters, output
 streams, malformed filter handling and discoverability of any logging option.
+
+Completed: Installed shared tracing-subscriber stderr logging with validated RUST_LOG target/level filters and info default; help/version skip logging setup. Unit and executable tests cover filters, malformed configuration and stdout discipline; help logging exercised. All required checks pass; production coverage: 4933/5126 = 96.23%.
 
 ### 7. Protected identity startup
 

@@ -7,6 +7,7 @@ pub(super) enum Topic {
     Serve,
     Identity,
     ServerOptions,
+    Logging,
 }
 
 pub(super) struct HelpTopic {
@@ -20,6 +21,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Logging,
+        names: &["logging", "RUST_LOG"],
+        label: "RUST_LOG",
+        summary: "Filter structured operational logs on stderr.",
+        details: "Usage: RUST_LOG=info talksphere serve --identity-store DIRECTORY\nRUST_LOG defaults to info; off disables logs; target filters such as talksphere=trace enable diagnosis.\nOperational logs use stderr; stdout contains intentional public CLI results. Never include secrets in diagnostics.\nHelp/version ignore logging configuration and exit with status 0; malformed filters prevent runtime startup with status 1.\n",
+    },
     HelpTopic {
         topic: Topic::ServerOptions,
         names: &[

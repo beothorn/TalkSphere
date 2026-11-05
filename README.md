@@ -169,3 +169,7 @@ individual option spelling. Example configuration (runtime activation pending):
 `cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000`.
 Explicit `--contact` payloads and `--stored-contacts yes` are mutually exclusive;
 no Discovery or automatic reconnect is implied.
+
+Operational logging uses stderr and defaults to `RUST_LOG=info`. Use
+`RUST_LOG=talksphere=trace` for diagnosis or `RUST_LOG=off` to disable logs;
+`talksphere help logging` describes target filters and startup failures.
