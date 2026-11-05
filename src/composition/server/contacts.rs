@@ -24,7 +24,7 @@ impl Transport {
         }
         self.contacts_started = true;
         let mut outcomes = Vec::with_capacity(self.contacts.len());
-        for contact in &self.contacts {
+        for contact in self.contacts.clone() {
             let expected_id = IdentityId(contact.expected_id.0);
             let admitted = contact
                 .endpoint
@@ -33,15 +33,10 @@ impl Transport {
                     ConnectRequest::new(endpoint, ExpectedPeer::Known(expected_id))
                         .map_err(|_| Failure::Network)
                 })
-                .and_then(
-                    |request| match self.driver.submit(Request::Connect(request)) {
-                        Ok(Accepted::Connection(handle)) => Ok(handle),
-                        _ => Err(Failure::Network),
-                    },
-                );
-            if let Ok(handle) = &admitted {
-                self.connections.push(handle.clone());
-            }
+                .and_then(|request| match self.submit(Request::Connect(request)) {
+                    Ok(Accepted::Connection(handle)) => Ok(handle),
+                    _ => Err(Failure::Network),
+                });
             outcomes.push(Attempt {
                 expected_id,
                 admitted,

@@ -154,7 +154,16 @@ fn until(a: &mut Node, b: &mut Node, predicate: impl Fn(&Node, &Node) -> bool) {
             return;
         }
         let remaining = deadline.saturating_duration_since(Instant::now());
-        assert!(!remaining.is_zero(), "real TCP condition timed out");
+        assert!(
+            !remaining.is_zero(),
+            "real TCP condition timed out: A {:?} connections={} events={:?}; B {:?} connections={} events={:?}",
+            a.pump.transport.stage,
+            a.pump.transport.driver.resources().connections(),
+            summarize(a),
+            b.pump.transport.stage,
+            b.pump.transport.driver.resources().connections(),
+            summarize(b)
+        );
         a.pump.signal.wait(remaining).unwrap();
     }
 }
@@ -258,4 +267,106 @@ fn real_tcp_multiplexing_halves_and_cancellation() {
     until(&mut a, &mut b, |_, b| b.bytes(2) == b"opposite half");
     let invalid = runtime::ProcessFixture::spawn(&["--unknown"]);
     assert!(invalid.error().is_ok());
+}
+
+// Actual TCP peers echo both probe tokens and finish accepted work during GOAWAY without accepting new streams.
+#[test]
+fn real_tcp_probes_and_accepted_stream_drain() {
+    let fixture = runtime::ProcessFixture::spawn(&["--version"]);
+    assert!(fixture.line().is_ok());
+    let signal = Signal::default();
+    let mut a = Node::new(&fixture.root.join("a"), signal.clone());
+    let mut b = Node::new(&fixture.root.join("b"), signal);
+    let connection = connect(&mut a, &mut b);
+    let incoming = b.incoming().unwrap();
+    a.pump
+        .transport
+        .submit(Request::Ping {
+            connection: connection.clone(),
+            token: [1; 8],
+            timeout: Duration::from_secs(1),
+        })
+        .unwrap();
+    b.pump
+        .transport
+        .submit(Request::Ping {
+            connection: incoming,
+            token: [2; 8],
+            timeout: Duration::from_secs(1),
+        })
+        .unwrap();
+    until(&mut a, &mut b, |a, b| {
+        [a, b].iter().all(|node| {
+            node.events
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|event| matches!(event, Event::PingFinished { result: Ok(_), .. }))
+        })
+    });
+    let stream = open(&mut a, &connection);
+    until(&mut a, &mut b, |_, b| b.stream(1).is_some());
+    let remote = b.stream(1).unwrap();
+    a.pump.transport.begin_shutdown(Instant::now()).unwrap();
+    assert!(
+        a.pump
+            .transport
+            .submit(Request::OpenStream {
+                connection,
+                owner: a.owner.clone()
+            })
+            .is_err()
+    );
+    b.action(
+        &remote,
+        StreamAction::Data(b"accepted drain reply".to_vec()),
+    );
+    b.action(&remote, StreamAction::End);
+    a.action(&stream, StreamAction::End);
+    until(&mut a, &mut b, |a, b| {
+        a.bytes(1) == b"accepted drain reply"
+            && a.pump.transport.driver.resources().connections() == 0
+            && b.pump.transport.driver.resources().connections() == 0
+    });
+    assert!(
+        a.pump
+            .transport
+            .shutdown_progress(Instant::now(), false)
+            .unwrap()
+    );
+    for node in [&a, &b] {
+        assert!(node.events.lock().unwrap().iter().any(|event| matches!(
+            event,
+            Event::StreamClosed {
+                outcome: StreamOutcome::Completed,
+                ..
+            }
+        )));
+    }
+    let invalid = runtime::ProcessFixture::spawn(&["--unknown"]);
+    assert!(invalid.error().is_ok());
+}
+
+// Describe lifecycle categories and stream IDs without dumping application bytes into failure diagnostics.
+fn summarize(node: &Node) -> Vec<String> {
+    node.events
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|event| match event {
+            Event::Authenticated(_) => "authenticated".into(),
+            Event::IncomingConnection(_) => "incoming".into(),
+            Event::StreamOpened { stream, .. } => format!("open {}", stream.wire_id()),
+            Event::Data { stream, bytes } => {
+                format!("data {} length {}", stream.wire_id(), bytes.len())
+            }
+            Event::RemoteEnd { stream } => format!("end {}", stream.wire_id()),
+            Event::StreamClosed { stream, outcome } => {
+                format!("closed {} {outcome:?}", stream.wire_id())
+            }
+            Event::PingFinished { token, result, .. } => format!("ping {} {result:?}", token[0]),
+            Event::ConnectionClosed { failure, .. } => format!("connection closed {failure:?}"),
+            Event::ListenerClosed { .. } => "listener closed".into(),
+        })
+        .collect()
 }

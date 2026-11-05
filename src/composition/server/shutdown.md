@@ -17,3 +17,9 @@ Signals.install forwards SIGINT/SIGTERM from signal-hook's iterator thread; raw 
 handlers do not execute blocking protocol work. Dropping Signals closes and joins
 that helper. Registration/startup failure returns Runtime before socket startup.
 Application tests can inject Signal directly without installing global handlers.
+
+All Connection admissions through the server's TransportControl port retain their
+local handle for shutdown, including callers beyond startup contacts. Incoming
+observations deduplicate already retained handles. A real TCP drain regression test
+covers this path; previously only startup contacts were tracked, allowing a direct
+outgoing connection to remain open after its streams completed.

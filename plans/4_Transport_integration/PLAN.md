@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–20 are complete.
+Status: execution started; steps 1–21 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -28,7 +28,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **18.** Reject tampering and replay before application dispatch.
 - [x] **19.** Verify stream allocation and protocol selection on authenticated connections.
 - [x] **20.** Verify multiplexing, half-close and cancellation across real peers.
-- [ ] **21.** Verify probes and graceful draining across real peers.
+- [x] **21.** Verify probes and graceful draining across real peers.
 - [ ] **22.** Verify truncation, resource bounds and slow-consumer isolation.
 - [ ] **23.** Verify restart, startup failures and diagnostic privacy.
 - [ ] **24.** Audit Transport acceptance and publish the server integration handoff.
@@ -318,6 +318,8 @@ Exercise TR-11/12: matching eight-byte PONG, unsolicited/duplicate/unrelated res
 probe expiry, GOAWAY bounds, increasing repeated bounds, late OPEN refusal and
 accepted-stream completion. Combine deterministic timer tests with real socket
 shutdown and confirm completed results remain complete after connection closure.
+
+Completed: Native probe/GOAWAY cases and actual TCP bidirectional probes/accepted-stream drain pass. The real test exposed and fixed server control-port connection admissions not being retained for shutdown; startup contacts now share the same tracking path. Completed stream results survive and reservations are released. Required checks pass; production coverage: 5336/5544 = 96.25%.
 
 ### 22. Truncation and bounded operation
 

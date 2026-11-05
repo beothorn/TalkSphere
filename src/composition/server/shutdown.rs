@@ -20,7 +20,13 @@ impl TransportControl for Transport {
         {
             return Err(TransportError::Closed);
         }
-        self.driver.submit(request)
+        let accepted = self.driver.submit(request)?;
+        if let Accepted::Connection(handle) = &accepted
+            && !self.connections.contains(handle)
+        {
+            self.connections.push(handle.clone());
+        }
+        Ok(accepted)
     }
     /// Forward driver polling while retaining the server lifecycle and configuration.
     fn poll_event(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Event>> {
@@ -41,7 +47,9 @@ impl Transport {
                         connection: handle.clone(),
                     });
                 } else {
-                    self.connections.push(handle.clone());
+                    if !self.connections.contains(handle) {
+                        self.connections.push(handle.clone());
+                    }
                 }
             }
             Event::ConnectionClosed { connection, .. } => {

@@ -609,3 +609,199 @@ fn routing_halves_cancellation_and_reuse_through_socket() {
     );
     assert!(h.control.is_closed());
 }
+
+use crate::modules::transport::codec::control::GoAway;
+use std::time::Duration;
+
+// Native-tag repetition verifies probe/drain state behavior independently of scripted crypto replies.
+#[test]
+fn ping_matching_timeout_and_graceful_empty_drain() {
+    let mut h = Harness::new();
+    h.receive(
+        FrameType::Ping,
+        0,
+        vec![1; 8],
+        Some((FrameType::Pong, 0, vec![1; 8])),
+    );
+    h.receive(FrameType::Pong, 0, vec![2; 8], None);
+    h.connection
+        .session()
+        .unwrap()
+        .ping([3; 8], Duration::from_secs(1), h.now)
+        .unwrap();
+    h.expect_send(FrameType::Ping, 0, &[3; 8]);
+    assert!(h.poll().is_pending());
+    h.receive(FrameType::Pong, 0, vec![4; 8], None);
+    h.now += Duration::from_secs(1);
+    assert!(h.poll().is_pending());
+    assert!(h.events().iter().any(|e| matches!(
+        e,
+        Event::PingFinished {
+            result: Err(Failure {
+                code: FailureCode::DeadlineExceeded,
+                ..
+            }),
+            ..
+        }
+    )));
+    h.connection
+        .session()
+        .unwrap()
+        .drain(ShutdownReason::Normal)
+        .unwrap();
+    h.expect_send(
+        FrameType::GoAway,
+        0,
+        &GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+    );
+    assert!(h.poll().is_ready());
+    assert!(
+        h.events()
+            .iter()
+            .any(|e| matches!(e, Event::ConnectionClosed { failure: None, .. }))
+    );
+}
+
+// Native-tag repetition verifies probe/drain state behavior independently of scripted crypto replies.
+#[test]
+fn goaway_refusal_and_accepted_stream_completion() {
+    let mut h = Harness::new();
+    let mut streams = vec![];
+    for id in [1, 3, 5] {
+        streams.push(
+            h.connection
+                .session()
+                .unwrap()
+                .open(&h.registry, &h.owner)
+                .unwrap(),
+        );
+        h.expect_send(
+            FrameType::Open,
+            id,
+            &Open::new("cr2se.peer", 1).unwrap().encode(),
+        );
+    }
+    assert!(h.poll().is_pending());
+    h.events();
+    h.receive(
+        FrameType::GoAway,
+        0,
+        GoAway::new(3, ErrorCode::NoError, "").unwrap().encode(),
+        Some((
+            FrameType::GoAway,
+            0,
+            GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+        )),
+    );
+    assert!(h.events().iter().any(|e| matches!(e, Event::StreamClosed { stream, outcome: StreamOutcome::Failed(Failure { code: FailureCode::Refused, .. }) } if stream.wire_id().get() == 5)));
+    h.receive(
+        FrameType::Open,
+        2,
+        vec![],
+        Some((FrameType::Error, 2, error(ErrorCode::RefusedStream))),
+    );
+    h.receive(
+        FrameType::GoAway,
+        0,
+        GoAway::new(1, ErrorCode::NoError, "").unwrap().encode(),
+        None,
+    );
+    h.events();
+    h.receive(FrameType::End, 1, vec![], None);
+    h.connection
+        .session()
+        .unwrap()
+        .end(&h.owner, &streams[0])
+        .unwrap();
+    h.expect_send(FrameType::End, 1, &[]);
+    assert!(h.poll().is_ready());
+    assert!(h.events().iter().any(|e| matches!(
+        e,
+        Event::StreamClosed {
+            outcome: StreamOutcome::Completed,
+            ..
+        }
+    )));
+}
+
+// Native-tag repetition verifies probe/drain state behavior independently of scripted crypto replies.
+#[test]
+fn protected_state_violations_close_connection() {
+    for (kind, id, payload) in [
+        (
+            FrameType::Open,
+            4,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+        ),
+        (FrameType::Data, 2, vec![1]),
+        (
+            FrameType::GoAway,
+            0,
+            GoAway::new(2, ErrorCode::NoError, "").unwrap().encode(),
+        ),
+        (
+            FrameType::GoAway,
+            0,
+            GoAway::new(1, ErrorCode::NoError, "").unwrap().encode(),
+        ),
+    ] {
+        let mut h = Harness::new();
+        h.receive(
+            kind,
+            id,
+            payload,
+            Some((FrameType::Error, 0, error(ErrorCode::ProtocolError))),
+        );
+        assert!(h.control.is_closed());
+    }
+}
+
+// Native-tag repetition verifies probe/drain state behavior independently of scripted crypto replies.
+#[test]
+fn eof_after_completed_goaway_is_normal() {
+    let mut h = Harness::new();
+    h.connection
+        .session()
+        .unwrap()
+        .drain(ShutdownReason::Normal)
+        .unwrap();
+    h.expect_send(
+        FrameType::GoAway,
+        0,
+        &GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+    );
+    h.control.push_read(ReadStep::Eof);
+    assert!(h.poll().is_ready());
+    assert!(
+        h.events()
+            .iter()
+            .any(|e| matches!(e, Event::ConnectionClosed { failure: None, .. }))
+    );
+}
+
+// Native-tag repetition verifies probe/drain state behavior independently of scripted crypto replies.
+#[test]
+fn peer_drain_reason_is_preserved() {
+    let mut h = Harness::new();
+    h.receive(
+        FrameType::GoAway,
+        0,
+        GoAway::new(0, ErrorCode::IdExhausted, "").unwrap().encode(),
+        Some((
+            FrameType::GoAway,
+            0,
+            GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+        )),
+    );
+    assert!(h.control.is_closed());
+    assert!(h.events().iter().any(|e| matches!(
+        e,
+        Event::ConnectionClosed {
+            failure: Some(Failure {
+                origin: FailureOrigin::Peer,
+                code: FailureCode::IdExhausted
+            }),
+            ..
+        }
+    )));
+}

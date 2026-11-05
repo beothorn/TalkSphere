@@ -106,3 +106,12 @@ usable, and reverse-direction stream creation/half-close. The production executa
 still registers no application handler. real_wire additionally repeats full-size
 DATA, refused OPEN consumption, queued traffic after cancellation and terminal-ID
 reuse rejection with independent native-tag response oracles.
+
+## Probes and graceful drain
+
+Native-tag fixtures repeat matching/unsolicited PONG and timeout behavior, GOAWAY
+bound reductions, late OPEN refusal, invalid bounds, accepted-stream completion,
+EOF after drain and typed peer drain reasons. server_streams verifies both probe
+directions over actual TCP, rejects new OPEN after runtime shutdown begins, receives
+a final reply on an accepted stream, preserves Completed outcomes and releases both
+connection reservations. Process SIGTERM coverage separately verifies normal exit.
