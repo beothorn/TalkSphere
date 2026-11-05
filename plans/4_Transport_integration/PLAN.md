@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–19 are complete.
+Status: execution started; steps 1–20 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -27,7 +27,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **17.** Verify real handshake failures before session key publication.
 - [x] **18.** Reject tampering and replay before application dispatch.
 - [x] **19.** Verify stream allocation and protocol selection on authenticated connections.
-- [ ] **20.** Verify multiplexing, half-close and cancellation across real peers.
+- [x] **20.** Verify multiplexing, half-close and cancellation across real peers.
 - [ ] **21.** Verify probes and graceful draining across real peers.
 - [ ] **22.** Verify truncation, resource bounds and slow-consumer isolation.
 - [ ] **23.** Verify restart, startup failures and diagnostic privacy.
@@ -309,6 +309,8 @@ Run TR-09/10 with interleaved streams in both directions, both half-close orders
 DATA/repeated END violations, cancellation, queued terminal traffic and independent
 stream progress. Assert exact per-direction bytes and ownership, no whole-connection
 failure for stream-local errors, and no hidden application retry or Ledger action.
+
+Completed: Added two actual TCP drivers with distinct protected keys and bounded test consumers: interleaving, both half-close directions, 1/3/5 and 2/4/6 allocation, cancellation and independent progress pass. Native tagged fixtures cover full-size DATA, queued terminal traffic and reuse rejection. Required checks and expanded TCP test pass; production coverage: 5331/5541 = 96.21%.
 
 ### 21. Probes and graceful drain
 

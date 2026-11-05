@@ -96,3 +96,13 @@ connection after native integrity checks. The original allocator's controlled ui
 exhaustion tests retain GOAWAY/no-wrap evidence; no production counter override is
 introduced. Registrations here are isolated test consumers, not a production Peer
 Protocol implementation or advertised application service.
+
+## Real TCP streams and native terminal handling
+
+server_streams runs two actual TCP drivers with independent protected keys and
+bounded test-only consumers. It checks 1/3/5 allocation, interleaved exact bytes,
+reply after half-close, normal completion, cancellation with another stream still
+usable, and reverse-direction stream creation/half-close. The production executable
+still registers no application handler. real_wire additionally repeats full-size
+DATA, refused OPEN consumption, queued traffic after cancellation and terminal-ID
+reuse rejection with independent native-tag response oracles.

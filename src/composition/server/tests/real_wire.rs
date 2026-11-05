@@ -523,3 +523,89 @@ fn native_stream_id_violations_close_connection() {
         assert!(h.control.is_closed());
     }
 }
+
+use crate::modules::transport::{
+    codec::control::{ErrorCode, ErrorPayload},
+    config::MAX_PAYLOAD_BYTES,
+};
+// Encode fixed diagnostic-free errors for independent native response assertions.
+fn error(code: ErrorCode) -> Vec<u8> {
+    ErrorPayload::new(code, "").unwrap().encode()
+}
+
+// Repeat the complete terminal/half-close scenario with persisted Identity and native tags.
+#[test]
+fn routing_halves_cancellation_and_reuse_through_socket() {
+    let mut h = Harness::new();
+    h.receive(
+        FrameType::Open,
+        2,
+        vec![],
+        Some((FrameType::Error, 2, error(ErrorCode::ProtocolError))),
+    );
+    h.receive(
+        FrameType::Open,
+        4,
+        Open::new("unknown", 1).unwrap().encode(),
+        Some((FrameType::Error, 4, error(ErrorCode::UnsupportedProtocol))),
+    );
+    h.receive(
+        FrameType::Open,
+        6,
+        Open::new("cr2se.peer", 1).unwrap().encode(),
+        None,
+    );
+    let stream = match h.events().pop().unwrap() {
+        Event::StreamOpened { stream, .. } => stream,
+        event => panic!("unexpected {event:?}"),
+    };
+    h.receive(FrameType::Data, 6, vec![1; MAX_PAYLOAD_BYTES], None);
+    assert!(
+        matches!(h.events().pop(), Some(Event::Data { bytes, .. }) if bytes.len() == MAX_PAYLOAD_BYTES)
+    );
+    h.receive(FrameType::End, 6, vec![], None);
+    h.connection
+        .session()
+        .unwrap()
+        .send(&h.owner, &stream, b"reply".to_vec())
+        .unwrap();
+    h.expect_send(FrameType::Data, 6, b"reply");
+    assert!(h.poll().is_pending());
+    h.connection
+        .session()
+        .unwrap()
+        .end(&h.owner, &stream)
+        .unwrap();
+    h.expect_send(FrameType::End, 6, &[]);
+    assert!(h.poll().is_pending());
+    assert!(h.events().iter().any(|e| matches!(
+        e,
+        Event::StreamClosed {
+            outcome: StreamOutcome::Completed,
+            ..
+        }
+    )));
+    h.receive(
+        FrameType::Open,
+        8,
+        Open::new("cr2se.peer", 1).unwrap().encode(),
+        None,
+    );
+    h.receive(FrameType::Cancel, 8, error(ErrorCode::Cancelled), None);
+    h.receive(FrameType::Data, 8, vec![1], None);
+    h.receive(FrameType::End, 8, vec![99], None);
+    assert_eq!(
+        h.events()
+            .iter()
+            .filter(|e| matches!(e, Event::StreamClosed { .. }))
+            .count(),
+        1
+    );
+    h.receive(
+        FrameType::Open,
+        8,
+        vec![],
+        Some((FrameType::Error, 0, error(ErrorCode::ProtocolError))),
+    );
+    assert!(h.control.is_closed());
+}
