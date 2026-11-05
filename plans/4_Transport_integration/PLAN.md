@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–8 are complete.
+Status: execution started; steps 1–9 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -16,7 +16,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **6.** Configure structured operational logging at application startup.
 - [x] **7.** Load one protected identity and grant the server scoped authority.
 - [x] **8.** Compose the real Transport driver and platform adapters.
-- [ ] **9.** Drive Transport events with a wakeable runtime loop.
+- [x] **9.** Drive Transport events with a wakeable runtime loop.
 - [ ] **10.** Start the configured listener and report its actual bound address.
 - [ ] **11.** Connect configured contacts while preserving their expected identities.
 - [ ] **12.** Route authenticated events to authorized local consumers.
@@ -193,6 +193,8 @@ handles deadlines and shutdown. Preserve self-wakes and wake-before-wait deliver
 avoid spinning or sleeping through available work. Bound work per iteration so
 shutdown and other connections remain responsive. Unit-test idle waiting, spurious
 wakeups, queued events, timer wakeups and worker failure handling.
+
+Completed: Added bounded 64-event polling with persistent task notifications, condition-variable waiting and injected local shutdown. Tests cover wake-before-wait, repeated notification, shutdown, pending/full turns, consumer failure and unexpected driver termination. All required checks pass; production coverage: 5045/5242 = 96.24%.
 
 ### 10. Listening and readiness
 

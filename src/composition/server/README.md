@@ -23,3 +23,7 @@ missing/corrupt state, scoped public projection and exclusive lock lifetime.
 [Real dependency composition](transport.md) shares TCP readiness with the monotonic
 clock and supplies production CSPRNG Cryptography plus scoped Identity to Driver.
 Construction binds no sockets and retains private authority until the driver drops.
+
+[Bounded event polling](pump.md) retains readiness notifications and local shutdown
+requests, yields after 64 events and waits on a condition variable instead of spinning.
+Run `cargo test --locked composition::server::pump` for deterministic scheduling checks.

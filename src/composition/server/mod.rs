@@ -39,3 +39,5 @@ pub mod credentials;
 
 #[cfg(target_os = "linux")]
 pub mod transport;
+
+pub mod pump;
