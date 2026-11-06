@@ -79,7 +79,7 @@ impl Terms {
         if bound > self.spending_bound {
             return Err(Error::Insufficient);
         }
-        if local == self.provider {
+        if local == self.provider && mode != Mode::Internal {
             if trust.millionths() == 0 {
                 return Err(Error::Denied);
             }

@@ -92,6 +92,7 @@ impl<P: Persistence> Ledger<P> {
                         Resource::Incoming(terms.requester)
                     }
                 }
+                Mode::Internal => Resource::Internal,
                 _ => return Err(Error::Unsupported),
             };
             let held = terms.maximum;

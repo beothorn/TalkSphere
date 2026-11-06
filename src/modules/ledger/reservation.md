@@ -19,3 +19,7 @@ Requester mode holds finite issuance on the requester and incoming owned-balance
 headroom on the provider. Requester issuance also pins destination issued-balance
 headroom. Administrative grants/reconciliation must respect these holds; no owned
 self-currency is required. Explicit requester-credit acceptance is provider policy.
+
+Internal mode reserves a separate finite local budget. Explicit Coordinator authority
+and resource capacity authorize self work; no remote trust assertion or self-balance
+is created. The same coordinated identity writer must own this budget across nodes.

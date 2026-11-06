@@ -18,7 +18,7 @@ settlement and durable transfer/claim replay records.
 - [x] **8.** Validate settlement roles and payment policies.
 - [x] **9.** Reserve provider-issued spending without double use.
 - [x] **10.** Reserve requester-issued credits and recipient capacity.
-- [ ] **11.** Reserve finite budgets for same-identity work.
+- [x] **11.** Reserve finite budgets for same-identity work.
 - [ ] **12.** Reserve third-party payments with exact fees and bindings.
 - [ ] **13.** Prepare immutable settlement effects and status records.
 - [ ] **14.** Commit two-party and internal settlements exactly once.
@@ -229,6 +229,8 @@ for positive-price same-identity operations. Persist reservations and eventual
 resource use without creating external credits or self-balances. Test exhaustion,
 concurrent attempts, restart and replay; copying keys never creates another
 independent allocation of the same budget.
+
+Completed step 11: Implemented finite same-identity internal holds without self-balances or external earnings. Tests reject a second price7 reservation from budget10 and preserve underlying budgets until settlement; local coordinator authority authorizes internal work. Required checks pass; production line coverage 7575/7892 = 95.98%.
 
 ### 12. Third-party holds
 

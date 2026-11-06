@@ -249,3 +249,62 @@ fn requester_capacity() {
         }
     }
 }
+
+// Same-identity work consumes finite internal capacity without producing a currency self-balance.
+#[test]
+fn internal_budget() {
+    let [a, _, _, _] = super::super::test_support::identities();
+    let auth = Arc::new(Authority::new());
+    let admin = auth.grant(a, Action::Administer, 65536).unwrap();
+    let read = auth.grant(a, Action::Read, 65536).unwrap();
+    let coord = auth.grant(a, Action::Coordinate, 65536).unwrap();
+    let ledger = Ledger::initialize(
+        a,
+        auth.clone(),
+        Memory::default(),
+        Limits {
+            accounts: 16,
+            operations: 16,
+            transfers: 16,
+            claims: 16,
+            quotes: 8,
+            state_bytes: 65536,
+        },
+        &context(&admin),
+        10,
+        10,
+    )
+    .unwrap();
+    let mut t = terms(a, a);
+    t.maximum = 7;
+    let key = OperationKey {
+        requester: a,
+        connection: [1; 32],
+        stream: 1,
+    };
+    ledger
+        .reserve(&context(&coord), key, t.clone(), Policy::default())
+        .unwrap();
+    assert!(
+        ledger
+            .reserve(
+                &context(&coord),
+                OperationKey { stream: 2, ..key },
+                t,
+                Policy::default()
+            )
+            .is_err()
+    );
+    assert_eq!(ledger.budgets(&context(&read)), Ok((10, 10)));
+    assert!(ledger.inner.lock().unwrap().state.accounts.owned.is_empty());
+    assert!(
+        ledger
+            .inner
+            .lock()
+            .unwrap()
+            .state
+            .accounts
+            .issued
+            .is_empty()
+    );
+}
