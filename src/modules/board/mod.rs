@@ -3,6 +3,7 @@
 
 pub mod authority;
 pub mod cache;
+mod cache_definitions;
 pub mod config;
 pub mod contract;
 pub mod definition;
