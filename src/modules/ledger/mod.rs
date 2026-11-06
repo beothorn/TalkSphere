@@ -11,6 +11,7 @@ pub mod state;
 pub mod terms;
 pub mod transfer;
 pub mod transfer_crypto;
+pub mod transfer_state;
 
 /// Structured local failures; diagnostic strings never determine protocol behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -27,7 +27,7 @@ settlement and durable transfer/claim replay records.
 - [x] **17.** Encode and validate canonical transfer orders.
 - [x] **18.** Sign and authenticate transfers through Identity and Cryptography.
 - [x] **19.** Bind transfer fee quotes to authenticated control contexts.
-- [ ] **20.** Commit transfers atomically with permanent replay protection.
+- [x] **20.** Commit transfers atomically with permanent replay protection.
 - [ ] **21.** Expose authorized transfer status and remote balance observations.
 - [ ] **22.** Resolve third-party payment using authenticated issuer evidence.
 - [ ] **23.** Encode portable claims with protected secret ownership.
@@ -330,6 +330,8 @@ Use (owner, transferId) as the lifetime replay key. Exact retries return the
 original result; changed signed bytes conflict. Test 100/9/2 -> 91/7, simultaneous
 acceptances, interaction with service holds, overflow and failure cuts. A failed
 transfer changes no balances; retained replay data cannot be evicted to admit work.
+
+Completed step 20: Implemented atomic issuer transfer debits/net credits and permanent owner/transfer replay records. Tests assert gross9/fee2 produces balances91/7, exact duplicate/restart returns the original fee/result, changed orders conflict and full replay capacity refuses new transfers. Required checks pass; production line coverage 8004/8372 = 95.60%.
 
 ### 21. Queries and reconciliation
 
