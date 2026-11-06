@@ -82,6 +82,44 @@ impl<P: Persistence> Ledger<P> {
             Ok(result)
         })
     }
+    /// Retrieve an original result only for its original or new authenticated owner.
+    /// # Errors
+    /// Unrelated callers receive Denied without protected-result disclosure.
+    pub fn transfer_result(
+        &self,
+        context: &Context<'_>,
+        authenticated: IdentityId,
+        owner: IdentityId,
+        transfer_id: [u8; 16],
+    ) -> Result<Option<TransferResult>, Error> {
+        tracing::trace!("Querying owner-protected transfer result");
+        context.check(&self.authority, self.local, Action::Control, 0)?;
+        let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        if i.uncertain {
+            return Err(Error::Unknown);
+        }
+        match i.state.transfers.get(&(owner, transfer_id)) {
+            Some(result) if authenticated == owner || authenticated == result.order.new_owner => {
+                Ok(Some(result.clone()))
+            }
+            None if authenticated == owner => Ok(None),
+            _ => Err(Error::Denied),
+        }
+    }
+    /// Report only this issuer's recognized balance for the trusted adapter's authenticated caller.
+    /// # Errors
+    /// Control authority, self-account or uncertain state rejection preserves accounting.
+    pub fn balance(&self, context: &Context<'_>, authenticated: IdentityId) -> Result<u64, Error> {
+        tracing::trace!("Reporting authenticated caller-only issuer balance");
+        context.check(&self.authority, self.local, Action::Control, 0)?;
+        let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        if i.uncertain {
+            return Err(Error::Unknown);
+        }
+        i.state
+            .accounts
+            .remote_balance(context, &self.authority, self.local, authenticated)
+    }
     /// Recognize accepted signed retries before quoting, so later policy changes cannot recharge them.
     /// # Errors
     /// Invalid authenticated proof or conflicting key reuse fails; absence is not an accepted transfer.

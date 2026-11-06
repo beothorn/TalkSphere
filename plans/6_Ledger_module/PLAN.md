@@ -28,7 +28,7 @@ settlement and durable transfer/claim replay records.
 - [x] **18.** Sign and authenticate transfers through Identity and Cryptography.
 - [x] **19.** Bind transfer fee quotes to authenticated control contexts.
 - [x] **20.** Commit transfers atomically with permanent replay protection.
-- [ ] **21.** Expose authorized transfer status and remote balance observations.
+- [x] **21.** Expose authorized transfer status and remote balance observations.
 - [ ] **22.** Resolve third-party payment using authenticated issuer evidence.
 - [ ] **23.** Encode portable claims with protected secret ownership.
 - [ ] **24.** Create finite claims and persist only their commitments.
@@ -341,6 +341,8 @@ as explicit observations with no automatic reconciliation of in-flight local
 accounting. Test unrelated callers, missing keys, exact values, issuer refusal,
 restart and lost transfer replies. Do not turn status recovery into a new transfer
 or service invocation; network request execution remains composition's job.
+
+Completed step 21: Added owner/new-owner-only transfer status and caller-scoped issuer balance queries. Tests deny unrelated callers for both existing/missing results, deny wrong action grants and preserve exact91/7 accounting without hidden reconciliation or network retries. Required checks pass; production line coverage 8032/8402 = 95.60%.
 
 ### 22. Payment resolution
 

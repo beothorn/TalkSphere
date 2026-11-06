@@ -62,6 +62,25 @@ fn atomic_transfer_and_replay() {
         .unwrap();
     assert_eq!(result.received(), Ok(7));
     assert_eq!(
+        ledger.transfer_result(&context(&control), a, a, [1; 16]),
+        Ok(Some(result.clone()))
+    );
+    assert_eq!(
+        ledger.transfer_result(&context(&control), b, a, [1; 16]),
+        Ok(Some(result.clone()))
+    );
+    assert_eq!(
+        ledger.transfer_result(&context(&control), u, a, [1; 16]),
+        Err(Error::Denied)
+    );
+    assert_eq!(
+        ledger.transfer_result(&context(&control), u, a, [2; 16]),
+        Err(Error::Denied)
+    );
+    assert_eq!(ledger.balance(&context(&control), a), Ok(91));
+    assert_eq!(ledger.balance(&context(&control), b), Ok(7));
+    assert_eq!(ledger.balance(&context(&read), a), Err(Error::Denied));
+    assert_eq!(
         ledger.commit_transfer(&context(&control), &accepted),
         Ok(result.clone())
     );

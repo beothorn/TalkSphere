@@ -13,3 +13,8 @@ capacity instead of deleting lifetime guards. Existing transfer verifies the sig
 authenticated owner first and returns the original result before requoting, or
 absence; it never submits a new transfer. Unknown commitment requires recovery.
 The retained private record is validated on reopen; all amounts remain exact.
+
+Transfer result queries require Control authority and trusted authenticated caller
+context. Only original/new owners receive the original result; unrelated callers
+receive Denied without result existence disclosure. Balance reports only recognized
+issuance for that caller and never reconciles another local owned view.
