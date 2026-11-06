@@ -93,9 +93,31 @@ impl<P: Persistence> Ledger<P> {
                     }
                 }
                 Mode::Internal => Resource::Internal,
-                _ => return Err(Error::Unsupported),
+                Mode::ThirdParty => {
+                    if self.local == terms.requester {
+                        Resource::Owned(terms.issuer)
+                    } else {
+                        Resource::Incoming(terms.issuer)
+                    }
+                }
             };
-            let held = terms.maximum;
+            if mode == Mode::ThirdParty
+                && s.operations.values().any(|o| {
+                    o.terms.issuer == terms.issuer
+                        && o.terms.requester == terms.requester
+                        && o.terms.transfer == terms.transfer
+                })
+            {
+                return Err(Error::Conflict);
+            }
+            let held = if mode == Mode::ThirdParty && self.local == terms.requester {
+                terms
+                    .maximum
+                    .checked_add(terms.fee.ok_or(Error::Invalid)?)
+                    .ok_or(Error::Limit)?
+            } else {
+                terms.maximum
+            };
             if resource == Resource::Issuance
                 && available(s, Resource::IssuedRoom(terms.provider))? < held
             {

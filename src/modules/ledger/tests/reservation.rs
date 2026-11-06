@@ -308,3 +308,65 @@ fn internal_budget() {
             .is_empty()
     );
 }
+
+// Third-party payment binds one transfer identity once and reserves the exact fee-inclusive gross.
+#[test]
+fn third_party_binding() {
+    let [a, b, c, _] = super::super::test_support::identities();
+    let auth = Arc::new(Authority::new());
+    let admin = auth.grant(a, Action::Administer, 65536).unwrap();
+    let read = auth.grant(a, Action::Read, 65536).unwrap();
+    let coord = auth.grant(a, Action::Coordinate, 65536).unwrap();
+    let ledger = Ledger::initialize(
+        a,
+        auth.clone(),
+        Memory::default(),
+        Limits {
+            accounts: 16,
+            operations: 16,
+            transfers: 16,
+            claims: 16,
+            quotes: 8,
+            state_bytes: 65536,
+        },
+        &context(&admin),
+        100,
+        100,
+    )
+    .unwrap();
+    ledger.set_owned(&context(&admin), c, 100).unwrap();
+    let mut t = terms(a, b);
+    t.issuer = c;
+    t.maximum = 7;
+    t.fee = Some(2);
+    t.transfer = Some([9; 16]);
+    let key = OperationKey {
+        requester: a,
+        connection: [1; 32],
+        stream: 1,
+    };
+    ledger
+        .reserve(
+            &context(&coord),
+            key,
+            t.clone(),
+            Policy {
+                requester_credits: false,
+                third_party: true,
+            },
+        )
+        .unwrap();
+    assert_eq!(ledger.available(&context(&read), c, true), Ok(91));
+    assert_eq!(
+        ledger.reserve(
+            &context(&coord),
+            OperationKey { stream: 2, ..key },
+            t,
+            Policy {
+                requester_credits: false,
+                third_party: true
+            }
+        ),
+        Err(Error::Conflict)
+    );
+}

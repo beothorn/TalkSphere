@@ -19,7 +19,7 @@ settlement and durable transfer/claim replay records.
 - [x] **9.** Reserve provider-issued spending without double use.
 - [x] **10.** Reserve requester-issued credits and recipient capacity.
 - [x] **11.** Reserve finite budgets for same-identity work.
-- [ ] **12.** Reserve third-party payments with exact fees and bindings.
+- [x] **12.** Reserve third-party payments with exact fees and bindings.
 - [ ] **13.** Prepare immutable settlement effects and status records.
 - [ ] **14.** Commit two-party and internal settlements exactly once.
 - [ ] **15.** Release uncommitted holds through authorized abort decisions.
@@ -240,6 +240,8 @@ exact agreed fee; checked maximumPrice + fee must fit uint64 and the authorized
 total spending bound. Reserve requester-owned issuer credits and appropriate
 provider incoming headroom under local policy. Test overflow, payment reuse,
 unsupported policy and both roles without initiating a network transfer.
+
+Completed step 12: Added exact fee-inclusive third-party holds and permanent per-invocation payment tuple binding. The price7/fee2 case reserves9 from100 and rejects reuse on another stream; local role, risk policy and overflow checks precede admission. Required checks pass; production line coverage 7590/7907 = 95.99%.
 
 ### 13. Prepare and status
 

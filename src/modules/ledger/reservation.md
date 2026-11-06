@@ -23,3 +23,8 @@ self-currency is required. Explicit requester-credit acceptance is provider poli
 Internal mode reserves a separate finite local budget. Explicit Coordinator authority
 and resource capacity authorize self work; no remote trust assertion or self-balance
 is created. The same coordinated identity writer must own this budget across nodes.
+
+Third-party mode holds requester-owned issuer credits for maximum plus exact fee,
+or provider incoming issuer-credit headroom for maximum. The issuer/requester/
+transfer tuple is bound once across retained operations. No reserve call initiates
+a transfer or accepts forwarded payment evidence.
