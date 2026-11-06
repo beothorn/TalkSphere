@@ -13,7 +13,7 @@ settlement and durable transfer/claim replay records.
 - [x] **3.** Add deterministic Ledger fixtures and failure helpers.
 - [x] **4.** Implement exact issuer-separated accounting views.
 - [x] **5.** Define atomic persistence and recoverable transaction outcomes.
-- [ ] **6.** Implement protected local Ledger persistence.
+- [x] **6.** Implement protected local Ledger persistence.
 - [ ] **7.** Implement authorized trust and finite credit administration.
 - [ ] **8.** Validate settlement roles and payment policies.
 - [ ] **9.** Reserve provider-issued spending without double use.
@@ -173,6 +173,8 @@ storage. Validate ownership, identity, bounds, format and accounting invariants
 on load; distinguish explicit initialization from opening a missing/corrupt store.
 Test real reopen, permissions, symlinks, contention and storage failure; unsupported
 platforms return explicit errors. Paid Storage is not a dependency.
+
+Completed step 6: Implemented Ledger-owned Linux descriptor-anchored protected persistence, explicit directory creation, exclusive writers, bounded versioned framing and synchronized atomic replacement. Real-store tests cover reopen, contention, corruption, symlinks, permissions and all five simulated durable cuts. Required checks pass; production line coverage 7052/7332 = 96.18%.
 
 ### 7. Administration
 

@@ -30,3 +30,8 @@ pub enum Error {
 
 #[cfg(test)]
 mod test_support;
+
+#[cfg(target_os = "linux")]
+pub mod linux;
+#[cfg(target_os = "linux")]
+mod record_codec;
