@@ -5,6 +5,7 @@ pub mod authority;
 pub mod contract;
 pub mod persistence;
 pub mod state;
+pub mod terms;
 
 /// Structured local failures; diagnostic strings never determine protocol behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

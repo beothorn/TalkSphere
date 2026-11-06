@@ -15,7 +15,7 @@ settlement and durable transfer/claim replay records.
 - [x] **5.** Define atomic persistence and recoverable transaction outcomes.
 - [x] **6.** Implement protected local Ledger persistence.
 - [x] **7.** Implement authorized trust and finite credit administration.
-- [ ] **8.** Validate settlement roles and payment policies.
+- [x] **8.** Validate settlement roles and payment policies.
 - [ ] **9.** Reserve provider-issued spending without double use.
 - [ ] **10.** Reserve requester-issued credits and recipient capacity.
 - [ ] **11.** Reserve finite budgets for same-identity work.
@@ -198,6 +198,8 @@ Require finite spending/issuance authority and explicit third-party risk policy.
 Reject impossible local roles, zero prices, conflicting fixed/metered terms and
 unsupported adjustments before reservation; existing paid entitlements do not
 create zero-price service reservations. Test each role and refusal separately.
+
+Completed step 8: Added immutable accepted terms and explicit issuer-based payment mode assessment, independent of TCP opener. Tests cover all roles, zero trust, missing payment fields, optional mode policy refusal, total fee bounds and uint64 overflow; requester context cannot assert provider trust. Required checks pass; production line coverage 7368/7658 = 96.21%.
 
 ### 9. Provider-issued holds
 
