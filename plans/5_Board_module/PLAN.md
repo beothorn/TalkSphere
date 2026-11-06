@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–8 complete, steps 9–24 pending.
+Status: execution authorized; steps 1–9 complete, steps 10–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -16,7 +16,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **6.** Validate exact prices and optional offering metadata.
 - [x] **7.** Validate primitive service schema descriptions.
 - [x] **8.** Validate nested service schemas and check definitions.
-- [ ] **9.** Match complete definitions to their offerings.
+- [x] **9.** Match complete definitions to their offerings.
 - [ ] **10.** Assess supported service semantics through explicit capability ports.
 - [ ] **11.** Check publication sizes against complete peer control responses.
 - [ ] **12.** Prepare complete publication candidates without changing visible state.
@@ -208,6 +208,8 @@ Keep custom logical-contract comparison explicit: names alone do not establish
 compatibility, and schema shape cannot redefine a standard service. Test each
 mismatch independently and contradictory same-service/version definitions using
 a declared contract validator, without treating different offering IDs as errors.
+
+Completed: Added complete definition parsing, four-field matching, economic-field rejection and conservative full-contract comparison; tested every missing and mismatching field and unknown schema support. Required checks pass. Production line coverage: 5779/5989 = 96.49%
 
 ### 10. Capability and semantic assessment
 

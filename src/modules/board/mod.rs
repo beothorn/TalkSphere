@@ -4,6 +4,7 @@
 pub mod authority;
 pub mod config;
 pub mod contract;
+pub mod definition;
 pub mod document;
 pub mod offering;
 pub mod terms;
