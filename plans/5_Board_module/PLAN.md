@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: planning only; all implementation steps await authorization.
+Status: execution authorized; step 1 complete, steps 2–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -8,7 +8,7 @@ attributed caches; it uses the Services schema format without its runtime.
 
 ## Steps
 
-- [ ] **1.** Reconcile Board requirements and acceptance cases with upstream.
+- [x] **1.** Reconcile Board requirements and acceptance cases with upstream.
 - [ ] **2.** Define Board contracts, authority and resource limits.
 - [ ] **3.** Add deterministic Board fixtures and fault-injection helpers.
 - [ ] **4.** Decode bounded JSON without losing numbers or unknown metadata.
@@ -100,6 +100,11 @@ pseudocode and local policy. Resolve or explicitly track contradictions rather
 than silently choosing wire behavior. Record which BD-09 quote/acceptance assertions
 require later Services/Peer Protocol integration; Board tests can prove immutable
 terms and staleness only. Preserve the completed integration evidence.
+
+Completed: re-read current upstream Board specification, contracts, pseudocode and
+acceptance suite; protocol baseline is unchanged. Added the assertion-level
+[acceptance inventory](../../src/modules/board/ACCEPTANCE.md), including deferred
+BD-09 integration, fixture provenance and unresolved upstream reports.
 
 ### 2. Contracts, authority and limits
 
