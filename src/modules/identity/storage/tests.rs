@@ -127,7 +127,17 @@ fn atomic_installation_cut_points_preserve_complete_pairs() {
         );
         assert!(!path.join("identity.pending").exists());
         drop(store);
-        let (mut store, admin) = FileStore::open(&path, limits()).unwrap();
+        // A concurrent test may fork between descriptor open and CLOEXEC processing.
+        // Await release within a bound; a genuinely retained lock still fails this assertion.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        let (mut store, admin) = loop {
+            match FileStore::open(&path, limits()) {
+                Err(IdentityError::Conflict) if std::time::Instant::now() < deadline => {
+                    std::thread::yield_now()
+                }
+                result => break result.unwrap(),
+            }
+        };
         if cut == Cut::Installed {
             assert!(
                 store
