@@ -2,6 +2,7 @@
 //! Accounting and persistence transitions are implemented in subsequent plan steps.
 pub mod accounting;
 pub mod authority;
+pub mod claim;
 pub mod contract;
 pub mod fees;
 pub mod payment;

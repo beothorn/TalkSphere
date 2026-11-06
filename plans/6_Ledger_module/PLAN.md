@@ -30,7 +30,7 @@ settlement and durable transfer/claim replay records.
 - [x] **20.** Commit transfers atomically with permanent replay protection.
 - [x] **21.** Expose authorized transfer status and remote balance observations.
 - [x] **22.** Resolve third-party payment using authenticated issuer evidence.
-- [ ] **23.** Encode portable claims with protected secret ownership.
+- [x] **23.** Encode portable claims with protected secret ownership.
 - [ ] **24.** Create finite claims and persist only their commitments.
 - [ ] **25.** Encrypt and validate owner-bound claim redemption requests.
 - [ ] **26.** Redeem claims atomically with owner-bound retry results.
@@ -365,6 +365,8 @@ versions/lengths, nonzero unused bits, whitespace and zero amounts. Keep bearer
 material in guarded secret types without revealing Debug/Display; explicitly
 controlled export transfers secret ownership. Test literal layout and malformed
 encoding independently of production round trips.
+
+Completed step 23: Implemented guarded portable105-byte claims with strict canonical RFC4648 text and explicit private export. Independent literal tests pin issuer/claim/secret/amount layout and reject aliases, invalid alphabet, wrong lengths/padding, unsupported version and zero amount; no automatic diagnostic/serialization exposes bearer material. Required checks pass; production line coverage 8232/8602 = 95.70%.
 
 ### 24. Claim creation
 
