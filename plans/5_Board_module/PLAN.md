@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–6 complete, steps 7–24 pending.
+Status: execution authorized; steps 1–7 complete, steps 8–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -14,7 +14,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **4.** Decode bounded JSON without losing numbers or unknown metadata.
 - [x] **5.** Validate Board headers and offering identity fields.
 - [x] **6.** Validate exact prices and optional offering metadata.
-- [ ] **7.** Validate primitive service schema descriptions.
+- [x] **7.** Validate primitive service schema descriptions.
 - [ ] **8.** Validate nested service schemas and check definitions.
 - [ ] **9.** Match complete definitions to their offerings.
 - [ ] **10.** Assess supported service semantics through explicit capability ports.
@@ -185,6 +185,8 @@ never substitute a known type or infer executable rules from descriptions.
 Document that this validates schema documents, not invocation values, detached
 bodies or runtime float serialization. Test malformed descriptors, unknown types
 and exact preservation without creating a Services runtime dependency.
+
+Completed: Added format-only primitive schema vocabulary with explicit unknown semantic support and malformed-descriptor tests; no Services runtime capability is advertised. Required checks pass. Production line coverage: 5710/5918 = 96.49%
 
 ### 8. Composite schemas and checks
 
