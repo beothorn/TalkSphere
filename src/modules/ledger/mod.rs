@@ -4,6 +4,7 @@ pub mod accounting;
 pub mod authority;
 pub mod contract;
 pub mod persistence;
+pub mod reservation;
 pub mod state;
 pub mod terms;
 

@@ -16,7 +16,7 @@ settlement and durable transfer/claim replay records.
 - [x] **6.** Implement protected local Ledger persistence.
 - [x] **7.** Implement authorized trust and finite credit administration.
 - [x] **8.** Validate settlement roles and payment policies.
-- [ ] **9.** Reserve provider-issued spending without double use.
+- [x] **9.** Reserve provider-issued spending without double use.
 - [ ] **10.** Reserve requester-issued credits and recipient capacity.
 - [ ] **11.** Reserve finite budgets for same-identity work.
 - [ ] **12.** Reserve third-party payments with exact fees and bindings.
@@ -209,6 +209,8 @@ and one opaque hold without changing the underlying balance. Exact retries reuse
 the hold and conflicting parameters fail. Test LG-02, the 100/60 competing-hold
 case, insufficient capacity, U64_MAX and the absence of cross-ledger mutation.
 Serialization must account for all other withdrawals from the same balance.
+
+Completed step 9: Added durable operation-bound provider-credit holds in each local role, exact retry/conflict handling and available-balance observations. Tests cover competing 60/100 reservations, unchanged balances, restart retention and administrative protection of held capacity. Required checks pass; production line coverage 7548/7867 = 95.95%.
 
 ### 10. Requester-issued holds
 

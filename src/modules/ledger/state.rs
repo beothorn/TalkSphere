@@ -18,6 +18,7 @@ pub(super) struct State {
     pub accounts: Accounts,
     pub issuance: u64,
     pub internal: u64,
+    pub operations: BTreeMap<super::contract::OperationKey, super::reservation::Operation>,
 }
 pub(super) struct Inner<P> {
     pub state: State,
@@ -163,6 +164,11 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Applying authorized owned-balance reconciliation");
         self.peer(issuer)?;
         self.change(context, Action::Administer, |s| {
+            let held = s.accounts.owned.get(&issuer).copied().unwrap_or(0)
+                - super::reservation::available(s, super::reservation::Resource::Owned(issuer))?;
+            if amount < held {
+                return Err(Error::Insufficient);
+            }
             s.accounts.owned.insert(issuer, amount);
             Ok(())
         })
@@ -182,6 +188,11 @@ impl<P: Persistence> Ledger<P> {
             return Err(Error::Invalid);
         }
         self.change(context, Action::Administer, |s| {
+            if super::reservation::available(s, super::reservation::Resource::Issued(peer))?
+                < amount
+            {
+                return Err(Error::Insufficient);
+            }
             let next = s
                 .accounts
                 .issued
@@ -289,7 +300,13 @@ impl State {
             .iter()
             .map(|(k, v)| json!([k.0.to_vec(), v.millionths()]))
             .collect::<Vec<_>>();
-        let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal})).map_err(|_|Error::Invalid)?;
+        if self.operations.len() > limits.operations {
+            return Err(Error::Limit);
+        }
+        for op in self.operations.values() {
+            super::reservation::available(self, op.resource)?;
+        }
+        let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations)})).map_err(|_|Error::Invalid)?;
         if payload.len() > limits.state_bytes {
             return Err(Error::Limit);
         }
@@ -316,6 +333,7 @@ impl State {
             internal: number(&v["internal"])?,
             ..State::default()
         };
+        s.operations = super::reservation::decode(&v["operations"], limits.operations)?;
         s.accounts.owned = map(&v["owned"], limits.accounts)?;
         s.accounts.issued = map(&v["issued"], limits.accounts)?;
         for (id, n) in map(&v["trust"], limits.accounts)? {
