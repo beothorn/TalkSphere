@@ -17,7 +17,7 @@ settlement and durable transfer/claim replay records.
 - [x] **7.** Implement authorized trust and finite credit administration.
 - [x] **8.** Validate settlement roles and payment policies.
 - [x] **9.** Reserve provider-issued spending without double use.
-- [ ] **10.** Reserve requester-issued credits and recipient capacity.
+- [x] **10.** Reserve requester-issued credits and recipient capacity.
 - [ ] **11.** Reserve finite budgets for same-identity work.
 - [ ] **12.** Reserve third-party payments with exact fees and bindings.
 - [ ] **13.** Prepare immutable settlement effects and status records.
@@ -219,6 +219,8 @@ on the provider, with explicit acceptance of requester credits. Hold destination
 headroom against competing additions so accepted work cannot overflow later.
 No owned self-currency is required. Exercise LG-03 price7/budget10, concurrent
 incoming credits, denied issuer policy and exact retry/conflict behavior.
+
+Completed step 10: Implemented requester-issued reservations with finite issuance, protected destination headroom and provider-side incoming credit holds. Tests demonstrate budget10/price7 exhaustion and refusal of administration that would consume reserved capacity. Required checks pass; production line coverage 7572/7891 = 95.96%.
 
 ### 11. Internal resource use
 

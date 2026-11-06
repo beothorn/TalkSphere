@@ -14,3 +14,8 @@ state. The private journal has strict finite arrays, exact integer/byte fields,
 unique keys and canonical re-encoding. Unsupported modes fail explicitly until
 implemented by their own plan steps. Status distinguishes reserved, prepared,
 committed and aborted; later steps implement decisions and status lookup.
+
+Requester mode holds finite issuance on the requester and incoming owned-balance
+headroom on the provider. Requester issuance also pins destination issued-balance
+headroom. Administrative grants/reconciliation must respect these holds; no owned
+self-currency is required. Explicit requester-credit acceptance is provider policy.

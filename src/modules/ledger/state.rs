@@ -138,6 +138,14 @@ impl<P: Persistence> Ledger<P> {
             return Err(Error::Invalid);
         }
         self.change(context, Action::Administer, |s| {
+            if super::reservation::available(s, super::reservation::Resource::Issuance)? < amount {
+                return Err(Error::Insufficient);
+            }
+            if super::reservation::available(s, super::reservation::Resource::IssuedRoom(peer))?
+                < amount
+            {
+                return Err(Error::Limit);
+            }
             let available = s.issuance.checked_sub(amount).ok_or(Error::Insufficient)?;
             let next = s
                 .accounts
@@ -168,6 +176,12 @@ impl<P: Persistence> Ledger<P> {
                 - super::reservation::available(s, super::reservation::Resource::Owned(issuer))?;
             if amount < held {
                 return Err(Error::Insufficient);
+            }
+            let incoming = u64::MAX
+                - s.accounts.owned.get(&issuer).copied().unwrap_or(0)
+                - super::reservation::available(s, super::reservation::Resource::Incoming(issuer))?;
+            if amount > u64::MAX - incoming {
+                return Err(Error::Limit);
             }
             s.accounts.owned.insert(issuer, amount);
             Ok(())

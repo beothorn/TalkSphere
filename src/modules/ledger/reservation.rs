@@ -35,6 +35,7 @@ pub(super) enum Resource {
     Issuance,
     Internal,
     Incoming(IdentityId),
+    IssuedRoom(IdentityId),
 }
 #[derive(Clone)]
 pub(super) struct Operation {
@@ -84,9 +85,21 @@ impl<P: Persistence> Ledger<P> {
                         Resource::Issued(terms.requester)
                     }
                 }
+                Mode::Requester => {
+                    if self.local == terms.requester {
+                        Resource::Issuance
+                    } else {
+                        Resource::Incoming(terms.requester)
+                    }
+                }
                 _ => return Err(Error::Unsupported),
             };
             let held = terms.maximum;
+            if resource == Resource::Issuance
+                && available(s, Resource::IssuedRoom(terms.provider))? < held
+            {
+                return Err(Error::Limit);
+            }
             if s.operations.len() >= self.limits.operations {
                 return Err(Error::Limit);
             }
@@ -146,11 +159,13 @@ pub(super) fn available(s: &State, resource: Resource) -> Result<u64, Error> {
         Resource::Issuance => s.issuance,
         Resource::Internal => s.internal,
         Resource::Incoming(id) => u64::MAX - s.accounts.owned.get(&id).copied().unwrap_or(0),
+        Resource::IssuedRoom(id) => u64::MAX - s.accounts.issued.get(&id).copied().unwrap_or(0),
     };
     s.operations
         .values()
         .filter(|o| {
-            o.resource == resource && matches!(o.status, Status::Reserved | Status::Prepared)
+            (o.resource == resource || matches!(resource,Resource::IssuedRoom(id) if o.resource==Resource::Issuance && o.terms.provider==id))
+                && matches!(o.status, Status::Reserved | Status::Prepared)
         })
         .try_fold(total, |n, o| n.checked_sub(o.held).ok_or(Error::Invalid))
 }
@@ -170,6 +185,7 @@ pub(super) fn encode(operations: &BTreeMap<OperationKey, Operation>) -> serde_js
                     Resource::Issuance => (2, IdentityId([0; 32])),
                     Resource::Internal => (3, IdentityId([0; 32])),
                     Resource::Incoming(id) => (4, id),
+                    Resource::IssuedRoom(id) => (5, id),
                 };
                 json!([
                     k.requester.0,
@@ -249,6 +265,7 @@ pub(super) fn decode(
             2 => Resource::Issuance,
             3 => Resource::Internal,
             4 => Resource::Incoming(id),
+            5 => Resource::IssuedRoom(id),
             _ => return Err(Error::Invalid),
         };
         let status = match number(&a[16])? {
