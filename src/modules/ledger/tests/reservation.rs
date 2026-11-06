@@ -370,3 +370,68 @@ fn third_party_binding() {
         Err(Error::Conflict)
     );
 }
+
+// Exact preparations survive restart and reject conflicting final prices or references.
+#[test]
+fn prepared_status_and_conflicts() {
+    let [a, b, _, _] = super::super::test_support::identities();
+    let auth = Arc::new(Authority::new());
+    let admin = auth.grant(a, Action::Administer, 65536).unwrap();
+    let read = auth.grant(a, Action::Read, 65536).unwrap();
+    let coord = auth.grant(a, Action::Coordinate, 65536).unwrap();
+    let limits = Limits {
+        accounts: 16,
+        operations: 16,
+        transfers: 16,
+        claims: 16,
+        quotes: 8,
+        state_bytes: 65536,
+    };
+    let ledger = Ledger::initialize(
+        a,
+        auth.clone(),
+        Memory::default(),
+        limits,
+        &context(&admin),
+        100,
+        100,
+    )
+    .unwrap();
+    ledger.set_owned(&context(&admin), b, 100).unwrap();
+    let key = OperationKey {
+        requester: a,
+        connection: [1; 32],
+        stream: 1,
+    };
+    assert_eq!(ledger.status(&context(&coord), key), Ok(None));
+    let r = ledger
+        .reserve(&context(&coord), key, terms(a, b), Policy::default())
+        .unwrap();
+    assert_eq!(
+        ledger.status(&context(&coord), key),
+        Ok(Some(Status::Reserved))
+    );
+    assert!(ledger.prepare(&context(&coord), &r, 61, vec![1]).is_err());
+    let token = ledger
+        .prepare(&context(&coord), &r, 21, vec![1, 2, 3])
+        .unwrap();
+    assert_eq!(
+        ledger.prepare(&context(&coord), &r, 21, vec![1, 2, 3]),
+        Ok(token)
+    );
+    assert_eq!(
+        ledger.prepare(&context(&coord), &r, 22, vec![1, 2, 3]),
+        Err(Error::Conflict)
+    );
+    assert_eq!(
+        ledger.prepare(&context(&coord), &r, 21, vec![2]),
+        Err(Error::Conflict)
+    );
+    assert_eq!(ledger.available(&context(&read), b, true), Ok(40));
+    let image = ledger.inner.lock().unwrap().persistence.load().unwrap();
+    let reopened = Ledger::open(a, auth.clone(), Memory(image), limits, &context(&read)).unwrap();
+    assert_eq!(
+        reopened.status(&context(&coord), key),
+        Ok(Some(Status::Prepared))
+    );
+}

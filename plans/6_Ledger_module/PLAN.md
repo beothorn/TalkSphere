@@ -20,7 +20,7 @@ settlement and durable transfer/claim replay records.
 - [x] **10.** Reserve requester-issued credits and recipient capacity.
 - [x] **11.** Reserve finite budgets for same-identity work.
 - [x] **12.** Reserve third-party payments with exact fees and bindings.
-- [ ] **13.** Prepare immutable settlement effects and status records.
+- [x] **13.** Prepare immutable settlement effects and status records.
 - [ ] **14.** Commit two-party and internal settlements exactly once.
 - [ ] **15.** Release uncommitted holds through authorized abort decisions.
 - [ ] **16.** Recover Ledger participants across coordination failures.
@@ -252,6 +252,8 @@ token; exact retries return the same association, conflicts have no effect.
 Expose absent/prepared/committed/aborted status without protected-data leaks;
 represent reserved-but-not-prepared state explicitly in the local API. Prepared
 holds survive deadlines, cancellation and dependency loss. No generic refund port.
+
+Completed step 13: Added exact final-price/result-reference preparation, opaque effect tokens and durable status queries. Tests cover absent/reserved/prepared state, price/ref conflicts, bound rejection, exact retry, held funds and restart without releasing prepared capacity. Required checks pass; production line coverage 7658/7978 = 95.99%.
 
 ### 14. Local commit
 

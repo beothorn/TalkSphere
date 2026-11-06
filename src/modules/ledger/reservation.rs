@@ -44,6 +44,7 @@ pub(super) struct Operation {
     pub resource: Resource,
     pub held: u64,
     pub status: Status,
+    pub effect: Option<(u64, Vec<u8>)>,
 }
 impl<P: Persistence> Ledger<P> {
     /// Reserve one exact accepted provider-credit operation with durable retry association.
@@ -137,6 +138,7 @@ impl<P: Persistence> Ledger<P> {
                     resource,
                     held,
                     status: Status::Reserved,
+                    effect: None,
                 },
             );
             Ok(Reservation {
@@ -227,7 +229,9 @@ pub(super) fn encode(operations: &BTreeMap<OperationKey, Operation>) -> serde_js
                     r,
                     id.0,
                     o.held,
-                    o.status as u8
+                    o.status as u8,
+                    o.effect.as_ref().map(|e| e.0),
+                    o.effect.as_ref().map(|e| &e.1)
                 ])
             })
             .collect(),
@@ -248,7 +252,7 @@ pub(super) fn decode(
     for row in rows {
         let a = row
             .as_array()
-            .filter(|a| a.len() == 17)
+            .filter(|a| a.len() == 19)
             .ok_or(Error::Invalid)?;
         let key = OperationKey {
             requester: IdentityId(array(&a[0])?),
@@ -298,6 +302,11 @@ pub(super) fn decode(
             3 => Status::Aborted,
             _ => return Err(Error::Invalid),
         };
+        let effect = if a[17].is_null() && a[18].is_null() {
+            None
+        } else {
+            Some((number(&a[17])?, byte_vec(&a[18])?))
+        };
         let held = number(&a[15])?;
         if key.requester != terms.requester || held == 0 || held < terms.maximum {
             return Err(Error::Invalid);
@@ -311,6 +320,7 @@ pub(super) fn decode(
                     resource,
                     held,
                     status,
+                    effect,
                 },
             )
             .is_some()
