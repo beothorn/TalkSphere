@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; step 1 complete, steps 2–24 pending.
+Status: execution authorized; steps 1–2 complete, steps 3–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -9,7 +9,7 @@ attributed caches; it uses the Services schema format without its runtime.
 ## Steps
 
 - [x] **1.** Reconcile Board requirements and acceptance cases with upstream.
-- [ ] **2.** Define Board contracts, authority and resource limits.
+- [x] **2.** Define Board contracts, authority and resource limits.
 - [ ] **3.** Add deterministic Board fixtures and fault-injection helpers.
 - [ ] **4.** Decode bounded JSON without losing numbers or unknown metadata.
 - [ ] **5.** Validate Board headers and offering identity fields.
@@ -116,6 +116,12 @@ depth, node, string, array, definition-count, cache and retained-snapshot budget
 Document strict rejection of malformed Boards as local policy, while keeping
 structurally valid unknown semantics discoverable. Test invalid configuration,
 unauthorized operations and scaffold failure without claiming module completion.
+
+Completed: added explicit typed boundary errors, finite validated limits, identity/action/
+byte-scoped revocable grants, deadline/cancellation checks, immutable snapshot
+contract and logical publication/definition/cache/selection ports. Scaffold reads
+return Unsupported. Focused unit tests and all repository checks pass; production
+coverage is 5484/5685 = 96.46%.
 
 ### 3. Deterministic dependencies and fixtures
 

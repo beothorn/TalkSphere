@@ -13,7 +13,9 @@ Frame integrity protects against modification and connection-local replay;
 **frame payloads remain visible**. Application encryption is a separate capability.
 
 Production registers no application protocol yet, so unsupported OPENs are refused.
-Board, Ledger, Services, Peer Protocol and paid Storage remain later milestones.
+Board implementation has started with local boundary and authority contracts;
+[Board status](src/modules/board/README.md) records its pending capabilities.
+Ledger, Services, Peer Protocol and paid Storage remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Board plan](plans/5_Board_module/PLAN.md),
 [integration plan](plans/4_Transport_integration/PLAN.md)
