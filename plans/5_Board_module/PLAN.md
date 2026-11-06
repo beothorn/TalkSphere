@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–10 complete, steps 11–24 pending.
+Status: execution authorized; steps 1–11 complete, steps 12–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -18,7 +18,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **8.** Validate nested service schemas and check definitions.
 - [x] **9.** Match complete definitions to their offerings.
 - [x] **10.** Assess supported service semantics through explicit capability ports.
-- [ ] **11.** Check publication sizes against complete peer control responses.
+- [x] **11.** Check publication sizes against complete peer control responses.
 - [ ] **12.** Prepare complete publication candidates without changing visible state.
 - [ ] **13.** Publish immutable Board snapshots atomically in memory.
 - [ ] **14.** Define durable snapshot commits and recovery outcomes.
@@ -233,6 +233,8 @@ five-byte record header to the body budget or allow a standalone document to
 consume the entire wrapped budget. Test exact fit/one over, nested wrapper depth,
 large Unicode strings and unknown metadata. Keep response sizing a small shared
 format boundary for later Peer Protocol reuse, not a partial network exchange.
+
+Completed: Added exact wrapped response sizing with original bytes, wrapper overhead, fixed control-body maximum and reserved nesting depth; tested exact fit and one-byte overflow for both response kinds. Required checks pass. Production line coverage: 5835/6045 = 96.53%
 
 ### 12. Publication preparation
 
