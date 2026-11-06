@@ -16,3 +16,8 @@ Unknown instead of proceeding with possibly inconsistent state.
 
 This initial owner is volatile. Durable storage is added through a separate port
 in the next step; no restart guarantee follows from this in-memory adapter.
+
+Durable owners use Provider.open with an explicit Persistence port. Successful
+publication acknowledges persistence before atomic visibility. Unknown commit
+outcomes block current reads/new publication until recover resolves stored state;
+old immutable pins remain owned data. Provider.new explicitly uses volatile Memory.

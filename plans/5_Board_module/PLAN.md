@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–13 complete, steps 14–24 pending.
+Status: execution authorized; steps 1–14 complete, steps 15–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -21,7 +21,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **11.** Check publication sizes against complete peer control responses.
 - [x] **12.** Prepare complete publication candidates without changing visible state.
 - [x] **13.** Publish immutable Board snapshots atomically in memory.
-- [ ] **14.** Define durable snapshot commits and recovery outcomes.
+- [x] **14.** Define durable snapshot commits and recovery outcomes.
 - [ ] **15.** Implement protected local snapshot persistence.
 - [ ] **16.** Verify publication recovery across failures and restarts.
 - [ ] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
@@ -269,6 +269,8 @@ write with lost acknowledgement; uncertain outcomes require recovery/status,
 not assumed rollback or automatic republication. Test this contract with injected
 cuts and define when reads/new writes must wait for reconciliation. Private
 operation identifiers are local metadata, not new protocol fields.
+
+Completed: Added complete durable records and a persistence port; commit precedes visibility, uncertain outcomes gate new state, and explicit recovery revalidates stored content without replaying writes. Required checks pass. Production line coverage: 6018/6309 = 95.39%
 
 ### 15. Linux persistence adapter
 

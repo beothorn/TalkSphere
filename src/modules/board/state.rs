@@ -12,6 +12,8 @@ use crate::modules::identity::api::IdentityId;
 use std::sync::{Arc, Mutex, Weak};
 
 struct State {
+    storage: Box<dyn super::persistence::Persistence>,
+    uncertain: bool,
     current: Option<Snapshot>,
     pins: Vec<Weak<Prepared>>,
 }
@@ -43,10 +45,73 @@ impl Provider {
             caps,
             domain: Arc::new(()),
             state: Mutex::new(State {
+                storage: Box::<super::persistence::Memory>::default(),
+                uncertain: false,
                 current: None,
                 pins: Vec::new(),
             }),
         })
+    }
+    /// Open a declared persistence adapter and recover complete validated state before serving reads.
+    /// # Errors
+    /// Rejects loaded corruption, wrong publisher, unavailable semantics and unresolved storage outcomes.
+    pub fn open(
+        publisher: IdentityId,
+        authority: Arc<Authority>,
+        limits: Limits,
+        caps: Arc<dyn Capabilities>,
+        storage: Box<dyn super::persistence::Persistence>,
+    ) -> Result<Self, Error> {
+        tracing::trace!("Recovering a Board owner from its declared persistence port");
+        let mut owner = Self::new(publisher, authority, limits, caps)?;
+        let state = owner.state.get_mut().map_err(|_| Error::Unknown)?;
+        state.storage = storage;
+        if let Some(record) = state.storage.load()? {
+            if record.publisher != publisher {
+                return Err(Error::Denied);
+            }
+            let data = Arc::new(record.prepare(limits, owner.caps.as_ref())?);
+            let snapshot = Snapshot {
+                publisher,
+                board: Arc::from(data.board.document.bytes()),
+                data: Some(data.clone()),
+                domain: Arc::downgrade(&owner.domain),
+            };
+            state.pins.push(Arc::downgrade(&data));
+            state.current = Some(snapshot);
+        }
+        Ok(owner)
+    }
+    /// Reconcile a possibly committed write under Publish authority without replaying that write.
+    /// # Errors
+    /// Returns Unknown until a complete readable record is recovered; wrong publisher/corruption fail explicitly.
+    pub fn recover(&self, context: &Context<'_>) -> Result<(), Error> {
+        tracing::trace!("Reconciling Board durability without automatic republication");
+        context.check(&self.authority, self.publisher, Action::Publish, 0)?;
+        let mut state = self.state.lock().map_err(|_| Error::Unknown)?;
+        let record = state.storage.load()?;
+        let current = if let Some(record) = record {
+            if record.publisher != self.publisher {
+                return Err(Error::Denied);
+            }
+            let data = Arc::new(record.prepare(self.limits, self.caps.as_ref())?);
+            state.pins.retain(|pin| pin.strong_count() > 0);
+            if state.pins.len() >= self.limits.snapshots {
+                return Err(Error::Limit);
+            }
+            state.pins.push(Arc::downgrade(&data));
+            Some(Snapshot {
+                publisher: self.publisher,
+                board: Arc::from(data.board.document.bytes()),
+                data: Some(data),
+                domain: Arc::downgrade(&self.domain),
+            })
+        } else {
+            None
+        };
+        state.current = current;
+        state.uncertain = false;
+        Ok(())
     }
     /// Replace the complete publication after authority and current capability checks.
     /// # Errors
@@ -84,9 +149,21 @@ impl Provider {
             Action::Publish,
             candidate.bytes(),
         )?;
+        if state.uncertain {
+            return Err(Error::Unknown);
+        }
         state.pins.retain(|pin| pin.strong_count() > 0);
         if state.pins.len() >= self.limits.snapshots {
             return Err(Error::Limit);
+        }
+        if let Err(error) = state
+            .storage
+            .commit(&super::persistence::Record::from_prepared(&candidate))
+        {
+            if error == Error::Unknown {
+                state.uncertain = true;
+            }
+            return Err(error);
         }
         let data = Arc::new(candidate);
         let snapshot = Snapshot {
@@ -106,6 +183,9 @@ impl Provider {
         tracing::trace!("Pinning one consistent local Board revision");
         context.check(&self.authority, self.publisher, Action::Read, 0)?;
         let state = self.state.lock().map_err(|_| Error::Unknown)?;
+        if state.uncertain {
+            return Err(Error::Unknown);
+        }
         let snapshot = state.current.as_ref().ok_or(Error::Missing)?;
         context.check(
             &self.authority,
