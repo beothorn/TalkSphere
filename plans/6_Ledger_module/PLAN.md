@@ -1,6 +1,6 @@
 # Ledger module plan
 
-Status: proposed for review; no implementation steps are complete.
+Status: execution in progress; requirements review complete.
 
 This is roadmap milestone 7 and planning folder 6, following completed Board.
 Ledger owns local trust, issuer-separated balances, finite budgets, reservations,
@@ -8,7 +8,7 @@ settlement and durable transfer/claim replay records.
 
 ## Steps
 
-- [ ] **1.** Reconcile Ledger requirements and acceptance cases with upstream.
+- [x] **1.** Reconcile Ledger requirements and acceptance cases with upstream.
 - [ ] **2.** Define Ledger authority, operation identities and resource limits.
 - [ ] **3.** Add deterministic Ledger fixtures and failure helpers.
 - [ ] **4.** Implement exact issuer-separated accounting views.
@@ -109,6 +109,8 @@ Ledger pseudocode is schematic and does not replace per-node role handling or
 the prepare/decision protocol. Recheck upstream changes and existing issue
 reports; report newly confirmed language-independent defects under AGENTS.md.
 Do not silently choose new wire behavior. Record unresolved blockers explicitly.
+
+Completed step 1: published the assertion-level [requirements map](../../src/modules/ledger/REQUIREMENTS.md), rechecked upstream and reconciled schematic algorithms with normative role/recovery rules. No new confirmed protocol defect. Required checks pass; documentation-only change, coverage not rerun.
 
 ### 2. Public contracts
 
