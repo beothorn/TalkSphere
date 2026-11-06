@@ -59,3 +59,7 @@ mod scenarios;
 #[cfg(test)]
 #[path = "tests/privacy.rs"]
 mod privacy_tests;
+
+#[cfg(test)]
+#[path = "tests/acceptance.rs"]
+mod acceptance_tests;

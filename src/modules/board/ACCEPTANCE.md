@@ -1,61 +1,84 @@
-# Board acceptance inventory
+# Board acceptance evidence
 
 Behavior baseline: [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
-Rechecked on 2026-11-06: upstream main has six website/documentation commits
-beyond this revision and no protocol changes. No Board implementation assertions
-have run yet; this inventory maps requirements to future executable evidence.
+Upstream was rechecked during planning and execution on 2026-11-06: six later
+website/workflow/introductory commits change none of the reviewed protocol files.
+Tests below implement [BD-01–BD-10](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/board/acceptanceTests/README.md)
+and applicable [AT-C01–AT-C04](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md#common-contract-cases)
+through direct public contracts. Run `cargo test --locked modules::board`,
+`cargo test --locked modules::services`, `cargo test --locked --test board_cli`
+and, on Linux, `cargo test --locked --test board_persistence`.
 
-## Required suite
+## Required suite assertions
 
-Source: [BD-01–BD-10](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/board/acceptanceTests/README.md).
-All entries below are pending unless explicitly updated with a test reference.
-
-| Case | Assertions to execute | Plan steps |
+| Case | Executed evidence | Scope |
 |---|---|---|
-| BD-01 | Empty/populated documents; exact matching fields; schemas only in definitions | 5–9, 12–13 |
-| BD-02 | Missing/wrong/unsupported fields; UTF-8; malformed/trailing JSON; duplicate members; unchanged state; exact 9007199254740993 and U64_MAX re-emission | 4–6, 12–13 |
-| BD-03 | Every required field mutation; duplicate IDs in either/across arrays; no first/last wins; distinct IDs sharing version | 5, 9, 12 |
-| BD-04 | Prices 1/U64_MAX; every invalid numeric/type row; exclusive pricing; checkPrice; forbidden embedded schemas; model maximum overflow | 6, 10 |
-| BD-05 | Provided/wanted roles independent of TCP opener; exact issuer; rejected aliases and invalid IDs | 5, 19 |
-| BD-06 | Known offering survives unknown service/version/model; unknown preconditions block use; nested unknown metadata preserved; hints produce no privileged effects | 4, 6–10, 19, 22 |
-| BD-07 | Each definition identity mismatch; remote mismatch unusable; missing/removed definition never substituted; old snapshot preserved | 9, 12–13, 18 |
-| BD-08 | Atomic reader/publisher races; immutable pins; failure/restart retains acknowledged complete snapshot | 13–16, 22 |
-| BD-09 | Changed future selections and retained copied terms | 19–20 |
-| BD-09 integration | Actual quote price change needs explicit acceptance; accepted work survives removal with original obligations | Deferred to Services/Peer Protocol; test-owned consumer is only Board evidence |
-| BD-10 | Direct authenticated provenance vs forwarded content; wrapped response size; array order has no implicit priority | 11, 17, 19 |
+| BD-01 | `offering::tests::identity_validation`, `definition::tests::definitions_match_exact_fields`, `acceptance_tests::bd01_bd03_bd10_multiple_ids_and_array_order` | Empty/provided/wanted/populated Boards, complete matching definitions, separate schemas, exact local reads |
+| BD-02 | `document::tests::exact_source_and_invalid_syntax`, `parsing_budgets`, `acceptance_tests::bd02_bd03_bd05_rejection_rows`, `terms::tests::economic_ranges_and_metadata` | Missing/wrong root fields, unsupported version, UTF-8/syntax/trailing/duplicate rejection, escaped duplicate names, exact values beyond binary64 and through U64_MAX |
+| BD-03 | `identity_validation`, `bd02_bd03_bd05_rejection_rows`, `bd01_bd03_bd10_multiple_ids_and_array_order` | Required fields, version boundaries, duplicate IDs in each/across lists; no first/last wins; multiple IDs sharing one exact contract |
+| BD-04 | `terms::tests::economic_ranges_and_metadata`, `acceptance_tests::bd04_check_price_matrix`, `offering::tests::mathematical_integer_spellings_are_exact`, `semantics::tests::capability_checks_are_explicit` | Main/check positive uint64 domains, all specified invalid numeric/type rows, exclusive representations, model/name and embedded-schema rules; exact checked arithmetic; injected known-model overflow |
+| BD-05 | `selection::tests::work_roles_and_contract_selection`, `scenarios::remote_selection_requires_direct_provenance`, `bd02_bd03_bd05_rejection_rows` | Provided/wanted roles, exact issuer and alias rejection; neither API accepts TCP opener as an input |
+| BD-06 | `document::tests::exact_source_and_invalid_syntax`, `semantics::tests::capability_checks_are_explicit`, `acceptance_tests::bd06_bd07_unknown_siblings_and_mismatches`, `privacy_tests::board_trace_excludes_raw_metadata` | Unknown siblings do not hide known selections; required unknown semantics block use; exact unknown metadata forwarding; hints retained without execution or log disclosure |
+| BD-07 | `definition::tests::definitions_match_exact_fields`, `bd06_bd07_unknown_siblings_and_mismatches`, `cache_definitions::tests::definition_receipts_never_mix_revisions`, `state::tests::immutable_atomic_revisions_and_owner_scope` | Each identity/schema mismatch, remote races, absent/removed IDs, no version substitution; failed preparation cannot mutate publication |
+| BD-08 | `scenarios::concurrent_reads_pin_complete_pairs`, `state::tests::immutable_atomic_revisions_and_owner_scope`, `recovery_tests::uncertain_commit_requires_recovery_without_replay`, `linux::tests::restart_at_each_durable_cut`, integration `acknowledged_snapshot_survives_process_restart` | Barrier-driven reader/writer races, immutable pins, atomic commit cuts, old/new complete restart state, actual new process reopen |
+| BD-09 Board layer | `scenarios::repricing_and_removal_preserve_retained_terms` | Price 7 becomes stale after price 9/removal; retained price-7 copied terms survive owner drop; Board never accepts new terms or cancels work |
+| BD-09 quote integration | Deferred | Actual quote acceptance, charge/refusal and durable accepted-invocation obligations require Services and Peer Protocol; not marked passed by a test-owned terms copy |
+| BD-10 | `cache::tests::provenance_expiry_and_capacity`, `remote_selection_requires_direct_provenance`, `response::tests::exact_response_limits`, `bd01_bd03_bd10_multiple_ids_and_array_order` | Trusted direct vs forwarded provenance, exact complete response bounds, no array priority; reordering leaves explicit selection unchanged |
 
-## Shared cases
+## Shared boundary assertions
 
-Source: [AT-C01–AT-C04](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md#common-contract-cases).
-
-| Case | Applicable assertions | Plan steps |
+| Case | Evidence | Applicability |
 |---|---|---|
-| AT-C01 | Declared direct ports, exact values, caller authority, no payload-forged provenance, no pointer/path peer fields | 2, 12–19, 22–23 |
-| AT-C02 | Every configured boundary; fail before effects; dependency failure vs uncertain commit; no automatic external retry | 2–4, 10–12, 14–18 |
-| AT-C03 | Immutable pinned results; owner/lifetime isolation; acknowledged state survives restart | 13–20, 22 |
-| AT-C04 | No partial successful document; malformed/truncated/cancelled input; secret-free bounded diagnostics; absent dependencies cause no hidden calls | 4, 12, 16–18, 21–22 |
+| AT-C01 | `authority::tests::grants_are_scoped_and_revocable`, `dropped_issuer_cannot_authorize`, `state::tests::immutable_atomic_revisions_and_owner_scope`, `scenarios::revoked_and_cancelled_operations_have_no_effects` | Direct-call authority, owner/domain isolation and purpose separation; trusted Cache grants are required to supply provenance; no wire pointer/path fields |
+| AT-C02 | `config::tests`, `document::tests::parsing_budgets`, `response::tests::exact_response_limits`, `record_codec::tests::private_record_boundaries`, `semantics::tests`, `recovery_tests` | Invalid/finite bounds, exact arithmetic, dependency rejection and unknown commit recovery without replay; resource limits do not masquerade as success |
+| AT-C03 | `state::tests`, `scenarios::concurrent_reads_pin_complete_pairs`, retained-revision case below, `recovery_tests`, `linux::tests`, separate-process integration | Immutable complete results, retained-revision admission, revoked future access and acknowledged durable restart state |
+| AT-C04 | `document::tests`, `scenarios::revoked_and_cancelled_operations_have_no_effects`, `privacy_tests`, `board_cli` integration | Complete validated output only, cancelled/malformed input, no payload logging or inferred external actions; no hidden optional dependency calls |
 
-Serialized local binding is not supplied by this plan; no process-separation claim.
-Board has no spending, refund or provider check-outcome port; those assertions
-belong to Services/Ledger and are inapplicable to Board alone.
+The retained-revision test's exact name is
+`scenarios::unpinned_current_does_not_exhaust_single_revision_budget`.
+Already returned public bytes are owned results, not revocable authority; issuer
+revocation blocks future operations rather than erasing the caller's copies.
+Unsupported local contract versions have no serialized negotiation path here:
+this direct binding is compile-time contract version 1. Unknown private record
+versions fail magic validation. No serialized local adapter is supplied or claimed.
 
-## Interpretation and fixtures
+Provider check outcomes, refunds, spending, actual service invocation and remote
+payment uncertainty are inapplicable to Board alone. Board returns metadata and
+terms; Services/Ledger own those operations. Peer control exchange framing is not
+implemented by the metadata response-size helper.
 
-The normative specification, input/output contracts, Services schema vocabulary,
-Peer Protocol metadata limits and shared module contracts are linked in the
-[plan](../../../plans/5_Board_module/PLAN.md). No standalone Board vector file is
-published at the baseline. New literal examples are specification-derived fixtures,
-not upstream cryptographic vectors. Use Identity-derived valid IDs, complete
-matching definitions and independent literal numeric expectations.
+## Fixtures, policies and limits of evidence
 
-Strict rejection of malformed Boards is TalkSphere policy. Structurally valid
-unknown semantics remain discoverable but cannot authorize use. Publication
-capabilities distinguish provided handlers from wanted requester codecs/input.
-Cache lifetime and limits are local policy; snapshots never introduce a wire
-revision field. Full wrapper JSON must fit 1,048,576 bytes and depth 32.
+[Board test support](test_support/README.md) uses complete specification-derived
+literal documents, valid public IDs from the pinned Transport vector and independent
+price literals. There is no upstream standalone Board vector file. Schema tests
+use the pinned Services vocabulary. Tests exercising explicit service capabilities
+install only a test-owned custom contract; production never advertises that fixture.
 
-Unresolved reports [#8](https://github.com/beothorn/CR2SE/issues/8) and
-[#9](https://github.com/beothorn/CR2SE/issues/9) contradict normative duplicate-member
-and precondition rules. Follow mandatory rejection and nonempty namespaced names;
-do not invent namespace grammar before upstream clarification. Existing local
-reports remain reported upstream; no fix has been verified.
+Real Identity text parsing is used. Local filesystem checks use the real Linux
+adapter, owned temporary directories and descriptor-safe operations. Failure cuts
+and unknown-acknowledgement stores are injected platform observations, not physical
+power-loss tests. `tests/board_persistence.rs` reopens actual acknowledged data in
+a separate process. This proves local persistence, not cross-implementation peer
+interoperability or separately deployed Board IPC.
+
+TalkSphere strictly rejects malformed Boards. Unknown but structurally valid
+semantics remain discoverable; unsupported local providers/requesters cannot publish
+through preparation. Cache lifetimes, capacities, strict extra-definition rejection
+and conservative custom-contract comparison are documented local policy. Board
+version 1 is a schema selector, not a revision field. Family pricing arithmetic is
+a trusted capability port; no real Storage or other family pricing provider is
+claimed by the injected overflow fixture.
+
+Open upstream reports remain [#8](https://github.com/beothorn/CR2SE/issues/8)
+(duplicate-member pseudocode) and [#9](https://github.com/beothorn/CR2SE/issues/9)
+(precondition pseudocode/namespace grammar). The normative duplicate and nonempty
+rules are enforced. Unknown precondition spellings are never silently satisfied;
+no precise namespace grammar is invented before upstream clarification. No upstream
+fix is marked adopted without verification.
+
+CLI tests separately verify help independent of logging, exact command syntax,
+format-versus-publishability output, oversized/malformed files, publisher mismatch
+and corrupt-store preservation. Inspection prints intentional public JSON; operational
+TRACE excludes raw metadata. No production Board publish CLI bypasses real capability
+composition. Completing this module does not demonstrate the minimum useful node.

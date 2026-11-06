@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–22 complete, steps 23–24 pending.
+Status: execution authorized; steps 1–23 complete, steps 24–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -30,7 +30,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **20.** Invalidate stale selections without changing retained terms.
 - [x] **21.** Expose authorized local Board validation and inspection commands.
 - [x] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
-- [ ] **23.** Complete the Board acceptance matrix through public contracts.
+- [x] **23.** Complete the Board acceptance matrix through public contracts.
 - [ ] **24.** Publish Board documentation and the next-module handoff.
 
 ## Reference baseline and scope
@@ -376,6 +376,8 @@ BD-09's real quote/payment acceptance remains deferred to Services/Peer Protocol
 record Board-level evidence separately rather than marking that integration passed.
 Resolve implementation gaps, link protocol blockers, and verify any upstream fixes
 before updating local reports. Do not claim a useful node from valid empty Boards.
+
+Completed: Added explicit remaining BD matrix rows through public contracts, including issuer aliases, every duplicate placement, unknown siblings, definition version mismatch, array reordering and exact decimal/exponent integer arithmetic. Published assertion-level evidence with BD-09 quote integration explicitly deferred. Required checks pass. Production line coverage: 6723/6980 = 96.32%
 
 ### 24. Documentation and handoff
 

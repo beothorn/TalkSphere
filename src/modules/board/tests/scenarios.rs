@@ -17,7 +17,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-struct Known;
+pub(super) struct Known;
 impl Capabilities for Known {
     // Exact custom fixture support is injected explicitly rather than installed by production CLI.
     fn understands(&self, o: &Offering) -> bool {

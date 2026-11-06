@@ -99,10 +99,48 @@ pub fn string<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
         .filter(|s| !s.is_empty())
         .ok_or(Error::Invalid)
 }
-/// Read an unsigned integer token without floating-point rounding or coercion.
+/// Read an exact nonnegative mathematical JSON integer without floating-point rounding or coercion.
 pub fn integer(value: &Value) -> Option<u64> {
     tracing::trace!("Reading an exact unsigned JSON integer");
-    value.as_number().and_then(|n| n.as_u64())
+    let token = value.as_number()?.to_string();
+    let (negative, token) = token
+        .strip_prefix('-')
+        .map_or((false, token.as_str()), |s| (true, s));
+    let (mantissa, exponent) = token.split_once(['e', 'E']).unwrap_or((token, "0"));
+    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return Some(0);
+    }
+    if negative {
+        return None;
+    }
+    let exponent: i64 = exponent.parse().ok()?;
+    let fraction = mantissa.split_once('.').map_or(0, |(_, f)| f.len()) as i64;
+    let shift = exponent.checked_sub(fraction)?;
+    let (digits, zeros) = if shift < 0 {
+        let remove = usize::try_from(shift.checked_neg()?).ok()?;
+        let keep = digits.len().checked_sub(remove)?;
+        if !digits[keep..].bytes().all(|b| b == b'0') {
+            return None;
+        }
+        (&digits[..keep], 0)
+    } else {
+        (digits, usize::try_from(shift).ok()?)
+    };
+    if digits.len().checked_add(zeros)? > 20 {
+        return None;
+    }
+    let mut amount = 0u64;
+    for digit in digits.bytes() {
+        amount = amount
+            .checked_mul(10)?
+            .checked_add(u64::from(digit - b'0'))?;
+    }
+    for _ in 0..zeros {
+        amount = amount.checked_mul(10)?;
+    }
+    Some(amount)
 }
 #[cfg(test)]
 mod tests {
@@ -161,5 +199,25 @@ mod tests {
             )
             .is_ok()
         );
+    }
+    // Decimal/exponent spellings represent exact mathematical integers, not binary floating-point values.
+    #[test]
+    fn mathematical_integer_spellings_are_exact() {
+        for (token, expected) in [
+            ("1.0", Some(1)),
+            ("1e0", Some(1)),
+            ("10e-1", Some(1)),
+            ("1e3", Some(1000)),
+            ("9007199254740993.0", Some(9007199254740993)),
+            ("184467440737095516150e-1", Some(u64::MAX)),
+            ("1e-1", None),
+            ("18446744073709551616", None),
+            ("-1", None),
+            ("1e999999999999999999999999", None),
+            ("0e999999999999999999999999", Some(0)),
+        ] {
+            let value: Value = serde_json::from_str(token).unwrap();
+            assert_eq!(integer(&value), expected, "{token}");
+        }
     }
 }
