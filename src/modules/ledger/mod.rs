@@ -1,5 +1,6 @@
 //! Local Ledger contracts for composition, Services and authenticated control adapters.
 //! Accounting and persistence transitions are implemented in subsequent plan steps.
+pub mod accounting;
 pub mod authority;
 pub mod contract;
 

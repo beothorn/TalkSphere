@@ -11,7 +11,7 @@ settlement and durable transfer/claim replay records.
 - [x] **1.** Reconcile Ledger requirements and acceptance cases with upstream.
 - [x] **2.** Define Ledger authority, operation identities and resource limits.
 - [x] **3.** Add deterministic Ledger fixtures and failure helpers.
-- [ ] **4.** Implement exact issuer-separated accounting views.
+- [x] **4.** Implement exact issuer-separated accounting views.
 - [ ] **5.** Define atomic persistence and recoverable transaction outcomes.
 - [ ] **6.** Implement protected local Ledger persistence.
 - [ ] **7.** Implement authorized trust and finite credit administration.
@@ -147,6 +147,8 @@ policy, never floating-point money. Unknown trust is zero. Expose authorized
 immutable balance/available-capacity views and caller-only remote issued balance;
 remote observations cannot silently replace local balances. Cover LG-01 and
 LG-05 boundaries, including U64_MAX and unauthorized disclosure.
+
+Completed step 4: Added exact issuer-separated owned/issued views, caller-only remote balance observations and local trust in integer millionths. Tests cover 100/40 separation, uint64 maximum, zero default trust, wrong authority and self-balance refusal. Required checks pass; production line coverage 6875/7144 = 96.23%.
 
 ### 5. Durability contract
 
