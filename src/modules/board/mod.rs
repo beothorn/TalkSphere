@@ -2,6 +2,7 @@
 //! Uses Identity IDs and Services schema formats; execution and payment belong to other modules.
 
 pub mod authority;
+pub mod cache;
 pub mod config;
 pub mod contract;
 pub mod definition;

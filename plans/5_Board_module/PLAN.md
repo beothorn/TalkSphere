@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–16 complete, steps 17–24 pending.
+Status: execution authorized; steps 1–17 complete, steps 18–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -24,7 +24,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **14.** Define durable snapshot commits and recovery outcomes.
 - [x] **15.** Implement protected local snapshot persistence.
 - [x] **16.** Verify publication recovery across failures and restarts.
-- [ ] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
+- [x] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
 - [ ] **18.** Associate remote definitions with the selected cached snapshot.
 - [ ] **19.** Select usable offerings with explicit roles and issuer.
 - [ ] **20.** Invalidate stale selections without changing retained terms.
@@ -305,6 +305,8 @@ identical bytes or an embedded publisher field cannot authenticate the original.
 Key by identity rather than endpoint and choose finite freshness/eviction policy.
 Use atomic cache replacement with pinned results; test forged context, endpoint
 changes, expiry, capacity exhaustion, failed refresh and absent dependencies.
+
+Completed: Added identity-keyed direct/forwarded receipts, trusted source authority, immutable bytes, finite cache and pin budgets, explicit expiry and no hidden refresh operations. Required checks pass. Production line coverage: 6383/6643 = 96.09%
 
 ### 18. Remote definition association
 
