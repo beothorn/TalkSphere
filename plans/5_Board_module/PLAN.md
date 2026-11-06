@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–21 complete, steps 22–24 pending.
+Status: execution authorized; steps 1–22 complete, steps 23–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -29,7 +29,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **19.** Select usable offerings with explicit roles and issuer.
 - [x] **20.** Invalidate stale selections without changing retained terms.
 - [x] **21.** Expose authorized local Board validation and inspection commands.
-- [ ] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
+- [x] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
 - [ ] **23.** Complete the Board acceptance matrix through public contracts.
 - [ ] **24.** Publish Board documentation and the next-module handoff.
 
@@ -364,6 +364,8 @@ retained snapshots. Capture TRACE on success/failure and ensure no raw document,
 description, suggestion, secrets or unbounded peer diagnostics leak into logs.
 Prove untrusted hints cause no network, installation, signing, execution or
 spending effects. Confirm reader/cache failures do not corrupt local publication.
+
+Completed: Added barrier-driven publication/read races, revoked/cancelled operation checks, expired issuer denial and TRACE payload exclusion. Fixed single-revision admission to release unpinned current state and rechecked capabilities under writer serialization. Required checks pass. Production line coverage: 6684/6946 = 96.23%
 
 ### 23. Acceptance evidence
 

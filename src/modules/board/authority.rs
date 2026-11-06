@@ -116,4 +116,17 @@ mod tests {
         assert_eq!(a.check(&g, id, Action::Publish, 1), Err(Error::Denied));
         assert!(matches!(a.grant(id, Action::Read, 1), Err(Error::Denied)));
     }
+    // A dropped issuer ends grant authority; immutable public bytes already returned remain owned data.
+    #[test]
+    fn dropped_issuer_cannot_authorize() {
+        let id = IdentityId([1; 32]);
+        let grant = {
+            let a = Authority::new();
+            a.grant(id, Action::Read, 8).unwrap()
+        };
+        assert_eq!(
+            Authority::new().check(&grant, id, Action::Read, 1),
+            Err(Error::Denied)
+        );
+    }
 }

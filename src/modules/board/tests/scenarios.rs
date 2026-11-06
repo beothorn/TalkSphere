@@ -147,3 +147,112 @@ fn remote_selection_requires_direct_provenance() {
         ));
     }
 }
+
+// Readers racing complete publication never combine a new offering with an old definition.
+#[test]
+fn concurrent_reads_pin_complete_pairs() {
+    use std::sync::Barrier;
+    let id = IdentityId([1; 32]);
+    let a = Arc::new(Authority::new());
+    let p = Provider::new(id, a.clone(), Limits::default(), Arc::new(Known)).unwrap();
+    let pg = a.grant(id, Action::Publish, 1_000_000).unwrap();
+    let pc = Context {
+        grant: &pg,
+        deadline: Instant::now() + Duration::from_secs(30),
+        cancelled: false,
+    };
+    let rg = a.grant(id, Action::Read, 1_000_000).unwrap();
+    let rc = Context { grant: &rg, ..pc };
+    p.publish(&pc, prepare(id, 7, false)).unwrap();
+    let barrier = Barrier::new(2);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            for n in 0..20 {
+                let mut b: serde_json::Value =
+                    serde_json::from_str(&super::test_support::board(false, 7)).unwrap();
+                let mut d: serde_json::Value =
+                    serde_json::from_str(super::test_support::definition()).unwrap();
+                let description = format!("Complete contract revision {n}.");
+                b["providedServices"][0]["description"] = description.clone().into();
+                d["description"] = description.into();
+                let defs = BTreeMap::from([("fixture".into(), d.to_string().into_bytes())]);
+                let next = Prepared::new(
+                    id,
+                    b.to_string().as_bytes(),
+                    &defs,
+                    Limits::default(),
+                    &Known,
+                )
+                .unwrap();
+                barrier.wait();
+                p.publish(&pc, next).unwrap();
+                barrier.wait();
+            }
+        });
+        for _ in 0..20 {
+            barrier.wait();
+            let s = p.read(&rc).unwrap();
+            let d = p.definition(&rc, &s, "fixture").unwrap();
+            let b = super::offering::Board::parse(s.bytes(), Limits::default()).unwrap();
+            assert_eq!(
+                b.offerings["fixture"].description,
+                d.document.value()["description"].as_str().unwrap()
+            );
+            barrier.wait();
+        }
+    });
+}
+// Revocation, wrong-purpose access and cancelled publication cannot change acknowledged state.
+#[test]
+fn revoked_and_cancelled_operations_have_no_effects() {
+    let id = IdentityId([1; 32]);
+    let a = Arc::new(Authority::new());
+    let p = Provider::new(id, a.clone(), Limits::default(), Arc::new(Known)).unwrap();
+    let g = a.grant(id, Action::Publish, 1_000_000).unwrap();
+    let c = Context {
+        grant: &g,
+        deadline: Instant::now() + Duration::from_secs(10),
+        cancelled: false,
+    };
+    let old = p.publish(&c, prepare(id, 7, false)).unwrap();
+    assert!(matches!(p.read(&c), Err(Error::Denied)));
+    let cancelled = Context {
+        cancelled: true,
+        ..c
+    };
+    assert!(matches!(
+        p.publish(&cancelled, prepare(id, 9, false)),
+        Err(Error::Cancelled)
+    ));
+    a.revoke();
+    assert!(matches!(
+        p.publish(&c, prepare(id, 9, false)),
+        Err(Error::Denied)
+    ));
+    assert_eq!(old.bytes(), super::test_support::board(false, 7).as_bytes());
+}
+
+// A one-revision budget permits replacement once callers release old pins, without unbounded retention.
+#[test]
+fn unpinned_current_does_not_exhaust_single_revision_budget() {
+    let id = IdentityId([1; 32]);
+    let a = Arc::new(Authority::new());
+    let l = Limits {
+        snapshots: 1,
+        ..Limits::default()
+    };
+    let p = Provider::new(id, a.clone(), l, Arc::new(Known)).unwrap();
+    let g = a.grant(id, Action::Publish, 1_000_000).unwrap();
+    let c = Context {
+        grant: &g,
+        deadline: Instant::now() + Duration::from_secs(10),
+        cancelled: false,
+    };
+    let old = p.publish(&c, prepare(id, 7, false)).unwrap();
+    assert!(matches!(
+        p.publish(&c, prepare(id, 9, false)),
+        Err(Error::Limit)
+    ));
+    drop(old);
+    assert!(p.publish(&c, prepare(id, 9, false)).is_ok());
+}

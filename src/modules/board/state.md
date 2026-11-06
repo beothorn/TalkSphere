@@ -21,3 +21,11 @@ Durable owners use Provider.open with an explicit Persistence port. Successful
 publication acknowledges persistence before atomic visibility. Unknown commit
 outcomes block current reads/new publication until recover resolves stored state;
 old immutable pins remain owned data. Provider.new explicitly uses volatile Memory.
+
+A replacement may release the owner's unpinned current revision when calculating
+retention admission; with snapshots=1, replacement works after external pins drop.
+Capabilities are rechecked inside the writer serialization boundary before commit.
+Composition must coordinate handler withdrawal with this owner rather than change
+capabilities concurrently after a successful check and claim existing work vanished.
+Public bytes already returned remain owned data after revocation; revocation blocks
+future privileged operations and does not erase callers' copies.

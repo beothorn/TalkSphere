@@ -96,7 +96,18 @@ impl Provider {
             }
             let data = Arc::new(record.prepare(self.limits, self.caps.as_ref())?);
             state.pins.retain(|pin| pin.strong_count() > 0);
-            if state.pins.len() >= self.limits.snapshots {
+            // Replacing an unpinned current revision releases that owner's only strong reference.
+            let releases_current = state
+                .current
+                .as_ref()
+                .and_then(|s| s.data.as_ref())
+                .is_some_and(|p| Arc::strong_count(p) == 1);
+            if state
+                .pins
+                .len()
+                .saturating_sub(usize::from(releases_current))
+                >= self.limits.snapshots
+            {
                 return Err(Error::Limit);
             }
             state.pins.push(Arc::downgrade(&data));
@@ -153,9 +164,21 @@ impl Provider {
             return Err(Error::Unknown);
         }
         state.pins.retain(|pin| pin.strong_count() > 0);
-        if state.pins.len() >= self.limits.snapshots {
+        // Replacing an unpinned current revision releases that owner's only strong reference.
+        let releases_current = state
+            .current
+            .as_ref()
+            .and_then(|s| s.data.as_ref())
+            .is_some_and(|p| Arc::strong_count(p) == 1);
+        if state
+            .pins
+            .len()
+            .saturating_sub(usize::from(releases_current))
+            >= self.limits.snapshots
+        {
             return Err(Error::Limit);
         }
+        candidate.assess(self.caps.as_ref())?;
         if let Err(error) = state
             .storage
             .commit(&super::persistence::Record::from_prepared(&candidate))

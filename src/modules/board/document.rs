@@ -57,6 +57,7 @@ struct Scan<'a> {
 impl Scan<'_> {
     // Consume only JSON whitespace; all other bytes remain part of validation.
     fn space(&mut self) {
+        let _span = tracing::trace_span!("bounded_json_preflight").entered();
         while self
             .bytes
             .get(self.pos)
@@ -67,6 +68,7 @@ impl Scan<'_> {
     }
     // Count before processing a value or member so parser work remains bounded.
     fn node(&mut self) -> Result<(), Error> {
+        let _span = tracing::trace_span!("bounded_json_preflight").entered();
         self.nodes += 1;
         if self.nodes > self.limits.nodes {
             Err(Error::Limit)
@@ -76,6 +78,7 @@ impl Scan<'_> {
     }
     // Decode one bounded JSON string with the library's Unicode/escape validation.
     fn string(&mut self) -> Result<String, Error> {
+        let _span = tracing::trace_span!("bounded_json_preflight").entered();
         let start = self.pos;
         self.pos += 1;
         loop {
@@ -98,6 +101,7 @@ impl Scan<'_> {
     }
     // Validate container nesting and duplicate decoded keys before building the complete tree.
     fn value(&mut self, depth: usize) -> Result<(), Error> {
+        let _span = tracing::trace_span!("bounded_json_preflight").entered();
         self.space();
         self.node()?;
         match self.bytes.get(self.pos).copied().ok_or(Error::Invalid)? {
