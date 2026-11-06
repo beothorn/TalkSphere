@@ -25,3 +25,6 @@ pub enum Error {
     /// An effect may be durable; recover before further dependent work.
     Unknown,
 }
+
+#[cfg(test)]
+mod test_support;

@@ -134,6 +134,8 @@ restart from durable state only. Use barriers for races, not sleeps; self-test
 helper failure/exhaustion behavior. No fixture expectation comes from the codec
 or arithmetic operation it tests.
 
+Step 3 progress: added a test-only atomic register with precommit failure, lost acknowledgement, durable-image reopen and script-exhaustion tests. Focused Ledger tests and strict Clippy pass. Randomness, authenticated receipts and real-key fixtures remain pending, so this step is unchecked.
+
 ### 4. Amounts and balances
 
 Model owned-by-issuer and issued-to-owner separately with exact uint64 values
