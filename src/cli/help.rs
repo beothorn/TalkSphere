@@ -6,6 +6,7 @@ pub(super) enum Topic {
     Version,
     Serve,
     Identity,
+    Board,
     ServerOptions,
     Logging,
 }
@@ -21,6 +22,19 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Board,
+        names: &[
+            "board-validate",
+            "board-show",
+            "--board-file",
+            "--board-store",
+            "--publisher",
+        ],
+        label: "board-validate | board-show",
+        summary: "Validate a public Board file or inspect a protected snapshot.",
+        details: "Usage: talksphere board-validate --board-file FILE | talksphere board-show --board-store DIRECTORY --publisher CR2SE_ID\n\n--board-file selects one public UTF-8 JSON document, bounded to 1048576 bytes and depth 31.\nValidation checks Board format and exact prices, not separately supplied definitions or local publishability.\n--board-store selects an existing owner-only Linux Board directory, separate from the identity store.\n--publisher supplies its exact expected CR2SE identity; mismatch is refused. Inspection locks and validates stored documents, then prints original public Board JSON.\nNo command publishes offerings, registers services, spends credits or opens a network connection.\nInvalid syntax exits with status 2; invalid/missing/corrupt documents, contention and unsupported platforms exit with status 1; success exits with status 0.\nSee plans/5_Board_module/PLAN.md and src/modules/board/README.md.\n",
+    },
     HelpTopic {
         topic: Topic::Logging,
         names: &["logging", "RUST_LOG"],

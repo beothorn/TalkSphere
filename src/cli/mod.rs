@@ -1,6 +1,7 @@
 //! Command-line entry point. Protocol behavior belongs to `modules`.
 
 mod args;
+mod board;
 mod help;
 mod identity;
 mod serve;
@@ -25,7 +26,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
 
     if matches!(
         &command,
-        Ok(Command::ServeConfigured(_) | Command::Identity { .. })
+        Ok(Command::ServeConfigured(_) | Command::Identity { .. } | Command::Board { .. })
     ) && let Err(error) = crate::composition::logging::initialize()
     {
         eprintln!("error: {error}");
@@ -40,6 +41,26 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
         Ok(Command::Version) => {
             println!("talksphere {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
+        }
+        Ok(Command::Board { path, publisher }) => {
+            let result = match publisher {
+                Some(id) => board::show(&path, id),
+                None => board::validate(&path),
+            };
+            match result {
+                Ok(output) => {
+                    print!("{output}");
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    if tracing::enabled!(tracing::Level::ERROR) {
+                        tracing::error!(%error,"Local Board command failed without publication");
+                    } else {
+                        eprintln!("error: {error}");
+                    }
+                    ExitCode::FAILURE
+                }
+            }
         }
         Ok(Command::Identity { path, create }) => match identity::execute(&path, create) {
             Ok(public) => {

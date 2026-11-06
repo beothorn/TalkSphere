@@ -146,3 +146,13 @@ The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
 module is Board; minimum-profile services and paid recovery remain later work.
+
+## Board document tools
+
+Validate a public document with `cargo run --locked -- board-validate --board-file
+board.json`. This checks the Board format and exact prices; it does not establish
+handler availability or validate separately supplied definitions. Inspect an existing
+protected Linux snapshot with `cargo run --locked -- board-show --board-store
+board-state --publisher CR2SE_ID`. The publisher must match the stored identity.
+Use `talksphere help --board-file` or `talksphere help --board-store` for limits,
+output and failure rules. These commands do not publish or open peer connections.

@@ -6,6 +6,10 @@ pub(super) enum Command {
     Help(Topic),
     Version,
     ServeConfigured(super::server_args::ServerArgs),
+    Board {
+        path: std::path::PathBuf,
+        publisher: Option<crate::modules::identity::api::IdentityId>,
+    },
     Identity {
         path: std::path::PathBuf,
         create: bool,
@@ -16,6 +20,33 @@ pub(super) enum Command {
 pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
     tracing::trace!(function = "args::parse", "Parsing CLI command forms");
     match arguments {
+        [command, option]
+            if matches!(command.as_str(), "board-validate" | "board-show")
+                && matches!(option.as_str(), "--help" | "-h") =>
+        {
+            Ok(Command::Help(Topic::Board))
+        }
+        [command, option, path]
+            if command == "board-validate" && option == "--board-file" && !path.is_empty() =>
+        {
+            Ok(Command::Board {
+                path: path.into(),
+                publisher: None,
+            })
+        }
+        [command, option, path, id_option, id]
+            if command == "board-show"
+                && option == "--board-store"
+                && !path.is_empty()
+                && id_option == "--publisher" =>
+        {
+            let publisher = crate::modules::identity::text::parse(id)
+                .map_err(|_| "--publisher requires a valid CR2SE ID".to_owned())?;
+            Ok(Command::Board {
+                path: path.into(),
+                publisher: Some(publisher),
+            })
+        }
         [command, option]
             if matches!(command.as_str(), "identity-init" | "identity-show")
                 && matches!(option.as_str(), "--help" | "-h") =>

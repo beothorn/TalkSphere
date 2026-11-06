@@ -24,3 +24,20 @@ cargo run --locked -- --help
 There is no Board CLI command yet. Exercise the direct-call scaffold through its
 unit tests. See [authority](authority.md), [limits](config.md) and
 [boundary contracts](contract.md).
+
+## Local validation and inspection
+
+```sh
+cargo run --locked -- board-validate --board-file board.json
+cargo run --locked -- help --board-file
+cargo run --locked -- board-show --board-store board-state --publisher CR2SE_ID
+cargo run --locked -- help --board-store
+```
+
+Validation checks bounded Board syntax/structure and exact terms, reporting that
+definitions and local publishability are not established. Inspection requires an
+existing protected Linux store and exact expected publisher; it validates all
+stored definition associations before printing original public Board JSON.
+No command publishes capabilities, registers services or spends. Library callers
+with real capabilities exercise publication through Provider; the application
+still registers no Peer Protocol or fake service handlers.

@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–20 complete, steps 21–24 pending.
+Status: execution authorized; steps 1–21 complete, steps 22–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -28,7 +28,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **18.** Associate remote definitions with the selected cached snapshot.
 - [x] **19.** Select usable offerings with explicit roles and issuer.
 - [x] **20.** Invalidate stale selections without changing retained terms.
-- [ ] **21.** Expose authorized local Board validation and inspection commands.
+- [x] **21.** Expose authorized local Board validation and inspection commands.
 - [ ] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
 - [ ] **23.** Complete the Board acceptance matrix through public contracts.
 - [ ] **24.** Publish Board documentation and the next-module handoff.
@@ -353,6 +353,8 @@ validity separately from local publishability and never registers fake services.
 Do not add a production publish path that bypasses absent provider/requester
 capabilities; exercise publication through the library integration harness until
 real composition can supply them. Keep stdout intentional and failures on stderr.
+
+Completed: Added bounded offline board-validate and protected board-show commands with explicit publisher checks, format-versus-publishability output, discoverable help for every option and executable malformed-input tests. Required checks pass. Production line coverage: 6654/6923 = 96.11%
 
 ### 22. Isolation, concurrency and logging
 
