@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–22 are complete.
+Status: execution started; steps 1–23 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -30,7 +30,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **20.** Verify multiplexing, half-close and cancellation across real peers.
 - [x] **21.** Verify probes and graceful draining across real peers.
 - [x] **22.** Verify truncation, resource bounds and slow-consumer isolation.
-- [ ] **23.** Verify restart, startup failures and diagnostic privacy.
+- [x] **23.** Verify restart, startup failures and diagnostic privacy.
 - [ ] **24.** Audit Transport acceptance and publish the server integration handoff.
 
 ## Reference baseline and scope
@@ -341,6 +341,8 @@ Capture structured diagnostics at TRACE across success/failure; assert no secret
 private records or payloads and bounded handling of malicious diagnostic strings.
 Document that Transport restart fails in-flight work rather than resuming service
 transactions or replaying application requests.
+
+Completed: Real reconnect/restart retains signing authority and refreshes ephemeral keys/nonces; same-identity copies authenticate in distinct roles. Startup failures and pre-start cancellation preserve keys/release ownership. Native and executable TRACE privacy checks pass; readiness fatal-state tests wake all waiters and preserve errors. Required checks pass; production coverage: 5352/5553 = 96.38%.
 
 ### 24. Acceptance and handoff
 

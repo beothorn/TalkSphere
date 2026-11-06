@@ -102,6 +102,30 @@ fn server_credentials_are_existing_scoped_and_exclusive() {
         .is_err()
     );
     drop(node);
+    let loaded = credentials::load(&config, false).unwrap();
+    let node = talksphere::composition::server::transport::compose(
+        Config::new(Options::local(path.clone()).unwrap()).unwrap(),
+        loaded,
+    )
+    .unwrap();
+    let signal = talksphere::composition::server::pump::Signal::default();
+    signal.shutdown();
+    let mut stopped = false;
+    talksphere::composition::server::run::run(
+        node,
+        talksphere::composition::server::routing::Router::default(),
+        signal,
+        |status| {
+            assert!(matches!(
+                status,
+                talksphere::composition::server::run::Status::Stopped
+            ));
+            stopped = true;
+            assert!(credentials::load(&config, false).is_ok());
+        },
+    )
+    .unwrap();
+    assert!(stopped);
     std::fs::write(path.join("identity.bin"), b"corrupt").unwrap();
     assert!(credentials::load(&config, false).is_err());
     assert_eq!(

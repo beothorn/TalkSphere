@@ -1011,3 +1011,6 @@ fn native_diagnostic_reason_vectors_reach_control_validation() {
     assert_eq!(rejected.len(), 1025);
     assert!(ErrorPayload::new(ErrorCode::ProtocolError, &rejected).is_err());
 }
+
+#[path = "privacy.rs"]
+mod privacy;

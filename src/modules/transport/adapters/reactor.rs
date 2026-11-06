@@ -191,6 +191,12 @@ fn run(mut poll: Poll, state: Arc<State>) {
             Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
             Err(error) => Some(error.kind()),
         };
+        if let Some(error) = error {
+            for waker in fail_waiters(&state, error) {
+                waker.wake();
+            }
+            break;
+        }
         let mut wake = Vec::new();
         {
             let mut entries = state.entries.lock().unwrap_or_else(|e| e.into_inner());
@@ -209,25 +215,66 @@ fn run(mut poll: Poll, state: Arc<State>) {
                 if entry
                     .timer
                     .as_ref()
-                    .is_some_and(|(deadline, _)| *deadline <= now || error.is_some())
+                    .is_some_and(|(deadline, _)| *deadline <= now)
                     && let Some((_, waker)) = entry.timer.take()
                 {
                     wake.push(waker);
                 }
-                if error.is_some() {
-                    wake.extend(entry.read.take());
-                    wake.extend(entry.write.take());
-                }
             }
-        }
-        if let Some(error) = error {
-            *state.error.lock().unwrap_or_else(|e| e.into_inner()) = Some(error);
         }
         for waker in wake {
             waker.wake();
         }
-        if error.is_some() {
-            break;
+    }
+}
+
+// Record fatal worker failure before waking every socket/timer waiter; future operations observe the stored error.
+fn fail_waiters(state: &State, error: io::ErrorKind) -> Vec<Waker> {
+    tracing::trace!("Recording readiness worker failure and releasing pending task wakeups");
+    *state.error.lock().unwrap_or_else(|e| e.into_inner()) = Some(error);
+    let mut wake = Vec::new();
+    let mut entries = state.entries.lock().unwrap_or_else(|e| e.into_inner());
+    for entry in entries.values_mut() {
+        wake.extend(entry.read.take());
+        wake.extend(entry.write.take());
+        if let Some((_, waker)) = entry.timer.take() {
+            wake.push(waker);
         }
+    }
+    wake
+}
+#[cfg(test)]
+mod failure_tests {
+    use super::*;
+    use crate::modules::transport::test_support::wake::WakeCounter;
+    // The real fatal-state transition wakes read/write/timer owners and prevents later socket arming from fabricating progress.
+    #[test]
+    fn worker_failure_releases_waiters_and_preserves_error() {
+        let reactor = Reactor::new().unwrap();
+        let token = reactor.token().unwrap();
+        let counter = Arc::new(WakeCounter::default());
+        let waker = counter.waker();
+        reactor.arm(token, false, &waker).unwrap();
+        reactor.arm(token, true, &waker).unwrap();
+        reactor.timer(
+            token,
+            Instant::now() + std::time::Duration::from_secs(60),
+            &waker,
+        );
+        let before = counter.count();
+        let wake = fail_waiters(&reactor.0.state, io::ErrorKind::BrokenPipe);
+        assert_eq!(wake.len(), 3);
+        for waker in wake {
+            waker.wake();
+        }
+        assert!(counter.count() >= before + 3);
+        assert_eq!(
+            reactor
+                .arm(token, false, &counter.waker())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::BrokenPipe
+        );
+        let _ = reactor.0.wake.wake();
     }
 }

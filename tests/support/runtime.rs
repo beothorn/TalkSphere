@@ -34,6 +34,7 @@ impl ProcessFixture {
         }
         let mut child = Command::new(env!("CARGO_BIN_EXE_talksphere"))
             .args(arguments)
+            .env("RUST_LOG", "warn")
             .current_dir(&root)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

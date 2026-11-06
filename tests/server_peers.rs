@@ -81,3 +81,33 @@ fn independent_processes_authenticate_in_both_directions() {
     let invalid = ProcessFixture::spawn(&["--unknown"]);
     assert!(invalid.error().is_ok());
 }
+
+// Copies of the same protected key pairs authenticate as one identity while retaining distinct TCP roles.
+#[test]
+fn same_identity_copies_authenticate_without_key_rotation() {
+    use std::{fs, os::unix::fs::PermissionsExt};
+    let fixture = ProcessFixture::spawn(&["--version"]);
+    assert!(fixture.line().is_ok());
+    let a = fixture.root.join("a");
+    let b = fixture.root.join("b");
+    let id = initialize(&a);
+    fs::create_dir(&b).unwrap();
+    fs::set_permissions(&b, fs::Permissions::from_mode(0o700)).unwrap();
+    let bytes = zeroize::Zeroizing::new(fs::read(a.join("identity.bin")).unwrap());
+    fs::write(b.join("identity.bin"), &bytes).unwrap();
+    fs::set_permissions(b.join("identity.bin"), fs::Permissions::from_mode(0o600)).unwrap();
+    let (mut listener, address) = start(&b, None);
+    let (mut caller, _) = start(&a, Some((&id, address)));
+    assert_eq!(
+        caller.line().unwrap().trim(),
+        format!("authenticated {id} Initiator")
+    );
+    assert_eq!(
+        listener.line().unwrap().trim(),
+        format!("authenticated {id} Acceptor")
+    );
+    stop(&mut caller);
+    stop(&mut listener);
+    let invalid = ProcessFixture::spawn(&["--unknown"]);
+    assert!(invalid.error().is_ok());
+}

@@ -127,3 +127,25 @@ available. Actual TCP driver tests refuse excess connection/stream admission,
 inspect occupancy and deliver maximum-size plus small-stream traffic without
 starvation. Existing shared-budget/short-write scheduler tests complement these
 observations; none claims a throughput or latency service guarantee.
+
+## Restart, operational failures and privacy
+
+server_runtime reads actual public HELLO bytes across reconnect/restart: the signing
+key stays fixed while both the ephemeral key and nonce change. server_peers also
+accepts separately protected copies of the same identity in distinct TCP roles.
+Configured missing/corrupt/bind-conflict failures preserve private records and
+release ownership. A pre-start injected shutdown reports only Stopped after releasing
+the store lock, without binding a listener.
+
+The readiness worker's actual fatal-state transition is directly unit-tested: all
+read/write/timer waiters wake, and later arming reports the stored error. This is
+controlled state testing of OS-error handling, not a claim that the test destroys
+an OS poll descriptor. Existing injected entropy tests retain dependency failure
+and acquisition cleanup evidence; production CSPRNG failure is never simulated by
+an insecure CLI switch or fallback.
+
+Native TRACE capture excludes verified application bytes, peer diagnostic text and
+fixture private material. server_trace drains real executable TRACE stderr in a
+bounded collector, checks both stored private inputs in hex/array representations,
+and verifies resource release before Stopped. No minimum-profile service recovery,
+application replay or physical erasure is inferred from these observations.

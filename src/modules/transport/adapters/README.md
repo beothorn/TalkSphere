@@ -29,3 +29,7 @@ Loopback tests use OS-assigned ports, test actual readiness/timer wakeups, byte
 exchange, closure, bind conflict and refused connection. They make no claim of
 cryptographic interoperability. Protocol baseline remains [CR2SE revision
 8e848eb](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport).
+
+Readiness-worker fatal errors are recorded before all read/write/timer owners are
+woken. New socket operations observe that stored failure; controlled-state unit
+coverage exercises this exact transition without unsafe descriptor manipulation.
