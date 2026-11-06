@@ -584,3 +584,98 @@ fn abort_decisions() {
         }
     }
 }
+
+// A test coordinator retains its decision across every SV-09 stage and retries delivery, never execution.
+#[test]
+fn coordinator_fault_matrix() {
+    let [a, b, _, _] = super::super::test_support::identities();
+    for cut in 0..8 {
+        let auth = Arc::new(Authority::new());
+        let admin = auth.grant(a, Action::Administer, 65536).unwrap();
+        let read = auth.grant(a, Action::Read, 65536).unwrap();
+        let coord = auth.grant(a, Action::Coordinate, 65536).unwrap();
+        let limits = Limits {
+            accounts: 16,
+            operations: 16,
+            transfers: 16,
+            claims: 16,
+            quotes: 8,
+            state_bytes: 65536,
+        };
+        let ledger = Ledger::initialize(
+            a,
+            auth.clone(),
+            Memory::default(),
+            limits,
+            &context(&admin),
+            100,
+            100,
+        )
+        .unwrap();
+        ledger.set_owned(&context(&admin), b, 100).unwrap();
+        let key = OperationKey {
+            requester: a,
+            connection: [1; 32],
+            stream: 1,
+        };
+        let mut handler_prepared = false;
+        let mut handler_visible = false;
+        let commit_decision = cut >= 4;
+        let r = ledger
+            .reserve(&context(&coord), key, terms(a, b), Policy::default())
+            .unwrap();
+        if cut >= 2 {
+            handler_prepared = true;
+        }
+        let token = if cut >= 3 {
+            Some(ledger.prepare(&context(&coord), &r, 7, vec![1]).unwrap())
+        } else {
+            None
+        };
+        if cut >= 5 {
+            ledger
+                .commit(&context(&coord), token.as_ref().unwrap())
+                .unwrap();
+        }
+        if cut >= 6 {
+            handler_visible = true;
+        }
+        let coordinator_image = [
+            commit_decision as u8,
+            handler_prepared as u8,
+            handler_visible as u8,
+        ];
+        let image = ledger.inner.lock().unwrap().persistence.load().unwrap();
+        drop(ledger);
+        let commit_decision = coordinator_image[0] != 0;
+        let handler_prepared = coordinator_image[1] != 0;
+        let mut handler_visible = coordinator_image[2] != 0;
+        let ledger = Ledger::open(a, auth.clone(), Memory(image), limits, &context(&read)).unwrap();
+        let r = ledger
+            .reserve(&context(&coord), key, terms(a, b), Policy::default())
+            .unwrap();
+        if commit_decision {
+            assert!(handler_prepared);
+            let token = ledger.prepare(&context(&coord), &r, 7, vec![1]).unwrap();
+            ledger.commit(&context(&coord), &token).unwrap();
+            ledger.commit(&context(&coord), &token).unwrap();
+            handler_visible = true;
+        } else {
+            let token = if token.is_some() {
+                Some(ledger.prepare(&context(&coord), &r, 7, vec![1]).unwrap())
+            } else {
+                None
+            };
+            ledger.abort(&context(&coord), &r, token.as_ref()).unwrap();
+        }
+        assert_eq!(handler_visible, commit_decision);
+        assert_eq!(
+            ledger.view(&context(&read), b).unwrap().owned,
+            if commit_decision { 93 } else { 100 }
+        );
+        assert_eq!(
+            ledger.available(&context(&read), b, true),
+            Ok(if commit_decision { 93 } else { 100 })
+        );
+    }
+}

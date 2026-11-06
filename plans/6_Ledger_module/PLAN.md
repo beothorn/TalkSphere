@@ -23,7 +23,7 @@ settlement and durable transfer/claim replay records.
 - [x] **13.** Prepare immutable settlement effects and status records.
 - [x] **14.** Commit two-party and internal settlements exactly once.
 - [x] **15.** Release uncommitted holds through authorized abort decisions.
-- [ ] **16.** Recover Ledger participants across coordination failures.
+- [x] **16.** Recover Ledger participants across coordination failures.
 - [ ] **17.** Encode and validate canonical transfer orders.
 - [ ] **18.** Sign and authenticate transfers through Identity and Cryptography.
 - [ ] **19.** Bind transfer fee quotes to authenticated control contexts.
@@ -286,6 +286,8 @@ recorded decisions, never service execution. Gate conflicting reads/spends while
 unresolved. Include fresh-process reopen and distinguish simulated crash evidence
 from filesystem/power-loss guarantees. Real Services coordination remains later
 integration, explicitly identified under LG-13.
+
+Completed step 16: Exercised the Ledger participant across eight coordinator decision cuts with recovered decision delivery, exact replay and consistent price7 accounting. Added a separate-process protected-store reopen scenario; simulated handler/coordinator coverage is explicitly distinguished from future real Services integration. Required checks pass; production line coverage 7731/8061 = 95.91%.
 
 ### 17. Transfer bytes
 

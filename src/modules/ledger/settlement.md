@@ -25,3 +25,10 @@ Abort requires explicit Coordinator authority. Reserved failure can release its
 hold directly; prepared abort requires the exact effect token and a recorded
 coordinator abort decision. Repeated abort is idempotent; committed effects cannot
 be undone. Timeout/cancellation without a decision leaves the hold intact.
+
+Recovery tests use a durable test-coordinator image and scripted handler participant
+for the SV-09 decision sequence. The real Ledger is reopened from complete stored
+bytes and receives only the recovered decision; service work is never repeated.
+A separate-process Linux test verifies acknowledged committed status and price7
+accounting survive reopen. This covers Ledger participant behavior; actual Services
+coordination and physical power-loss evidence remain outside this module claim.
