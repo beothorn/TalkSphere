@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–9 complete, steps 10–24 pending.
+Status: execution authorized; steps 1–10 complete, steps 11–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -17,7 +17,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **7.** Validate primitive service schema descriptions.
 - [x] **8.** Validate nested service schemas and check definitions.
 - [x] **9.** Match complete definitions to their offerings.
-- [ ] **10.** Assess supported service semantics through explicit capability ports.
+- [x] **10.** Assess supported service semantics through explicit capability ports.
 - [ ] **11.** Check publication sizes against complete peer control responses.
 - [ ] **12.** Prepare complete publication candidates without changing visible state.
 - [ ] **13.** Publish immutable Board snapshots atomically in memory.
@@ -221,6 +221,8 @@ injected model without claiming real Storage pricing. Unknown models/types block
 use of only that offering. Enforce supplied capabilities differently for provided
 and wanted roles, and check cr2se.identity from authenticated context rather than
 a second handshake. No hidden network calls, spending or runtime handler stubs.
+
+Completed: Added trusted exact-contract, term-validation, precondition and direction-specific local capability ports; unknown semantics remain unusable and known arithmetic failures propagate without hidden effects. Required checks pass. Production line coverage: 5815/6025 = 96.51%
 
 ### 11. Retrievable document bounds
 
