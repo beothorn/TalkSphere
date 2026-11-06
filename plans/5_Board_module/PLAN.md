@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–3 complete, steps 4–24 pending.
+Status: execution authorized; steps 1–4 complete, steps 5–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -11,7 +11,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **1.** Reconcile Board requirements and acceptance cases with upstream.
 - [x] **2.** Define Board contracts, authority and resource limits.
 - [x] **3.** Add deterministic Board fixtures and fault-injection helpers.
-- [ ] **4.** Decode bounded JSON without losing numbers or unknown metadata.
+- [x] **4.** Decode bounded JSON without losing numbers or unknown metadata.
 - [ ] **5.** Validate Board headers and offering identity fields.
 - [ ] **6.** Validate exact prices and optional offering metadata.
 - [ ] **7.** Validate primitive service schema descriptions.
@@ -149,6 +149,8 @@ numbers when relaying originals; retaining source bytes is acceptable and avoids
 unrequested normalization. Test numeric extremes, fractions/exponents without
 lossy coercion, invalid Unicode, deep nesting and every configured boundary.
 Do not convert Board uint64 prices to Peer Protocol decimal-string value encoding.
+
+Completed: Added bounded structural preflight, decoded duplicate-key rejection and exact source preservation with arbitrary-precision numeric trees; tested malformed input and resource boundaries. Required checks pass. Production line coverage: 5601/5805 = 96.49%
 
 ### 5. Board and offering identities
 
