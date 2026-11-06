@@ -24,7 +24,7 @@ settlement and durable transfer/claim replay records.
 - [x] **14.** Commit two-party and internal settlements exactly once.
 - [x] **15.** Release uncommitted holds through authorized abort decisions.
 - [x] **16.** Recover Ledger participants across coordination failures.
-- [ ] **17.** Encode and validate canonical transfer orders.
+- [x] **17.** Encode and validate canonical transfer orders.
 - [ ] **18.** Sign and authenticate transfers through Identity and Cryptography.
 - [ ] **19.** Bind transfer fee quotes to authenticated control contexts.
 - [ ] **20.** Commit transfers atomically with permanent replay protection.
@@ -297,6 +297,8 @@ newOwner32 and positive uint64be amount at offsets 1/17/49/81/113. Reject the ol
 recipient identities. Keep public key/signature external to signed bytes.
 Use independent literal LG-07 bytes and all applicable LG-08 mutations; canonical
 JSON controls belong to Peer Protocol, not this binary codec.
+
+Completed step 17: Implemented exact 121-byte version-one transfer encoding and strict decoding with independent literal offset/amount fixtures. Tests reject the old105-byte layout, every truncated prefix, trailing data, unknown versions, zero amount and forbidden recipients. Required checks pass; production line coverage 7759/8089 = 95.92%.
 
 ### 18. Transfer authority
 
