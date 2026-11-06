@@ -14,16 +14,65 @@ pub enum Support {
 /// # Errors
 /// Rejects missing/non-string type and non-object descriptors; unknown types return Unknown.
 pub fn validate(value: &Value) -> Result<Support, Error> {
-    tracing::trace!("Validating a Services primitive schema description");
+    tracing::trace!("Validating bounded Services schema structure");
+    walk(value, false, 0)
+}
+
+// Bound recursion independently of callers and propagate unsupported nested type semantics.
+fn walk(value: &Value, field: bool, depth: usize) -> Result<Support, Error> {
+    tracing::trace!("Checking nested schema structure");
+    if depth > 31 {
+        return Err(Error::Limit);
+    }
     if !value.is_object() {
         return Err(Error::Invalid);
     }
-    Ok(match string(value, "type")? {
+    if let Some(optional) = value.get("optional")
+        && (!field || optional.as_bool().is_none())
+    {
+        return Err(Error::Invalid);
+    }
+    if field {
+        string(value, "description")?;
+    }
+    let mut support = Support::Known;
+    match string(value, "type")? {
+        "object" => {
+            for (name, child) in value
+                .get("fields")
+                .and_then(Value::as_object)
+                .ok_or(Error::Invalid)?
+            {
+                if name.is_empty() {
+                    return Err(Error::Invalid);
+                }
+                if walk(child, true, depth + 1)? == Support::Unknown {
+                    support = Support::Unknown;
+                }
+            }
+        }
+        "array" => support = walk(value.get("items").ok_or(Error::Invalid)?, false, depth + 1)?,
         "bool" | "int32" | "int64" | "uint32" | "uint64" | "float" | "double" | "string"
-        | "bytes" => Support::Known,
-        _ => Support::Unknown,
+        | "bytes" => {}
+        _ => support = Support::Unknown,
+    }
+    Ok(support)
+}
+/// Validate mandatory check procedure description and both check schemas.
+/// # Errors
+/// Rejects missing/empty description, malformed schemas and exceeded recursion budgets.
+pub fn check(value: &Value) -> Result<Support, Error> {
+    tracing::trace!("Validating a complete check definition");
+    string(value, "description")?;
+    let input = validate(value.get("input").ok_or(Error::Invalid)?)?;
+    let output = validate(value.get("output").ok_or(Error::Invalid)?)?;
+    Ok(if input == Support::Known && output == Support::Known {
+        Support::Known
+    } else {
+        Support::Unknown
     })
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -50,5 +99,35 @@ mod tests {
         ] {
             assert_eq!(validate(&v), Err(Error::Invalid));
         }
+    }
+    // Nested named fields need descriptions; optionality belongs only to object fields.
+    #[test]
+    fn composite_and_check_rules() {
+        let good = serde_json::json!({"type":"object","fields":{"label":{"type":"array","description":"Labels.","items":{"type":"string"},"optional":true}}});
+        assert_eq!(validate(&good), Ok(Support::Known));
+        let mut bad = good.clone();
+        bad["fields"]["label"]
+            .as_object_mut()
+            .unwrap()
+            .remove("description");
+        assert_eq!(validate(&bad), Err(Error::Invalid));
+        bad = good.clone();
+        bad["fields"]["label"]["items"]["optional"] = true.into();
+        assert_eq!(validate(&bad), Err(Error::Invalid));
+        bad = good.clone();
+        bad["fields"]["label"]["items"]["type"] = "new.type".into();
+        assert_eq!(validate(&bad), Ok(Support::Unknown));
+        let c = serde_json::json!({"description":"Compare labels.","input":good,"output":{"type":"bool"}});
+        assert_eq!(check(&c), Ok(Support::Known));
+        for field in ["description", "input", "output"] {
+            let mut b = c.clone();
+            b.as_object_mut().unwrap().remove(field);
+            assert!(check(&b).is_err());
+        }
+        let mut deep = serde_json::json!({"type":"string"});
+        for _ in 0..33 {
+            deep = serde_json::json!({"type":"array","items":deep});
+        }
+        assert_eq!(validate(&deep), Err(Error::Limit));
     }
 }

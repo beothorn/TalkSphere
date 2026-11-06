@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–7 complete, steps 8–24 pending.
+Status: execution authorized; steps 1–8 complete, steps 9–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -15,7 +15,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **5.** Validate Board headers and offering identity fields.
 - [x] **6.** Validate exact prices and optional offering metadata.
 - [x] **7.** Validate primitive service schema descriptions.
-- [ ] **8.** Validate nested service schemas and check definitions.
+- [x] **8.** Validate nested service schemas and check definitions.
 - [ ] **9.** Match complete definitions to their offerings.
 - [ ] **10.** Assess supported service semantics through explicit capability ports.
 - [ ] **11.** Check publication sizes against complete peer control responses.
@@ -196,6 +196,8 @@ field including nested fields. Validate check.description plus check.input/outpu
 no implicit nullability or new semantics from metadata. Bound recursive work and
 account for nested unsupported types. Test missing/wrong fields, invalid optional
 placement, malformed checks and depth/node limits with complete valid controls.
+
+Completed: Added bounded recursive object and array schemas, named-field descriptions, field-only optionality and mandatory check schemas; tested malformed and unknown nested types. A transient truncated LLVM profile required rerunning coverage. Required checks pass. Production line coverage: 5745/5955 = 96.47%
 
 ### 9. Matching definitions
 
