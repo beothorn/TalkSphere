@@ -25,7 +25,7 @@ settlement and durable transfer/claim replay records.
 - [x] **15.** Release uncommitted holds through authorized abort decisions.
 - [x] **16.** Recover Ledger participants across coordination failures.
 - [x] **17.** Encode and validate canonical transfer orders.
-- [ ] **18.** Sign and authenticate transfers through Identity and Cryptography.
+- [x] **18.** Sign and authenticate transfers through Identity and Cryptography.
 - [ ] **19.** Bind transfer fee quotes to authenticated control contexts.
 - [ ] **20.** Commit transfers atomically with permanent replay protection.
 - [ ] **21.** Expose authorized transfer status and remote balance observations.
@@ -308,6 +308,8 @@ Ed25519 profile. Verify authenticated caller=owner, derived key identity=owner,
 issuer=local and signature over exact bytes. Test real signatures, mixed or weak
 key rejection through the shared verifier, wrong purpose, entropy/signing failure
 and cancellation. Never expose keys or treat a signature alone as credit authority.
+
+Completed step 18: Added protected Identity signing adapter, explicit outgoing spending authorization, cryptographic transfer IDs and strict owner/key/signature verification. Real Ed25519 tests reject modified bytes, wrong callers/issuers, weak keys, truncated signatures, entropy exhaustion and revoked spending authority. Required checks pass; production line coverage 7813/8149 = 95.88%.
 
 ### 19. Fee agreement
 
