@@ -5,6 +5,9 @@ pub mod authority;
 pub mod config;
 pub mod contract;
 
+#[cfg(test)]
+mod test_support;
+
 /// Expected failures at the Board boundary; diagnostics never contain untrusted documents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {

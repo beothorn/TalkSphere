@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–2 complete, steps 3–24 pending.
+Status: execution authorized; steps 1–3 complete, steps 4–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -10,7 +10,7 @@ attributed caches; it uses the Services schema format without its runtime.
 
 - [x] **1.** Reconcile Board requirements and acceptance cases with upstream.
 - [x] **2.** Define Board contracts, authority and resource limits.
-- [ ] **3.** Add deterministic Board fixtures and fault-injection helpers.
+- [x] **3.** Add deterministic Board fixtures and fault-injection helpers.
 - [ ] **4.** Decode bounded JSON without losing numbers or unknown metadata.
 - [ ] **5.** Validate Board headers and offering identity fields.
 - [ ] **6.** Validate exact prices and optional offering metadata.
@@ -131,6 +131,13 @@ literal offered/wanted definitions and valid identity text; independent expected
 numbers include 9007199254740993 and uint64 maximum. Helpers must observe effects,
 not reproduce production validation. Cover helper failures and cleanup; keep
 substitutes test-only and exclude them from production coverage.
+
+Completed: added test-only complete literal documents with upstream-derived issuer,
+independent exact prices, controlled time/capabilities and atomic commit cut-point
+observations preserving durable state across restart. Helper self-tests cover
+failures and script exhaustion. Reuse standard barriers/channels for future races
+and the existing process harness. All required checks pass; production coverage
+remains 5484/5685 = 96.46%, excluding test support.
 
 ### 4. Lossless bounded JSON
 

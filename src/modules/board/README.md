@@ -2,7 +2,7 @@
 
 Board owns atomic offering/definition snapshots, attributed remote caches and
 selection. Current status: requirements inventory and initial authority/resource
-contracts only; snapshot reads explicitly return Unsupported. Publication,
+contracts plus deterministic test helpers; snapshot reads explicitly return Unsupported. Publication,
 persistence, validation, caches and selection are still pending in the
 [plan](../../../plans/5_Board_module/PLAN.md).
 
