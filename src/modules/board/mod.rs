@@ -12,6 +12,7 @@ pub mod offering;
 pub mod persistence;
 pub mod prepared;
 pub mod response;
+pub mod selection;
 pub mod semantics;
 pub mod state;
 pub mod terms;

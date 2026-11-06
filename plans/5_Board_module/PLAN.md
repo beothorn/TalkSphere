@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–18 complete, steps 19–24 pending.
+Status: execution authorized; steps 1–19 complete, steps 20–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -26,7 +26,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **16.** Verify publication recovery across failures and restarts.
 - [x] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
 - [x] **18.** Associate remote definitions with the selected cached snapshot.
-- [ ] **19.** Select usable offerings with explicit roles and issuer.
+- [x] **19.** Select usable offerings with explicit roles and issuer.
 - [ ] **20.** Invalidate stale selections without changing retained terms.
 - [ ] **21.** Expose authorized local Board validation and inspection commands.
 - [ ] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
@@ -328,6 +328,8 @@ issuer independently of TCP opener. Require understood and satisfied preconditio
 unknown offerings must not hide known selectable ones. Test both directions,
 third-party issuers, reordered arrays, unsupported contracts and conservative
 custom compatibility without implied array priority or payment authorization.
+
+Completed: Added authority-checked local and direct-remote selection, exact contract requirements, semantic checks and immutable requester/provider/issuer terms independent of TCP direction. Required checks pass. Production line coverage: 6490/6795 = 95.51%
 
 ### 20. Staleness and retained terms
 
