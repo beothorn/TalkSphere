@@ -5,6 +5,7 @@ pub mod authority;
 pub mod config;
 pub mod contract;
 pub mod document;
+pub mod offering;
 
 #[cfg(test)]
 mod test_support;

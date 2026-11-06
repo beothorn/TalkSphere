@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–4 complete, steps 5–24 pending.
+Status: execution authorized; steps 1–5 complete, steps 6–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -12,7 +12,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **2.** Define Board contracts, authority and resource limits.
 - [x] **3.** Add deterministic Board fixtures and fault-injection helpers.
 - [x] **4.** Decode bounded JSON without losing numbers or unknown metadata.
-- [ ] **5.** Validate Board headers and offering identity fields.
+- [x] **5.** Validate Board headers and offering identity fields.
 - [ ] **6.** Validate exact prices and optional offering metadata.
 - [ ] **7.** Validate primitive service schema descriptions.
 - [ ] **8.** Validate nested service schemas and check definitions.
@@ -161,6 +161,8 @@ Reject duplicate offering IDs within and across lists without first/last wins.
 Keep direction explicit and unknown reserved-prefix services unsupported rather
 than automatically malformed. Test same service/version under distinct IDs,
 unsupported versions, issuer aliases, nulls, wrong types and boundary values.
+
+Completed: Added Board version/list validation, strict issuer parsing, direction-aware offerings and duplicate rejection across lists with malformed-field unit tests. Required checks pass. Production line coverage: 5652/5857 = 96.50%
 
 ### 6. Prices and metadata
 
