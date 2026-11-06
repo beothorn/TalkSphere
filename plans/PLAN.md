@@ -61,7 +61,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   unknown metadata and unsupported required semantics with the
   [Board evidence matrix](../src/modules/board/ACCEPTANCE.md). BD-09 quote/payment
   integration remains explicitly deferred to Services/Peer Protocol.
-- [ ] **7. Ledger module.** Implement exact issuer-specific balances, trust,
+- [ ] **7. [Ledger module](6_Ledger_module/PLAN.md).** Implement exact issuer-specific balances, trust,
   finite grants, bounded reservations, settlement, transfer/claim controls,
   durable state and replay protection. Test concurrent spending and restart.
 - [ ] **8. Services module.** Implement typed schemas, handler registration,
