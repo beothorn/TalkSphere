@@ -63,3 +63,64 @@ fn exhausted_script_fails() {
     let mut s = Store::new(b"", []);
     let _ = s.commit(b"extra");
 }
+
+// Reuse pinned public vector seeds; C/U use independent fixed test-only seeds.
+pub fn identities() -> [crate::modules::identity::api::IdentityId; 4] {
+    use crate::modules::{
+        cryptography::{
+            primitives::keys::signing_key,
+            test_support::{ScriptedEntropy, transport},
+        },
+        identity::api::IdentityId,
+    };
+    [
+        transport("initiator Ed25519 seed"),
+        transport("acceptor Ed25519 seed"),
+        vec![3; 32],
+        vec![4; 32],
+    ]
+    .map(|seed| {
+        let mut entropy = ScriptedEntropy(VecDeque::from([Ok(seed)]));
+        let key = signing_key(&mut entropy).unwrap();
+        let mut input = vec![1, 1];
+        input.extend_from_slice(&key.public_key);
+        use sha2::Digest;
+        IdentityId(sha2::Sha256::digest(&input).into())
+    })
+}
+
+/// Controlled external-receipt response without synthetic authentication claims.
+pub struct Receipts<T>(pub VecDeque<Result<T, super::Error>>);
+impl<T> Receipts<T> {
+    // Missing or refused issuer evidence cannot turn into a successful payment.
+    pub fn next(&mut self) -> Result<T, super::Error> {
+        self.0.pop_front().unwrap_or(Err(super::Error::Unknown))
+    }
+}
+// Identity fixtures are reproducible/distinct; scripted entropy and evidence failures stay explicit.
+#[test]
+fn deterministic_sources_and_refusals() {
+    use crate::modules::cryptography::{
+        error::CryptoError, ports::Entropy, test_support::ScriptedEntropy,
+    };
+    let ids = identities();
+    assert_eq!(ids, identities());
+    for i in 0..4 {
+        for j in i + 1..4 {
+            assert_ne!(ids[i], ids[j]);
+        }
+    }
+    let mut e = ScriptedEntropy(VecDeque::from([
+        Ok(vec![9; 16]),
+        Err(CryptoError::Unavailable),
+    ]));
+    let mut out = [0; 16];
+    e.fill(&mut out).unwrap();
+    assert_eq!(out, [9; 16]);
+    assert!(e.fill(&mut out).is_err());
+    assert!(e.fill(&mut out).is_err());
+    let mut r = Receipts(VecDeque::from([Ok(7), Err(super::Error::Denied)]));
+    assert_eq!(r.next(), Ok(7));
+    assert_eq!(r.next(), Err(super::Error::Denied));
+    assert_eq!(r.next(), Err(super::Error::Unknown));
+}

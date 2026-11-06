@@ -10,7 +10,7 @@ settlement and durable transfer/claim replay records.
 
 - [x] **1.** Reconcile Ledger requirements and acceptance cases with upstream.
 - [x] **2.** Define Ledger authority, operation identities and resource limits.
-- [ ] **3.** Add deterministic Ledger fixtures and failure helpers.
+- [x] **3.** Add deterministic Ledger fixtures and failure helpers.
 - [ ] **4.** Implement exact issuer-separated accounting views.
 - [ ] **5.** Define atomic persistence and recoverable transaction outcomes.
 - [ ] **6.** Implement protected local Ledger persistence.
@@ -135,6 +135,8 @@ helper failure/exhaustion behavior. No fixture expectation comes from the codec
 or arithmetic operation it tests.
 
 Step 3 progress: added a test-only atomic register with precommit failure, lost acknowledgement, durable-image reopen and script-exhaustion tests. Focused Ledger tests and strict Clippy pass. Randomness, authenticated receipts and real-key fixtures remain pending, so this step is unchecked.
+
+Completed step 3: Completed deterministic durable-cut, entropy, reproducible real-key identity and issuer-response helpers with refusal/exhaustion self-tests. Test-only substitutes remain excluded from production. Required checks pass; production line coverage 6832/7101 = 96.21%.
 
 ### 4. Amounts and balances
 
