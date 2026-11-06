@@ -55,7 +55,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   the implemented Cryptography adapter and connect two local nodes in both directions.
   Extend the passing cryptographic vectors to full server integration. Reject
   tampering and replay before dispatch; complete TR-01 through TR-15.
-- [ ] **6. Board module.** Publish atomic provided/wanted offerings and definition
+- [ ] **6. [Board module](5_Board_module/PLAN.md).** Publish atomic provided/wanted offerings and definition
   snapshots, using Services schema formats without requiring its runtime.
   Validate consistency, unknown metadata and unsupported required semantics.
 - [ ] **7. Ledger module.** Implement exact issuer-specific balances, trust,

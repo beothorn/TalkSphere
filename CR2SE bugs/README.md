@@ -11,6 +11,9 @@ Confirmed reports:
 
 - [0004: Secret cleanup guards start too late](0004-secret-cleanup-guards.md) — resolved upstream in [d40b627](https://github.com/beothorn/CR2SE/commit/d40b6278f24430e814d7fa82094f57261bfcac9f); reported as [#7](https://github.com/beothorn/CR2SE/issues/7), with local adoption tracked in the [Identity plan](../plans/3_Identity_module/PLAN.md).
 
+- [0005: Board duplicate-member pseudocode contradicts mandatory rejection](0005-board-duplicate-json-members.md) — reported upstream as [#8](https://github.com/beothorn/CR2SE/issues/8).
+- [0006: Board precondition validation contradicts required nonempty names](0006-board-precondition-validation.md) — reported upstream as [#9](https://github.com/beothorn/CR2SE/issues/9).
+
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision
 and sections. Include a minimal trace, conflicting statements or vector that
