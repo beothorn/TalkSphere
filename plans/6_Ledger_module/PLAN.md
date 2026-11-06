@@ -12,7 +12,7 @@ settlement and durable transfer/claim replay records.
 - [x] **2.** Define Ledger authority, operation identities and resource limits.
 - [x] **3.** Add deterministic Ledger fixtures and failure helpers.
 - [x] **4.** Implement exact issuer-separated accounting views.
-- [ ] **5.** Define atomic persistence and recoverable transaction outcomes.
+- [x] **5.** Define atomic persistence and recoverable transaction outcomes.
 - [ ] **6.** Implement protected local Ledger persistence.
 - [ ] **7.** Implement authorized trust and finite credit administration.
 - [ ] **8.** Validate settlement roles and payment policies.
@@ -160,6 +160,8 @@ uncertainty gates affected work until reload/status resolves it. Implement a
 volatile test adapter and failure tests before dependent mutations, never claim
 volatile state is durable. Choose and document a bounded storage representation
 and its schema/version migration refusal rules.
+
+Completed step 5: Defined complete identity-bound durable image transactions, precommit versus unknown failure semantics and an explicitly volatile copy adapter. Tested missing versus present state and immutable image replacement; runtime recovery will consume these ports in later steps. Required checks pass; production line coverage 6884/7153 = 96.24%.
 
 ### 6. Linux adapter
 

@@ -3,6 +3,7 @@
 pub mod accounting;
 pub mod authority;
 pub mod contract;
+pub mod persistence;
 
 /// Structured local failures; diagnostic strings never determine protocol behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
