@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–19 complete, steps 20–24 pending.
+Status: execution authorized; steps 1–20 complete, steps 21–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -27,7 +27,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
 - [x] **18.** Associate remote definitions with the selected cached snapshot.
 - [x] **19.** Select usable offerings with explicit roles and issuer.
-- [ ] **20.** Invalidate stale selections without changing retained terms.
+- [x] **20.** Invalidate stale selections without changing retained terms.
 - [ ] **21.** Expose authorized local Board validation and inspection commands.
 - [ ] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
 - [ ] **23.** Complete the Board acceptance matrix through public contracts.
@@ -340,6 +340,8 @@ Test price 7 to 9, issuer/definition changes, removal, reordered arrays and pinn
 old terms surviving replacement/restart as owned copied data where persisted.
 Use a test-owned invocation consumer to prove Board does not cancel obligations;
 mark actual quote acceptance and durable Services context as later integration.
+
+Completed: Added current offering/definition checks before local selection, explicit stale results after repricing or removal and public-contract scenarios proving copied price-7 terms survive price-9 publication and owner drop. Required checks pass. Production line coverage: 6572/6836 = 96.14%
 
 ### 21. Local exercise commands
 

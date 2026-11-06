@@ -51,3 +51,7 @@ mod record_codec;
 #[cfg(test)]
 #[path = "tests/recovery.rs"]
 mod recovery_tests;
+
+#[cfg(test)]
+#[path = "tests/scenarios.rs"]
+mod scenarios;

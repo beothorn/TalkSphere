@@ -106,13 +106,15 @@ impl Provider {
             snapshot.bytes().len(),
         )?;
         let data = snapshot.data.as_ref().ok_or(Error::Missing)?;
-        select(
+        let selected = select(
             data.board.offerings.get(r.id).ok_or(Error::Missing)?,
             data.definitions.get(r.id).ok_or(Error::Missing)?,
             self.publisher,
             r,
             self.caps.as_ref(),
-        )
+        )?;
+        self.current_selection(context, &selected)?;
+        Ok(selected)
     }
 }
 impl Cache {

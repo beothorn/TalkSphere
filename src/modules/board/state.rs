@@ -221,6 +221,48 @@ impl Provider {
         )?;
         Ok(d.clone())
     }
+    /// Verify selected terms still exactly match the current offering and definition.
+    /// # Errors
+    /// Returns Stale after removal/repricing/contract change and Unknown during unresolved durability.
+    pub fn current_selection(
+        &self,
+        context: &Context<'_>,
+        selected: &super::selection::Selection,
+    ) -> Result<(), Error> {
+        tracing::trace!("Checking current terms without changing retained selections");
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Select,
+            selected.offering().source.to_string().len(),
+        )?;
+        if selected.publisher() != self.publisher {
+            return Err(Error::Denied);
+        }
+        let state = self.state.lock().map_err(|_| Error::Unknown)?;
+        if state.uncertain {
+            return Err(Error::Unknown);
+        }
+        let data = state
+            .current
+            .as_ref()
+            .and_then(|s| s.data.as_ref())
+            .ok_or(Error::Stale)?;
+        let id = &selected.offering().id;
+        if data
+            .board
+            .offerings
+            .get(id)
+            .is_none_or(|o| o.source != selected.offering().source)
+            || data
+                .definitions
+                .get(id)
+                .is_none_or(|d| d.document.value() != selected.definition().document.value())
+        {
+            return Err(Error::Stale);
+        }
+        Ok(())
+    }
     // A pin from another owner or a dropped owner never supplies local authority.
     pub(super) fn check_snapshot(&self, snapshot: &Snapshot) -> Result<(), Error> {
         tracing::trace!("Checking Board snapshot owner association");
