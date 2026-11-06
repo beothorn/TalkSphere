@@ -1,6 +1,10 @@
 //! Finite local resource policy checked before Board decoding or platform effects.
 use super::Error;
 
+// Conservative private-record allowance includes fixed header and per-definition length fields.
+pub(super) const RECORD_FIXED_BYTES: usize = 64;
+pub(super) const RECORD_ENTRY_BYTES: usize = 12;
+
 /// Positive local budgets, separate from fixed peer protocol maxima.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Limits {
@@ -46,7 +50,7 @@ impl Default for Limits {
 impl Limits {
     /// Validate policy before allocation; lower local limits may refuse otherwise valid documents.
     /// # Errors
-    /// Returns Invalid for zero budgets or inconsistent aggregate/string/depth bounds.
+    /// Returns Invalid for zero budgets, inconsistent bounds or unrepresentable private record envelopes.
     pub fn validate(&self) -> Result<(), Error> {
         tracing::trace!("Validating Board resource budgets before effects");
         let values = [
@@ -60,7 +64,17 @@ impl Limits {
             self.cache_entries,
             self.snapshots,
         ];
-        if values.contains(&0)
+        let envelope = self
+            .publication_bytes
+            .checked_mul(2)
+            .and_then(|n| {
+                self.definitions
+                    .checked_mul(RECORD_ENTRY_BYTES)
+                    .and_then(|d| n.checked_add(d))
+            })
+            .and_then(|n| n.checked_add(RECORD_FIXED_BYTES));
+        if envelope.is_none()
+            || values.contains(&0)
             || self.cache_seconds == 0
             || self.depth > 31
             || self.document_bytes > 1_048_576
@@ -120,5 +134,25 @@ mod tests {
         ] {
             assert_eq!(bad.validate(), Err(Error::Invalid));
         }
+    }
+    // Unrepresentable storage envelopes fail during configuration before any directory or lock effects.
+    #[test]
+    fn envelope_overflow_is_invalid_configuration() {
+        assert_eq!(
+            Limits {
+                publication_bytes: usize::MAX,
+                ..Limits::default()
+            }
+            .validate(),
+            Err(Error::Invalid)
+        );
+        assert_eq!(
+            Limits {
+                definitions: usize::MAX,
+                ..Limits::default()
+            }
+            .validate(),
+            Err(Error::Invalid)
+        );
     }
 }

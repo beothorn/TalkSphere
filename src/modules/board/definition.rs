@@ -43,20 +43,23 @@ impl Definition {
         };
         Ok(Self { document, support })
     }
-    /// Compare the logical contract excluding offering-specific ID and optional metadata.
+    /// Compare the logical contract excluding offering-specific ID and conservatively comparing unknown metadata.
     /// Descriptions and all three schemas must agree; unknown details inside schemas are retained.
     pub fn same_contract(&self, other: &Self) -> bool {
         tracing::trace!("Comparing complete logical service definitions");
-        [
-            "service",
-            "serviceVersion",
-            "description",
-            "input",
-            "output",
-            "check",
-        ]
-        .iter()
-        .all(|k| self.document.value().get(*k) == other.document.value().get(*k))
+        let a = self.document.value();
+        let b = other.document.value();
+        if a.get("serviceVersion").and_then(integer) != b.get("serviceVersion").and_then(integer) {
+            return false;
+        }
+        let equivalent = |left: &serde_json::Value, right: &serde_json::Value| {
+            left.as_object().is_some_and(|o| {
+                o.iter()
+                    .filter(|(key, _)| !matches!(key.as_str(), "id" | "serviceVersion"))
+                    .all(|(key, value)| right.get(key) == Some(value))
+            })
+        };
+        equivalent(a, b) && equivalent(b, a)
     }
 }
 #[cfg(test)]
@@ -99,5 +102,33 @@ mod tests {
         let unknown = Definition::parse(bad.to_string().as_bytes(), o, Limits::default()).unwrap();
         assert_eq!(unknown.support, Support::Unknown);
         assert!(!d.same_contract(&unknown));
+    }
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+    // Numeric version spelling does not change a contract; unfamiliar metadata is compared conservatively.
+    #[test]
+    fn exact_versions_and_unknown_metadata() {
+        let b = super::super::offering::Board::parse(
+            super::super::test_support::board(false, 7).as_bytes(),
+            Limits::default(),
+        )
+        .unwrap();
+        let o = &b.offerings["fixture"];
+        let d = Definition::parse(
+            super::super::test_support::definition().as_bytes(),
+            o,
+            Limits::default(),
+        )
+        .unwrap();
+        let mut v = d.document.value().clone();
+        v["serviceVersion"] = serde_json::from_str("1.0").unwrap();
+        let same = Definition::parse(v.to_string().as_bytes(), o, Limits::default()).unwrap();
+        assert!(d.same_contract(&same));
+        v["newContractMetadata"] = "unfamiliar rule".into();
+        let different = Definition::parse(v.to_string().as_bytes(), o, Limits::default()).unwrap();
+        assert!(!d.same_contract(&different));
     }
 }

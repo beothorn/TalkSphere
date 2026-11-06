@@ -18,6 +18,27 @@ struct State {
     pins: Vec<Weak<Prepared>>,
 }
 /// Direct-call owner for one publisher, with finite pin retention and serialized writers.
+///
+/// This example publishes an empty volatile Board; composition supplies its actual local identity.
+/// No service handler, network authentication or spending capability is created.
+/// ```
+/// use std::{collections::BTreeMap,sync::Arc,time::{Duration,Instant}};
+/// use talksphere::modules::{identity::api::IdentityId,board::{
+///     authority::{Authority,Action},config::Limits,contract::Context,
+///     prepared::Prepared,semantics::Unavailable,state::Provider,
+/// }};
+/// let local=IdentityId([1;32]); // Illustrative public ID; obtain the real ID from Identity in composition.
+/// let limits=Limits::default();
+/// let authority=Arc::new(Authority::new());
+/// let grant=authority.grant(local,Action::Publish,limits.publication_bytes)?;
+/// let context=Context {grant:&grant,deadline:Instant::now()+Duration::from_secs(10),cancelled:false};
+/// let candidate=Prepared::new(local,br#"{"version":1,"providedServices":[],"wantedServices":[]}"#,
+///     &BTreeMap::new(),limits,&Unavailable)?;
+/// let owner=Provider::new(local,authority,limits,Arc::new(Unavailable))?;
+/// let snapshot=owner.publish(&context,candidate)?;
+/// assert_eq!(snapshot.publisher(),local);
+/// # Ok::<(),talksphere::modules::board::Error>(())
+/// ```
 pub struct Provider {
     pub(super) authority: Arc<Authority>,
     pub(super) limits: Limits,
@@ -120,6 +141,7 @@ impl Provider {
         } else {
             None
         };
+        context.check(&self.authority, self.publisher, Action::Publish, 0)?;
         state.current = current;
         state.uncertain = false;
         Ok(())
@@ -179,6 +201,12 @@ impl Provider {
             return Err(Error::Limit);
         }
         candidate.assess(self.caps.as_ref())?;
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Publish,
+            candidate.bytes(),
+        )?;
         if let Err(error) = state
             .storage
             .commit(&super::persistence::Record::from_prepared(&candidate))

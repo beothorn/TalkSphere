@@ -1,5 +1,9 @@
 //! Bounded private record encoding; this format never appears on CR2SE peer streams.
-use super::{Error, config::Limits, persistence::Record};
+use super::{
+    Error,
+    config::{Limits, RECORD_ENTRY_BYTES, RECORD_FIXED_BYTES},
+    persistence::Record,
+};
 use crate::modules::identity::api::IdentityId;
 use std::collections::BTreeMap;
 
@@ -8,8 +12,8 @@ pub(super) fn maximum(l: Limits) -> Result<usize, Error> {
     tracing::trace!("Calculating private Board record bounds");
     l.publication_bytes
         .checked_mul(2)
-        .and_then(|n| n.checked_add(l.definitions.checked_mul(12)?))
-        .and_then(|n| n.checked_add(64))
+        .and_then(|n| n.checked_add(l.definitions.checked_mul(RECORD_ENTRY_BYTES)?))
+        .and_then(|n| n.checked_add(RECORD_FIXED_BYTES))
         .ok_or(Error::Limit)
 }
 // Serialize only bounded complete records, without treating stored metadata as authority.
@@ -148,5 +152,13 @@ mod tests {
         bad = bytes;
         bad[0] = 0;
         assert!(decode(&bad, l).is_err());
+    }
+    // A declared oversized field is rejected before proportional allocation, even with a tiny payload.
+    #[test]
+    fn oversized_declared_field_is_rejected_before_payload() {
+        let mut bytes = b"TSBOARD1".to_vec();
+        bytes.extend_from_slice(&[1; 32]);
+        bytes.extend_from_slice(&u32::MAX.to_be_bytes());
+        assert_eq!(decode(&bytes, Limits::default()), Err(Error::Limit));
     }
 }

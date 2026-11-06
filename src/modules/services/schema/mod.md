@@ -14,3 +14,7 @@ propagate Unknown to the complete schema. Recursion beyond 31 returns Limit.
 check validates a nonempty procedure description and complete input/output
 schemas; malformed descriptions return Invalid. Neither function accepts values
 or invokes the described check procedure.
+
+The independent schema Error contract distinguishes Invalid and Limit without
+importing Board types. A single validation is bounded to 65536 schema nodes and
+depth 31 even outside Board; consuming modules map these failures at their boundary.

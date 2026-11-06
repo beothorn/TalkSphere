@@ -46,19 +46,18 @@ impl Prepared {
             return Err(Error::Invalid);
         }
         let mut validated = BTreeMap::new();
+        let mut contracts: BTreeMap<(String, u32), String> = BTreeMap::new();
         for (id, o) in &board.offerings {
             let d = Definition::parse(definitions.get(id).ok_or(Error::Missing)?, o, limits)?;
             response::encode("definition", &d.document)?;
-            for (other_id, other) in &board.offerings {
-                if other_id >= id {
-                    break;
+            let contract = (o.service.clone(), o.version);
+            if let Some(prior_id) = contracts.get(&contract) {
+                let prior = validated.get(prior_id).ok_or(Error::Invalid)?;
+                if !d.same_contract(prior) {
+                    return Err(Error::Invalid);
                 }
-                if other.service == o.service && other.version == o.version {
-                    let prior = validated.get(other_id).ok_or(Error::Invalid)?;
-                    if !d.same_contract(prior) {
-                        return Err(Error::Invalid);
-                    }
-                }
+            } else {
+                contracts.insert(contract, id.clone());
             }
             validated.insert(id.clone(), d);
         }
@@ -116,5 +115,53 @@ mod tests {
             Err(Error::Unsupported)
         ));
         assert!(Prepared::new(id, empty, &defs, limits, &Unavailable).is_err());
+    }
+}
+
+#[cfg(test)]
+mod consistency_tests {
+    use super::*;
+    // Shared service/version requires a single full logical contract despite distinct offering IDs.
+    #[test]
+    fn conflicting_same_version_definitions_are_rejected() {
+        let mut b: serde_json::Value =
+            serde_json::from_str(&super::super::test_support::board(false, 7)).unwrap();
+        let mut o = b["providedServices"][0].clone();
+        o["id"] = "second".into();
+        b["providedServices"].as_array_mut().unwrap().push(o);
+        let mut d: serde_json::Value =
+            serde_json::from_str(super::super::test_support::definition()).unwrap();
+        d["id"] = "second".into();
+        d["input"]["type"] = "bool".into();
+        let mut defs = BTreeMap::from([
+            (
+                "fixture".into(),
+                super::super::test_support::definition().as_bytes().to_vec(),
+            ),
+            ("second".into(), d.to_string().into_bytes()),
+        ]);
+        assert!(matches!(
+            Prepared::new(
+                IdentityId([1; 32]),
+                b.to_string().as_bytes(),
+                &defs,
+                Limits::default(),
+                &super::super::scenarios::Known
+            ),
+            Err(Error::Invalid)
+        ));
+        d["input"]["type"] = "string".into();
+        d["serviceVersion"] = serde_json::from_str("1.0").unwrap();
+        defs.insert("second".into(), d.to_string().into_bytes());
+        assert!(
+            Prepared::new(
+                IdentityId([1; 32]),
+                b.to_string().as_bytes(),
+                &defs,
+                Limits::default(),
+                &super::super::scenarios::Known
+            )
+            .is_ok()
+        );
     }
 }

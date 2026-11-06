@@ -13,3 +13,11 @@ can still discover unrelated offerings. It performs no quote, reservation,
 execution, network request or spending. Unavailable refuses all service and local
 support and recognizes only cr2se.identity when trusted context is authenticated.
 This conservative default is suitable for offline inspection, not a fake provider.
+
+contract verifies the entire separately retrieved definition against the exact
+known service semantics. Its default is Unsupported, so recognizing an identifier
+and checking schema shape cannot redefine a standard contract or establish custom
+compatibility. Trusted handlers must supply this validation explicitly; assess
+requires it before term validation or selection. Test providers compare against
+independent literal schemas, and a structurally valid replacement input type is
+rejected under the same service/version.

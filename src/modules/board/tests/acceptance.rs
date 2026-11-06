@@ -100,13 +100,21 @@ fn bd01_bd03_bd10_multiple_ids_and_array_order() {
     b["providedServices"].as_array_mut().unwrap().push(other);
     let mut d: serde_json::Value = serde_json::from_str(super::test_support::definition()).unwrap();
     d["id"] = "second".into();
-    let defs = BTreeMap::from([
+    let mut defs = BTreeMap::from([
         (
             "fixture".into(),
             super::test_support::definition().as_bytes().to_vec(),
         ),
         ("second".into(), d.to_string().into_bytes()),
     ]);
+    for wanted_id in ["wanted-first", "wanted-second"] {
+        let mut wanted = b["providedServices"][0].clone();
+        wanted["id"] = wanted_id.into();
+        b["wantedServices"].as_array_mut().unwrap().push(wanted);
+        let mut definition = d.clone();
+        definition["id"] = wanted_id.into();
+        defs.insert(wanted_id.into(), definition.to_string().into_bytes());
+    }
     let snapshot = p
         .publish(
             &pc,
@@ -129,7 +137,14 @@ fn bd01_bd03_bd10_multiple_ids_and_array_order() {
         authenticated: true,
     };
     let selected = p.select(&sc, &snapshot, &r).unwrap();
+    let wanted_request = Request {
+        id: "wanted-first",
+        ..r
+    };
+    let wanted_selection = p.select(&sc, &snapshot, &wanted_request).unwrap();
+    assert_eq!(wanted_selection.roles().0, id);
     b["providedServices"].as_array_mut().unwrap().reverse();
+    b["wantedServices"].as_array_mut().unwrap().reverse();
     p.publish(
         &pc,
         Prepared::new(
@@ -143,6 +158,7 @@ fn bd01_bd03_bd10_multiple_ids_and_array_order() {
     )
     .unwrap();
     assert_eq!(p.current_selection(&sc, &selected), Ok(()));
+    assert_eq!(p.current_selection(&sc, &wanted_selection), Ok(()));
     let one = Limits {
         definitions: 1,
         ..Limits::default()

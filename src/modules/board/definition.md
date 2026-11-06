@@ -8,5 +8,6 @@ unknown nested types produce a discoverable definition with Unknown support.
 The immutable Document preserves exact original bytes and unknown metadata.
 
 same_contract compares service, exact version, description and full input/output/
-check structures while excluding offering ID. Equality is conservative; matching
+check structures while excluding offering ID and comparing mathematical version values. Unknown
+root metadata is also compared conservatively rather than assumed compatible. Equality is conservative; matching
 names alone never establish compatibility or redefine a standard service version.

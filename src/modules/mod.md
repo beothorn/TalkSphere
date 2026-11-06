@@ -1,14 +1,13 @@
 # Protocol module exports
 
-`transport` exports Transport framing, state, dependency ports and adapters.
-`cryptography` exports implemented primitives, generic envelopes, a real provider
-and validated policy, with its acceptance audit tracked in the detailed plan.
+Transport exports framing, state, dependency ports and native platform adapters.
+Cryptography exports real primitives, bounded envelopes and integrity adapters.
+Identity exports canonical IDs, protected key authority, credentials and recovery.
+Board exports validated publication, immutable snapshots, Linux durability,
+attributed caches, explicit selection and local document tools.
+Services currently exports only its reusable schema-format validator for Board;
+invocation, handlers, coordination and payments remain later implementation work.
 
-Modules communicate through explicit contracts. Application composition selects
-adapters; exporting a module does not start a listener or enable a capability.
-
-Identity and the remaining roadmap modules are future implementations; absent
-modules must never be replaced with production authentication substitutes.
-
-Identity now exposes its initial contracts and resource policy; durable credentials
-and operations are pending the Identity plan.
+Modules use explicit public contracts; composition selects adapters and grants
+trusted authority. Exporting a module neither opens a listener nor advertises a
+capability. Remaining roadmap modules must not be replaced by fake providers.

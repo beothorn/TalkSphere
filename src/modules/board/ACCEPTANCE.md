@@ -82,3 +82,26 @@ format-versus-publishability output, oversized/malformed files, publisher mismat
 and corrupt-store preservation. Inspection prints intentional public JSON; operational
 TRACE excludes raw metadata. No production Board publish CLI bypasses real capability
 composition. Completing this module does not demonstrate the minimum useful node.
+
+## Final handoff audit
+
+Step 24 removes the unavailable scaffold in favor of concrete Provider/Cache
+operations and separates Services schema errors from Board internals. Additional
+regressions cover schema node bounds without a Board decoder, mathematical version
+spellings in contract comparison, conservative unknown contract metadata, conflicting
+same-version definitions, withdrawn capabilities, unpinned cache replacement and
+private record envelope arithmetic/declared-length rejection. Complete API examples
+run as rustdoc tests. Updated public companions describe the resulting contracts.
+
+Quote/payment integration remains the deferred BD-09 row above. Ledger is next;
+this module does not register a fake service or establish minimum-node conformance.
+
+`scenarios::known_contract_cannot_be_redefined_by_schema` verifies that schema
+structural validity cannot redefine a known service/version: the explicit trusted
+contract validator is required in addition to type and identifier recognition.
+
+Final verification on 2026-11-06: formatting, warnings-denied Clippy, locked
+unit/integration/doctests, build, API docs, all 26 detailed help spellings and the
+documented offline validation example pass. Production line coverage: 6752/7017 = 96.22%
+Coverage follows [the production procedure](../../../docs/coverage.md), excluding
+test-only code and merging valid captures without suppressing test failures.

@@ -40,6 +40,7 @@ impl Cache {
         if self.pins.len() >= self.limits.snapshots {
             return Err(Error::Limit);
         }
+        context.check(&self.authority, k.0, Action::Cache, bytes.len())?;
         next.revision = Arc::new(());
         self.pins.push(Arc::downgrade(&next.revision));
         self.entries.insert(k, next.clone());

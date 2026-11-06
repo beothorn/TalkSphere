@@ -159,6 +159,14 @@ mod tests {
         fn understands(&self, o: &Offering) -> bool {
             o.service == "org.example.echo" && o.version == 1
         }
+        // The test handler validates exact known schemas against independent literal definitions.
+        fn contract(
+            &self,
+            _: &Offering,
+            d: &crate::modules::board::definition::Definition,
+        ) -> Result<(), Error> {
+            crate::modules::board::test_support::contract(d)
+        }
         // Only fixed-price fixtures are supported by this test model.
         fn terms(&self, o: &Offering) -> Result<(), Error> {
             if o.source.get("price").is_some() {

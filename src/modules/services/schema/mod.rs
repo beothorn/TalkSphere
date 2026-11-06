@@ -1,7 +1,24 @@
 //! Services schema-format validation shared with Board; no handler runtime or value codec.
-use crate::modules::board::{Error, offering::string};
+
 use serde_json::Value;
 
+/// Schema format failures, independent of any consuming module's error representation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Error {
+    /// A required descriptor field is malformed or missing.
+    Invalid,
+    /// The independent recursion or node budget was exceeded.
+    Limit,
+}
+// Require a nonempty schema string without assigning executable meaning to descriptive text.
+fn string<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
+    tracing::trace!("Reading a required Services schema string");
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|s| !s.is_empty())
+        .ok_or(Error::Invalid)
+}
 /// Semantic support of a structurally valid schema description.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Support {
@@ -10,20 +27,21 @@ pub enum Support {
     /// Unknown type remains discoverable but cannot be used automatically.
     Unknown,
 }
-/// Validate a primitive schema descriptor without interpreting metadata as executable rules.
+/// Validate a bounded complete schema descriptor without interpreting metadata as executable rules.
 /// # Errors
 /// Rejects missing/non-string type and non-object descriptors; unknown types return Unknown.
 pub fn validate(value: &Value) -> Result<Support, Error> {
     tracing::trace!("Validating bounded Services schema structure");
-    walk(value, false, 0)
+    walk(value, false, 0, &mut 65536)
 }
 
 // Bound recursion independently of callers and propagate unsupported nested type semantics.
-fn walk(value: &Value, field: bool, depth: usize) -> Result<Support, Error> {
+fn walk(value: &Value, field: bool, depth: usize, remaining: &mut usize) -> Result<Support, Error> {
     tracing::trace!("Checking nested schema structure");
-    if depth > 31 {
+    if depth > 31 || *remaining == 0 {
         return Err(Error::Limit);
     }
+    *remaining -= 1;
     if !value.is_object() {
         return Err(Error::Invalid);
     }
@@ -46,12 +64,19 @@ fn walk(value: &Value, field: bool, depth: usize) -> Result<Support, Error> {
                 if name.is_empty() {
                     return Err(Error::Invalid);
                 }
-                if walk(child, true, depth + 1)? == Support::Unknown {
+                if walk(child, true, depth + 1, remaining)? == Support::Unknown {
                     support = Support::Unknown;
                 }
             }
         }
-        "array" => support = walk(value.get("items").ok_or(Error::Invalid)?, false, depth + 1)?,
+        "array" => {
+            support = walk(
+                value.get("items").ok_or(Error::Invalid)?,
+                false,
+                depth + 1,
+                remaining,
+            )?
+        }
         "bool" | "int32" | "int64" | "uint32" | "uint64" | "float" | "double" | "string"
         | "bytes" => {}
         _ => support = Support::Unknown,
@@ -129,5 +154,22 @@ mod tests {
             deep = serde_json::json!({"type":"array","items":deep});
         }
         assert_eq!(validate(&deep), Err(Error::Limit));
+    }
+}
+
+#[cfg(test)]
+mod budget_tests {
+    use super::*;
+    // The reusable format validator has a node bound even when called without Board's JSON decoder.
+    #[test]
+    fn independent_schema_node_budget() {
+        let field = serde_json::json!({"type":"string","description":"One bounded field."});
+        let fields: serde_json::Map<String, Value> = (0..65536)
+            .map(|i| (format!("f{i}"), field.clone()))
+            .collect();
+        assert_eq!(
+            validate(&serde_json::json!({"type":"object","fields":fields})),
+            Err(Error::Limit)
+        );
     }
 }

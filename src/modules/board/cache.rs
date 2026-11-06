@@ -87,10 +87,15 @@ impl Cache {
         let expires = now
             .checked_add(self.limits.cache_seconds)
             .ok_or(Error::Limit)?;
+        context.check(&self.authority, key.0, Action::Cache, bytes.len())?;
         self.entries.retain(|_, e| e.expires > now);
         self.pins.retain(|p| p.strong_count() > 0);
+        let releases = self
+            .entries
+            .get(&key)
+            .is_some_and(|e| Arc::strong_count(&e.revision) == 1);
         if (!self.entries.contains_key(&key) && self.entries.len() >= self.limits.cache_entries)
-            || self.pins.len() >= self.limits.snapshots
+            || self.pins.len().saturating_sub(usize::from(releases)) >= self.limits.snapshots
         {
             return Err(Error::Limit);
         }
@@ -178,5 +183,33 @@ mod tests {
             cache.store(&c, Provenance::Direct(id), bytes, u64::MAX),
             Err(Error::Limit)
         ));
+    }
+    // An unpinned current cache entry can be replaced within a one-revision budget.
+    #[test]
+    fn unpinned_cache_revision_is_reclaimable() {
+        let a = Arc::new(Authority::new());
+        let id = IdentityId([1; 32]);
+        let mut cache = Cache::new(
+            a.clone(),
+            Limits {
+                snapshots: 1,
+                ..Limits::default()
+            },
+        )
+        .unwrap();
+        let g = a.grant(id, Action::Cache, 1000).unwrap();
+        let c = Context {
+            grant: &g,
+            deadline: Instant::now() + Duration::from_secs(10),
+            cancelled: false,
+        };
+        let raw = br#"{"version":1,"providedServices":[],"wantedServices":[]}"#;
+        let old = cache.store(&c, Provenance::Direct(id), raw, 100).unwrap();
+        assert!(matches!(
+            cache.store(&c, Provenance::Direct(id), raw, 101),
+            Err(Error::Limit)
+        ));
+        drop(old);
+        assert!(cache.store(&c, Provenance::Direct(id), raw, 102).is_ok());
     }
 }

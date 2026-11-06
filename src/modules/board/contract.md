@@ -1,34 +1,19 @@
-# Direct Board boundary
+# Direct-call context and snapshots
 
-Boundary construction consumes trusted Authority and validates Limits without
-filesystem or network effects. Invalid configuration fails before construction.
-Limits returns the immutable policy by value.
+Context carries a borrowed local grant, monotonic deadline and cancellation
+observation. check rejects cancelled/expired calls before validating the issuer,
+publisher, action and byte budget. Adapters own concurrent cancellation delivery;
+blocking commits already in progress are not falsely claimed rolled back.
 
-Context carries a borrowed grant, monotonic deadline and cancellation observation.
-Check rejects cancelled or expired calls before validating publisher, operation
-and bytes against the receiving authority. Concurrent cancellation delivery is
-the adapter's responsibility; this boundary does not spawn a worker.
+Snapshot is owner-created and opaque. It exposes the publisher and borrowed exact
+immutable Board bytes, and clones pin the complete associated revision. Provider
+validates ownership for definition lookup; public bytes already returned are owned
+results, not authority. Snapshot association alone is not authenticated remote
+provenance; Cache has separate trusted receipt contracts.
 
-Read takes Context and publisher ID, checks Read authority, then currently
-returns Unsupported. It never manufactures an empty publication.
-
-Snapshot is owner-created and opaque: callers cannot construct validated state.
-It exposes the bound publisher and borrowed exact immutable bytes; clones pin
-content independently of subsequent publication. Association with a publisher
-alone is not evidence of direct authenticated retrieval.
-
-Publication, definition lookup, cache and selection operations will be added in
-their implementation steps. Their intended rules are in the plan and acceptance
-inventory; this initial contract does not claim they exist.
-
-## Logical implementation ports
-
-BoardPorts declares the future direct-call operations, with implementation-owned
-validated Candidate, Definition, Retrieval, SelectionRequest and Selection types.
-Publish consumes a complete candidate and returns a snapshot, preserving explicit
-Storage versus Unknown commitment failures. Definition reads one exact offering
-ID in a pinned snapshot. Cache accepts a trusted adapter's retrieval association.
-Select returns immutable terms/usability for caller-specified requirements; it
-never executes or pays. Each receives Context and enforces its own action.
-No implementation of these ports is supplied by the scaffold. Local contract
-version is 1, independent of JSON schema version and peer protocol version.
+Concrete Provider and Cache operations are the implemented ports. The initial
+unavailable Boundary and declaration-only umbrella trait were removed after real
+operations became available. Local contract version is 1, independent of Board
+JSON schema version and peer protocol version. This direct compiled binding does
+not claim a serialized version-negotiation protocol or expose local pointers/paths
+as peer fields. See state.md, cache.md and selection.md for operation/error rules.

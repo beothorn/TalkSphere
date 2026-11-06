@@ -55,9 +55,12 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   the implemented Cryptography adapter and connect two local nodes in both directions.
   Extend the passing cryptographic vectors to full server integration. Reject
   tampering and replay before dispatch; complete TR-01 through TR-15.
-- [ ] **6. [Board module](5_Board_module/PLAN.md).** Publish atomic provided/wanted offerings and definition
+- [x] **6. [Board module](5_Board_module/PLAN.md).** Publish atomic provided/wanted offerings and definition
   snapshots, using Services schema formats without requiring its runtime.
-  Validate consistency, unknown metadata and unsupported required semantics.
+  Direct-call implementation and Linux persistence are complete; validate consistency,
+  unknown metadata and unsupported required semantics with the
+  [Board evidence matrix](../src/modules/board/ACCEPTANCE.md). BD-09 quote/payment
+  integration remains explicitly deferred to Services/Peer Protocol.
 - [ ] **7. Ledger module.** Implement exact issuer-specific balances, trust,
   finite grants, bounded reservations, settlement, transfer/claim controls,
   durable state and replay protection. Test concurrent spending and restart.

@@ -14,8 +14,8 @@ replacement cannot mutate old terms. Limits.snapshots bounds live revisions;
 excess publication is refused until older pins release. A poisoned owner reports
 Unknown instead of proceeding with possibly inconsistent state.
 
-This initial owner is volatile. Durable storage is added through a separate port
-in the next step; no restart guarantee follows from this in-memory adapter.
+Provider.new uses volatile Memory and makes no restart claim. Durable owners
+use Provider.open with a declared persistence adapter and explicit recovery.
 
 Durable owners use Provider.open with an explicit Persistence port. Successful
 publication acknowledges persistence before atomic visibility. Unknown commit

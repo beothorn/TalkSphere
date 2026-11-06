@@ -23,6 +23,14 @@ impl Capabilities for Known {
     fn understands(&self, o: &Offering) -> bool {
         o.service == "org.example.echo" && o.version == 1
     }
+    // The test handler validates exact known schemas against independent literal definitions.
+    fn contract(
+        &self,
+        _: &Offering,
+        d: &crate::modules::board::definition::Definition,
+    ) -> Result<(), Error> {
+        crate::modules::board::test_support::contract(d)
+    }
     // The fixture models only positive fixed-price whole operations.
     fn terms(&self, o: &Offering) -> Result<(), Error> {
         if o.source
@@ -255,4 +263,71 @@ fn unpinned_current_does_not_exhaust_single_revision_budget() {
     ));
     drop(old);
     assert!(p.publish(&c, prepare(id, 9, false)).is_ok());
+}
+
+// Withdrawn local support cannot be bypassed by presenting a candidate prepared under earlier capabilities.
+#[test]
+fn withdrawn_capabilities_refuse_new_publication() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    struct Toggle(AtomicBool);
+    impl Capabilities for Toggle {
+        // Understanding is stable while provider availability can be withdrawn by trusted composition.
+        fn understands(&self, o: &Offering) -> bool {
+            Known.understands(o)
+        }
+        // The test handler validates exact known schemas against independent literal definitions.
+        fn contract(
+            &self,
+            _: &Offering,
+            d: &crate::modules::board::definition::Definition,
+        ) -> Result<(), Error> {
+            crate::modules::board::test_support::contract(d)
+        }
+        // Reuse the fixture's exact supported term model.
+        fn terms(&self, o: &Offering) -> Result<(), Error> {
+            Known.terms(o)
+        }
+        // Required preconditions retain their explicit verification rules.
+        fn precondition(&self, n: &str, a: bool) -> bool {
+            Known.precondition(n, a)
+        }
+        // The atomic switch represents an actual trusted local capability withdrawal.
+        fn local(&self, _: &Offering) -> bool {
+            self.0.load(Ordering::SeqCst)
+        }
+    }
+    let id = IdentityId([1; 32]);
+    let a = Arc::new(Authority::new());
+    let caps = Arc::new(Toggle(AtomicBool::new(true)));
+    let p = Provider::new(id, a.clone(), Limits::default(), caps.clone()).unwrap();
+    let g = a.grant(id, Action::Publish, 1_000_000).unwrap();
+    let c = Context {
+        grant: &g,
+        deadline: Instant::now() + Duration::from_secs(10),
+        cancelled: false,
+    };
+    let old = p.publish(&c, prepare(id, 7, false)).unwrap();
+    let next = prepare(id, 9, false);
+    caps.0.store(false, Ordering::SeqCst);
+    assert!(matches!(p.publish(&c, next), Err(Error::Unsupported)));
+    assert_eq!(old.bytes(), super::test_support::board(false, 7).as_bytes());
+}
+
+// A syntactically valid schema cannot redefine a known service by retaining its identifier/version.
+#[test]
+fn known_contract_cannot_be_redefined_by_schema() {
+    let id = IdentityId([1; 32]);
+    let mut d: serde_json::Value = serde_json::from_str(super::test_support::definition()).unwrap();
+    d["input"]["type"] = "bool".into();
+    let definitions = BTreeMap::from([("fixture".into(), d.to_string().into_bytes())]);
+    assert!(matches!(
+        Prepared::new(
+            id,
+            super::test_support::board(false, 7).as_bytes(),
+            &definitions,
+            Limits::default(),
+            &Known
+        ),
+        Err(Error::Invalid)
+    ));
 }

@@ -63,3 +63,14 @@ mod privacy_tests;
 #[cfg(test)]
 #[path = "tests/acceptance.rs"]
 mod acceptance_tests;
+
+impl From<super::services::schema::Error> for Error {
+    /// Map independent format failures into the Board boundary without coupling schema code to Board.
+    fn from(error: super::services::schema::Error) -> Self {
+        tracing::trace!("Mapping an independent Services schema failure");
+        match error {
+            super::services::schema::Error::Invalid => Self::Invalid,
+            super::services::schema::Error::Limit => Self::Limit,
+        }
+    }
+}

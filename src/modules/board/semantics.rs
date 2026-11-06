@@ -6,6 +6,14 @@ use crate::modules::services::schema::Support;
 pub trait Capabilities: Send + Sync {
     /// Whether the exact contract can be understood by this client, without version substitution.
     fn understands(&self, offering: &Offering) -> bool;
+    /// Verify that the complete retrieved definition implements this exact known service contract.
+    /// Structure alone cannot redefine a standard contract or establish custom compatibility.
+    /// # Errors
+    /// Defaults to Unsupported until trusted composition supplies an actual contract validator.
+    fn contract(&self, _offering: &Offering, _definition: &Definition) -> Result<(), Error> {
+        tracing::trace!("Refusing absent exact service contract validation");
+        Err(Error::Unsupported)
+    }
     /// Validate all known family terms and maximum arithmetic, including fixed-price restrictions.
     /// # Errors
     /// Returns Unsupported for an unknown pricing model and Invalid/Limit for invalid/overflowing terms.
@@ -54,6 +62,7 @@ pub fn assess(
     if d.support != Support::Known || !caps.understands(o) || (local && !caps.local(o)) {
         return Err(Error::Unsupported);
     }
+    caps.contract(o, d)?;
     caps.terms(o)?;
     if let Some(required) = o.source.get("preconditions") {
         for name in required.as_array().ok_or(Error::Invalid)? {
@@ -73,6 +82,14 @@ mod tests {
         // Only this fixture's exact custom version is understood.
         fn understands(&self, o: &Offering) -> bool {
             o.service == "org.example.echo" && o.version == 1
+        }
+        // The test handler validates exact known schemas against independent literal definitions.
+        fn contract(
+            &self,
+            _: &Offering,
+            d: &crate::modules::board::definition::Definition,
+        ) -> Result<(), Error> {
+            crate::modules::board::test_support::contract(d)
         }
         // A fixture maximum must remain positive uint64; real families supply their own arithmetic.
         fn terms(&self, o: &Offering) -> Result<(), Error> {
@@ -103,6 +120,7 @@ mod tests {
             assess(&Unavailable, &o, &d, true, false),
             Err(Error::Unsupported)
         );
+        assert_eq!(Unavailable.contract(&o, &d), Err(Error::Unsupported));
         assert!(!Unavailable.local(&o));
         assert!(Unavailable.terms(&o).is_err());
         o.source["preconditions"] = serde_json::json!(["cr2se.identity"]);

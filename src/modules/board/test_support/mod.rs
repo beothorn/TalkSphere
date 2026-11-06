@@ -100,6 +100,19 @@ impl Capabilities {
     }
 }
 
+// A test-owned handler checks its contract against literal schemas, never trusting matching names alone.
+pub(super) fn contract(d: &super::definition::Definition) -> Result<(), Error> {
+    let expected: serde_json::Value = serde_json::from_str(definition()).unwrap();
+    if ["input", "output", "check"]
+        .iter()
+        .all(|key| d.document.value().get(*key) == expected.get(*key))
+    {
+        Ok(())
+    } else {
+        Err(Error::Invalid)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

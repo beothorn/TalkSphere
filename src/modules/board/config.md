@@ -11,3 +11,6 @@ wrapper), document size above 1048576, strings larger than a document, and an
 aggregate publication budget smaller than a document. Validation has no effects.
 Actual wrapped response length and depth require additional checks before
 publication; these defaults do not assert that a maximal standalone document fits.
+
+Private record envelope arithmetic must also fit the platform integer width;
+publication/count combinations that overflow are rejected before filesystem effects.

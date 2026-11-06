@@ -11,7 +11,7 @@ Provided/Wanted direction. This direction does not depend on TCP roles. Board
 indexes offerings by unique ID across both lists and rejects duplicates rather
 than selecting first/last. Definition count bounds total offerings. Array order
 supplies no priority. Unknown service identifiers are metadata, not automatically
-supported contracts. Numeric and economic validation is added in the next step.
+supported contracts. Exact economic and optional metadata validation is applied before returning the Board.
 
-string reads a required nonempty string. integer reads an exact unsigned numeric
-token without coercing strings, booleans or floating-point values.
+string reads a required nonempty string. integer reads an exact nonnegative mathematical numeric
+value without coercing strings, booleans or floating-point values.

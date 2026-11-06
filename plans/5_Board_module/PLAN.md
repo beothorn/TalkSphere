@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–23 complete, steps 24–24 pending.
+Status: all 24 steps complete; deferred Services/Peer Protocol integration is documented.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -31,7 +31,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **21.** Expose authorized local Board validation and inspection commands.
 - [x] **22.** Verify concurrent access, authority isolation and diagnostic privacy.
 - [x] **23.** Complete the Board acceptance matrix through public contracts.
-- [ ] **24.** Publish Board documentation and the next-module handoff.
+- [x] **24.** Publish Board documentation and the next-module handoff.
 
 ## Reference baseline and scope
 
@@ -389,3 +389,5 @@ Run all required checks, API docs, command scenarios and production coverage;
 record the measured percentage. Mark Board's implemented contract scope complete
 only with passing evidence and explicit deferred integration rows, then hand off
 to Ledger without expanding or implementing that next plan in this task.
+
+Completed: Completed implemented Provider/Cache contracts, independent bounded Services schema formats, exact known-contract validation, API examples and current guides. Audited effect-boundary checks, snapshot reclamation and private record overflow. All 26 help spellings and API docs pass; BD-09 quote/payment integration and namespace grammar remain explicitly tracked for later modules/upstream clarification. Required checks pass. Production line coverage: 6752/7017 = 96.22%
