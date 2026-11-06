@@ -32,7 +32,7 @@ settlement and durable transfer/claim replay records.
 - [x] **22.** Resolve third-party payment using authenticated issuer evidence.
 - [x] **23.** Encode portable claims with protected secret ownership.
 - [x] **24.** Create finite claims and persist only their commitments.
-- [ ] **25.** Encrypt and validate owner-bound claim redemption requests.
+- [x] **25.** Encrypt and validate owner-bound claim redemption requests.
 - [ ] **26.** Redeem claims atomically with owner-bound retry results.
 - [ ] **27.** Invalidate unused claims without weakening terminal replay guards.
 - [ ] **28.** Preserve obligations and replay records during bounded maintenance.
@@ -390,6 +390,8 @@ Decrypt through protected identity authority and release plaintext only after
 authentication, then validate length/domain/local issuer/authenticated owner.
 Test real encryption, tampering, wrong credential/recipient, truncation, resource
 bounds and cleanup on all failures; no secret in diagnostics or wire plaintext.
+
+Completed step 25: Implemented exact owner/issuer/domain-bound generic encrypted claim requests and protected Identity decryption adapter. Real envelope tests reject ciphertext/header tampering, wrong owner and truncation; secret plaintext stays guarded and is absent from transmitted objects. Required checks pass; production line coverage 8431/8830 = 95.48%.
 
 ### 26. Claim redemption
 

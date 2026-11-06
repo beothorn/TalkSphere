@@ -8,6 +8,7 @@ pub mod contract;
 pub mod fees;
 pub mod payment;
 pub mod persistence;
+pub mod redemption;
 pub mod reservation;
 pub mod settlement;
 pub mod state;
