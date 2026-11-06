@@ -5,3 +5,5 @@ pub mod cryptography;
 pub mod identity;
 pub mod services;
 pub mod transport;
+
+pub mod ledger;

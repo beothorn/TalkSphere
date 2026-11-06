@@ -5,7 +5,8 @@ settlement, transfers and claims for Services and authenticated Peer Protocol
 adapters. It consumes public Identity/Cryptography capabilities and local platform
 persistence, without accessing another module's private state.
 
-Status: requirements reconciled; accounting runtime is not implemented or exposed.
+Status: requirements reconciled and tested local authority/call contracts available;
+accounting runtime is not implemented or exposed.
 See the [requirements map](REQUIREMENTS.md) and [33-step plan](../../../plans/6_Ledger_module/PLAN.md).
 The map pins the [CR2SE](https://github.com/beothorn/CR2SE) revision and distinguishes
 module evidence from future Services/network integration.

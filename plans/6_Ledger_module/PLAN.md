@@ -9,7 +9,7 @@ settlement and durable transfer/claim replay records.
 ## Steps
 
 - [x] **1.** Reconcile Ledger requirements and acceptance cases with upstream.
-- [ ] **2.** Define Ledger authority, operation identities and resource limits.
+- [x] **2.** Define Ledger authority, operation identities and resource limits.
 - [ ] **3.** Add deterministic Ledger fixtures and failure helpers.
 - [ ] **4.** Implement exact issuer-separated accounting views.
 - [ ] **5.** Define atomic persistence and recoverable transaction outcomes.
@@ -121,6 +121,8 @@ accepted terms, roles, issuer, price mode/bound and result references; identical
 input on another stream is a different attempt. Separate administrative,
 coordinator, account and authenticated-control authority. Test foreign/revoked
 handles, incompatible versions and invalid limits before effects.
+
+Completed step 2: added versioned call contexts, exact operation keys, separate local authority actions, typed failures and positive admission limits. Foreign/revoked grants, wrong identity/action, over-budget calls, expired/cancelled calls and version rejection have unit tests. Required checks pass; production coverage 6832/7101 = 96.21%. Accounting transitions remain future steps.
 
 ### 3. Test dependencies
 
