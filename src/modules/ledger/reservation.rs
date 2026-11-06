@@ -45,6 +45,7 @@ pub(super) struct Operation {
     pub held: u64,
     pub status: Status,
     pub effect: Option<(u64, Vec<u8>)>,
+    pub confirmed: bool,
 }
 impl<P: Persistence> Ledger<P> {
     /// Reserve one exact accepted provider-credit operation with durable retry association.
@@ -139,6 +140,7 @@ impl<P: Persistence> Ledger<P> {
                     held,
                     status: Status::Reserved,
                     effect: None,
+                    confirmed: mode != Mode::ThirdParty,
                 },
             );
             Ok(Reservation {
@@ -190,7 +192,7 @@ pub(super) fn available(s: &State, resource: Resource) -> Result<u64, Error> {
         .values()
         .filter(|o| {
             (o.resource == resource || matches!(resource,Resource::IssuedRoom(id) if o.resource==Resource::Issuance && o.terms.provider==id))
-                && matches!(o.status, Status::Reserved | Status::Prepared)
+                && (matches!(o.status, Status::Reserved | Status::Prepared)||(o.status==Status::Committed&&!o.confirmed))
         })
         .try_fold(total, |n, o| n.checked_sub(o.held).ok_or(Error::Invalid))
 }
@@ -231,7 +233,8 @@ pub(super) fn encode(operations: &BTreeMap<OperationKey, Operation>) -> serde_js
                     o.held,
                     o.status as u8,
                     o.effect.as_ref().map(|e| e.0),
-                    o.effect.as_ref().map(|e| &e.1)
+                    o.effect.as_ref().map(|e| &e.1),
+                    o.confirmed
                 ])
             })
             .collect(),
@@ -252,7 +255,7 @@ pub(super) fn decode(
     for row in rows {
         let a = row
             .as_array()
-            .filter(|a| a.len() == 19)
+            .filter(|a| a.len() == 20)
             .ok_or(Error::Invalid)?;
         let key = OperationKey {
             requester: IdentityId(array(&a[0])?),
@@ -307,6 +310,7 @@ pub(super) fn decode(
         } else {
             Some((number(&a[17])?, byte_vec(&a[18])?))
         };
+        let confirmed = a[19].as_bool().ok_or(Error::Invalid)?;
         let held = number(&a[15])?;
         if key.requester != terms.requester || held == 0 || held < terms.maximum {
             return Err(Error::Invalid);
@@ -321,6 +325,7 @@ pub(super) fn decode(
                     held,
                     status,
                     effect,
+                    confirmed,
                 },
             )
             .is_some()

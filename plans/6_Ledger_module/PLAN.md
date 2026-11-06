@@ -21,7 +21,7 @@ settlement and durable transfer/claim replay records.
 - [x] **11.** Reserve finite budgets for same-identity work.
 - [x] **12.** Reserve third-party payments with exact fees and bindings.
 - [x] **13.** Prepare immutable settlement effects and status records.
-- [ ] **14.** Commit two-party and internal settlements exactly once.
+- [x] **14.** Commit two-party and internal settlements exactly once.
 - [ ] **15.** Release uncommitted holds through authorized abort decisions.
 - [ ] **16.** Recover Ledger participants across coordination failures.
 - [ ] **17.** Encode and validate canonical transfer orders.
@@ -263,6 +263,8 @@ credit or internal use with status/result retention and unused metered capacity
 release. Test LG-02–LG-05: price7, 60 reserved/21 final, exact maximum, duplicate
 commit, wrong token and lost reply. Preserve accepted terms across trust/policy
 changes; no assertion of atomicity between independent peers or service stores.
+
+Completed step 14: Implemented token-bound local commits for provider/requester credits and internal resource use, exact retry idempotence and unused metered release. Mode-by-mode tests assert one price21 effect from a maximum60 reservation; third-party completion retains an unconfirmed payment hold. Required checks pass; production line coverage 7700/8029 = 95.90%.
 
 ### 15. Abort semantics
 

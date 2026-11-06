@@ -435,3 +435,86 @@ fn prepared_status_and_conflicts() {
         Ok(Some(Status::Prepared))
     );
 }
+
+// Every two-party/internal role applies its price once and releases unused metered capacity.
+#[test]
+fn local_commit_modes() {
+    let [a, b, _, _] = super::super::test_support::identities();
+    for (local, issuer, internal) in [
+        (a, b, false),
+        (b, b, false),
+        (a, a, false),
+        (b, a, false),
+        (a, a, true),
+    ] {
+        let provider = if internal { a } else { b };
+        let auth = Arc::new(Authority::new());
+        let admin = auth.grant(local, Action::Administer, 65536).unwrap();
+        let read = auth.grant(local, Action::Read, 65536).unwrap();
+        let coord = auth.grant(local, Action::Coordinate, 65536).unwrap();
+        let ledger = Ledger::initialize(
+            local,
+            auth.clone(),
+            Memory::default(),
+            Limits {
+                accounts: 16,
+                operations: 16,
+                transfers: 16,
+                claims: 16,
+                quotes: 8,
+                state_bytes: 65536,
+            },
+            &context(&admin),
+            100,
+            100,
+        )
+        .unwrap();
+        if !internal && local == b {
+            ledger
+                .set_trust(&context(&admin), a, Trust::new(1).unwrap())
+                .unwrap();
+            if issuer == b {
+                ledger.grant(&context(&admin), a, 100).unwrap();
+            }
+        }
+        if !internal && local == a && issuer == b {
+            ledger.set_owned(&context(&admin), b, 100).unwrap();
+        }
+        let mut t = terms(a, provider);
+        t.issuer = issuer;
+        let key = OperationKey {
+            requester: a,
+            connection: [1; 32],
+            stream: 1,
+        };
+        let r = ledger
+            .reserve(
+                &context(&coord),
+                key,
+                t,
+                Policy {
+                    requester_credits: true,
+                    third_party: true,
+                },
+            )
+            .unwrap();
+        let token = ledger.prepare(&context(&coord), &r, 21, vec![1]).unwrap();
+        ledger.commit(&context(&coord), &token).unwrap();
+        ledger.commit(&context(&coord), &token).unwrap();
+        assert_eq!(
+            ledger.status(&context(&coord), key),
+            Ok(Some(Status::Committed))
+        );
+        if internal {
+            assert_eq!(ledger.budgets(&context(&read)), Ok((100, 79)));
+        } else if issuer == b {
+            let peer = if local == a { b } else { a };
+            assert_eq!(ledger.available(&context(&read), peer, local == a), Ok(79));
+        } else if local == a {
+            assert_eq!(ledger.view(&context(&read), b).unwrap().issued, 21);
+            assert_eq!(ledger.budgets(&context(&read)).unwrap().0, 79);
+        } else {
+            assert_eq!(ledger.view(&context(&read), a).unwrap().owned, 21);
+        }
+    }
+}

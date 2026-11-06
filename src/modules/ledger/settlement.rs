@@ -64,6 +64,69 @@ impl<P: Persistence> Ledger<P> {
             })
         })
     }
+    /// Apply one authorized durable coordinator commit decision to the exact prepared effect.
+    /// # Errors
+    /// Denied token, conflicting terminal decision, capacity or persistence failures prevent success.
+    pub fn commit(&self, context: &Context<'_>, prepared: &Prepared) -> Result<(), Error> {
+        tracing::trace!("Applying immutable Ledger commit decision");
+        if prepared.local != self.local {
+            return Err(Error::Denied);
+        }
+        self.change(context, Action::Coordinate, |s| {
+            let mut o = s
+                .operations
+                .get(&prepared.key)
+                .cloned()
+                .ok_or(Error::Denied)?;
+            let (price, effect) = o.effect.as_ref().ok_or(Error::Conflict)?;
+            if token(prepared.key, *price, effect) != prepared.digest {
+                return Err(Error::Denied);
+            }
+            if o.status == Status::Committed {
+                return Ok(());
+            }
+            if o.status != Status::Prepared {
+                return Err(Error::Conflict);
+            }
+            let price = *price;
+            if o.mode == super::terms::Mode::ThirdParty {
+                o.held = if self.local == o.terms.requester {
+                    price
+                        .checked_add(o.terms.fee.ok_or(Error::Invalid)?)
+                        .ok_or(Error::Limit)?
+                } else {
+                    price
+                };
+            } else {
+                match o.resource {
+                    super::reservation::Resource::Owned(id) => {
+                        let balance = s.accounts.owned.get_mut(&id).ok_or(Error::Insufficient)?;
+                        *balance = balance.checked_sub(price).ok_or(Error::Insufficient)?;
+                    }
+                    super::reservation::Resource::Issued(id) => {
+                        let balance = s.accounts.issued.get_mut(&id).ok_or(Error::Insufficient)?;
+                        *balance = balance.checked_sub(price).ok_or(Error::Insufficient)?;
+                    }
+                    super::reservation::Resource::Issuance => {
+                        s.issuance = s.issuance.checked_sub(price).ok_or(Error::Insufficient)?;
+                        let balance = s.accounts.issued.entry(o.terms.provider).or_default();
+                        *balance = balance.checked_add(price).ok_or(Error::Limit)?;
+                    }
+                    super::reservation::Resource::Internal => {
+                        s.internal = s.internal.checked_sub(price).ok_or(Error::Insufficient)?;
+                    }
+                    super::reservation::Resource::Incoming(id) => {
+                        let balance = s.accounts.owned.entry(id).or_default();
+                        *balance = balance.checked_add(price).ok_or(Error::Limit)?;
+                    }
+                    super::reservation::Resource::IssuedRoom(_) => return Err(Error::Invalid),
+                }
+            }
+            o.status = Status::Committed;
+            s.operations.insert(prepared.key, o);
+            Ok(())
+        })
+    }
     /// Query one exact durable operation status without creating or re-executing work.
     /// # Errors
     /// Requires Coordinator authority and a reconciled local image.
