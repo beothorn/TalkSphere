@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–21 are complete.
+Status: execution started; steps 1–22 are complete.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -29,7 +29,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **19.** Verify stream allocation and protocol selection on authenticated connections.
 - [x] **20.** Verify multiplexing, half-close and cancellation across real peers.
 - [x] **21.** Verify probes and graceful draining across real peers.
-- [ ] **22.** Verify truncation, resource bounds and slow-consumer isolation.
+- [x] **22.** Verify truncation, resource bounds and slow-consumer isolation.
 - [ ] **23.** Verify restart, startup failures and diagnostic privacy.
 - [ ] **24.** Audit Transport acceptance and publish the server integration handoff.
 
@@ -329,6 +329,8 @@ completed streams and no resynchronization. Exercise handshake deadlines, listen
 connection/stream/byte caps, slow consumers and fairness under bounded concurrent
 load. Assert resource refusal is never normal service completion; use synthetic
 state for impractically large limits and explicit counters for occupancy claims.
+
+Completed: Native-tag tests cover malformed header/control rules, literal diagnostic rows, every incomplete DATA prefix and slow-consumer isolation. Real TCP tests verify silent-peer deadlines, continued listener operation, connection/stream admission caps, occupancy and maximum-plus-small-frame progress. Required checks pass; production coverage: 5339/5544 = 96.30%.
 
 ### 23. Restart and operational failures
 

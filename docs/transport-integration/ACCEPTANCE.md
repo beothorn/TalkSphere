@@ -115,3 +115,15 @@ EOF after drain and typed peer drain reasons. server_streams verifies both probe
 directions over actual TCP, rejects new OPEN after runtime shutdown begins, receives
 a final reply on an accepted stream, preserves Completed outcomes and releases both
 connection reservations. Process SIGTERM coverage separately verifies normal exit.
+
+## Truncation and finite operation
+
+Native-tag scenarios repeat invalid header bounds, malformed controls, every
+incomplete protected DATA prefix and slow-consumer overflow with independent
+stream progress. Literal diagnostic reason rows run for ERROR/CANCEL/GOAWAY with
+valid tags, accepted byte preservation and leading-BOM rejection. A real silent TCP
+peer is closed by its configured handshake deadline while the listener remains
+available. Actual TCP driver tests refuse excess connection/stream admission,
+inspect occupancy and deliver maximum-size plus small-stream traffic without
+starvation. Existing shared-budget/short-write scheduler tests complement these
+observations; none claims a throughput or latency service guarantee.

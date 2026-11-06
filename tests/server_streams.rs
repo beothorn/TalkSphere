@@ -43,6 +43,10 @@ struct Node {
 impl Node {
     // Initialize separate protected credentials and register only an isolated test application protocol.
     fn new(path: &Path, signal: Signal) -> Self {
+        Self::configured(path, signal, |_| {})
+    }
+    // Validate test-specific finite resource policy before acquiring real driver dependencies.
+    fn configured(path: &Path, signal: Signal, edit: impl FnOnce(&mut Options)) -> Self {
         assert!(
             Command::new(env!("CARGO_BIN_EXE_talksphere"))
                 .args(["identity-init", "--identity-store"])
@@ -52,7 +56,9 @@ impl Node {
                 .status
                 .success()
         );
-        let config = Config::new(Options::local(path.into()).unwrap()).unwrap();
+        let mut options = Options::local(path.into()).unwrap();
+        edit(&mut options);
+        let config = Config::new(options).unwrap();
         let credentials = server::credentials::load(&config, false).unwrap();
         let mut node = server::transport::compose(config, credentials).unwrap();
         let events = Arc::new(Mutex::new(Vec::new()));
@@ -369,4 +375,61 @@ fn summarize(node: &Node) -> Vec<String> {
             Event::ListenerClosed { .. } => "listener closed".into(),
         })
         .collect()
+}
+
+// Real TCP driver admission remains bounded while a full-size stream and a small independent stream both progress.
+#[test]
+fn real_tcp_resource_admission_and_frame_fairness() {
+    use talksphere::modules::transport::config::{MAX_PAYLOAD_BYTES, TransportConfig};
+    let fixture = runtime::ProcessFixture::spawn(&["--version"]);
+    assert!(fixture.line().is_ok());
+    let signal = Signal::default();
+    let limit = |options: &mut Options| {
+        let mut limits = *options.transport.limits();
+        limits.connections = 1;
+        limits.streams_per_connection = 2;
+        options.transport = TransportConfig::new(limits, Duration::from_secs(1)).unwrap();
+    };
+    let mut a = Node::configured(&fixture.root.join("a"), signal.clone(), limit);
+    let mut b = Node::configured(&fixture.root.join("b"), signal, limit);
+    let connection = connect(&mut a, &mut b);
+    assert!(
+        a.pump
+            .transport
+            .submit(Request::Connect(
+                ConnectRequest::new(b.address, ExpectedPeer::Known(b.pump.transport.local_id))
+                    .unwrap()
+            ))
+            .is_err()
+    );
+    assert_eq!(a.pump.transport.driver.resources().connections(), 1);
+    let large = open(&mut a, &connection);
+    let small = open(&mut a, &connection);
+    assert!(
+        a.pump
+            .transport
+            .submit(Request::OpenStream {
+                connection,
+                owner: a.owner.clone()
+            })
+            .is_err()
+    );
+    until(&mut a, &mut b, |_, b| b.stream(3).is_some());
+    a.action(&large, StreamAction::Data(vec![9; MAX_PAYLOAD_BYTES]));
+    a.action(&small, StreamAction::Data(vec![7]));
+    assert!(
+        a.pump.transport.driver.resources().outbound_bytes()
+            <= a.pump
+                .transport
+                .config
+                .options()
+                .transport
+                .limits()
+                .outbound_bytes
+    );
+    until(&mut a, &mut b, |_, b| {
+        b.bytes(1).len() == MAX_PAYLOAD_BYTES && b.bytes(3) == [7]
+    });
+    let invalid = runtime::ProcessFixture::spawn(&["--unknown"]);
+    assert!(invalid.error().is_ok());
 }

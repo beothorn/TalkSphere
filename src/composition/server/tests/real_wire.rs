@@ -805,3 +805,209 @@ fn peer_drain_reason_is_preserved() {
         }
     )));
 }
+
+use crate::modules::transport::codec::FrameHeader;
+
+// Correct native tags reach the actual bound, control or truncation state rule under test.
+#[test]
+fn malformed_header_response_matrix() {
+    for case in 0..6 {
+        let mut h = Harness::new();
+        let mut header = FrameHeader::new(FrameType::Data, 2, 1).unwrap().encode();
+        match case {
+            0 => header[0] = 2,
+            1 => header[2] = 1,
+            2 => header[1] = 255,
+            3 => header[8..12].copy_from_slice(&65537u32.to_be_bytes()),
+            4 => header[4..8].fill(0),
+            _ => header[1] = FrameType::Ping as u8,
+        }
+        let start = h.control.written().len();
+        if case != 0 {
+            h.expect_send(
+                FrameType::Error,
+                0,
+                &error(if case == 3 {
+                    ErrorCode::FrameSizeError
+                } else {
+                    ErrorCode::ProtocolError
+                }),
+            );
+        }
+        h.control.push_read(ReadStep::Bytes(header.to_vec()));
+        assert!(h.poll().is_ready());
+        assert!(h.control.is_closed());
+        if case == 0 {
+            assert_eq!(h.control.written().len(), start);
+        }
+        assert!(!h.events().iter().any(|e| matches!(e, Event::Data { .. })));
+    }
+}
+
+// Correct native tags reach the actual bound, control or truncation state rule under test.
+#[test]
+fn malformed_protected_controls_are_connection_errors() {
+    for (kind, payload) in [
+        (FrameType::Ping, vec![0; 7]),
+        (FrameType::Error, vec![0, 0, 0, 0]),
+        (FrameType::Error, vec![255, 255, 0, 0]),
+        (FrameType::Error, vec![0, 1, 0, 1, 255]),
+        (FrameType::GoAway, vec![0; 7]),
+    ] {
+        let mut h = Harness::new();
+        h.receive(
+            kind,
+            0,
+            payload,
+            Some((FrameType::Error, 0, error(ErrorCode::ProtocolError))),
+        );
+        assert!(h.control.is_closed());
+    }
+}
+
+// Correct native tags reach the actual bound, control or truncation state rule under test.
+#[test]
+fn every_incomplete_protected_prefix_is_truncation() {
+    let bytes = protected(FrameType::Data, 2, b"abc", 1, "acceptor-to-initiator");
+    for end in 1..bytes.len() {
+        let mut h = Harness::new();
+        h.receive(
+            FrameType::Open,
+            2,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+            None,
+        );
+        h.events();
+        h.control.push_read(ReadStep::Bytes(bytes[..end].to_vec()));
+        h.control.push_read(ReadStep::Eof);
+        assert!(h.poll().is_ready());
+        let events = h.events();
+        assert!(!events.iter().any(|e| matches!(e, Event::Data { .. })));
+        assert!(events.iter().any(|e| matches!(
+            e,
+            Event::StreamClosed {
+                outcome: StreamOutcome::Failed(Failure {
+                    code: FailureCode::TruncatedFrame,
+                    ..
+                }),
+                ..
+            }
+        )));
+    }
+}
+
+// Correct native tags reach the actual bound, control or truncation state rule under test.
+#[test]
+fn bounded_slow_consumer_does_not_stop_another_stream() {
+    let mut h = Harness::new();
+    for id in [2, 4] {
+        h.receive(
+            FrameType::Open,
+            id,
+            Open::new("cr2se.peer", 1).unwrap().encode(),
+            None,
+        );
+    }
+    h.events();
+    h.receive(FrameType::Data, 2, vec![0; MAX_PAYLOAD_BYTES], None);
+    h.receive(
+        FrameType::Data,
+        2,
+        vec![1],
+        Some((FrameType::Error, 2, error(ErrorCode::ResourceLimit))),
+    );
+    h.receive(FrameType::Data, 4, vec![9], None);
+    let events = h.events();
+    assert!(events.iter().any(|e| matches!(
+        e,
+        Event::StreamClosed {
+            outcome: StreamOutcome::Failed(Failure {
+                code: FailureCode::ResourceLimit,
+                ..
+            }),
+            ..
+        }
+    )));
+    assert!(events.iter().any(|e| matches!(e, Event::Data { stream, bytes } if stream.wire_id().get() == 4 && *bytes == [9])));
+    assert!(!h.control.is_closed());
+}
+
+// Every literal diagnostic row preserves accepted bytes and rejects malformed text before trusted delivery under real tags.
+#[test]
+fn native_diagnostic_reason_vectors_reach_control_validation() {
+    use crate::modules::cryptography::test_support::hex;
+    for line in crate::modules::identity::test_support::TRANSPORT
+        .lines()
+        .filter(|line| line.starts_with("| empty |") || line.starts_with("| `"))
+    {
+        let columns: Vec<_> = line.split('|').map(str::trim).collect();
+        if columns.len() != 6 {
+            continue;
+        }
+        let reason_bytes = if columns[1] == "empty" {
+            vec![]
+        } else {
+            hex(columns[1].trim_matches('`'))
+        };
+        let error_bytes = hex(columns[2].trim_matches('`'));
+        let goaway_bytes = hex(columns[3].trim_matches('`'));
+        let valid = columns[4].starts_with("accept");
+        let reason = std::str::from_utf8(&reason_bytes).unwrap();
+        if valid {
+            assert_eq!(
+                ErrorPayload::new(ErrorCode::ProtocolError, reason)
+                    .unwrap()
+                    .encode(),
+                error_bytes
+            );
+            assert_eq!(
+                GoAway::new(0, ErrorCode::ProtocolError, reason)
+                    .unwrap()
+                    .encode(),
+                goaway_bytes
+            );
+        } else {
+            assert!(ErrorPayload::new(ErrorCode::ProtocolError, reason).is_err());
+            assert!(GoAway::new(0, ErrorCode::ProtocolError, reason).is_err());
+        }
+        for kind in [FrameType::Error, FrameType::Cancel, FrameType::GoAway] {
+            let mut h = Harness::new();
+            let id = if kind == FrameType::Cancel {
+                h.receive(
+                    FrameType::Open,
+                    2,
+                    Open::new("cr2se.peer", 1).unwrap().encode(),
+                    None,
+                );
+                h.events();
+                2
+            } else {
+                0
+            };
+            let payload = if kind == FrameType::GoAway {
+                goaway_bytes.clone()
+            } else {
+                error_bytes.clone()
+            };
+            let response = if !valid {
+                Some((FrameType::Error, 0, error(ErrorCode::ProtocolError)))
+            } else if kind == FrameType::GoAway {
+                Some((
+                    FrameType::GoAway,
+                    0,
+                    GoAway::new(0, ErrorCode::NoError, "").unwrap().encode(),
+                ))
+            } else {
+                None
+            };
+            h.receive(kind, id, payload, response);
+            assert_eq!(h.control.is_closed(), !valid || kind != FrameType::Cancel);
+        }
+    }
+    let accepted = format!("{}\u{feff}", "a".repeat(1021));
+    assert_eq!(accepted.len(), 1024);
+    assert!(ErrorPayload::new(ErrorCode::ProtocolError, &accepted).is_ok());
+    let rejected = format!("{}\u{feff}", "a".repeat(1022));
+    assert_eq!(rejected.len(), 1025);
+    assert!(ErrorPayload::new(ErrorCode::ProtocolError, &rejected).is_err());
+}
