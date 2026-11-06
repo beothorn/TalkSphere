@@ -518,3 +518,69 @@ fn local_commit_modes() {
         }
     }
 }
+
+// Explicit abort releases only uncommitted capacity; prepared timeout and committed cancel cannot erase effects.
+#[test]
+fn abort_decisions() {
+    let [a, b, _, _] = super::super::test_support::identities();
+    let auth = Arc::new(Authority::new());
+    let admin = auth.grant(a, Action::Administer, 65536).unwrap();
+    let read = auth.grant(a, Action::Read, 65536).unwrap();
+    let coord = auth.grant(a, Action::Coordinate, 65536).unwrap();
+    let ledger = Ledger::initialize(
+        a,
+        auth.clone(),
+        Memory::default(),
+        Limits {
+            accounts: 16,
+            operations: 16,
+            transfers: 16,
+            claims: 16,
+            quotes: 8,
+            state_bytes: 65536,
+        },
+        &context(&admin),
+        100,
+        100,
+    )
+    .unwrap();
+    ledger.set_owned(&context(&admin), b, 100).unwrap();
+    for stream in 1..=3 {
+        let key = OperationKey {
+            requester: a,
+            connection: [1; 32],
+            stream,
+        };
+        let r = ledger
+            .reserve(&context(&coord), key, terms(a, b), Policy::default())
+            .unwrap();
+        if stream == 1 {
+            ledger.abort(&context(&coord), &r, None).unwrap();
+            ledger.abort(&context(&coord), &r, None).unwrap();
+            assert_eq!(ledger.available(&context(&read), b, true), Ok(100));
+        } else {
+            let token = ledger.prepare(&context(&coord), &r, 21, vec![1]).unwrap();
+            assert_eq!(ledger.abort(&context(&coord), &r, None), Err(Error::Denied));
+            let mut expired = context(&coord);
+            expired.cancelled = true;
+            assert_eq!(
+                ledger.abort(&expired, &r, Some(&token)),
+                Err(Error::Cancelled)
+            );
+            assert_eq!(ledger.available(&context(&read), b, true), Ok(40));
+            if stream == 2 {
+                ledger.abort(&context(&coord), &r, Some(&token)).unwrap();
+                assert_eq!(
+                    ledger.commit(&context(&coord), &token),
+                    Err(Error::Conflict)
+                );
+            } else {
+                ledger.commit(&context(&coord), &token).unwrap();
+                assert_eq!(
+                    ledger.abort(&context(&coord), &r, Some(&token)),
+                    Err(Error::Conflict)
+                );
+            }
+        }
+    }
+}

@@ -22,7 +22,7 @@ settlement and durable transfer/claim replay records.
 - [x] **12.** Reserve third-party payments with exact fees and bindings.
 - [x] **13.** Prepare immutable settlement effects and status records.
 - [x] **14.** Commit two-party and internal settlements exactly once.
-- [ ] **15.** Release uncommitted holds through authorized abort decisions.
+- [x] **15.** Release uncommitted holds through authorized abort decisions.
 - [ ] **16.** Recover Ledger participants across coordination failures.
 - [ ] **17.** Encode and validate canonical transfer orders.
 - [ ] **18.** Sign and authenticate transfers through Identity and Cryptography.
@@ -274,6 +274,8 @@ and preserve idempotent/conflicting-key history. Refuse abort after commit and
 never infer rollback from timeout, socket loss or missing coordinator. Test each
 state transition and races with commit, including revoked new-work authority
 without orphaning authorized recovery of accepted obligations.
+
+Completed step 15: Added explicit precommit failure release and exact-token coordinated abort. Tests cover repeated abort, prepared calls requiring a token, cancelled calls retaining holds, commit-after-abort conflict and refusal to undo committed effects. Required checks pass; production line coverage 7730/8061 = 95.89%.
 
 ### 16. Local recovery
 

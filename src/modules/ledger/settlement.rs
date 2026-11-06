@@ -127,6 +127,43 @@ impl<P: Persistence> Ledger<P> {
             Ok(())
         })
     }
+    /// Release a reserved operation after explicit failure, or apply a recorded prepared abort.
+    /// Prepared abort requires the exact token; absence of a decision is never a timeout abort.
+    /// # Errors
+    /// Denies foreign holds/tokens, rejects committed operations and conflicting terminal decisions.
+    pub fn abort(
+        &self,
+        context: &Context<'_>,
+        reservation: &Reservation,
+        prepared: Option<&Prepared>,
+    ) -> Result<(), Error> {
+        tracing::trace!("Applying explicit uncommitted Ledger abort decision");
+        if reservation.local != self.local {
+            return Err(Error::Denied);
+        }
+        self.change(context, Action::Coordinate, |s| {
+            let o = s
+                .operations
+                .get_mut(&reservation.key)
+                .ok_or(Error::Denied)?;
+            if o.status == Status::Committed {
+                return Err(Error::Conflict);
+            }
+            if let Some((price, effect)) = &o.effect {
+                let p = prepared.ok_or(Error::Denied)?;
+                if p.local != self.local
+                    || p.key != reservation.key
+                    || p.digest != token(reservation.key, *price, effect)
+                {
+                    return Err(Error::Denied);
+                }
+            } else if prepared.is_some() {
+                return Err(Error::Denied);
+            }
+            o.status = Status::Aborted;
+            Ok(())
+        })
+    }
     /// Query one exact durable operation status without creating or re-executing work.
     /// # Errors
     /// Requires Coordinator authority and a reconciled local image.

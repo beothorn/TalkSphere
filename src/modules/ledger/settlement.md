@@ -20,3 +20,8 @@ internal use once, and releases unused metered capacity. Repeated commit returns
 the original outcome. Third-party commit records service-side completion while
 retaining the final payment hold until authenticated issuer confirmation; it
 never fabricates payment success. Local transaction success proves no remote receipt.
+
+Abort requires explicit Coordinator authority. Reserved failure can release its
+hold directly; prepared abort requires the exact effect token and a recorded
+coordinator abort decision. Repeated abort is idempotent; committed effects cannot
+be undone. Timeout/cancellation without a decision leaves the hold intact.
