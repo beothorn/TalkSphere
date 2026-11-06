@@ -27,5 +27,5 @@ cargo test --locked
 cargo run --locked -- --help
 ```
 
-Networking remains unavailable through `serve`; exercise framing through the
+Configured Linux serve now composes real networking; exercise framing through the
 polling API and deterministic tests. The integrity layer performs tag verification through injected Crypto.

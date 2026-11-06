@@ -3,8 +3,9 @@
 `run(arguments)` takes operating-system arguments excluding the executable name,
 validates UTF-8 and dispatches documented commands. It prints help/version on
 stdout, usage/runtime failures on stderr, and returns exit status 0 for help or
-version, 2 for invalid input, and 1 for unavailable server integration. It does
-not install protocol logging or manufacture credentials.
+version or successful administration/shutdown, 2 for invalid input, and 1 for
+runtime failure. Operational commands install shared stderr logging at composition;
+only explicit identity-init generates keys. Configured serve runs real Transport.
 
 Explicit identity-init and identity-show commands require --identity-store DIRECTORY.
 They return only the public canonical ID; initialization never overwrites keys and

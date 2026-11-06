@@ -14,7 +14,8 @@ through Mio. Only `net` and `os-poll` features are enabled.
 
 [Driver composition](../driver/mod.md) checks shared admission limits before
 allocating handshake state. No adapter implements identity or cryptography.
-The normal CLI remains unavailable until real module capabilities are supplied.
+The configured Linux serve command supplies real module capabilities through
+application composition.
 
 From the repository root:
 

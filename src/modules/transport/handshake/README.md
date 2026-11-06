@@ -27,6 +27,6 @@ AUTH and a tagged frame in one socket chunk. Derivation follows the normative
 post-AUTH ordering; [bug 0002](../../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md)
 records the differing pseudocode order. The integrity layer performs tag verification through injected Crypto.
 
-`serve` remains unavailable. Constructors never authenticate by themselves;
-only fully checked state can release connection facts. Real cryptography and
-normal server composition remain required for a running node.
+Configured `serve --identity-store DIRECTORY` is available on Linux. Constructors never authenticate by themselves;
+only fully checked state can release connection facts. Real Identity/Cryptography and runtime composition now exercise these state rules;
+see the server integration acceptance evidence.

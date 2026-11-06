@@ -20,8 +20,8 @@ cargo run --locked -- --help
 cargo run --locked -- help serve
 ```
 
-Tests use private temporary directories and fixture keys. There is no storage CLI
-command yet and serve remains unavailable. Platforms other than Linux explicitly
+Tests use private temporary directories and fixture keys. Explicit identity-init
+and identity-show use this adapter; configured serve loads existing protected keys. Platforms other than Linux explicitly
 return Unsupported until a protected adapter is implemented and tested. The
 [Identity plan](../../../../plans/3_Identity_module/PLAN.md) records the pinned
 CR2SE baseline; file protection and serialization are local implementation choices.

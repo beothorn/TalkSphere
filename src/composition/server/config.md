@@ -9,7 +9,8 @@ These are application defaults, not protocol limits. Non-loopback binds require
 an explicit address. Port zero is valid for binding, never for an outgoing contact.
 
 Config.new rejects an empty identity path, zero shutdown deadline, zero/exceeded
-contact capacity, duplicate binary contact IDs and unresolved or invalid endpoints.
+contact capacity, duplicate binary contact IDs, unresolved or invalid endpoints, and monotonic deadlines
+that the platform cannot represent. DeadlineRange is rejected before acquisition.
 No storage inspection, creation or networking happens during construction. Existing
 TransportConfig owns transport validation. options returns an immutable view; later
 changes require a newly validated configuration. Config errors contain categories

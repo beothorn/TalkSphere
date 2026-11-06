@@ -1,51 +1,51 @@
 # Authenticated server composition
 
-Status: validated policy and lifecycle contracts are implemented; runtime execution
-follows the [integration plan](../../../plans/4_Transport_integration/PLAN.md).
-CLI and trusted application callers supply local configuration. Composition will
-own protected Identity, real Cryptography, platform adapters and the Transport
-Driver; it does not implement application protocols or service transactions.
+Status: all 24 integration steps are implemented; final verification is recorded
+in the [plan](../../../plans/4_Transport_integration/PLAN.md) and
+[acceptance matrix](../../../docs/transport-integration/ACCEPTANCE.md).
+The direct Linux runtime owns protected Identity authority, real Cryptography,
+TCP/readiness, monotonic timers and the Transport driver. CLI/trusted library
+callers supply configuration; Transport retains wire/session/stream state.
+Application protocols and service coordination belong to later modules.
 
-From the root, run `cargo build --locked`, `cargo test --locked composition::server`
-and `cargo run --locked -- --help`. The serve command remains explicitly unavailable
-until runtime startup and shutdown are implemented. See [policy](config.md),
-[lifecycle](mod.md) and the [upstream evidence inventory](../../../docs/transport-integration/ACCEPTANCE.md).
+| Contract | Responsibility |
+| --- | --- |
+| [Configuration](config.md) | Effect-free policy, contacts, finite representable deadlines |
+| [Lifecycle](mod.md) | Stages and secret-free failure categories |
+| [Credentials](credentials.md) | Existing protected keys, read/sign grants, writer lock |
+| [Transport composition](transport.md) | Real adapters, shared readiness and actual listener binding |
+| [Contacts](contacts.md) | One-shot pinned connection attempts |
+| [Event pump](pump.md) | Bounded polling and retained readiness notifications |
+| [Routing](routing.md) | Trusted registration and isolated consumer ownership |
+| [Shutdown](shutdown.md) | Stop admission, drain, force policy and process signals |
+| [Runtime](run.md) | Executable lifecycle and public status observations |
 
-Runtime fixtures are test-only: `cargo test --locked --test runtime_helpers` checks
-isolated child output/cleanup, and `cargo test --locked composition::server` checks
-wake/shutdown probes. Existing Transport ManualClock and scripted socket boundaries
-remain available for deterministic timing and I/O; authentication tests use real keys.
+From the repository root:
 
-[Credential startup](credentials.md) loads existing keys and explicitly selected
-contacts before networking; `cargo test --locked --test server_credentials` checks
-missing/corrupt state, scoped public projection and exclusive lock lifetime.
+```sh
+cargo build --locked
+cargo test --locked composition::server
+cargo test --locked --test server_runtime --test server_peers --test server_streams
+cargo test --locked --test server_trace
+cargo run --locked -- --help
+cargo run --locked -- help serve
+```
 
-[Real dependency composition](transport.md) shares TCP readiness with the monotonic
-clock and supplies production CSPRNG Cryptography plus scoped Identity to Driver.
-Construction binds no sockets and retains private authority until the driver drops.
+Follow the root README's explicit identity initialization and two-terminal commands.
+serve never generates replacement keys. Its default bind is loopback with an assigned
+port; an explicit contact requires an IP/port and expected identity. Contacts are
+not retried automatically. Inspection shares the protected store's exclusive lock.
+SIGINT/SIGTERM drain to --shutdown-ms; repeated requests force remaining work closed.
+Normal Stopped is reported after driver/key ownership drops. Runtime failure exits 1,
+syntax failure exits 2. Unsupported platforms fail without an unprotected fallback.
 
-[Bounded event polling](pump.md) retains readiness notifications and local shutdown
-requests, yields after 64 events and waits on a condition variable instead of spinning.
-Run `cargo test --locked composition::server::pump` for deterministic scheduling checks.
+Production registers no application protocol. Tests register bounded isolated
+consumers through trusted composition and never enable a fake service/debug CLI.
+The runtime protects frame integrity, not payload confidentiality, and never treats
+Transport admission as service completion, spending authorization or remote receipt.
 
-Transport.listen returns the actual bound address and public ID after binding and
-retains listener ownership. Lifecycle transitions prevent duplicate startup; tests
-verify port-zero readiness and that dropping the composition releases the port.
-
-[Contact startup](contacts.md) initiates each configured contact once with its exact
-expected ID and preserves per-attempt failures without taking down the listener.
-Admission is not authentication; no implicit reconnect or Discovery is performed.
-
-[Consumer routing](routing.md) requires locally registered owner capabilities and
-cancels a failed consumer's stream without automatic application retries. The
-production router remains empty until later application protocols are implemented.
-
-[Shutdown composition](shutdown.md) stops admission, drains accepted sessions to a
-finite deadline and closes incomplete handshakes. SIGINT/SIGTERM are forwarded by
-a safe iterator thread; repeated requests force closure. Driver drop releases keys
-and sockets before completion is reported.
-
-[Runtime orchestration](run.md) runs real Transport until controlled shutdown.
-The configured serve command is enabled on Linux; use --identity-store with existing
-keys and consult `talksphere help --listen` for defaults and startup contacts.
-Public stdout status never contains application payloads or private records.
+Fixtures control only the boundaries under test. Native real_wire tests pin exact
+upstream bytes with real primitives; separate executable peers use production
+randomness. Test sockets, manual time, extreme-counter fixtures and wake probes
+are excluded from production coverage. The supported local binding is direct;
+network peers are independent processes, not serialized local module deployment.

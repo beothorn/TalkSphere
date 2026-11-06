@@ -9,7 +9,7 @@ use super::{
 /// Local request failure; these variants are not CR2SE wire error codes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransportError {
-    /// Server startup awaits application composition.
+    /// Argument-free startup requires explicit protected server configuration.
     RuntimeUnavailable,
     InvalidConfig(ConfigError),
     WrongConnection,
@@ -35,7 +35,7 @@ impl fmt::Display for TransportError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RuntimeUnavailable => formatter.write_str(
-                "Server runtime requires normal server composition; no server was started. See plans/PLAN.md.",
+                "Transport startup requires explicit server configuration; use talksphere serve --identity-store DIRECTORY.",
             ),
             Self::InvalidConfig(error) => write!(formatter, "invalid Transport configuration: {error}"),
             Self::WrongConnection => formatter.write_str("stream belongs to a different connection"),
@@ -70,14 +70,14 @@ impl From<ConfigError> for TransportError {
 mod tests {
     use super::*;
 
-    // The local failure explains required real modules and where to find the integration plan.
+    // Argument-free startup explains explicit protected configuration without opening a listener.
     #[test]
-    fn runtime_error_explains_missing_integration() {
+    fn runtime_error_requires_explicit_configuration() {
         let error: &dyn Error = &TransportError::RuntimeUnavailable;
         let message = error.to_string();
-        assert!(message.contains("normal server composition"));
-        assert!(message.contains("no server was started"));
-        assert!(message.contains("plans/PLAN.md"));
+        assert!(message.contains("explicit server configuration"));
+        assert!(message.contains("--identity-store"));
+        assert!(message.contains("talksphere serve"));
         assert!(error.source().is_none());
     }
 

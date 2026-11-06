@@ -2,7 +2,7 @@
 
 Status: all 30 planned steps are implemented and verified for the direct in-process
 binding and protected Linux filesystem adapter. See the [plan](../../../plans/3_Identity_module/PLAN.md)
-and [acceptance matrix](ACCEPTANCE.md). Server composition is roadmap step 5.
+and [acceptance matrix](ACCEPTANCE.md). Server composition is implemented in roadmap step 5.
 
 Identity owns persistent credentials, scoped authority and configured contacts.
 It calls Cryptography for algorithms and a protected platform store for durability;
@@ -28,8 +28,9 @@ cargo run --locked -- --help
 cargo run --locked -- help serve
 ```
 
-There is no Identity CLI command yet. `cargo run --locked -- serve` returns status 1
-until normal server composition exists. No listener is opened.
+Explicit identity-init and identity-show commands require --identity-store DIRECTORY.
+Configured serve loads existing keys and opens the selected listener on Linux;
+serve without the required store option exits 2. See the root README for commands.
 Production coverage follows [the shared procedure](../../../docs/coverage.md).
 
 [Test helpers](test_support/README.md) pin the reviewed upstream fixtures and

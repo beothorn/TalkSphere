@@ -1,6 +1,6 @@
 //! Transport framing, authentication orchestration, multiplexed streams and TCP control.
 //! Production primitives are injected through explicit Identity/Cryptography contracts.
-//! Normal CLI composition remains unavailable until those real modules are integrated.
+//! Configured authenticated CLI composition is provided by composition::server.
 //!
 //! Deterministic dependencies are available only to internal unit tests.
 //! ```compile_fail
@@ -30,11 +30,11 @@ pub(crate) mod test_support;
 
 pub use error::TransportError;
 
-/// Attempt to start Transport.
+/// Reject argument-free startup, which cannot select protected credentials or local policy.
 ///
 /// # Errors
 ///
-/// Always returns [`TransportError::RuntimeUnavailable`] until Identity and normal server composition are integrated.
+/// Always returns [`TransportError::RuntimeUnavailable`]; use the configured server composition or serve command.
 /// This function performs no network I/O and creates no runtime state.
 pub fn start() -> Result<(), TransportError> {
     tracing::trace!(
@@ -48,7 +48,7 @@ pub fn start() -> Result<(), TransportError> {
 mod tests {
     use super::*;
 
-    // The implemented library must not claim that unavailable normal server composition is running.
+    // Argument-free startup cannot guess protected configuration or report an authenticated server.
     #[test]
     fn missing_runtime_cannot_report_a_running_server() {
         assert_eq!(start(), Err(TransportError::RuntimeUnavailable));

@@ -1,7 +1,7 @@
-# Server integration acceptance inventory
+# Server integration acceptance evidence
 
 Implementation baseline: [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
-The upstream comparison against main on 2026-11-05 is six commits ahead and changes
+The upstream comparison against main on 2026-11-05, rechecked on 2026-11-06, is six commits ahead and changes
 only website/workflow/root introductory material; no module contracts, pseudocode,
 acceptance cases or vectors changed. Retain the existing behavior and fixture revision.
 The specification, Transport inputs/outputs, pseudocode, vectors, TR suite,
@@ -12,33 +12,33 @@ pending notes superseded by its Cryptography and persistent Identity supplements
 Real AUTH and directional frame vectors already pass in composition tests, using
 protected identities loaded from disk. They do not yet exercise a server process.
 
-| Case | Existing evidence | Integration work still required |
+| Case | Executed assertion evidence | Result / binding |
 | --- | --- | --- |
-| TR-01 | Real persisted Identity handshake/AUTH/frame vectors | Driver ordering observations and separate-process authentication |
-| TR-02 | Scripted every-split/coalesced/short-write framing | Repeat with real protected bytes and representative TCP fragmentation |
-| TR-03 | Codec bounds, composed maximum DATA, real maximum tagging | Real driver/socket boundary failures before dispatch |
-| TR-04 | Handshake state rejection, real crypto negatives, real Identity contact/denial rejection | Full two-role matrix, weak A/R/S negatives, observed no X25519/HKDF before verified AUTH |
-| TR-05 | State gates and coalesced AUTH transitions | Real partial AUTH writes, withheld AUTH, same-ID fresh sessions |
-| TR-06 | Real vectors and cryptographic integrity regressions | Real driver mutation/replay/old-session rejection and exit cleanup matrix |
-| TR-07 | Exact allocation and controlled exhaustion unit tests | Authenticated driver allocation and exhaustion behavior |
-| TR-08 | OPEN codecs, registration and scripted routing | Correctly tagged malformed OPEN and owner isolation |
-| TR-09 | Scripted interleaving and half-close | Real protected bidirectional consumer exchange |
-| TR-10 | Scripted terminal traffic and cancellation | Real protected cancellation without retries |
-| TR-11 | Token/deadline and real primitive PING/PONG checks | Driver/socket probe expiry and duplicate handling |
-| TR-12 | Session GOAWAY and scripted drain | Runtime signal handling and authenticated socket drain |
-| TR-13 | Exact diagnostic vectors and codec rejection | Correctly tagged invalid controls and captured runtime privacy |
-| TR-14 | Scripted every-prefix truncation | Real session EOF/restart and completed-result preservation |
-| TR-15 | Driver budgets, scheduler, manual deadlines, real TCP readiness | Runtime wake races, slow consumers, shutdown responsiveness and occupancy evidence |
-| AT-C01 | Direct ports, typed grants, real adapters | Real runtime owner checks; serialized local module deployment is unsupported |
-| AT-C02 | Bounds and typed failures at individual modules | Startup cleanup, worker failure, bounded contacts and explicit unknown outcomes |
-| AT-C03 | Protected identity restart, copied contact snapshots | Process restart with stable keys and fresh sessions; no transient handle reuse |
-| AT-C04 | Module diagnostics capture and fail-closed decoders | Executable help/output discipline, signals, private-data exclusion and absent-service refusal |
+| TR-01 | real_wire::segmented_handshake_and_tag_transition_match_vectors; independent_tag_oracle_matches_pinned_first_frame; composition::identity pinned handshake/frame test; server_peers exact authenticated IDs/roles | Pass: literal vectors/native primitives, controlled bytes, actual TCP/processes |
+| TR-02 | every_protected_split_preserves_real_authenticated_bytes; segmented_handshake_and_tag_transition_match_vectors; existing framing every-split tests | Pass: every OPEN/DATA split, one-byte handshake/tail and 1–3-byte writes; real TCP payload tests supplement controlled segmentation |
+| TR-03 | native_stream_allocation_and_protocol_selection_are_exact; routing_halves_cancellation_and_reuse_through_socket; malformed_header_response_matrix; real_tcp_resource_admission_and_frame_fairness | Pass: lengths 1/65536, oversized/invalid headers before dispatch; actual TCP maximum/small frames |
+| TR-04 | real_handshake_failure_precedes_agreement_for_both_roles; malformed_and_timed_out_handshakes_do_not_publish_keys; partial_auth_write_and_expected_identity_failure_do_not_derive; handshake/state ordering_duplicates_and_payload_failures_are_terminal | Pass: native two-role negatives/order observations, complete state/width/duplicate matrix at the state boundary |
+| TR-05 | segmented_handshake_and_tag_transition_match_vectors; partial_auth_write_and_expected_identity_failure_do_not_derive; server_runtime freshness and server_peers same-identity tests | Pass: tag transition, withheld proof, partial AUTH, same-ID roles and independently fresh public handshake material |
+| TR-06 | integrity_mutation_replay_and_direction_confusion_close_silently; old_connection_tag_is_rejected_under_new_signed_transcript; native_connection_failure_releases_acquired_secret_owners; integrity sequence_exhaustion_closes_without_reusing_a_nonce | Pass: native rejection/release; extreme sequence boundary uses controlled unit state |
+| TR-07 | native_stream_allocation_and_protocol_selection_are_exact; native_stream_id_violations_close_connection; real_tcp_multiplexing_halves_and_cancellation; ids both_parities_exhaust_without_wrapping and session exhausted_numbering_drains | Pass: real allocation in both parities, real-tag failures; uint32 exhaustion uses controlled unit state |
+| TR-08 | native_stream_allocation_and_protocol_selection_are_exact; control/open codec matrices; routing consumers_are_isolated_and_failure_requests_cancellation | Pass: exact selection/refusal/consumed IDs and ownership; isolated test registration only |
+| TR-09 | real_tcp_multiplexing_halves_and_cancellation; native routing_halves_cancellation_and_reuse_through_socket; session independent_half_close_orders_and_write_completion and invalid_peer_half_close_sequences_are_isolated | Pass: actual bidirectional TCP plus native/state transition matrix |
+| TR-10 | real_tcp_multiplexing_halves_and_cancellation; native terminal/cancellation scenario; session cancellation_stops_production_and_discards_terminal_frames | Pass: cancellation, queued terminal discard, reuse rejection and independent progress; no Ledger/retry dependency |
+| TR-11 | real_tcp_probes_and_accepted_stream_drain; native ping_matching_timeout_and_graceful_empty_drain; session ping_echo_matching_and_timeout | Pass: both TCP probe directions, exact token/unsolicited/duplicate/unrelated/timeout state assertions |
+| TR-12 | real_tcp_probes_and_accepted_stream_drain; native goaway_refusal_and_accepted_stream_completion, protected_state_violations_close_connection, eof_after_completed_goaway_is_normal and peer_drain_reason_is_preserved; session goaway_bounds_and_late_open_refusal | Pass: actual accepted-stream drain and complete bound/refusal matrix |
+| TR-13 | native_diagnostic_reason_vectors_reach_control_validation; malformed_protected_controls_are_connection_errors; shared control codec tests | Pass: correctly tagged malformed controls, all literal reason rows, exact accepted bytes and byte-limit/BOM checks |
+| TR-14 | native every_incomplete_protected_prefix_is_truncation and EOF-after-drain; session connection_failure_preserves_completed_outcomes; framing every-prefix tests | Pass: partial header/payload/tag, no provisional dispatch/resynchronization, failed unfinished versus completed work |
+| TR-15 | bounded_slow_consumer_does_not_stop_another_stream; real_tcp_resource_admission_and_frame_fairness; server_runtime silent-peer test; driver shared budgets/deadlines and session scheduler tests | Pass: bounded occupancy/refusal, timeout, whole-frame writes and independent progress; no performance SLA claimed |
+| AT-C01 | Scoped credential/router tests, real Identity/Cryptography adapters and actual runtime tests | Pass for supported direct local binding; serialized local module deployment unsupported |
+| AT-C02 | Config/CLI boundaries, native failure matrices, startup failures, readiness worker_failure_releases_waiters_and_preserves_error; Identity durability/reconciliation suite | Pass at actual supported boundaries; no automatic service execution/retry or fabricated remote acknowledgement |
+| AT-C03 | Credential lock/snapshot tests, server_peers restart, server_runtime refresh and ownership tests, protected Identity restart suite | Pass: stable durable identity, fresh sessions and immutable copied inputs; transient connection handles are not restart authority |
+| AT-C04 | server_trace, native_runtime_traces_exclude_payloads_keys_and_peer_diagnostics, pre-start cancellation, CLI help/exit tests | Pass: complete validation precedes status, no private/payload diagnostics, no hidden optional module calls |
 
-This inventory records outstanding assertions, not passes. Integration plan steps
-15–23 close these rows and step 24 records exact executed test names and outcomes.
-Fixed vectors use literal upstream bytes; malformed state fixtures must have valid
-independently generated tags unless integrity failure itself is under test.
-Unbounded sequence traffic is replaced by controlled test-only state injection.
+The matrix combines the unit/state boundary cases with native connection, actual
+TCP and separate-process evidence; it does not pretend every extreme/malformed case
+was sent by an executable peer. Pure codec and controlled-counter cases remain
+appropriate for exactness and impractical limits. The full locked test command runs
+all these assertions, including earlier module suites. Supporting detail follows.
 
 The application owns runtime lifecycle under src/composition; Transport owns wire
 state; Identity owns protected credentials; Cryptography owns primitive execution.
@@ -149,3 +149,21 @@ fixture private material. server_trace drains real executable TRACE stderr in a
 bounded collector, checks both stored private inputs in hex/array representations,
 and verifies resource release before Stopped. No minimum-profile service recovery,
 application replay or physical erasure is inferred from these observations.
+
+## Completion verification
+
+Integration steps 1–24 are complete for the supported Linux/direct binding.
+Formatting, warnings-denied Clippy, locked unit/integration/doctests, build, API
+documentation and all command/option/logging help topics pass. Production-only line
+coverage is **96.38% (5359/5560)** using docs/coverage.md exclusions. All source
+changes are retained as focused per-step commits with intent and verification.
+
+The final upstream recheck still finds only website/workflow introductory changes
+beyond d40b6278; protocol contracts and vectors are unchanged. No new confirmed
+protocol defect required an issue. The local outgoing-admission/drain tracking bug
+was fixed and tested in step 21; it is not recorded as a CR2SE issue.
+
+Completion means authenticated Transport connections, bounded streams and runtime
+lifecycle work with real modules and sockets. It does not mean application services,
+serialized local-module deployment, independent interoperability, paid recovery,
+minimum useful node or full-feature conformance. The next roadmap work is Board.

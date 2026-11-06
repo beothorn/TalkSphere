@@ -7,6 +7,6 @@ Config and startup failures retain their typed causes. Display text is safe
 local explanation, not peer-provided diagnostic text. Backpressure means the
 request was not admitted and may be retried after capacity becomes available.
 
-`RuntimeUnavailable` explains that normal server composition remains
-required and links the main roadmap. The real Cryptography adapter is available;
-this error does not claim a running authenticated server.
+`RuntimeUnavailable` is returned by the legacy argument-free start helper because
+it cannot select protected credentials or policy. Configured authenticated startup
+is available through composition::server and `serve --identity-store DIRECTORY`.

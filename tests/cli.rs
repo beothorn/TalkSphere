@@ -44,8 +44,8 @@ fn command_and_option_details_are_accessible_without_starting_server() {
     }
     let serve_help = successful_stdout(&["help", "serve"]);
     assert!(serve_help.contains("opens no sockets"));
-    assert!(serve_help.contains("Transport and TCP adapters are implemented"));
-    assert!(serve_help.contains("plans/1_Transport_module/PLAN.md"));
+    assert!(serve_help.contains("existing protected keys"));
+    assert!(serve_help.contains("plans/4_Transport_integration/PLAN.md"));
     assert_eq!(successful_stdout(&["serve", "--help"]), serve_help);
     assert_eq!(successful_stdout(&["serve", "-h"]), serve_help);
     assert_eq!(

@@ -47,7 +47,7 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
                 ExitCode::SUCCESS
             }
             Err(error) => {
-                eprintln!("error: {error}");
+                tracing::error!(%error,"Identity operation failed; exiting without replacement");
                 ExitCode::FAILURE
             }
         },

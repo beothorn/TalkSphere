@@ -60,6 +60,8 @@ pub enum ConfigError {
     ZeroShutdownTimeout,
     /// Contact capacity must be positive and not exceeded.
     ContactLimit,
+    /// A configured monotonic deadline cannot be represented by this platform.
+    DeadlineRange,
     /// A configured contact has no usable IP/port.
     InvalidContact,
     /// Repeated binary identities would make startup attempts ambiguous.
@@ -78,6 +80,14 @@ impl Config {
         }
         if options.shutdown_timeout.is_zero() {
             return Err(ConfigError::ZeroShutdownTimeout);
+        }
+        let now = std::time::Instant::now();
+        if now.checked_add(options.shutdown_timeout).is_none()
+            || now
+                .checked_add(options.transport.handshake_timeout())
+                .is_none()
+        {
+            return Err(ConfigError::DeadlineRange);
         }
         if options.maximum_contacts == 0 || options.contacts.len() > options.maximum_contacts {
             return Err(ConfigError::ContactLimit);
@@ -120,6 +130,23 @@ mod tests {
             MAX_PAYLOAD_BYTES
         );
         assert_eq!(options.shutdown_timeout, Duration::from_secs(5));
+    }
+    // Unrepresentable deadlines fail before key-store or socket acquisition rather than during a later shutdown.
+    #[test]
+    fn unrepresentable_deadlines_fail_before_effects() {
+        let mut options = Options::local("fixture".into()).unwrap();
+        options.shutdown_timeout = Duration::MAX;
+        assert!(matches!(
+            Config::new(options),
+            Err(ConfigError::DeadlineRange)
+        ));
+        let mut options = Options::local("fixture".into()).unwrap();
+        options.transport =
+            TransportConfig::new(*options.transport.limits(), Duration::MAX).unwrap();
+        assert!(matches!(
+            Config::new(options),
+            Err(ConfigError::DeadlineRange)
+        ));
     }
     // Invalid options fail before runtime acquisition; exact contact capacity and distinct IDs remain valid.
     #[test]

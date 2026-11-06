@@ -64,5 +64,5 @@ without network I/O. Unit tests use the pinned PING/PONG tokens and independent
 error/shutdown byte examples, exhaust the numeric code registry, check byte
 bounds and reject truncation, trailing bytes, invalid text and forbidden codes.
 See [coverage instructions](../../../../../docs/coverage.md) for production
-measurement. `serve` remains unavailable and exits 1; no runtime behavior is
+measurement. Configured Linux serve is available; no service-handler behavior is
 added by these codecs. See the [Transport plan](../../../../../plans/1_Transport_module/PLAN.md).

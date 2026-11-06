@@ -5,10 +5,11 @@ wire codecs, bounded fragmented I/O, handshake and directional integrity
 orchestration, multiplexed streams, cancellation, ping, graceful drain, deadlines,
 resource limits, fair scheduling, TCP adapters and the public control driver.
 
-Real Cryptography and its Transport adapter are implemented; Identity and its scoped Transport adapter are implemented. The normal `serve`
-command returns `TransportError::RuntimeUnavailable`, opens no sockets and exits
-1. Test substitutes are unavailable in production builds. Local test success
-does not establish cryptographic conformance or an authenticated deployment.
+Real Identity and Cryptography now run through the configured Linux server,
+including actual TCP and separate-process authentication. Production builds expose
+no deterministic substitutes. See the [integration evidence](../../../docs/transport-integration/ACCEPTANCE.md)
+for assertion-level scope; independent interoperability and application services remain
+later milestones.
 
 ## Callers and boundaries
 
@@ -98,10 +99,10 @@ Generated API documentation is under `target/doc/talksphere/`.
 Behavior and fixtures use [CR2SE revision
 8e848eb2e70ef7cd4490a753f9e647fdddcd99fd](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/modules/transport).
 The [acceptance matrix](ACCEPTANCE.md) maps TR-01–TR-15 to executable tests and
-records the real Cryptography adapter supplement at revision 80f6795 and the remaining server integration assertions. The [Transport
+records fixture provenance and links the completed native/server integration matrix. The [Transport
 plan](../../../plans/1_Transport_module/PLAN.md) records each step's validation.
-[Roadmap step 5](../../../plans/PLAN.md) composes two authenticated local socket nodes
-using the implemented Identity and Cryptography adapters.
+[Roadmap step 5](../../../plans/PLAN.md) is complete; its server integration matrix
+records real socket/process and native cryptography assertions.
 
 Two language-independent findings, fixed upstream in revision 80f6795, remain documented historically: [diagnostic BOM handling](../../../CR2SE%20bugs/0001-diagnostic-byte-order-mark.md)
 and [key derivation order](../../../CR2SE%20bugs/0002-key-derivation-before-auth-verification.md).

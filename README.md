@@ -1,187 +1,145 @@
 # TalkSphere
 
 TalkSphere is a Rust server implementation and proof of concept for
-[CR2SE](https://github.com/beothorn/CR2SE). It will grow module by module into a
-node that exchanges services and storage, followed by messaging, public boards,
-pages and the other CR2SE capabilities. See the [implementation plan](plans/PLAN.md),
-the [Transport breakdown](plans/1_Transport_module/PLAN.md) and the
-[Cryptography breakdown](plans/2_Cryptography_module/PLAN.md). The completed
-[Identity plan](plans/3_Identity_module/PLAN.md); its [module guide](src/modules/identity/README.md)
-records available operations.
+[CR2SE](https://github.com/beothorn/CR2SE), developed module by module. The intended
+model is ad-free social features supported by shared resources and paid services.
+The server will also have client capabilities for testing and advanced users;
+separate UI clients remain future work.
 
-The intended model is ad-free social features supported by shared device
-storage and paid backup space. Compatibility with CR2SE clients is an
-implementation goal.  
+**Current status:** Transport, Cryptography, Identity and the authenticated server
+integration milestone are implemented. On Linux, `serve` loads protected existing
+keys, listens, authenticates configured peers and handles controlled shutdown.
+Frame integrity protects against modification and connection-local replay;
+**frame payloads remain visible**. Application encryption is a separate capability.
 
-This implementation is focused on being a server (always running), but will also have client 
-features for testing and for advanced users. Better clients with ui that are not using the cli must
-be implemented separetely.
-
-**Current status:** Transport, Cryptography and Identity's planned implementations are complete.
-Real primitives verify both Transport handshake roles and fixed protected-frame
-vectors; generic recipient encryption authenticates complete bounded objects.
-Protected Linux identity creation/loading, scoped signing/decryption, contact snapshots
-and backup/restore are implemented and tested with real Transport handshakes.
-The authenticated socket-node demonstration has a [detailed integration plan](plans/4_Transport_integration/PLAN.md)
-for roadmap step 5; `serve` reports the missing integration and
-opens no listener. See the [Transport evidence](src/modules/transport/ACCEPTANCE.md)
-and [Cryptography acceptance matrix](src/modules/cryptography/ACCEPTANCE.md) for
-verified behavior, scope and unresolved protocol findings.
-
-The [Cryptography guide](src/modules/cryptography/README.md) describes available
-operations and verified vectors. Exercise it with
-`cargo test --locked modules::cryptography`.
+Production registers no application protocol yet, so unsupported OPENs are refused.
+Board, Ledger, Services, Peer Protocol and paid Storage remain later milestones.
+This is not yet the minimum useful node or full-feature PoC. See the
+[roadmap](plans/PLAN.md), [integration plan](plans/4_Transport_integration/PLAN.md)
+and [executed acceptance evidence](docs/transport-integration/ACCEPTANCE.md).
 
 ## Build and test
 
-Install a current stable Rust toolchain with Cargo, rustfmt and Clippy. The
-project uses Rust edition 2024, `tracing` for structured diagnostics and Mio for
-nonblocking TCP readiness.
-Run these commands from the repository root:
+Use stable Rust with Cargo, rustfmt and Clippy; the project uses edition 2024.
+From the repository root:
 
 ```sh
 cargo build --locked
 cargo test --locked
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
-```
-
-Run only the deterministic Transport helpers with
-`cargo test --locked modules::transport::test_support`; their
-[README](src/modules/transport/test_support/README.md) describes scripted I/O,
-manual time, dependency failures and pinned fixtures.
-
-Exercise frame header and control payload encoding/validation with
-`cargo test --locked modules::transport::codec`; see the
-[codec guide](src/modules/transport/codec/README.md) for its API and scope.
-Run `cargo test --locked --test control_payloads` for public API composition
-and trace privacy tests. See [production coverage](docs/coverage.md) for the
-coverage setup, exclusions and measurement procedure.
-
-Cargo.lock is tracked for reproducible application builds. For an optimized
-build, run `cargo build --locked --release`; the executable is
-`target/release/talksphere` (`talksphere.exe` on Windows).
-
-## Run and get help
-
-```sh
-cargo run --locked -- --help
-cargo run --locked -- help serve
-cargo run --locked -- help --help
-cargo run --locked -- help --version
-cargo run --locked -- --version
-cargo run --locked -- serve
-```
-
-The unconfigured serve command exits with status **2**, requiring explicit --identity-store selection. It opens no sockets. With no arguments, the application
-shows its overview and exits successfully. Invalid arguments exit with status
-**2** and a usage hint.
-
-`--help` (or `-h`) lists all commands, options and detailed help topics. Use
-`help <topic>` for details on each option or command; option spellings such as
-`help --version` work too. `serve --help` also shows the serve topic.
-`--version` (or `-V`) reports the application version, not CR2SE conformance.
-After building, replace `cargo run --locked --` with
-`./target/debug/talksphere` to run the executable directly.
-
-## Project layout
-
-```text
-src/
-  main.rs                  executable entry point
-  lib.rs                   module exports
-  cli/                     argument parsing and shared help definitions
-  composition/             real Identity and Cryptography adapters for Transport
-  modules/
-    cryptography/          primitives, recipient envelopes, provider and tests
-    identity/              protected credentials, scoped operations, contacts and recovery
-    transport/             protocol state, control driver, TCP adapters and tests
-tests/                     executable integration tests
-CR2SE bugs/                language-independent protocol bug reports
-AGENTS.md                  instructions for ongoing implementation
-plans/
-  PLAN.md                  staged implementation checklist
-  1_Transport_module/
-    PLAN.md                Transport steps and matching detailed instructions
-  2_Cryptography_module/
-    PLAN.md                Cryptography steps and matching details
-  3_Identity_module/
-    PLAN.md                completed Identity steps and matching evidence
-```
-
-Protocol modules own their code and private state. Focused subfolders separate codecs, lifecycle, adapters and composition. The [Transport README](src/modules/transport/README.md)
-documents its public boundary, limits and integration handoff. VS Code recommendations and
-build/test/debug tasks use Rust tooling.
-
-## Protocol reference and issue reporting
-
-The setup plan follows CR2SE revision
-[`8e848eb2e70ef7cd4490a753f9e647fdddcd99fd`](https://github.com/beothorn/CR2SE/tree/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd),
-particularly its [module contracts](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/ModuleContracts.md)
-and [PoC guide](https://github.com/beothorn/CR2SE/blob/8e848eb2e70ef7cd4490a753f9e647fdddcd99fd/PoC.md).
-Review changes upstream before each implementation stage and record any new
-baseline. This reference does not claim that the protocol is implemented.
-
-Record protocol, pseudocode, contract and vector defects in
-[`CR2SE bugs/`](CR2SE%20bugs/README.md). Reports must apply across implementation
-languages; Rust-specific issues belong in this project's implementation work.
-See [AGENTS.md](AGENTS.md) for development and validation requirements.
-
-## Exercise Identity
-
-See the [Identity guide](src/modules/identity/README.md) and
-[acceptance matrix](src/modules/identity/ACCEPTANCE.md). Run from the root:
-
-```sh
-cargo test --locked modules::identity
-cargo test --locked composition::identity
-cargo test --locked --test identity_persistence
-cargo test --locked --test identity_recovery
-cargo test --locked --test identity_privacy
 cargo doc --locked --no-deps
 ```
 
-The protected filesystem adapter currently supports Linux. It uses owner-only
-permissions and one exclusive writer per store; backup files are not encrypted.
-Trusted application composition grants separate read, sign, decrypt, backup and
-import capabilities. Inputs have explicit byte/count budgets. Restore never
-overwrites an existing identity, and uncertain durable writes require reconciliation.
-Application recovery catalogs remain separate. No administrative CLI is exposed yet.
+Cargo.lock is tracked. For an optimized executable, run `cargo build --locked --release`.
+See [production coverage](docs/coverage.md) for the measured-code exclusions and
+coverage command. Follow [AGENTS.md](AGENTS.md) when contributing.
 
-Server composition progress and validated local policy are documented in the
-[server guide](src/composition/server/README.md); runtime activation follows the
-[integration checklist](plans/4_Transport_integration/PLAN.md).
-
-Initialize and inspect protected local keys explicitly (Linux):
+Focused checks:
 
 ```sh
-cargo run --locked -- identity-init --identity-store ./node-a
-cargo run --locked -- identity-show --identity-store ./node-a
-cargo run --locked -- help --identity-store
+cargo test --locked composition::server
+cargo test --locked --test server_peers
+cargo test --locked --test server_streams
+cargo test --locked --test server_runtime
+cargo test --locked --test server_trace
 ```
 
-Initialization refuses existing credentials; inspection never replaces missing or
-corrupt keys. Output is the public ID only. Protect this owner-only directory and
-its backups; records are not encrypted at rest.
+The [Transport](src/modules/transport/README.md),
+[Cryptography](src/modules/cryptography/README.md) and
+[Identity](src/modules/identity/README.md) guides document module contracts,
+fixture revisions and additional tests. Real socket/process tests use isolated
+stores and assigned ports; controlled tests cover fragmentation and extreme counters.
 
-Server options are documented by `cargo run --locked -- help --listen` and each
-individual option spelling. Example configuration:
-`cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000`.
-Explicit `--contact` payloads and `--stored-contacts yes` are mutually exclusive;
-no Discovery or automatic reconnect is implied.
-
-Operational logging uses stderr and defaults to `RUST_LOG=info`. Use
-`RUST_LOG=talksphere=trace` for diagnosis or `RUST_LOG=off` to disable logs;
-`talksphere help logging` describes target filters and startup failures.
-
-Authenticated Transport startup is now available on Linux after explicit initialization:
+## Initialize and inspect keys
 
 ```sh
-cargo run --locked -- identity-init --identity-store ./node-a
-cargo run --locked -- serve --identity-store ./node-a --listen 127.0.0.1:7000
+./target/debug/talksphere identity-init --identity-store ./node-a
+./target/debug/talksphere identity-init --identity-store ./node-b
+./target/debug/talksphere identity-show --identity-store ./node-b
 ```
 
-The server prints `ready <public-id> <actual-address>`, then public `authenticated`
-connection observations. SIGINT/SIGTERM stop admission and drain connections;
-`stopped` is printed after resources are released. Runtime failure exits 1.
-The production router has no application protocols yet; unsupported OPENs are refused.
+Initialization is explicit and refuses existing credentials. Inspection never
+replaces missing/corrupt keys. Both commands print only the public canonical ID.
+Run inspection before starting the server: the protected store has one exclusive
+writer lock, retained throughout runtime. Linux directories/files are owner-only
+0700/0600; records and backups are **not encrypted at rest**. Secure their location
+and copies. Key backup/import library operations require separate privileged grants;
+they are not exposed as CLI commands. Application recovery catalogs remain separate.
+
+## Connect two nodes
+
+In terminal B, start the already initialized node:
+
+```sh
+./target/debug/talksphere serve --identity-store ./node-b --listen 127.0.0.1:7002
+```
+
+Wait for `ready <B_PUBLIC_ID> 127.0.0.1:7002`. In terminal A, replace
+`B_PUBLIC_ID` below with that complete `cr2se:...` ID:
+
+```sh
+./target/debug/talksphere serve --identity-store ./node-a --listen 127.0.0.1:7001 \
+  --contact 'B_PUBLIC_ID?address=127.0.0.1&port=7002'
+```
+
+Both terminals report `authenticated <PUBLIC_ID> <Initiator|Acceptor>` only after
+proof verification and session derivation. Reverse the roles to connect B to A.
+Each startup contact is attempted once; failed admission/connection does not create
+an implicit reconnect loop or stop the listener. ID-only contacts cannot be resolved
+without Discovery. Explicit contacts and `--stored-contacts yes` cannot be combined;
+a selected stored snapshot must already exist and contain usable IP/port endpoints.
+
+SIGINT/SIGTERM stop admission and drain accepted work to a finite deadline.
+`stopped` means owned resources have been released. Repeated termination requests
+force remaining connections closed. Runtime failure or forced timeout exits 1;
+invalid syntax exits 2; normal shutdown and help exit 0. No arguments show help.
+Transient work is not replayed or resumed after restart.
+
+## Help, logging and policy
+
+```sh
+./target/debug/talksphere --help
+./target/debug/talksphere help serve
+./target/debug/talksphere help --identity-store
+./target/debug/talksphere help --listen
+./target/debug/talksphere help --version
+./target/debug/talksphere help logging
+```
+
+Every option spelling has detailed help through `help <topic>`. `serve --help`
+also works. The default listener is loopback port zero; readiness reports its
+actual assigned port. All other addresses require explicit configuration.
+
+| Option | Default and units |
+| --- | --- |
+| `--identity-store` | Required existing protected directory for serve |
+| `--listen` | `127.0.0.1:0` |
+| `--contact` | None; repeat up to 64 endpoint-bearing contacts |
+| `--stored-contacts` | `no`; `yes` selects the protected snapshot |
+| `--max-connections` | 64 simultaneous connections |
+| `--max-streams` | 128 per connection |
+| `--outbound-bytes` | 4196096 serialized bytes per Transport instance |
+| `--buffered-bytes` | 65536 verified payload bytes per stream |
+| `--handshake-ms` | 10000 milliseconds |
+| `--shutdown-ms` | 5000 milliseconds |
+
+Policy must support full protocol frames and positive representable deadlines.
+Operational logs use stderr, with `RUST_LOG=info` by default. For diagnosis use
+`RUST_LOG=talksphere=trace`, target filters, or `RUST_LOG=off`. Intentional public
+CLI results/status use stdout; neither stream contains private keys or payloads.
+Help/version do not require a valid logging filter. The application version is
+not a CR2SE conformance claim.
+
+## Organization and handoff
+
+Protocol domains live under `src/modules/<module>/`; the thin main delegates to
+`src/cli/`. Real adapters and runtime policy/lifecycle live under `src/composition/`.
+See the [server guide](src/composition/server/README.md) for contract links.
+Individual protocol findings and confirmed upstream issue URLs are retained in
+[CR2SE bugs](CR2SE%20bugs/README.md). References always identify GitHub sources.
+
+The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
+original provenance. Real process tests use TalkSphere at both ends and do not
+establish interoperability with an independent implementation. The next roadmap
+module is Board; minimum-profile services and paid recovery remain later work.

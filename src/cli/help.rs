@@ -50,22 +50,14 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         names: &["identity-init", "identity-show", "--identity-store"],
         label: "identity-init | identity-show",
         summary: "Create or inspect a protected local identity.",
-        details: "Usage: talksphere identity-init --identity-store DIRECTORY | talksphere identity-show --identity-store DIRECTORY\n\nExplicit initialization installs both key pairs without overwrite; inspection never generates keys.\n--identity-store requires an explicit owner-only Linux directory; parents must exist.\nOutput is only the public canonical CR2SE ID. Files are permission-protected, not encrypted.\nMissing/corrupt/insecure stores and conflicting initialization exit with status 1; invalid syntax exits with status 2.\nHelp exits with status 0. See plans/4_Transport_integration/PLAN.md.\n",
+        details: "Usage: talksphere identity-init --identity-store DIRECTORY | talksphere identity-show --identity-store DIRECTORY\n\nExplicit initialization installs both key pairs without overwrite; inspection never generates keys.\n--identity-store requires an explicit owner-only Linux directory; parents must exist.\nThe same --identity-store option is required by serve, which only loads existing keys.\nOutput from identity administration is only the public canonical CR2SE ID. Files are permission-protected, not encrypted.\nMissing/corrupt/insecure stores and conflicting initialization exit with status 1; invalid syntax exits with status 2.\nHelp exits with status 0. See plans/4_Transport_integration/PLAN.md.\n",
     },
     HelpTopic {
         topic: Topic::Serve,
         names: &["serve"],
         label: "serve",
-        summary: "Start an authenticated Transport server (Linux).",
-        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\
-                  Help:  talksphere help serve | talksphere serve --help\n\n\
-                  Transport and TCP adapters are implemented and tested with injected dependencies.\n\
-                  Cryptography implementation is complete; Identity and its scoped Transport adapter are implemented.\n\
-                  See plans/2_Cryptography_module/PLAN.md for completed Cryptography steps; plans/3_Identity_module/PLAN.md records completed Identity steps; plans/PLAN.md lists server integration.\n\
-                  Configured startup loads existing keys and runs real authenticated Transport.\n\
-                  Without --identity-store this command opens no sockets,\n\
-                  creates no identity or runtime state, and exits with status 2.\n\
-                  See plans/1_Transport_module/PLAN.md. Options: talksphere help --listen.\n",
+        summary: "Run authenticated Transport connections (Linux).",
+        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\nRequesting help opens no sockets and exits with status 0.\nLoads existing protected keys; missing or inconsistent credentials never generate replacements.\nReports ready <PUBLIC_ID> <ACTUAL_ADDRESS> and verified authenticated peer IDs.\nFrame payloads remain visible; application encryption and services are separate modules.\nProduction registers no application protocol; unsupported OPEN requests are refused.\nUse talksphere help --listen for contacts, defaults, limits and timeouts.\nSIGINT/SIGTERM stop admission and drain; repeated signals force remaining connections closed.\nInvalid syntax exits with status 2, startup/runtime failure with status 1, normal shutdown with status 0.\nSee plans/4_Transport_integration/PLAN.md and docs/transport-integration/ACCEPTANCE.md.\n",
     },
     HelpTopic {
         topic: Topic::Help,
@@ -150,13 +142,13 @@ mod tests {
 
     // Serve help distinguishes configured authenticated startup from a missing identity selection.
     #[test]
-    fn serve_help_explains_cryptography_completion_and_links_its_plan() {
+    fn serve_help_explains_protected_startup_and_integration_evidence() {
         let details = render(Topic::Serve);
-        assert!(details.contains("Cryptography implementation is complete"));
-        assert!(details.contains("plans/2_Cryptography_module/PLAN.md"));
-        assert!(details.contains("plans/PLAN.md"));
-        assert!(details.contains("existing keys"));
-        assert!(details.contains("opens no sockets"));
+        assert!(details.contains("existing protected keys"));
+        assert!(details.contains("plans/4_Transport_integration/PLAN.md"));
+        assert!(details.contains("ACCEPTANCE.md"));
+        assert!(details.contains("never generate replacements"));
+        assert!(details.contains("unsupported OPEN"));
     }
 
     // Every detailed topic preserves discoverable usage and exit behavior.

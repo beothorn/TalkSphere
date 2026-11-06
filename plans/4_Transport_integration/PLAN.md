@@ -1,6 +1,6 @@
 # Transport integration plan
 
-Status: execution started; steps 1–23 are complete.
+Status: all 24 steps are implemented, tested and documented.
 
 This is roadmap milestone 5 and planning folder 4, following the completed
 Transport, Cryptography and Identity plans. It composes those modules into an
@@ -31,7 +31,7 @@ executable authenticated Transport node. Implementation was subsequently authori
 - [x] **21.** Verify probes and graceful draining across real peers.
 - [x] **22.** Verify truncation, resource bounds and slow-consumer isolation.
 - [x] **23.** Verify restart, startup failures and diagnostic privacy.
-- [ ] **24.** Audit Transport acceptance and publish the server integration handoff.
+- [x] **24.** Audit Transport acceptance and publish the server integration handoff.
 
 ## Reference baseline and scope
 
@@ -358,3 +358,5 @@ Update root/module READMEs, companion contracts, overview/detailed help and road
 Run AGENTS.md checks, affected commands, API docs and production coverage above 80%;
 record measured evidence. Only then mark milestone 5 complete and hand off to Board
 without expanding or implementing its plan in this task.
+
+Completed: Completed the TR-01–TR-15 and applicable shared-case evidence matrix, current root/module/public-contract guides, explicit two-node usage and detailed CLI help. Final fmt, warnings-denied Clippy, locked unit/integration/doctests, build, API docs and all 17 help topics pass. Production coverage: 5359/5560 = 96.38%. Upstream protocol remains unchanged; no new protocol defect confirmed. Linux/direct Transport integration is complete; Board and later service milestones remain.
