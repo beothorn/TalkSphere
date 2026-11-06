@@ -31,7 +31,7 @@ settlement and durable transfer/claim replay records.
 - [x] **21.** Expose authorized transfer status and remote balance observations.
 - [x] **22.** Resolve third-party payment using authenticated issuer evidence.
 - [x] **23.** Encode portable claims with protected secret ownership.
-- [ ] **24.** Create finite claims and persist only their commitments.
+- [x] **24.** Create finite claims and persist only their commitments.
 - [ ] **25.** Encrypt and validate owner-bound claim redemption requests.
 - [ ] **26.** Redeem claims atomically with owner-bound retry results.
 - [ ] **27.** Invalidate unused claims without weakening terminal replay guards.
@@ -378,6 +378,8 @@ failure, overflow, revoked authority and commit uncertainty. Lost export does no
 authorize duplicate issuance: expose recoverable status/invalidation for the
 bound creation attempt and explain that the secret cannot be recovered from its
 commitment.
+
+Completed step 24: Implemented independently randomized finite claim creation with guarded secret ownership, commitment-only records, recipient restrictions and durable administrative creation keys. Tests verify7 reserved from20, restart retention, grant exclusion, duplicate creation refusal, denied authority and entropy loss. Required checks pass; production line coverage 8373/8756 = 95.63%.
 
 ### 25. Redemption envelope
 

@@ -18,6 +18,7 @@ pub(super) struct State {
     pub accounts: Accounts,
     pub issuance: u64,
     pub internal: u64,
+    pub claims: BTreeMap<[u8; 32], super::claims::ClaimRecord>,
     pub transfers: BTreeMap<(IdentityId, [u8; 16]), super::transfer_state::TransferResult>,
     pub operations: BTreeMap<super::contract::OperationKey, super::reservation::Operation>,
 }
@@ -318,10 +319,14 @@ impl State {
         if self.operations.len() > limits.operations {
             return Err(Error::Limit);
         }
+        if self.claims.len() > limits.claims {
+            return Err(Error::Limit);
+        }
+        super::reservation::available(self, super::reservation::Resource::Issuance)?;
         for op in self.operations.values() {
             super::reservation::available(self, op.resource)?;
         }
-        let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations),"transfers":super::transfer_state::encode(self)?})).map_err(|_|Error::Invalid)?;
+        let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations),"transfers":super::transfer_state::encode(self)?,"claims":super::claims::encode(self)})).map_err(|_|Error::Invalid)?;
         if payload.len() > limits.state_bytes {
             return Err(Error::Limit);
         }
@@ -348,6 +353,7 @@ impl State {
             internal: number(&v["internal"])?,
             ..State::default()
         };
+        s.claims = super::claims::decode(&v["claims"], local, limits.claims)?;
         s.transfers = super::transfer_state::decode(&v["transfers"], local, limits.transfers)?;
         s.operations = super::reservation::decode(&v["operations"], limits.operations)?;
         s.accounts.owned = map(&v["owned"], limits.accounts)?;

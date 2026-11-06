@@ -151,6 +151,21 @@ impl<P: Persistence> Ledger<P> {
             })
         })
     }
+    /// Read spendable finite issuance/internal capacities after active holds and claims.
+    /// # Errors
+    /// Requires Read authority and reconciled valid accounting state.
+    pub fn capacities(&self, context: &Context<'_>) -> Result<(u64, u64), Error> {
+        tracing::trace!("Reading unreserved issuance and internal capacity");
+        context.check(&self.authority, self.local, Action::Read, 0)?;
+        let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        if i.uncertain {
+            return Err(Error::Unknown);
+        }
+        Ok((
+            available(&i.state, Resource::Issuance)?,
+            available(&i.state, Resource::Internal)?,
+        ))
+    }
     /// Read remaining spendable owned or issued credits after every unresolved reservation.
     /// # Errors
     /// Requires local Read authority; unknown state and self-account requests fail.
@@ -190,13 +205,23 @@ pub(super) fn available(s: &State, resource: Resource) -> Result<u64, Error> {
         Resource::Incoming(id) => u64::MAX - s.accounts.owned.get(&id).copied().unwrap_or(0),
         Resource::IssuedRoom(id) => u64::MAX - s.accounts.issued.get(&id).copied().unwrap_or(0),
     };
-    s.operations
+    let remaining=s.operations
         .values()
         .filter(|o| {
             (o.resource == resource || matches!(resource,Resource::IssuedRoom(id) if o.resource==Resource::Issuance && o.terms.provider==id))
                 && (matches!(o.status, Status::Reserved | Status::Prepared)||(o.status==Status::Committed&&!o.confirmed))
         })
-        .try_fold(total, |n, o| n.checked_sub(o.held).ok_or(Error::Invalid))
+        .try_fold(total, |n, o| n.checked_sub(o.held).ok_or(Error::Invalid))?;
+    if resource == Resource::Issuance {
+        s.claims
+            .values()
+            .filter(|c| c.state == super::claims::ClaimState::Available)
+            .try_fold(remaining, |n, c| {
+                n.checked_sub(c.amount).ok_or(Error::Invalid)
+            })
+    } else {
+        Ok(remaining)
+    }
 }
 
 // Encode operation state explicitly rather than persisting process-local handles.

@@ -3,6 +3,7 @@
 pub mod accounting;
 pub mod authority;
 pub mod claim;
+pub mod claims;
 pub mod contract;
 pub mod fees;
 pub mod payment;
