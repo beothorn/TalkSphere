@@ -7,6 +7,7 @@ pub mod contract;
 pub mod definition;
 pub mod document;
 pub mod offering;
+pub mod prepared;
 pub mod response;
 pub mod semantics;
 pub mod terms;

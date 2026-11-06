@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–11 complete, steps 12–24 pending.
+Status: execution authorized; steps 1–12 complete, steps 13–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -19,7 +19,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **9.** Match complete definitions to their offerings.
 - [x] **10.** Assess supported service semantics through explicit capability ports.
 - [x] **11.** Check publication sizes against complete peer control responses.
-- [ ] **12.** Prepare complete publication candidates without changing visible state.
+- [x] **12.** Prepare complete publication candidates without changing visible state.
 - [ ] **13.** Publish immutable Board snapshots atomically in memory.
 - [ ] **14.** Define durable snapshot commits and recovery outcomes.
 - [ ] **15.** Implement protected local snapshot persistence.
@@ -245,6 +245,8 @@ candidate work. Return an immutable prepared candidate whose validation cannot
 be bypassed by callers; recheck relevant authority/capability changes at commit.
 Test every rejection preserves the prior snapshot and produces no persistence
 write, provider registration or other external action.
+
+Completed: Validated complete Board/definition sets, aggregate budgets, peer retrievability, contract consistency and current local capabilities before any effects; rejected missing and extra definitions. Required checks pass. Production line coverage: 5887/6106 = 96.41%
 
 ### 13. Atomic in-memory publication
 
