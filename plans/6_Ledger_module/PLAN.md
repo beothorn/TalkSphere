@@ -14,7 +14,7 @@ settlement and durable transfer/claim replay records.
 - [x] **4.** Implement exact issuer-separated accounting views.
 - [x] **5.** Define atomic persistence and recoverable transaction outcomes.
 - [x] **6.** Implement protected local Ledger persistence.
-- [ ] **7.** Implement authorized trust and finite credit administration.
+- [x] **7.** Implement authorized trust and finite credit administration.
 - [ ] **8.** Validate settlement roles and payment policies.
 - [ ] **9.** Reserve provider-issued spending without double use.
 - [ ] **10.** Reserve requester-issued credits and recipient capacity.
@@ -185,6 +185,8 @@ claim or hidden query side effect. Persist changes before success. Never create
 self-balances, implicitly increase trust or reset spent budgets on reopen.
 Protect existing holds and accepted obligations when changing policy or revoking
 credits. Cover LG-05/LG-06 and denial of every administrative call from peer context.
+
+Completed step 7: Implemented serialized complete-image accounting with finite administrative grants, revocation, explicit owned reconciliation and exact trust. Tested authorization, self-account refusal, exhausted budgets, durable reopen, corrupt binding rejection and unknown-commit gating/reload without reapplying changes. Required checks pass; production line coverage 7330/7619 = 96.21%.
 
 ### 8. Mode selection
 
