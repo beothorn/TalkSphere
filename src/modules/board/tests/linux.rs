@@ -69,3 +69,48 @@ fn unsafe_paths_and_file_permissions() {
     .unwrap();
     assert!(s.load().is_err());
 }
+
+// Every write cut recovers a complete old/new record; unacknowledged writes are never assumed rolled back.
+#[test]
+fn restart_at_each_durable_cut() {
+    for cut in 1..=5 {
+        let f = Fixture::new();
+        let mut store = FileStore::open(&f.0, Limits::default()).unwrap();
+        let old = record();
+        store.commit(&old).unwrap();
+        let mut new = old.clone();
+        new.board.push(b' ');
+        store.fault = Some(cut);
+        assert_eq!(
+            store.commit(&new),
+            Err(if cut >= 4 {
+                Error::Unknown
+            } else {
+                Error::Storage
+            })
+        );
+        drop(store);
+        let mut reopened = FileStore::open(&f.0, Limits::default()).unwrap();
+        assert_eq!(reopened.load(), Ok(Some(if cut >= 4 { new } else { old })));
+    }
+}
+// An abandoned write is ignored while an acknowledged snapshot remains authoritative.
+#[test]
+fn abandoned_staging_is_not_promoted() {
+    let f = Fixture::new();
+    let mut store = FileStore::open(&f.0, Limits::default()).unwrap();
+    store.commit(&record()).unwrap();
+    drop(store);
+    use std::os::unix::fs::OpenOptionsExt;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(f.0.join("board.pending"))
+        .unwrap()
+        .write_all(b"incomplete")
+        .unwrap();
+    let mut reopened = FileStore::open(&f.0, Limits::default()).unwrap();
+    assert_eq!(reopened.load(), Ok(Some(record())));
+    assert!(!f.0.join("board.pending").exists());
+}

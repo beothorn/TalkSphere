@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–15 complete, steps 16–24 pending.
+Status: execution authorized; steps 1–16 complete, steps 17–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -23,7 +23,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **13.** Publish immutable Board snapshots atomically in memory.
 - [x] **14.** Define durable snapshot commits and recovery outcomes.
 - [x] **15.** Implement protected local snapshot persistence.
-- [ ] **16.** Verify publication recovery across failures and restarts.
+- [x] **16.** Verify publication recovery across failures and restarts.
 - [ ] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
 - [ ] **18.** Associate remote definitions with the selected cached snapshot.
 - [ ] **19.** Select usable offerings with explicit roles and issuer.
@@ -293,6 +293,8 @@ unacknowledged commits may resolve only to permitted old/new complete states.
 Test I/O failures, leftover staging records, corruption, competing writers and
 shutdown during publication. Explain which guarantees derive from real filesystem
 checks versus simulated crashes; do not claim power-loss testing from process exit.
+
+Completed: Exercised every durable write boundary, abandoned staging, separate-process reopen and public-owner unknown-outcome reconciliation; proved no automatic recommit and immutable old pins. Required checks pass. Production line coverage: 6307/6563 = 96.10%
 
 ### 17. Remote cache provenance
 

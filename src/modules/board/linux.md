@@ -17,3 +17,10 @@ counts, duplicate rejection and no trailing bytes. Content is revalidated by the
 Board owner before becoming live. Files are permission-protected, not encrypted;
 these are public documents, separate from Identity keys and paid Storage state.
 This adapter is available only on Linux. Other targets have no durable adapter.
+
+Recovery evidence injects cuts after creation, writing, file sync, rename and
+directory sync. Fresh reopen must observe complete old/new records, and abandoned
+staging is never promoted. A separate process test verifies acknowledged data
+without shared heap/descriptors. These simulate commit interruption; they do not
+claim physical power-loss testing. Public owner tests verify Unknown gates and
+explicit reconciliation without another write or mutation of old pins.

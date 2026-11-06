@@ -44,3 +44,7 @@ pub enum Error {
 pub mod linux;
 #[cfg(target_os = "linux")]
 mod record_codec;
+
+#[cfg(test)]
+#[path = "tests/recovery.rs"]
+mod recovery_tests;
