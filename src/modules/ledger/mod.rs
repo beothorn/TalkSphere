@@ -4,6 +4,7 @@ pub mod accounting;
 pub mod authority;
 pub mod contract;
 pub mod fees;
+pub mod payment;
 pub mod persistence;
 pub mod reservation;
 pub mod settlement;

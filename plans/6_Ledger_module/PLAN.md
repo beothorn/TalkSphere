@@ -29,7 +29,7 @@ settlement and durable transfer/claim replay records.
 - [x] **19.** Bind transfer fee quotes to authenticated control contexts.
 - [x] **20.** Commit transfers atomically with permanent replay protection.
 - [x] **21.** Expose authorized transfer status and remote balance observations.
-- [ ] **22.** Resolve third-party payment using authenticated issuer evidence.
+- [x] **22.** Resolve third-party payment using authenticated issuer evidence.
 - [ ] **23.** Encode portable claims with protected secret ownership.
 - [ ] **24.** Create finite claims and persist only their commitments.
 - [ ] **25.** Encrypt and validate owner-bound claim redemption requests.
@@ -354,6 +354,8 @@ one local accounting effect. Bind evidence to the original operation and reject
 reuse, forwarded requester JSON and changed fees. Test every LG-10 row, both
 local roles, persisted refusal/uncertainty, duplicate evidence and restart without
 re-executing work. Never assume issuer refusal rolls back successful service work.
+
+Completed step 22: Implemented separately authorized original-issuer receipts, exact per-invocation payment matching and explicit transfer/query action requests. Tests reject forwarded-control authority and wrong owner/recipient/ID/amount/fee, preserve unknown/refused states, and settle both local roles once across restart. Required checks pass; production line coverage 8176/8546 = 95.67%.
 
 ### 23. Claim format
 

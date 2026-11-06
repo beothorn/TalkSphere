@@ -122,6 +122,9 @@ impl<P: Persistence> Ledger<P> {
                     super::reservation::Resource::IssuedRoom(_) => return Err(Error::Invalid),
                 }
             }
+            if o.mode != super::terms::Mode::ThirdParty {
+                o.payment = super::payment::Payment::Settled;
+            }
             o.status = Status::Committed;
             s.operations.insert(prepared.key, o);
             Ok(())

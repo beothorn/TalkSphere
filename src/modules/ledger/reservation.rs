@@ -46,6 +46,7 @@ pub(super) struct Operation {
     pub status: Status,
     pub effect: Option<(u64, Vec<u8>)>,
     pub confirmed: bool,
+    pub payment: super::payment::Payment,
 }
 impl<P: Persistence> Ledger<P> {
     /// Reserve one exact accepted provider-credit operation with durable retry association.
@@ -141,6 +142,7 @@ impl<P: Persistence> Ledger<P> {
                     status: Status::Reserved,
                     effect: None,
                     confirmed: mode != Mode::ThirdParty,
+                    payment: super::payment::Payment::Pending,
                 },
             );
             Ok(Reservation {
@@ -234,7 +236,8 @@ pub(super) fn encode(operations: &BTreeMap<OperationKey, Operation>) -> serde_js
                     o.status as u8,
                     o.effect.as_ref().map(|e| e.0),
                     o.effect.as_ref().map(|e| &e.1),
-                    o.confirmed
+                    o.confirmed,
+                    o.payment as u8
                 ])
             })
             .collect(),
@@ -255,7 +258,7 @@ pub(super) fn decode(
     for row in rows {
         let a = row
             .as_array()
-            .filter(|a| a.len() == 20)
+            .filter(|a| a.len() == 21)
             .ok_or(Error::Invalid)?;
         let key = OperationKey {
             requester: IdentityId(array(&a[0])?),
@@ -311,6 +314,13 @@ pub(super) fn decode(
             Some((number(&a[17])?, byte_vec(&a[18])?))
         };
         let confirmed = a[19].as_bool().ok_or(Error::Invalid)?;
+        let payment = match number(&a[20])? {
+            0 => super::payment::Payment::Pending,
+            1 => super::payment::Payment::Unknown,
+            2 => super::payment::Payment::Unsettled,
+            3 => super::payment::Payment::Settled,
+            _ => return Err(Error::Invalid),
+        };
         let held = number(&a[15])?;
         if key.requester != terms.requester || held == 0 || held < terms.maximum {
             return Err(Error::Invalid);
@@ -326,6 +336,7 @@ pub(super) fn decode(
                     status,
                     effect,
                     confirmed,
+                    payment,
                 },
             )
             .is_some()

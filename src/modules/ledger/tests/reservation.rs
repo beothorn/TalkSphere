@@ -679,3 +679,156 @@ fn coordinator_fault_matrix() {
         );
     }
 }
+
+// Original issuer evidence settles each local role once; all forged bindings preserve pending payment.
+#[test]
+fn issuer_payment_evidence() {
+    use super::super::{
+        payment::{Payment, Receipt},
+        transfer::Order,
+        transfer_state::TransferResult,
+    };
+    let [a, b, c, u] = super::super::test_support::identities();
+    for local in [a, b] {
+        let auth = Arc::new(Authority::new());
+        let admin = auth.grant(local, Action::Administer, 65536).unwrap();
+        let read = auth.grant(local, Action::Read, 65536).unwrap();
+        let coord = auth.grant(local, Action::Coordinate, 65536).unwrap();
+        let evidence = auth.grant(local, Action::Evidence, 65536).unwrap();
+        let control = auth.grant(local, Action::Control, 65536).unwrap();
+        let limits = Limits {
+            accounts: 16,
+            operations: 16,
+            transfers: 16,
+            claims: 16,
+            quotes: 8,
+            state_bytes: 65536,
+        };
+        let ledger = Ledger::initialize(
+            local,
+            auth.clone(),
+            Memory::default(),
+            limits,
+            &context(&admin),
+            100,
+            100,
+        )
+        .unwrap();
+        if local == a {
+            ledger.set_owned(&context(&admin), c, 100).unwrap();
+        } else {
+            ledger
+                .set_trust(&context(&admin), a, Trust::new(1).unwrap())
+                .unwrap();
+        }
+        let mut t = terms(a, b);
+        t.issuer = c;
+        t.maximum = 7;
+        t.transfer = Some([9; 16]);
+        t.fee = Some(2);
+        let key = OperationKey {
+            requester: a,
+            connection: [1; 32],
+            stream: 1,
+        };
+        let r = ledger
+            .reserve(
+                &context(&coord),
+                key,
+                t,
+                Policy {
+                    requester_credits: false,
+                    third_party: true,
+                },
+            )
+            .unwrap();
+        let token = ledger.prepare(&context(&coord), &r, 7, vec![1]).unwrap();
+        ledger.commit(&context(&coord), &token).unwrap();
+        assert_eq!(
+            ledger
+                .payment_request(&context(&coord), key)
+                .unwrap()
+                .order
+                .amount,
+            9
+        );
+        assert_eq!(
+            ledger
+                .payment_request(&context(&coord), key)
+                .unwrap()
+                .submit,
+            local == a
+        );
+        assert_eq!(
+            ledger.payment(&context(&coord), key),
+            Ok(Some(Payment::Pending))
+        );
+        ledger.payment_problem(&context(&coord), key, true).unwrap();
+        assert_eq!(
+            ledger.payment(&context(&coord), key),
+            Ok(Some(Payment::Unknown))
+        );
+        ledger
+            .payment_problem(&context(&coord), key, false)
+            .unwrap();
+        assert_eq!(
+            ledger.payment(&context(&coord), key),
+            Ok(Some(Payment::Unsettled))
+        );
+        let result = TransferResult {
+            order: Order {
+                owner: a,
+                new_owner: b,
+                issuer: c,
+                transfer_id: [9; 16],
+                amount: 9,
+            },
+            fee: 2,
+        };
+        assert!(
+            Receipt::authenticated(&context(&control), auth.clone(), local, c, result.clone())
+                .is_err()
+        );
+        for mutation in 0..5 {
+            let mut changed = result.clone();
+            match mutation {
+                0 => changed.order.owner = u,
+                1 => changed.order.new_owner = u,
+                2 => changed.order.transfer_id = [8; 16],
+                3 => changed.order.amount = 10,
+                _ => changed.fee = 1,
+            };
+            let receipt =
+                Receipt::authenticated(&context(&evidence), auth.clone(), local, c, changed)
+                    .unwrap();
+            assert!(
+                ledger
+                    .confirm_payment(&context(&coord), key, &receipt)
+                    .is_err()
+            );
+        }
+        let receipt =
+            Receipt::authenticated(&context(&evidence), auth.clone(), local, c, result).unwrap();
+        ledger
+            .confirm_payment(&context(&coord), key, &receipt)
+            .unwrap();
+        ledger
+            .confirm_payment(&context(&coord), key, &receipt)
+            .unwrap();
+        assert_eq!(
+            ledger.payment(&context(&coord), key),
+            Ok(Some(Payment::Settled))
+        );
+        assert_eq!(
+            ledger.view(&context(&read), c).unwrap().owned,
+            if local == a { 91 } else { 7 }
+        );
+        let image = ledger.inner.lock().unwrap().persistence.load().unwrap();
+        let reopened =
+            Ledger::open(local, auth.clone(), Memory(image), limits, &context(&read)).unwrap();
+        assert_eq!(
+            reopened.payment(&context(&coord), key),
+            Ok(Some(Payment::Settled))
+        );
+    }
+}

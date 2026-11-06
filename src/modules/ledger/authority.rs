@@ -19,6 +19,8 @@ pub enum Action {
     Control,
     /// Sign an explicitly authorized outgoing payment.
     Spend,
+    /// Assert original issuer connection provenance through a trusted evidence adapter.
+    Evidence,
 }
 /// Opaque grant, valid only while its issuing authority remains live and unrevoked.
 pub struct Grant {
