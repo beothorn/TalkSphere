@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–14 complete, steps 15–24 pending.
+Status: execution authorized; steps 1–15 complete, steps 16–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -22,7 +22,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **12.** Prepare complete publication candidates without changing visible state.
 - [x] **13.** Publish immutable Board snapshots atomically in memory.
 - [x] **14.** Define durable snapshot commits and recovery outcomes.
-- [ ] **15.** Implement protected local snapshot persistence.
+- [x] **15.** Implement protected local snapshot persistence.
 - [ ] **16.** Verify publication recovery across failures and restarts.
 - [ ] **17.** Cache remote Boards with explicit provenance and bounded lifetimes.
 - [ ] **18.** Associate remote definitions with the selected cached snapshot.
@@ -281,6 +281,8 @@ validate publisher ownership, permissions, unsafe paths and loaded records.
 Specify first-start empty state, missing/corrupt existing state and unsupported
 platform errors without silently discarding prior publication. Test real temporary
 stores, lock contention, truncation, wrong owner and resource cleanup.
+
+Completed: Added no-follow descriptor-anchored owner-only storage, exclusive writer locking, bounded private record encoding and atomic file/directory synchronization; tested reopen, corruption, symlinks and permissions. Retried coverage after a truncated subprocess profile. Required checks pass. Production line coverage: 6243/6563 = 95.12%
 
 ### 16. Crash recovery
 

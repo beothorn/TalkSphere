@@ -39,3 +39,8 @@ pub enum Error {
     /// Commitment may have occurred; recover before further mutation.
     Unknown,
 }
+
+#[cfg(target_os = "linux")]
+pub mod linux;
+#[cfg(target_os = "linux")]
+mod record_codec;
