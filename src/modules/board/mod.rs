@@ -6,6 +6,7 @@ pub mod config;
 pub mod contract;
 pub mod document;
 pub mod offering;
+pub mod terms;
 
 #[cfg(test)]
 mod test_support;

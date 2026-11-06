@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–5 complete, steps 6–24 pending.
+Status: execution authorized; steps 1–6 complete, steps 7–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -13,7 +13,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **3.** Add deterministic Board fixtures and fault-injection helpers.
 - [x] **4.** Decode bounded JSON without losing numbers or unknown metadata.
 - [x] **5.** Validate Board headers and offering identity fields.
-- [ ] **6.** Validate exact prices and optional offering metadata.
+- [x] **6.** Validate exact prices and optional offering metadata.
 - [ ] **7.** Validate primitive service schema descriptions.
 - [ ] **8.** Validate nested service schemas and check definitions.
 - [ ] **9.** Match complete definitions to their offerings.
@@ -173,6 +173,8 @@ tracked clarification; empty optional suggestion strings remain distinct from
 empty required names. Preserve unknown metadata without executing descriptions,
 URIs or hints. Test overflow, both/neither price forms, wrong optional types,
 unknown required semantics and inert install/run/spend text.
+
+Completed: Enforced exclusive pricing, positive uint64 amounts, optional metadata types and embedded-schema rejection. Empty preconditions are rejected; unresolved namespace grammar remains tracked under upstream issue 9 without invented syntax. Required checks pass. Production line coverage: 5700/5908 = 96.48%
 
 ### 7. Primitive schema descriptions
 

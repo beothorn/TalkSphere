@@ -63,6 +63,7 @@ impl Board {
                 let version = integer(o.get("serviceVersion").ok_or(Error::Invalid)?)
                     .filter(|n| *n > 0 && *n <= u32::MAX as u64)
                     .ok_or(Error::Invalid)? as u32;
+                super::terms::validate(value)?;
                 let offering = Offering {
                     id: string(value, "id")?.into(),
                     service: string(value, "service")?.into(),
