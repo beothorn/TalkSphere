@@ -6,9 +6,16 @@ and [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov):
 ```sh
 rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov --locked
-cargo llvm-cov --locked --lcov --output-path target/production-coverage.lcov \
+cargo llvm-cov --locked --failure-mode all --lcov --output-path target/production-coverage.lcov \
   --ignore-filename-regex '(/tests/|/tests.rs|/test_support/)'
 ```
+
+The subprocess suites intentionally exercise abrupt termination. Such a child can
+leave an incomplete LLVM profile. `--failure-mode all` allows LLVM to merge the
+valid captures while warning about incomplete ones; it still fails if none can
+be merged. This does not ignore test failures or remove production source from
+the denominator. Events present only in a discarded child capture contribute no
+coverage, so report the result from valid profiles and retain the warning log.
 
 Coverage runs the tests under instrumentation; it does not replace the normal
 format, Clippy, test, build and help checks. Reports stay in ignored `target/`.
