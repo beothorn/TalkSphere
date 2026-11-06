@@ -1,0 +1,203 @@
+//! Atomic local Board ownership; immutable pins never mix offering and definition revisions.
+use super::{
+    Error,
+    authority::{Action, Authority},
+    config::Limits,
+    contract::{Context, Snapshot},
+    definition::Definition,
+    prepared::Prepared,
+    semantics::Capabilities,
+};
+use crate::modules::identity::api::IdentityId;
+use std::sync::{Arc, Mutex, Weak};
+
+struct State {
+    current: Option<Snapshot>,
+    pins: Vec<Weak<Prepared>>,
+}
+/// Direct-call owner for one publisher, with finite pin retention and serialized writers.
+pub struct Provider {
+    pub(super) authority: Arc<Authority>,
+    pub(super) limits: Limits,
+    pub(super) publisher: IdentityId,
+    pub(super) caps: Arc<dyn Capabilities>,
+    domain: Arc<()>,
+    state: Mutex<State>,
+}
+impl Provider {
+    /// Create an empty volatile owner; no publication exists until an authorized complete commit.
+    /// # Errors
+    /// Rejects invalid limits before creating state or effects.
+    pub fn new(
+        publisher: IdentityId,
+        authority: Arc<Authority>,
+        limits: Limits,
+        caps: Arc<dyn Capabilities>,
+    ) -> Result<Self, Error> {
+        tracing::trace!("Creating an atomic Board publication owner");
+        limits.validate()?;
+        Ok(Self {
+            authority,
+            limits,
+            publisher,
+            caps,
+            domain: Arc::new(()),
+            state: Mutex::new(State {
+                current: None,
+                pins: Vec::new(),
+            }),
+        })
+    }
+    /// Replace the complete publication after authority and current capability checks.
+    /// # Errors
+    /// Rejects wrong publisher, revoked grants, limits and unavailable semantics without replacing state.
+    pub fn publish(&self, context: &Context<'_>, candidate: Prepared) -> Result<Snapshot, Error> {
+        tracing::trace!("Atomically replacing a complete Board snapshot");
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Publish,
+            candidate.bytes(),
+        )?;
+        if candidate.publisher() != self.publisher {
+            return Err(Error::Denied);
+        }
+        if candidate.bytes() > self.limits.publication_bytes {
+            return Err(Error::Limit);
+        }
+        let definitions = candidate
+            .definitions
+            .iter()
+            .map(|(id, d)| (id.clone(), d.document.bytes().to_vec()))
+            .collect();
+        let candidate = Prepared::new(
+            self.publisher,
+            candidate.board.document.bytes(),
+            &definitions,
+            self.limits,
+            self.caps.as_ref(),
+        )?;
+        let mut state = self.state.lock().map_err(|_| Error::Unknown)?;
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Publish,
+            candidate.bytes(),
+        )?;
+        state.pins.retain(|pin| pin.strong_count() > 0);
+        if state.pins.len() >= self.limits.snapshots {
+            return Err(Error::Limit);
+        }
+        let data = Arc::new(candidate);
+        let snapshot = Snapshot {
+            publisher: self.publisher,
+            board: Arc::from(data.board.document.bytes()),
+            data: Some(data.clone()),
+            domain: Arc::downgrade(&self.domain),
+        };
+        state.pins.push(Arc::downgrade(&data));
+        state.current = Some(snapshot.clone());
+        Ok(snapshot)
+    }
+    /// Pin the complete current revision under Read authority; initial empty state is explicit Missing.
+    /// # Errors
+    /// Returns Denied/Cancelled/Limit for control failures, Missing before publication, Unknown on poisoned ownership.
+    pub fn read(&self, context: &Context<'_>) -> Result<Snapshot, Error> {
+        tracing::trace!("Pinning one consistent local Board revision");
+        context.check(&self.authority, self.publisher, Action::Read, 0)?;
+        let state = self.state.lock().map_err(|_| Error::Unknown)?;
+        let snapshot = state.current.as_ref().ok_or(Error::Missing)?;
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Read,
+            snapshot.bytes().len(),
+        )?;
+        Ok(snapshot.clone())
+    }
+    /// Retrieve a definition from exactly the supplied owner-issued revision.
+    /// # Errors
+    /// Rejects foreign pins and authority failures; a missing ID returns Missing without substitution.
+    pub fn definition(
+        &self,
+        context: &Context<'_>,
+        snapshot: &Snapshot,
+        id: &str,
+    ) -> Result<Definition, Error> {
+        tracing::trace!("Reading a definition from a pinned Board revision");
+        self.check_snapshot(snapshot)?;
+        let d = snapshot
+            .data
+            .as_ref()
+            .ok_or(Error::Missing)?
+            .definitions
+            .get(id)
+            .ok_or(Error::Missing)?;
+        context.check(
+            &self.authority,
+            self.publisher,
+            Action::Read,
+            d.document.bytes().len(),
+        )?;
+        Ok(d.clone())
+    }
+    // A pin from another owner or a dropped owner never supplies local authority.
+    pub(super) fn check_snapshot(&self, snapshot: &Snapshot) -> Result<(), Error> {
+        tracing::trace!("Checking Board snapshot owner association");
+        let domain = snapshot.domain.upgrade().ok_or(Error::Denied)?;
+        if !Arc::ptr_eq(&domain, &self.domain) || snapshot.publisher() != self.publisher {
+            return Err(Error::Denied);
+        }
+        Ok(())
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::super::semantics::Unavailable;
+    use super::*;
+    use std::{
+        collections::BTreeMap,
+        time::{Duration, Instant},
+    };
+    // Pins retain complete immutable content; foreign owner references and capacity exhaustion are rejected.
+    #[test]
+    fn immutable_atomic_revisions_and_owner_scope() {
+        let id = IdentityId([1; 32]);
+        let authority = Arc::new(Authority::new());
+        let l = Limits {
+            snapshots: 2,
+            ..Limits::default()
+        };
+        let p = Provider::new(id, authority.clone(), l, Arc::new(Unavailable)).unwrap();
+        let grant = authority
+            .grant(id, Action::Publish, l.publication_bytes)
+            .unwrap();
+        let c = Context {
+            grant: &grant,
+            deadline: Instant::now() + Duration::from_secs(10),
+            cancelled: false,
+        };
+        let empty = br#"{"version":1,"providedServices":[],"wantedServices":[]}"#;
+        let make = || Prepared::new(id, empty, &BTreeMap::new(), l, &Unavailable).unwrap();
+        let first = p.publish(&c, make()).unwrap();
+        let second = p.publish(&c, make()).unwrap();
+        assert_eq!(first.bytes(), second.bytes());
+        assert!(matches!(p.publish(&c, make()), Err(Error::Limit)));
+        drop(first);
+        assert!(p.publish(&c, make()).is_ok());
+        let read = authority
+            .grant(id, Action::Read, l.publication_bytes)
+            .unwrap();
+        let rc = Context { grant: &read, ..c };
+        assert!(p.read(&rc).is_ok());
+        assert!(matches!(
+            p.definition(&rc, &second, "absent"),
+            Err(Error::Missing)
+        ));
+        let other = Provider::new(id, authority, l, Arc::new(Unavailable)).unwrap();
+        assert!(matches!(
+            other.definition(&rc, &second, "absent"),
+            Err(Error::Denied)
+        ));
+    }
+}

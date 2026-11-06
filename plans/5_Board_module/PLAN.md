@@ -1,6 +1,6 @@
 # Board module plan
 
-Status: execution authorized; steps 1–12 complete, steps 13–24 pending.
+Status: execution authorized; steps 1–13 complete, steps 14–24 pending.
 
 This is roadmap milestone 6 and planning folder 5, following completed
 Transport integration. Board owns consistent offering/definition snapshots and
@@ -20,7 +20,7 @@ attributed caches; it uses the Services schema format without its runtime.
 - [x] **10.** Assess supported service semantics through explicit capability ports.
 - [x] **11.** Check publication sizes against complete peer control responses.
 - [x] **12.** Prepare complete publication candidates without changing visible state.
-- [ ] **13.** Publish immutable Board snapshots atomically in memory.
+- [x] **13.** Publish immutable Board snapshots atomically in memory.
 - [ ] **14.** Define durable snapshot commits and recovery outcomes.
 - [ ] **15.** Implement protected local snapshot persistence.
 - [ ] **16.** Verify publication recovery across failures and restarts.
@@ -257,6 +257,8 @@ local policy. Bound retained pins without mutating already returned content.
 Race readers and publishers with barriers in both orders and verify complete
 old/new pairs, immutable prior reads, empty replacements and released resources.
 No new revision field is added to peer JSON.
+
+Completed: Added serialized complete revision replacement, owner-bound immutable pins, exact pinned-definition reads and finite retained-revision admission. Revalidate candidates under receiving limits before visibility. Required checks pass. Production line coverage: 5985/6217 = 96.27%
 
 ### 14. Durable commit contract
 

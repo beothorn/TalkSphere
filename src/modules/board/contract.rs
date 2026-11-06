@@ -11,8 +11,10 @@ use std::{sync::Arc, time::Instant};
 /// Construction is reserved for the Board owner after complete validation.
 #[derive(Clone)]
 pub struct Snapshot {
-    publisher: IdentityId,
-    board: Arc<[u8]>,
+    pub(super) publisher: IdentityId,
+    pub(super) board: Arc<[u8]>,
+    pub(super) data: Option<Arc<super::prepared::Prepared>>,
+    pub(super) domain: std::sync::Weak<()>,
 }
 impl Snapshot {
     /// Return the bound publisher without asserting forwarded-document authentication.
@@ -180,6 +182,8 @@ mod tests {
     fn pinned_contract_preserves_bytes() {
         let s = Snapshot {
             publisher: IdentityId([3; 32]),
+            data: None,
+            domain: std::sync::Weak::new(),
             board: Arc::from(&b"{}"[..]),
         };
         let other = s.clone();

@@ -10,6 +10,7 @@ pub mod offering;
 pub mod prepared;
 pub mod response;
 pub mod semantics;
+pub mod state;
 pub mod terms;
 
 #[cfg(test)]
