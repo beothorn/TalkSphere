@@ -26,7 +26,7 @@ settlement and durable transfer/claim replay records.
 - [x] **16.** Recover Ledger participants across coordination failures.
 - [x] **17.** Encode and validate canonical transfer orders.
 - [x] **18.** Sign and authenticate transfers through Identity and Cryptography.
-- [ ] **19.** Bind transfer fee quotes to authenticated control contexts.
+- [x] **19.** Bind transfer fee quotes to authenticated control contexts.
 - [ ] **20.** Commit transfers atomically with permanent replay protection.
 - [ ] **21.** Expose authorized transfer status and remote balance observations.
 - [ ] **22.** Resolve third-party payment using authenticated issuer evidence.
@@ -319,6 +319,8 @@ connection/stream and exact fee; acceptance on another context or with changed
 fee fails. Quotes alone do not debit or guarantee capacity. Already committed
 exact retries bypass requoting and later fee changes. Test zero fees, exhaustion,
 expiration/disconnect before acceptance and every fee-related LG-08 row.
+
+Completed step 19: Added bounded transient fee quotes with strict signed-owner validation, exact fee ceilings, monotonic expiry and same-stream acceptance. Real-signature tests reject altered fees, stale/foreign contexts, duplicates and capacity overflow; acceptance exposes no issuer authority or balance mutation. Required checks pass; production line coverage 7919/8257 = 95.91%.
 
 ### 20. Issuer transfer effects
 
