@@ -21,3 +21,8 @@ checks AVAILABLE/restrictions and recipient headroom, consumes the reserved issu
 credits the stored authoritative amount and records the original owner atomically.
 Same-secret/original-owner retry returns ClaimResult(id,amount) without another credit,
 including after restart. Wrong secret/owner/invalid state fails without trust changes.
+
+Invalidate claim requires Administer and an unredeemed claim. It atomically marks
+INVALIDATED and releases finite issuance, retaining the creation/claim record.
+Repeated invalidation is idempotent; redeemed claims cannot be invalidated. A race
+with redemption admits exactly one terminal transition; restart preserves it.

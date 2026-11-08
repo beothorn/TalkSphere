@@ -154,6 +154,20 @@ impl<P: Persistence> Ledger<P> {
             })
         })
     }
+    /// Invalidate an unredeemed claim and release its held issuance without deleting replay state.
+    /// # Errors
+    /// Missing authority/claim or already redeemed state rejects; repeated invalidation is idempotent.
+    pub fn invalidate_claim(&self, context: &Context<'_>, id: [u8; 32]) -> Result<(), Error> {
+        tracing::trace!("Invalidating unused credit claim without erasing replay protection");
+        self.change(context, Action::Administer, |s| {
+            let claim = s.claims.get_mut(&id).ok_or(Error::Denied)?;
+            if claim.state == ClaimState::Redeemed {
+                return Err(Error::Conflict);
+            }
+            claim.state = ClaimState::Invalidated;
+            Ok(())
+        })
+    }
     /// Resolve an uncertain/lost private export by its durable creation key without reconstructing a secret.
     /// # Errors
     /// Requires Administer authority; uncertain state must recover before a definitive answer.

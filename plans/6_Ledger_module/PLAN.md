@@ -34,7 +34,7 @@ settlement and durable transfer/claim replay records.
 - [x] **24.** Create finite claims and persist only their commitments.
 - [x] **25.** Encrypt and validate owner-bound claim redemption requests.
 - [x] **26.** Redeem claims atomically with owner-bound retry results.
-- [ ] **27.** Invalidate unused claims without weakening terminal replay guards.
+- [x] **27.** Invalidate unused claims without weakening terminal replay guards.
 - [ ] **28.** Preserve obligations and replay records during bounded maintenance.
 - [ ] **29.** Verify races across every shared accounting resource.
 - [ ] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
@@ -412,6 +412,8 @@ issuance reservation atomically. Retain invalidated/redeemed records and reject
 recreation of their IDs; no expiry invented for bearer claims. Test invalidate
 versus redeem in both serialization orders, repeated local calls, restart and
 rejected attempts against terminal records without exposing bearer information.
+
+Completed step 27: Implemented authorized claim invalidation with issuance release and retained terminal records. Real encrypted redemption/invalidation races admit one winner; tests cover repeated invalidation, redeemed-claim refusal and invalidated replay rejection after restart. Required checks pass; production line coverage 8504/8897 = 95.58%.
 
 ### 28. Capacity and compaction
 

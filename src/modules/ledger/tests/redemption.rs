@@ -170,6 +170,77 @@ fn encrypted_owner_binding() {
     );
     assert_eq!(reopened.view(&read_context, owner).unwrap().issued, 7);
 
+    // A real encrypted redemption races administrative invalidation in either permitted serialization order.
+    let mut entropy = ScriptedEntropy(std::collections::VecDeque::from([
+        Ok(vec![7; 32]),
+        Ok(vec![8; 32]),
+    ]));
+    let fresh = ledger
+        .create_claim(&admin_context, [2; 32], 7, Some(owner), &mut entropy)
+        .unwrap();
+    let fresh_object = fresh
+        .encrypt(owner, &credential, &mut opener.crypto)
+        .unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    let (redeem, invalidate) = std::thread::scope(|scope| {
+        let r = scope.spawn(|| {
+            barrier.wait();
+            ledger.redeem_claim(&context, owner, &fresh_object, &opener)
+        });
+        let i = scope.spawn(|| {
+            barrier.wait();
+            ledger.invalidate_claim(&admin_context, fresh.id())
+        });
+        (r.join().unwrap(), i.join().unwrap())
+    });
+    assert_ne!(redeem.is_ok(), invalidate.is_ok());
+    assert_eq!(
+        ledger.view(&read_context, owner).unwrap().issued,
+        if redeem.is_ok() { 14 } else { 7 }
+    );
+    assert_eq!(
+        ledger.capacities(&read_context).unwrap().0,
+        if redeem.is_ok() { 6 } else { 13 }
+    );
+    assert!(ledger.invalidate_claim(&admin_context, [4; 32]).is_err());
+    let mut entropy = ScriptedEntropy(std::collections::VecDeque::from([
+        Ok(vec![10; 32]),
+        Ok(vec![11; 32]),
+    ]));
+    let unused = ledger
+        .create_claim(&admin_context, [3; 32], 3, None, &mut entropy)
+        .unwrap();
+    ledger
+        .invalidate_claim(&admin_context, unused.id())
+        .unwrap();
+    ledger
+        .invalidate_claim(&admin_context, unused.id())
+        .unwrap();
+    assert_eq!(
+        ledger.claim_creation(&admin_context, [3; 32]),
+        Ok(Some((
+            unused.id(),
+            super::super::claims::ClaimState::Invalidated
+        )))
+    );
+
+    let invalidated_object = unused
+        .encrypt(owner, &credential, &mut opener.crypto)
+        .unwrap();
+    let image = ledger.inner.lock().unwrap().persistence.load().unwrap();
+    let reopened = Ledger::open(
+        IdentityId(id),
+        auth.clone(),
+        Memory(image),
+        limits,
+        &read_context,
+    )
+    .unwrap();
+    assert!(
+        reopened
+            .redeem_claim(&context, owner, &invalidated_object, &opener)
+            .is_err()
+    );
     for at in [0, 4, 36, 68, 100, 132, object.len() - 1] {
         let mut bad = object.clone();
         bad[at] ^= 1;
