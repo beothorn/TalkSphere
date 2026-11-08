@@ -14,3 +14,10 @@ recover then query Claim creation by the original attempt key to obtain public I
 and explicitly invalidate it if appropriate. Never retry as a new issuance blindly.
 Terminal records and creation keys are retained for Ledger lifetime. State is Available,
 Redeemed (one recorded owner), or Invalidated. Claim use never raises local trust.
+
+Redeem claim requires Control authority and a complete owner-bound encrypted object.
+After authenticated decryption it compares SHA256 commitment in constant time,
+checks AVAILABLE/restrictions and recipient headroom, consumes the reserved issuance,
+credits the stored authoritative amount and records the original owner atomically.
+Same-secret/original-owner retry returns ClaimResult(id,amount) without another credit,
+including after restart. Wrong secret/owner/invalid state fails without trust changes.

@@ -33,6 +33,14 @@ pub(super) struct ClaimRecord {
     pub state: ClaimState,
     pub owner: Option<IdentityId>,
 }
+/// Public replay-stable redemption response; it contains no secret.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClaimResult {
+    /// Original claim replay identity.
+    pub id: [u8; 32],
+    /// Authoritative stored issuer amount, never the portable hint.
+    pub amount: u64,
+}
 impl<P: Persistence> Ledger<P> {
     /// Create one positive finite bearer claim under a durable administrative attempt key.
     /// # Errors
@@ -82,6 +90,68 @@ impl<P: Persistence> Ledger<P> {
             id,
             secret,
             amount,
+        })
+    }
+    /// Redeem an authenticated encrypted claim exactly once using its stored authoritative amount.
+    /// # Errors
+    /// Wrong secret/owner/restriction/state, overflow or failed persistence produces no successful issuance.
+    pub fn redeem_claim(
+        &self,
+        context: &Context<'_>,
+        authenticated: IdentityId,
+        object: &[u8],
+        decryptor: &impl super::redemption::Decryptor,
+    ) -> Result<ClaimResult, Error> {
+        tracing::trace!("Redeeming authenticated claim under one durable transaction");
+        let redemption = super::redemption::Redemption::decrypt(
+            context,
+            &self.authority,
+            self.local,
+            authenticated,
+            object,
+            decryptor,
+        )?;
+        self.change(context, Action::Control, |s| {
+            let mut claim = s.claims.get(&redemption.id).cloned().ok_or(Error::Denied)?;
+            use hmac::digest::CtOutput;
+            if CtOutput::<Sha256>::new(redemption.commitment().into())
+                != CtOutput::<Sha256>::new(claim.hash.into())
+            {
+                return Err(Error::Denied);
+            }
+            if claim.state == ClaimState::Redeemed {
+                if claim.owner == Some(authenticated) {
+                    return Ok(ClaimResult {
+                        id: redemption.id,
+                        amount: claim.amount,
+                    });
+                }
+                return Err(Error::Denied);
+            }
+            if claim.state != ClaimState::Available
+                || claim
+                    .restriction
+                    .is_some_and(|owner| owner != authenticated)
+            {
+                return Err(Error::Denied);
+            }
+            if available(s, Resource::IssuedRoom(authenticated))? < claim.amount {
+                return Err(Error::Limit);
+            }
+            s.issuance = s
+                .issuance
+                .checked_sub(claim.amount)
+                .ok_or(Error::Insufficient)?;
+            let balance = s.accounts.issued.entry(authenticated).or_default();
+            *balance = balance.checked_add(claim.amount).ok_or(Error::Limit)?;
+            claim.state = ClaimState::Redeemed;
+            claim.owner = Some(authenticated);
+            let amount = claim.amount;
+            s.claims.insert(redemption.id, claim);
+            Ok(ClaimResult {
+                id: redemption.id,
+                amount,
+            })
         })
     }
     /// Resolve an uncertain/lost private export by its durable creation key without reconstructing a secret.

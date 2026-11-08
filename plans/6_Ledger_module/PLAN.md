@@ -33,7 +33,7 @@ settlement and durable transfer/claim replay records.
 - [x] **23.** Encode portable claims with protected secret ownership.
 - [x] **24.** Create finite claims and persist only their commitments.
 - [x] **25.** Encrypt and validate owner-bound claim redemption requests.
-- [ ] **26.** Redeem claims atomically with owner-bound retry results.
+- [x] **26.** Redeem claims atomically with owner-bound retry results.
 - [ ] **27.** Invalidate unused claims without weakening terminal replay guards.
 - [ ] **28.** Preserve obligations and replay records during bounded maintenance.
 - [ ] **29.** Verify races across every shared accounting resource.
@@ -402,6 +402,8 @@ cannot make a successful credit overflow. Same secret and original owner replay
 the original result without issuance; another owner fails. Test all LG-11/LG-12
 rows, concurrent redeemers, zero-trust control access and lost reply/restart.
 Portable amount cannot replace stored amount or implicitly grant service trust.
+
+Completed step 26: Implemented constant-time commitment-checked claim redemption with atomic reserved issuance consumption, destination headroom and owner-bound original results. Real encrypted tests cover wrong secrets/owners, portable amount99 versus stored7, zero-trust bootstrap, exact retries and restart without duplicate issuance. Required checks pass; production line coverage 8490/8886 = 95.54%.
 
 ### 27. Claim lifecycle
 
