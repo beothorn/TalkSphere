@@ -120,3 +120,46 @@ fn phase_prerequisites() {
         Err(Error::Invalid)
     ));
 }
+
+// Completed and pending history remains byte-for-byte retained when lower reopen quotas cannot hold it.
+#[test]
+fn retained_capacity_refuses_without_eviction() {
+    let mut first = record();
+    first.input = Some(Value::Array(vec![
+        Value::Bytes(vec![1]),
+        Value::Bytes(vec![]),
+    ]));
+    first.phase = Phase::Reserved;
+    let mut second = record();
+    second.key.stream = 2;
+    let records = BTreeMap::from([(first.key, first.clone()), (second.key, second)]);
+    let bytes = operation::encode(&records, Limits::default()).unwrap();
+    let local = IdentityId([2; 32]);
+    for limits in [
+        Limits {
+            operations: 1,
+            ..Limits::default()
+        },
+        Limits {
+            bodies: 1,
+            ..Limits::default()
+        },
+        Limits {
+            state_bytes: bytes.len() - 1,
+            ..Limits::default()
+        },
+    ] {
+        assert!(matches!(
+            operation::decode(&bytes, local, limits),
+            Err(Error::Limit)
+        ));
+        assert_eq!(operation::encode(&records, limits), Err(Error::Limit));
+    }
+    let restored = operation::decode(&bytes, local, Limits::default()).unwrap();
+    assert_eq!(restored.len(), 2);
+    assert_eq!(restored[&first.key].input, first.input);
+    assert_eq!(
+        operation::encode(&restored, Limits::default()).unwrap(),
+        bytes
+    );
+}

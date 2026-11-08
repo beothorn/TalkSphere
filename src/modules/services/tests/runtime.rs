@@ -341,6 +341,15 @@ fn configured_policy(
     requester_only: bool,
     policy: ledger::terms::Policy,
 ) -> Fixture {
+    configured_limits(family, requester_only, policy, Limits::default())
+}
+// Runtime capacity varies independently of the unchanged registry and finite accounting participant.
+fn configured_limits(
+    family: Arc<super::test_support::family::Echo>,
+    requester_only: bool,
+    policy: ledger::terms::Policy,
+    limits: Limits,
+) -> Fixture {
     let local = IdentityId([2; 32]);
     let requester = IdentityId([1; 32]);
     let a = Arc::new(Authority::new());
@@ -383,7 +392,7 @@ fn configured_policy(
         Config {
             local,
             authority: a.clone(),
-            limits: Limits::default(),
+            limits,
         },
         &context(&init),
         Memory::default(),
@@ -857,4 +866,53 @@ fn accepted_work_survives_handler_drain() {
         .issued,
         93
     );
+}
+
+// A full lifetime operation table refuses new consent while preserving the first result and exact charge.
+#[test]
+fn lifetime_capacity_keeps_results() {
+    let f = Arc::new(super::test_support::family::Echo::new());
+    let fixture = configured_limits(
+        f.clone(),
+        false,
+        Default::default(),
+        Limits {
+            operations: 1,
+            bodies: 1,
+            ..Limits::default()
+        },
+    );
+    let Fixture { runtime, a, r, .. } = fixture;
+    let g = a
+        .grant(IdentityId([2; 32]), Action::Coordinate, 1_000_000)
+        .unwrap();
+    let o = a
+        .grant(IdentityId([2; 32]), Action::Observe, 1_000_000)
+        .unwrap();
+    let accepted = accepted(a.clone(), &r, 1, 1);
+    let key = accepted.assessed().authorized.peer.key;
+    runtime
+        .admit(&context(&g), accepted, Payment::default())
+        .unwrap();
+    runtime
+        .supply_input(&context(&g), key, Value::String("input".into()))
+        .unwrap();
+    runtime.start(&context(&g), key).unwrap();
+    runtime.stage(&context(&g), key).unwrap();
+    runtime.resume(&context(&g), key).unwrap();
+    let result = runtime.result(&context(&o), key).unwrap();
+    assert_eq!(result.price, 7);
+    assert_eq!(
+        runtime.admit(
+            &context(&g),
+            self::accepted(a.clone(), &r, 2, 2),
+            Payment::default()
+        ),
+        Err(Error::Limit)
+    );
+    assert_eq!(
+        runtime.result(&context(&o), key).unwrap().result.bytes(),
+        result.result.bytes()
+    );
+    assert_eq!(f.executions.load(std::sync::atomic::Ordering::SeqCst), 1);
 }

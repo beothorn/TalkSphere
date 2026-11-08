@@ -56,6 +56,23 @@ impl Value {
         self.walk(0, &mut budget)?;
         Ok(maximum - budget.bytes)
     }
+    /// Count owned byte-body values after validating structural and aggregate budgets.
+    /// # Errors
+    /// Malformed objects and exhausted budgets fail before recursive counting.
+    pub fn body_count(&self, budget: Budget) -> Result<usize, Error> {
+        tracing::trace!("Counting bounded owned logical byte bodies");
+        self.bounded(budget)?;
+        Ok(self.count_bodies())
+    }
+    // Structural validation above limits recursion and total nodes, making the sum finite.
+    fn count_bodies(&self) -> usize {
+        match self {
+            Self::Bytes(_) => 1,
+            Self::Array(values) => values.iter().map(Self::count_bodies).sum(),
+            Self::Object(fields) => fields.iter().map(|(_, v)| v.count_bodies()).sum(),
+            _ => 0,
+        }
+    }
     // Walk only bounded nesting and decrement shared aggregate budgets before visiting children.
     fn walk(&self, depth: usize, budget: &mut Budget) -> Result<(), Error> {
         if depth > budget.depth {

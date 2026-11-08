@@ -18,3 +18,5 @@ state framing must leave 64 bytes of arithmetic headroom. Defaults are 4096
 handlers/operations, 65536 bodies/nodes, 64 quotes and 16777216 state bytes.
 These local defaults are not protocol maxima. Accepted obligations cannot be
 evicted merely to admit new work.
+
+The body limit counts retained input/output byte values and one complete result buffer per completion across all operations, including terminal history; coordination metadata and pins remain bounded by image bytes, nodes and operation/handler quotas.

@@ -16,3 +16,5 @@ not a peer encoding; callers must bound decoding before constructing huge values
 byte_len applies the same bounded traversal and returns aggregate payload/name
 bytes for caller byte-grant checks. It does not count native object overhead;
 node admission separately bounds container overhead.
+
+`body_count` validates the same budgets and counts each logical byte value, including empty values. Containers and text do not add body references.

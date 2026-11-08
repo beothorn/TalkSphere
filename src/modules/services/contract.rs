@@ -61,7 +61,7 @@ pub struct Limits {
     pub handlers: usize,
     /// Maximum retained durable operation bindings.
     pub operations: usize,
-    /// Maximum simultaneous body references.
+    /// Maximum retained logical byte bodies plus complete result buffers across all operations.
     pub bodies: usize,
     /// Maximum nodes in one logical value.
     pub nodes: usize,

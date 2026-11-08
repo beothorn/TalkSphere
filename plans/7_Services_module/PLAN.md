@@ -36,7 +36,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **26.** Run requester-local checks without side effects.
 - [x] **27.** Coordinate paid evidence and included check entitlements.
 - [x] **28.** Drain handlers while preserving accepted recovery paths.
-- [ ] **29.** Bound retention without discarding recovery obligations.
+- [x] **29.** Bound retention without discarding recovery obligations.
 - [ ] **30.** Verify contracts through a bounded serialized adapter.
 - [ ] **31.** Verify concurrent invocation and authority isolation.
 - [ ] **32.** Add a discoverable local Services exercise path.
@@ -309,3 +309,5 @@ remote outcomes retain holds; valid received results settle finite local issuanc
 Required checks pass; production coverage 10978/11513 = 95.35%.
 
 Step 28 completed: composition unpublishes before draining, retained pins finish accepted work, and startup explicitly gates missing recovery providers. Required checks pass; production coverage 11728/12472 = 94.03%.
+
+Step 29 completed: aggregate retained byte-body limits apply on every write and reopen alongside operations, nodes and image bytes. Lower-limit recovery and a full lifetime table refuse without evicting results or replay guards; no unsafe compaction is exposed. Required checks pass; production coverage 11767/12508 = 94.08%.

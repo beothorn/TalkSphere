@@ -63,6 +63,7 @@ pub(super) fn encode(
     if records.len() > l.operations {
         return Err(Error::Limit);
     }
+    retained_bodies(records, l)?;
     let values = records
         .values()
         .map(Operation::value)
@@ -96,7 +97,32 @@ pub(super) fn decode(
             return Err(Error::Invalid);
         }
     }
+    retained_bodies(&records, l)?;
     Ok(records)
+}
+// Count retained application bodies across all history; opaque coordination tokens use the image-byte limit.
+fn retained_bodies(
+    records: &std::collections::BTreeMap<OperationKey, Operation>,
+    limits: Limits,
+) -> Result<(), Error> {
+    tracing::trace!("Checking aggregate retained Services body capacity");
+    let mut remaining = limits.bodies;
+    for op in records.values() {
+        if let Some(input) = &op.input {
+            remaining = remaining
+                .checked_sub(input.body_count(budget(limits))?)
+                .ok_or(Error::Limit)?;
+        }
+        if let Some(completion) = &op.completion {
+            let count = completion
+                .output
+                .body_count(budget(limits))?
+                .checked_add(1)
+                .ok_or(Error::Limit)?;
+            remaining = remaining.checked_sub(count).ok_or(Error::Limit)?;
+        }
+    }
+    Ok(())
 }
 impl Operation {
     // Reconstruct explicit public handler contracts without exposing this private record representation.
