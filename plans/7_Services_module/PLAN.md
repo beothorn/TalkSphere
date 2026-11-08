@@ -10,7 +10,7 @@ The existing Services schema-format validator remains the starting point.
 
 - [x] **1.** Reconcile Services requirements and acceptance cases with upstream.
 - [x] **2.** Define Services authority, operation contexts and resource limits.
-- [ ] **3.** Add deterministic Services dependencies and failure helpers.
+- [x] **3.** Add deterministic Services dependencies and failure helpers.
 - [x] **4.** Represent the complete logical value vocabulary exactly.
 - [x] **5.** Validate structured values against bounded schemas.
 - [x] **6.** Define requester and provider handler contracts.
@@ -114,7 +114,7 @@ Define versioned local contracts, typed failures, caller/peer identity provenanc
 
 Provide test-owned custom handlers, immutable Board selections, controlled clocks, body sources and durable failure scripts with independently specified outputs. Reuse real Ledger fixtures where applicable. Self-test exhaustion and refusal behavior, track assess/execute/prepare/commit calls, and restart from durable bytes only. Use barriers for races and explicit boundary cuts rather than timing sleeps; helpers must never become production handlers.
 
-Step 3 progress: deterministic atomic-register cuts, explicit clock and generic reply/call-count scripts are implemented and self-tested. Typed handler lifecycle and Board-selection adapters remain pending, so this step is unchecked.
+Step 3 completed: atomic-register failure cuts, explicit clock, finite reply scripts, typed handler lifecycle counters/recovery ports and real immutable Board selection fixtures are implemented and self-tested through public contracts. Tests preserve reply-loss ambiguity and helper exhaustion. Required checks pass; production coverage 9119/9500 = 95.99%.
 
 ### 4. Represent the complete logical value vocabulary exactly
 

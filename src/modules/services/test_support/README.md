@@ -8,8 +8,11 @@ Script exhaustion fails closed. Literal response7 and binary00ff do not depend
 on production pricing or codecs. No sleeps, sockets, production registration or
 peer authentication are involved.
 
-Board-selection fixtures and typed handler lifecycle adapters will be added when
-the public handler and registry contracts exist. Consequently plan step3 remains
-in progress until those adapters are verified through their owning contracts.
+Typed echo requester/provider fixtures exercise assessment, execute, completion,
+prepare, commit, abort and status with an explicit execution counter. Real Board
+publication/selection fixtures use only public contracts and the installed Services
+registry. The echo state is deliberately volatile; later durable-coordinator tests
+must supply a persistent family participant rather than claiming this fixture
+survives process restart.
 
 From the root: cargo test --locked modules::services::test_support.
