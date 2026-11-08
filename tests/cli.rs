@@ -21,7 +21,7 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("serve"));
     assert!(overview.contains("--version"));
     assert!(overview.contains(
-        "authenticated Transport server available on Linux; application services pending"
+        "authenticated Transport server available on Linux; network application protocols pending"
     ));
     for arguments in [&[][..], &["-h"], &["help"]] {
         assert_eq!(successful_stdout(arguments), overview);
@@ -104,4 +104,19 @@ fn non_utf8_arguments_report_a_usage_error_without_panicking() {
     let error = String::from_utf8(output.stderr).unwrap();
     assert!(error.contains("valid UTF-8"));
     assert!(!error.contains("panicked"));
+}
+
+// Local Services exercise instructions remain discoverable without initializing stores or opening sockets.
+#[test]
+fn services_help_explains_scope_and_recovery() {
+    let details = successful_stdout(&["help", "services"]);
+    for text in [
+        "cargo run --locked --example services",
+        "price=7, remaining=93",
+        "volatile",
+        "fresh grants",
+        "no application protocol",
+    ] {
+        assert!(details.contains(text), "{details}");
+    }
 }

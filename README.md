@@ -175,3 +175,15 @@ library contracts; network controls await Peer Protocol composition.
 Run `cargo run --locked --example ledger` for the bounded volatile accounting
 walkthrough, and see the [Ledger evidence](src/modules/ledger/ACCEPTANCE.md) for
 all local payment modes, failure/replay tests and later composition obligations.
+
+## Local Services exercise
+
+Run `cargo run --locked --example services` for an explicitly installed custom text
+handler using real Board/Ledger contracts: it prints `price=7, remaining=93`.
+Use `cargo run --locked -- help services` or
+`cargo run --locked --example services -- --help` for details;
+`cargo test --locked --example services` checks the complete example.
+This demonstration uses volatile stores and starts fresh on every run; it opens
+no network connection. Protected-store recovery is exercised independently by
+`cargo test --locked modules::services::recovery_tests`. See the
+[Services guide](src/modules/services/README.md) for ownership and recovery rules.

@@ -39,7 +39,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **29.** Bound retention without discarding recovery obligations.
 - [x] **30.** Verify contracts through a bounded serialized adapter.
 - [x] **31.** Verify concurrent invocation and authority isolation.
-- [ ] **32.** Add a discoverable local Services exercise path.
+- [x] **32.** Add a discoverable local Services exercise path.
 - [ ] **33.** Complete the Services acceptance matrix.
 - [ ] **34.** Publish Services documentation and the Peer Protocol handoff.
 
@@ -315,3 +315,5 @@ Step 29 completed: aggregate retained byte-body limits apply on every write and 
 Step 30 completed: the bounded versioned local adapter calls the same coordinator APIs with out-of-band authority; direct/serialized results, lost replies, truncation, finite buffers, foreign callers and result ownership are tested. Literal codec fixtures cover full-width values and IEEE bits. This is not peer wire or independent-process adapter conformance. Required checks pass; production coverage 11871/12619 = 94.07%.
 
 Step 31 completed: barrier races cover dispatch, opposite immutable decisions, duplicate delivery and included-check admission; foreign/revoked contexts, bounded TRACE privacy, forged definition flags, callback expiry and missing coordinator/retained Ledger history are checked. Runtime responsibilities are split into focused files. Required checks pass; production coverage 11915/12670 = 94.04%.
+
+Step 32 completed: the explicit volatile custom-handler example composes actual Board/Ledger contracts and prints price=7, remaining=93. Its unit test, run/help path, shared services help topic and executable CLI tests pass; docs distinguish restartable protected integration from this fresh-per-run example. Required checks pass; production coverage 11915/12670 = 94.04%.

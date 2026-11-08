@@ -14,3 +14,5 @@ No arguments show help successfully; invalid syntax exits 2 before effects. Miss
 or inconsistent runtime credentials, unsupported platforms and runtime failures exit
 1; normal shutdown exits 0. Help/version do not initialize operational logging or
 start networking. The application version is not a conformance declaration.
+
+The services topic describes the explicitly installed volatile local custom-handler example, finite library defaults, separate protected-store recovery and exit statuses. The overview distinguishes implemented Services library coordination from pending network application protocols.

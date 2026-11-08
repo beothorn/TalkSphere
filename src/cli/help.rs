@@ -8,6 +8,7 @@ pub(super) enum Topic {
     Identity,
     Board,
     Ledger,
+    Services,
     ServerOptions,
     Logging,
 }
@@ -23,6 +24,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Services,
+        names: &["services"],
+        label: "help services",
+        summary: "Exercise the local Services library with a finite custom handler.",
+        details: "Usage: talksphere help services | cargo run --locked --example services\n\nThe explicit local demonstration registers a custom text handler and uses real Board and Ledger contracts; it prints price=7, remaining=93. It uses volatile stores and no sockets, keys, standard-family runtime or automatic retries. Every run starts a new demonstration; it cannot resume after process exit.\nLibrary defaults: 4096 handlers/operations, 65536 bodies/nodes, 64 quotes and 16777216 state bytes. Terminal history is retained; full capacity refuses new work. Production Linux recovery reopens protected participant stores under fresh grants and resumes original decisions, never execution.\nExample --help/-h exits with status 0; invalid example arguments exit 2 and runtime failures exit 1. This help exits 0. Production serve still registers no application protocol.\nSee src/modules/services/README.md, ACCEPTANCE.md and plans/7_Services_module/PLAN.md.\n",
+    },
     HelpTopic {
         topic: Topic::Ledger,
         names: &[
@@ -132,7 +140,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: authenticated Transport server available on Linux; application services pending.\n\n\
+         Status: authenticated Transport server available on Linux; network application protocols pending.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -159,7 +167,7 @@ mod tests {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
         assert!(overview.contains(
-            "authenticated Transport server available on Linux; application services pending"
+            "authenticated Transport server available on Linux; network application protocols pending"
         ));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));
