@@ -11,7 +11,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **1.** Reconcile Services requirements and acceptance cases with upstream.
 - [x] **2.** Define Services authority, operation contexts and resource limits.
 - [ ] **3.** Add deterministic Services dependencies and failure helpers.
-- [ ] **4.** Represent the complete logical value vocabulary exactly.
+- [x] **4.** Represent the complete logical value vocabulary exactly.
 - [ ] **5.** Validate structured values against bounded schemas.
 - [ ] **6.** Define requester and provider handler contracts.
 - [ ] **7.** Register exact contracts through authorized composition.
@@ -119,6 +119,8 @@ Step 3 progress: deterministic atomic-register cuts, explicit clock and generic 
 ### 4. Represent the complete logical value vocabulary exactly
 
 Introduce bounded logical booleans, signed and unsigned 32/64-bit integers, binary32/binary64, UTF-8 strings, bytes, objects and arrays. Preserve float bits including signed zero and explicitly permitted nonfinite values; never route integers through floating point. Distinguish absent fields from null. Test literal SV-02 extrema and invalid representations; Peer Protocol retains ownership of canonical peer encodings.
+
+Step 4 completed: exact logical integer widths, float bits, UTF-8, bytes and nested values are implemented with independent aggregate budgets and duplicate-name rejection. Required checks pass; production line coverage with current validators is 8944/9319 = 95.98%.
 
 ### 5. Validate structured values against bounded schemas
 
