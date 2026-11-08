@@ -103,6 +103,25 @@ pub trait Requester: super::validation::Semantics {
     /// # Errors
     /// Reject unsupported pricing and invalid or overflowing terms.
     fn terms(&self, offering: &Offering) -> Result<(), Error>;
+    /// Calculate exact price from validated offering terms and provider factors without performing work.
+    /// The default supports only positive fixed prices; calculated models require installed family rules.
+    /// # Errors
+    /// Rejects unsupported models, malformed prices and family term refusals.
+    fn pricing(
+        &self,
+        offering: &Offering,
+        _factors: &Value,
+    ) -> Result<super::pricing::Price, Error> {
+        tracing::trace!("Calculating fixed price through installed requester contract");
+        self.terms(offering)?;
+        let price = offering
+            .source
+            .get("price")
+            .and_then(crate::modules::board::offering::integer)
+            .filter(|p| *p > 0)
+            .ok_or(Error::Unsupported)?;
+        Ok(super::pricing::Price::Fixed(price))
+    }
     /// Verify original input, agreed terms, complete evidence and local expectations.
     /// # Errors
     /// Return a typed dependency/validation failure; missing expectations should yield Inconclusive.

@@ -61,3 +61,5 @@ pub mod assessment;
 #[cfg(test)]
 #[path = "tests/assessment.rs"]
 mod assessment_tests;
+
+pub mod pricing;

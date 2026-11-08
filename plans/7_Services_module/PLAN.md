@@ -18,7 +18,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **8.** Connect registered capabilities to Board selection.
 - [x] **9.** Authorize provided and wanted invocation roles.
 - [x] **10.** Assess input metadata before accepting large bodies.
-- [ ] **11.** Calculate fixed prices with checked exact arithmetic.
+- [x] **11.** Calculate fixed prices with checked exact arithmetic.
 - [ ] **12.** Validate the Computation metering exception.
 - [ ] **13.** Bind quote acceptance to exact terms and context.
 - [ ] **14.** Define durable coordinator records and storage outcomes.
@@ -161,6 +161,8 @@ Step 10 completed: provider assessment validates caller role, metadata budgets a
 ### 11. Calculate fixed prices with checked exact arithmetic
 
 Authorize positive fixed or precomputed prices with explicit issuer, rounding, provider-size inputs and requester ceiling. Recompute using trusted registered family rules rather than accepting arbitrary handler amounts. Reject overflow, zero prices, hidden fees and unsupported models. Preserve agreed adjustments as separately authorized data; do not implement Messaging release credits or another family algorithm as a generic refund.
+
+Step 11 completed: installed family pricing validates fixed positive terms and provider factors; explicit requester ceilings are enforced before acceptance. Fixed completions cannot introduce duration or hidden charges, and uint64 maxima remain exact. Required checks pass; production coverage 9311/9694 = 96.05%.
 
 ### 12. Validate the Computation metering exception
 

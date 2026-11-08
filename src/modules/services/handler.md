@@ -29,3 +29,8 @@ the coordinator or participant must persist bytes before acknowledging durable w
 All ports return typed Services errors; Unknown preserves possible commitment.
 Handlers own family resources and cannot inspect Board/Ledger tables or open sockets
 through these interfaces. Application composition authorizes caller channels.
+
+Requester.pricing calculates exact Price from validated offering terms and provider
+factors. The default checks terms and supports only positive fixed prices; custom
+calculated models must explicitly override it. Computation metering remains subject
+to the exact service/version eligibility rules in the shared pricing validator.

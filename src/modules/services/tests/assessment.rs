@@ -59,6 +59,14 @@ fn metadata_before_body() {
         Limits::default(),
     )
     .unwrap();
+    assert_eq!(
+        super::pricing::quote(&assessed, 7),
+        Ok(super::pricing::Price::Fixed(7))
+    );
+    assert_eq!(
+        super::pricing::quote(&assessed, 6),
+        Err(Error::Insufficient)
+    );
     assert_eq!(assessed.input_bytes(), 128);
     assert_eq!(assessed.factors(), &Value::Object(vec![]));
     assert_eq!(assessed.authorized().key(), peer.key);
