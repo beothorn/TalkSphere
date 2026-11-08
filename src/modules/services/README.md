@@ -8,3 +8,6 @@ spending or network dependency. The format is specified by
 
 From the repository root: cargo build --locked; cargo test --locked
 modules::services; cargo run --locked -- --help. No Services command exists.
+
+The [Services implementation plan](../../../plans/7_Services_module/PLAN.md)
+is proposed for review; its runtime steps are not yet implemented.

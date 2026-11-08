@@ -19,7 +19,8 @@ The Ledger direct-call module now supports durable finite accounting, settlement
 transfers and encrypted claims with protected Linux persistence and local inspection.
 Services, Peer Protocol and paid Storage remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
-[roadmap](plans/PLAN.md), [Ledger plan](plans/6_Ledger_module/PLAN.md),
+[roadmap](plans/PLAN.md), [Services plan](plans/7_Services_module/PLAN.md),
+[Ledger plan](plans/6_Ledger_module/PLAN.md),
 [Board plan](plans/5_Board_module/PLAN.md),
 [integration plan](plans/4_Transport_integration/PLAN.md)
 and [executed acceptance evidence](docs/transport-integration/ACCEPTANCE.md).

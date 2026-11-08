@@ -66,7 +66,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   durable state and replay protection. Direct-call implementation, protected Linux
   persistence, inspection and [Ledger evidence](../src/modules/ledger/ACCEPTANCE.md)
   cover concurrent spending and restart; real Services/network integration remains later.
-- [ ] **8. Services module.** Implement typed schemas, handler registration,
+- [ ] **8. [Services module](7_Services_module/PLAN.md).** Implement typed schemas, handler registration,
   authority, quotes/pricing, provided/wanted roles and durable coordination
   with Board/Ledger through contracts. Test failures and unknown outcomes.
 - [ ] **9. Peer Control / Peer Protocol module.** Bind metadata, quotes, service
