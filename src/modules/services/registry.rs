@@ -97,6 +97,11 @@ impl Registry {
             entries: RwLock::new(BTreeMap::new()),
         })
     }
+    // All stateful Services receivers must share the same local authority rather than laundering foreign registrations.
+    pub(crate) fn belongs_to(&self, local: IdentityId, authority: &Arc<Authority>) -> bool {
+        tracing::trace!("Checking receiving registry identity and authority domain");
+        self.local == local && Arc::ptr_eq(&self.authority, authority)
+    }
     /// Install one exact requester contract and optional provider under registration authority.
     /// # Errors
     /// Denies foreign authority; rejects malformed, unsupported or duplicate definitions and capacity overflow.

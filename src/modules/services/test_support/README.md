@@ -16,3 +16,12 @@ must supply a persistent family participant rather than claiming this fixture
 survives process restart.
 
 From the root: cargo test --locked modules::services::test_support.
+
+The durable-family wrapper now serializes every acknowledged staged result,
+preparation, decision and execution count into independent byte images. Reopening
+constructs fresh Echo objects from those bytes. Fault stores preserve only complete
+Services/Ledger records, with known-before and possible-after acknowledgement cuts.
+The SV-09 matrix discards old modules/authorities and resolves all eight boundaries.
+A separate Linux subprocess test uses protected real stores for all three owners,
+then independently reopens the committed result. This is restart and simulated-cut
+evidence; it does not claim physical power-loss or independent implementation tests.

@@ -69,3 +69,15 @@ and Ledger tokens and releasing uncommitted resources once. A missing Ledger hol
 is not recreated merely to abort it. Abort cannot replace Commit/Committed; a
 cancelled call alone changes no decision or obligation. Lost participant replies
 leave Abort pending for recovery, and no service execution is retried.
+
+Recovery stops and reopens the exclusive coordinator and affected participants
+from their authoritative stores under fresh authority. resume then advances only
+original durable phases: query staged completion, prepare original effects, record
+or deliver the decision, and return the terminal phase. It never calls execute or
+reissues a peer invocation. Reserved input awaiting an explicit start remains
+Unknown; an unrecoverable external execution remains Unknown. Operators may choose
+an authorized abort before a commit decision, never from a participant timeout.
+
+Registry and Coordinator must share the same local Services authority domain;
+foreign registration domains are rejected before opening/mutating journal state.
+Ledger retains its separate authority and explicit coordinator grant.

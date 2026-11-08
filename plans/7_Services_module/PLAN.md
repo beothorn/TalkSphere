@@ -31,7 +31,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **21.** Persist one immutable commit or abort decision.
 - [x] **22.** Deliver commit decisions without duplicate effects.
 - [x] **23.** Abort uncommitted work without erasing obligations.
-- [ ] **24.** Recover coordination across every durable failure cut.
+- [x] **24.** Recover coordination across every durable failure cut.
 - [ ] **25.** Track payment state separately from completed work.
 - [ ] **26.** Run requester-local checks without side effects.
 - [ ] **27.** Coordinate paid evidence and included check entitlements.
@@ -239,6 +239,8 @@ Step 23 completed: only stored Abort decisions release original handler/Ledger p
 ### 24. Recover coordination across every durable failure cut
 
 Run the real Services coordinator with the real Ledger participant and a durable test-owned handler through all eight SV-09 cuts. Reopen stores using only durable state, replay original decisions/status calls and assert either consistent resource-plus-price7 or abort with neither. Verify conflicting reads/spends are gated, no execution retries occur, and lifetime service replay guards survive. Include fresh-process coordinator recovery and lost replies at both participant boundaries.
+
+Step 24 completed: the real coordinator, real Ledger and byte-persistent test handler survive all eight SV-09 cuts with fresh objects/authority domains, exact decision replay and no re-execution. Known uncommitted cases resolve through an explicit recovered-coordinator abort; durable commits finish resource+price7 once. A separately exec'd Linux test reopens protected stores and confirms durable result/accounting. Added bounded resume of original phases without execution. Required checks pass; production coverage 10789/11314 = 95.36% (valid LLVM profiles; existing abrupt-child profile warning handled by the documented procedure).
 
 ### 25. Track payment state separately from completed work
 

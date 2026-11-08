@@ -201,3 +201,117 @@ impl Provider for Echo {
         Err(Error::Unsupported)
     }
 }
+
+impl Echo {
+    // Snapshot only complete durable family records and the independent execution counter.
+    pub(in crate::modules::services) fn snapshot(&self) -> Result<Vec<u8>, Error> {
+        let state = self.state.lock().unwrap();
+        let rows = state
+            .iter()
+            .map(|(k, (c, s))| {
+                Value::Array(vec![
+                    Value::Bytes(k.requester.0.to_vec()),
+                    Value::Bytes(k.connection.to_vec()),
+                    Value::Uint64(u64::from(k.stream)),
+                    c.output.clone(),
+                    Value::Bytes(c.result.bytes().to_vec()),
+                    Value::Uint64(c.price),
+                    Value::Bytes(c.effect.bytes().to_vec()),
+                    Value::Uint64(match s {
+                        Status::Absent => 0,
+                        Status::Prepared(_) => 1,
+                        Status::Committed => 2,
+                        Status::Aborted => 3,
+                    }),
+                ])
+            })
+            .collect();
+        super::super::codec::encode(
+            &Value::Array(vec![
+                Value::Uint64(self.executions.load(std::sync::atomic::Ordering::SeqCst) as u64),
+                Value::Array(rows),
+            ]),
+            super::super::value::Budget {
+                depth: 16,
+                nodes: 65536,
+                bytes: 1_000_000,
+            },
+            1_000_000,
+        )
+    }
+    // Reconstruct a new independent participant solely from validated snapshot bytes, never shared state/locks.
+    pub(in crate::modules::services) fn restore(bytes: &[u8]) -> Result<Self, Error> {
+        let root = super::super::codec::decode(
+            bytes,
+            super::super::value::Budget {
+                depth: 16,
+                nodes: 65536,
+                bytes: 1_000_000,
+            },
+            1_000_000,
+        )?;
+        let Value::Array(root) = root else {
+            return Err(Error::Invalid);
+        };
+        let [Value::Uint64(count), Value::Array(rows)] = root.as_slice() else {
+            return Err(Error::Invalid);
+        };
+        let mut state = BTreeMap::new();
+        for row in rows {
+            let Value::Array(row) = row else {
+                return Err(Error::Invalid);
+            };
+            let [
+                Value::Bytes(requester),
+                Value::Bytes(connection),
+                Value::Uint64(stream),
+                output,
+                Value::Bytes(result),
+                Value::Uint64(price),
+                Value::Bytes(effect),
+                Value::Uint64(status),
+            ] = row.as_slice()
+            else {
+                return Err(Error::Invalid);
+            };
+            let key = OperationKey {
+                requester: crate::modules::identity::api::IdentityId(
+                    requester
+                        .as_slice()
+                        .try_into()
+                        .map_err(|_| Error::Invalid)?,
+                ),
+                connection: connection
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| Error::Invalid)?,
+                stream: u32::try_from(*stream).map_err(|_| Error::Invalid)?,
+            };
+            let c = Completion {
+                output: output.clone(),
+                result: Blob::new(result.clone(), 1_000_000)?,
+                price: *price,
+                effect: Blob::new(effect.clone(), 1_000_000)?,
+            };
+            let status = match status {
+                0 => Status::Absent,
+                1 => Status::Prepared(token(key, &c.effect)),
+                2 => Status::Committed,
+                3 => Status::Aborted,
+                _ => return Err(Error::Invalid),
+            };
+            if state.insert(key, (c, status)).is_some() {
+                return Err(Error::Invalid);
+            }
+        }
+        if usize::try_from(*count).ok() != Some(state.len()) {
+            return Err(Error::Invalid);
+        }
+        let family = Self::new();
+        *family.state.lock().unwrap() = state;
+        family
+            .executions
+            .store(*count as usize, std::sync::atomic::Ordering::SeqCst);
+        Ok(family)
+    }
+}

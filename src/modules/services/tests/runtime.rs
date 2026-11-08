@@ -18,7 +18,7 @@ use std::{
     time::{Duration, Instant},
 };
 // Call contexts are explicitly short-lived and never originate in peer payloads.
-fn context(grant: &Grant) -> Context<'_> {
+pub(super) fn context(grant: &Grant) -> Context<'_> {
     Context {
         version: 1,
         grant,
@@ -27,7 +27,7 @@ fn context(grant: &Grant) -> Context<'_> {
     }
 }
 // Build exact accepted consent through a real Board and trusted original-stream quote, without network claims.
-fn accepted(
+pub(super) fn accepted(
     a: Arc<Authority>,
     registry: &super::registry::Registry,
     stream: u32,
@@ -125,7 +125,9 @@ fn durable_binding_and_real_reservation() {
         .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
         .unwrap();
     let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, Default::default()));
-    let (_, _, _, r) = selected(false);
+    let family = Arc::new(super::test_support::family::Echo::new());
+    let (_, _, _, r) =
+        super::test_support::selection::selected_with_family(false, family, a.clone());
     let runtime = Coordinator::open(
         Config {
             local,
@@ -316,7 +318,8 @@ fn runtime_with_family(family: Arc<super::test_support::family::Echo>) -> Fixtur
         .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
         .unwrap();
     let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, Default::default()));
-    let (_, _, _, r) = super::test_support::selection::selected_with_family(false, family);
+    let (_, _, _, r) =
+        super::test_support::selection::selected_with_family(false, family, a.clone());
     let runtime = Coordinator::open(
         Config {
             local,

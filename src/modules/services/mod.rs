@@ -95,3 +95,6 @@ pub mod runtime;
 mod runtime_tests;
 
 pub mod body;
+#[cfg(test)]
+#[path = "tests/recovery.rs"]
+mod recovery_tests;

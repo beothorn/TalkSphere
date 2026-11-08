@@ -2,7 +2,7 @@
 use super::super::{
     authority::{Action, Authority},
     contract::{Context, Limits},
-    handler::Requester,
+    handler::{Provider as FamilyProvider, Requester},
     registry::{NoStandards, Registry},
 };
 use super::family::{Echo, offering};
@@ -24,12 +24,27 @@ pub(in crate::modules::services) fn selected(
     Arc<board::authority::Authority>,
     Arc<Registry>,
 ) {
-    selected_with_family(wanted, Arc::new(Echo::new()))
+    selected_with_family(wanted, Arc::new(Echo::new()), Arc::new(Authority::new()))
 }
 // Publish a complete real Board and return its owner plus selected immutable terms; no private tables are read.
 pub(in crate::modules::services) fn selected_with_family(
     wanted: bool,
     f: Arc<Echo>,
+    authority: Arc<Authority>,
+) -> (
+    Provider,
+    Selection,
+    Arc<board::authority::Authority>,
+    Arc<Registry>,
+) {
+    selected_ports(wanted, f.clone(), f, authority)
+}
+// Compose independently supplied requester/provider ports under the same receiving Services authority.
+pub(in crate::modules::services) fn selected_ports(
+    wanted: bool,
+    f: Arc<dyn Requester>,
+    provider: Arc<dyn FamilyProvider>,
+    a: Arc<Authority>,
 ) -> (
     Provider,
     Selection,
@@ -38,7 +53,6 @@ pub(in crate::modules::services) fn selected_with_family(
 ) {
     let publisher = IdentityId([2; 32]);
     let other = IdentityId([1; 32]);
-    let a = Arc::new(Authority::new());
     let g = a.grant(publisher, Action::Register, 65536).unwrap();
     let context = Context {
         version: 1,
@@ -48,7 +62,7 @@ pub(in crate::modules::services) fn selected_with_family(
     };
     let r =
         Arc::new(Registry::new(publisher, a, Limits::default(), Arc::new(NoStandards)).unwrap());
-    r.register(&context, f.clone(), Some(f.clone())).unwrap();
+    r.register(&context, f.clone(), Some(provider)).unwrap();
     let ba = Arc::new(board::authority::Authority::new());
     let p = Provider::new(publisher, ba.clone(), Default::default(), r.clone()).unwrap();
     let publish = ba
