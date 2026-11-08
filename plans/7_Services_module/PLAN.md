@@ -19,7 +19,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **9.** Authorize provided and wanted invocation roles.
 - [x] **10.** Assess input metadata before accepting large bodies.
 - [x] **11.** Calculate fixed prices with checked exact arithmetic.
-- [ ] **12.** Validate the Computation metering exception.
+- [x] **12.** Validate the Computation metering exception.
 - [ ] **13.** Bind quote acceptance to exact terms and context.
 - [ ] **14.** Define durable coordinator records and storage outcomes.
 - [ ] **15.** Implement protected local coordinator persistence.
@@ -167,6 +167,8 @@ Step 11 completed: installed family pricing validates fixed positive terms and p
 ### 12. Validate the Computation metering exception
 
 Permit version-one metering only for the exact registered Computation contract, with accepted formula, duration bound and maximum. Use checked integer/rational arithmetic for maximum and final prices; test max60 and billed1201 at rate1/1000 gives2, releasing58 later. Validate billable executionError/timeLimitReached records through a contract-compatible fixture without installing a Computation runtime. Reject ordinary handlers that invent post-execution metering.
+
+Step 12 completed: only cr2se.computation version1 permits accepted metering, with exact checked rational maximum/final pricing, valid zero numerator and bounded billed duration. Literal max60/final2, uint64 overflow and ordinary-handler metering refusal tests pass. Family completion semantics and actual unused-hold release are exercised at later coordination/acceptance steps. Required checks pass; production coverage 9340/9723 = 96.06%.
 
 ### 13. Bind quote acceptance to exact terms and context
 
