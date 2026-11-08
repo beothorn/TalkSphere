@@ -59,6 +59,30 @@ fn matches(value: &Value, schema: &Schema, nonfinite: bool) -> Result<(), Error>
     };
     if valid { Ok(()) } else { Err(Error::Invalid) }
 }
+
+/// Locally installed contract rules, never loaded from a remote description.
+pub trait Semantics: Send + Sync {
+    /// Reject unsupported required extensions and validate operation-specific restrictions.
+    /// # Errors
+    /// Unsupported semantics and invalid combinations must fail without effects.
+    fn validate(&self, descriptor: &Schema, value: &Value) -> Result<(), Error>;
+    /// Whether this exact registered contract permits nonfinite logical values.
+    fn nonfinite(&self) -> bool;
+}
+/// Validate shape and then mandatory registered semantics without executing work.
+/// # Errors
+/// Propagates schema, aggregate limit and family semantic failures before dispatch.
+pub fn complete(
+    value: &Value,
+    descriptor: &Schema,
+    budget: Budget,
+    semantics: &dyn Semantics,
+) -> Result<(), Error> {
+    tracing::trace!("Checking logical shape and registered contract restrictions");
+    validate(value, descriptor, budget, semantics.nonfinite())?;
+    semantics.validate(descriptor, value)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

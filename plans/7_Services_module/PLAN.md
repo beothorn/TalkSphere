@@ -12,7 +12,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **2.** Define Services authority, operation contexts and resource limits.
 - [ ] **3.** Add deterministic Services dependencies and failure helpers.
 - [x] **4.** Represent the complete logical value vocabulary exactly.
-- [ ] **5.** Validate structured values against bounded schemas.
+- [x] **5.** Validate structured values against bounded schemas.
 - [ ] **6.** Define requester and provider handler contracts.
 - [ ] **7.** Register exact contracts through authorized composition.
 - [ ] **8.** Connect registered capabilities to Board selection.
@@ -126,7 +126,7 @@ Step 4 completed: exact logical integer widths, float bits, UTF-8, bytes and nes
 
 Extend the existing Services schema validator without breaking Board callers. Validate required and optional fields, nested arrays, aggregate nodes/depth/bytes and service-specific restrictions through explicit semantic ports. Unknown types or required semantics are unusable; optional metadata cannot confer new behavior. Cover every SV-01–SV-03 mutation, duplicate fields and refusal before proportional allocation. Nonfinite permission must come from an understood contract, not an invented schema extension.
 
-Step 5 progress: exact shape validation, bounded nesting, required/optional fields and trusted nonfinite policy are implemented with unit tests. Family semantic ports and the complete mutation matrix remain pending; this step is unchecked. Required checks pass; production coverage 8944/9319 = 95.98%.
+Step 5 completed: shape and registered semantic validation now compose explicitly; mutation tests cover forbidden fields, required extensions, optional omissions, wrong nested types and independent limits. Board definition tests supply missing-schema/description and binding mutations. Required checks pass; production coverage 8954/9329 = 95.98%.
 
 ### 6. Define requester and provider handler contracts
 

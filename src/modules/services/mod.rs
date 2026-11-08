@@ -34,3 +34,7 @@ mod test_support;
 
 pub mod validation;
 pub mod value;
+
+#[cfg(test)]
+#[path = "tests/validation.rs"]
+mod validation_tests;

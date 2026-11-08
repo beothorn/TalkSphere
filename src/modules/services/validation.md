@@ -13,3 +13,9 @@ unknown type; Limit means schema or value budgets exhausted. Validation has no
 execution, spending or storage effects. Registered family validation must also
 check discriminator restrictions and content-specific invariants; passing this
 shape validator alone does not authorize an invocation.
+
+Semantics is a trusted installed validator for required extensions, nonfinite
+permission and operation-specific restrictions. complete first checks bounded
+shape, then calls Semantics.validate. It propagates Unsupported/Invalid failures.
+Descriptions and optional metadata never install these rules. Shape-only callers
+must explicitly choose validate; invocation callers must use complete.
