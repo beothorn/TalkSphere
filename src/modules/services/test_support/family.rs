@@ -11,6 +11,7 @@ use std::{collections::BTreeMap, sync::Mutex};
 
 pub(in crate::modules::services) struct Echo {
     definition: Definition,
+    configured: Option<(Value, u64)>,
     state: Mutex<BTreeMap<OperationKey, (Completion, Status)>>,
     pub(in crate::modules::services) executions: std::sync::atomic::AtomicUsize,
 }
@@ -31,10 +32,17 @@ pub(in crate::modules::services) fn offering(wanted: bool) -> Offering {
         .unwrap()
 }
 impl Echo {
+    // Script a literal invalid provider completion independently of production validation.
+    pub(in crate::modules::services) fn with_output(output: Value, price: u64) -> Self {
+        let mut family = Self::new();
+        family.configured = Some((output, price));
+        family
+    }
     // A synthetic implementation must be installed explicitly; descriptive text cannot construct it.
     pub(in crate::modules::services) fn new() -> Self {
         let raw=br#"{"id":"echo","service":"org.example.echo","serviceVersion":1,"description":"Return the original text.","input":{"type":"string"},"output":{"type":"string"},"check":{"description":"Compare returned text to original.","input":{"type":"string"},"output":{"type":"bool"}}}"#;
         Self {
+            configured: None,
             definition: Definition::parse(raw, &offering(false), Limits::default()).unwrap(),
             state: Mutex::new(BTreeMap::new()),
             executions: std::sync::atomic::AtomicUsize::new(0),
@@ -106,9 +114,12 @@ impl Provider for Echo {
             return Err(Error::Invalid);
         };
         let c = Completion {
-            output: input.clone(),
+            output: self
+                .configured
+                .as_ref()
+                .map_or_else(|| input.clone(), |(v, _)| v.clone()),
             result: Blob::new(s.as_bytes().to_vec(), 128)?,
-            price: 7,
+            price: self.configured.as_ref().map_or(7, |(_, p)| *p),
             effect: Blob::new(vec![7], 1)?,
         };
         self.executions

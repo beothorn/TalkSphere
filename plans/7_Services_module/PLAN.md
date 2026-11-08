@@ -26,7 +26,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **16.** Reserve Ledger capacity for accepted invocations.
 - [x] **17.** Validate complete input through bounded body references.
 - [x] **18.** Journal execution attempts before dispatching work.
-- [ ] **19.** Validate outputs and retain complete results durably.
+- [x] **19.** Validate outputs and retain complete results durably.
 - [ ] **20.** Prepare handler and Ledger effects through public contracts.
 - [ ] **21.** Persist one immutable commit or abort decision.
 - [ ] **22.** Deliver commit decisions without duplicate effects.
@@ -209,6 +209,8 @@ Step 18 completed: execution requires reserved complete input and persists an Ex
 ### 19. Validate outputs and retain complete results durably
 
 Validate output shape, service semantics, quoted sizes, fixed/final price and effect references before successful settlement. Retain complete bounded result bytes under coordinator ownership independent of caller/session lifetime. Reject invalid output and over-bound price without exposing success. Test literal fixed7 results, valid negative business outcomes, session expiry and storage failure while retaining results; an uncertain handler effect requires recovery rather than assumed rollback.
+
+Step 19 completed: staged completion recovery independently validates output schema/semantics, contextual quote rules, complete retained bytes/effect and recalculated final price before durable staging. Explicit invalid-output and price8-versus-quote7 fixtures remain uncharged and cannot trigger execution again. Results are coordinator-owned rather than session-owned. Required checks pass; production coverage 10517/11110 = 94.66%.
 
 ### 20. Prepare handler and Ledger effects through public contracts
 

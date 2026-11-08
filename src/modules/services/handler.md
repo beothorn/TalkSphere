@@ -45,3 +45,9 @@ Invocation exposes publisher, issuer, complete public Offering/Definition, origi
 quote, accepted pricing and factors explicitly. Handlers must not decode Services'
 private journal/binding format to reconstruct their contracts. These copies remain
 immutable at execution even if the Board or registry changes.
+
+Requester.validate_result checks immutable quote-dependent sizes and contextual
+operation rules after Services independently validates output schema/semantics.
+The default has no additional contextual restriction. Installed standard families
+must implement their specified validation; this does not turn optional families
+into runtime dependencies or accept arbitrary descriptions as code.

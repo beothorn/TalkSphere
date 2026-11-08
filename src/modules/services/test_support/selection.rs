@@ -15,9 +15,21 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-// Publish a complete real Board and return its owner plus selected immutable terms; no private tables are read.
+// The default fixture installs a literal valid echo provider.
 pub(in crate::modules::services) fn selected(
     wanted: bool,
+) -> (
+    Provider,
+    Selection,
+    Arc<board::authority::Authority>,
+    Arc<Registry>,
+) {
+    selected_with_family(wanted, Arc::new(Echo::new()))
+}
+// Publish a complete real Board and return its owner plus selected immutable terms; no private tables are read.
+pub(in crate::modules::services) fn selected_with_family(
+    wanted: bool,
+    f: Arc<Echo>,
 ) -> (
     Provider,
     Selection,
@@ -36,7 +48,6 @@ pub(in crate::modules::services) fn selected(
     };
     let r =
         Arc::new(Registry::new(publisher, a, Limits::default(), Arc::new(NoStandards)).unwrap());
-    let f = Arc::new(Echo::new());
     r.register(&context, f.clone(), Some(f.clone())).unwrap();
     let ba = Arc::new(board::authority::Authority::new());
     let p = Provider::new(publisher, ba.clone(), Default::default(), r.clone()).unwrap();

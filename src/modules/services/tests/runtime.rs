@@ -203,9 +203,11 @@ fn durable_binding_and_real_reservation() {
         runtime.start(&context(&coordinate), key),
         Err(Error::Unknown)
     );
+    assert_eq!(runtime.stage(&context(&coordinate), key), Ok(()));
+    assert_eq!(runtime.stage(&context(&coordinate), key), Ok(()));
     assert_eq!(
         runtime.status(&context(&observe), key),
-        Ok(Some(Phase::Executing))
+        Ok(Some(Phase::Staged))
     );
     assert!(matches!(
         runtime.admit(
@@ -215,4 +217,111 @@ fn durable_binding_and_real_reservation() {
         ),
         Err(Error::Denied)
     ));
+}
+
+// Compose real accounting and an explicitly configured test family without exposing production admin ports.
+struct Fixture {
+    runtime: Coordinator<Memory>,
+    a: Arc<Authority>,
+    r: Arc<super::registry::Registry>,
+    l: Arc<ledger::state::Ledger<ledger::persistence::Memory>>,
+    la: Arc<ledger::authority::Authority>,
+}
+// Construct an independent real-ledger runtime for a configured local test handler.
+fn runtime_with_family(family: Arc<super::test_support::family::Echo>) -> Fixture {
+    let local = IdentityId([2; 32]);
+    let requester = IdentityId([1; 32]);
+    let a = Arc::new(Authority::new());
+    let init = a.grant(local, Action::Register, 1_000_000).unwrap();
+    let la = Arc::new(ledger::authority::Authority::new());
+    let admin = la
+        .grant(local, ledger::authority::Action::Administer, 1_000_000)
+        .unwrap();
+    let lc = ledger::contract::Context {
+        version: 1,
+        grant: &admin,
+        deadline: context(&init).deadline,
+        cancelled: false,
+    };
+    let l = Arc::new(
+        ledger::state::Ledger::initialize(
+            local,
+            la.clone(),
+            ledger::persistence::Memory::default(),
+            Default::default(),
+            &lc,
+            1000,
+            100,
+        )
+        .unwrap(),
+    );
+    l.grant(&lc, requester, 100).unwrap();
+    l.set_trust(&lc, requester, ledger::accounting::Trust::new(1).unwrap())
+        .unwrap();
+    let lg = la
+        .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+        .unwrap();
+    let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, Default::default()));
+    let (_, _, _, r) = super::test_support::selection::selected_with_family(false, family);
+    let runtime = Coordinator::open(
+        Config {
+            local,
+            authority: a.clone(),
+            limits: Limits::default(),
+        },
+        &context(&init),
+        Memory::default(),
+        adapter,
+        r.clone(),
+        true,
+    )
+    .unwrap();
+    Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    }
+}
+// Invalid typed output or an over-quote final price cannot become successful settlement or trigger execution again.
+#[test]
+fn reject_invalid_completion_without_charge() {
+    use super::test_support::family::Echo;
+    for (output, price) in [(Value::Bool(false), 7), (Value::String("input".into()), 8)] {
+        let family = Arc::new(Echo::with_output(output, price));
+        let Fixture {
+            runtime,
+            a,
+            r,
+            l,
+            la,
+        } = runtime_with_family(family.clone());
+        let local = IdentityId([2; 32]);
+        let cg = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+        let c = context(&cg);
+        let key = runtime
+            .admit(&c, accepted(a.clone(), &r, 1, 1), Payment::default())
+            .unwrap();
+        runtime
+            .supply_input(&c, key, Value::String("input".into()))
+            .unwrap();
+        runtime.start(&c, key).unwrap();
+        assert_eq!(runtime.stage(&c, key), Err(Error::Invalid));
+        assert_eq!(runtime.start(&c, key), Err(Error::Unknown));
+        assert_eq!(
+            family.executions.load(std::sync::atomic::Ordering::SeqCst),
+            1
+        );
+        let rg = la
+            .grant(local, ledger::authority::Action::Read, 1_000_000)
+            .unwrap();
+        let rc = ledger::contract::Context {
+            version: 1,
+            grant: &rg,
+            deadline: c.deadline,
+            cancelled: false,
+        };
+        assert_eq!(l.view(&rc, IdentityId([1; 32])).unwrap().issued, 100);
+    }
 }

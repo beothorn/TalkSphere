@@ -290,12 +290,15 @@ impl<P: Persistence> Coordinator<P> {
                 .map_err(|_| Error::Limit)?
                 .min(self.config.limits.state_bytes),
         };
-        state
-            .pins
-            .get(&key)
-            .ok_or(Error::Unavailable)?
-            .requester()
-            .validate_input(&op.metadata, &input, budget)?;
+        let invocation = op.invocation(self.config.limits)?;
+        let requester = state.pins.get(&key).ok_or(Error::Unavailable)?.requester();
+        super::validation::complete(
+            &input,
+            &invocation.definition.document.value()["input"],
+            budget,
+            requester,
+        )?;
+        requester.validate_input(&op.metadata, &input, budget)?;
         op.input = Some(input);
         self.save(context, &mut state, op)
     }
@@ -332,6 +335,70 @@ impl<P: Persistence> Coordinator<P> {
             .provider()?
             .execute(&invocation, &input)
             .map(|_| ())
+    }
+
+    /// Recover a staged completion, validate it against immutable terms and retain its full bytes durably.
+    /// No service execution is retried and no settlement occurs in this stage.
+    /// # Errors
+    /// Invalid output, quoted sizes, final price, absent completion and persistence uncertainty reject success.
+    pub fn stage(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
+        tracing::trace!("Validating and durably retaining complete staged service result");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if matches!(
+            op.phase,
+            Phase::Staged | Phase::Prepared | Phase::Commit | Phase::Committed
+        ) {
+            return Ok(());
+        }
+        if op.phase != Phase::Executing {
+            return Err(Error::Conflict);
+        }
+        let pin = state.pins.get(&key).ok_or(Error::Unavailable)?;
+        let completion = pin.provider()?.completion(key)?;
+        let invocation = op.invocation(self.config.limits)?;
+        let budget = Budget {
+            depth: 31,
+            nodes: self.config.limits.nodes,
+            bytes: self.config.limits.state_bytes,
+        };
+        super::validation::complete(
+            &completion.output,
+            &invocation.definition.document.value()["output"],
+            budget,
+            pin.requester(),
+        )?;
+        pin.requester().validate_result(
+            &invocation,
+            op.input.as_ref().ok_or(Error::Invalid)?,
+            &completion.output,
+        )?;
+        if completion.result.bytes().len() > self.config.limits.state_bytes
+            || completion.effect.bytes().is_empty()
+            || completion.effect.bytes().len() > self.config.limits.state_bytes
+        {
+            return Err(Error::Limit);
+        }
+        let billed = if matches!(op.pricing, super::pricing::Price::Computation { .. }) {
+            let Value::Object(fields) = &completion.output else {
+                return Err(Error::Invalid);
+            };
+            let Some((_, Value::Uint64(billed))) =
+                fields.iter().find(|(n, _)| n == "billedMilliseconds")
+            else {
+                return Err(Error::Invalid);
+            };
+            Some(*billed)
+        } else {
+            None
+        };
+        if op.pricing.final_price(&op.service, op.version, billed)? != completion.price {
+            return Err(Error::Invalid);
+        }
+        op.completion = Some(completion);
+        op.phase = Phase::Staged;
+        self.save(context, &mut state, op)
     }
 
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.

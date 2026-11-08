@@ -158,6 +158,19 @@ pub trait Requester: super::validation::Semantics {
         }
         Ok(())
     }
+    /// Validate output-dependent quoted sizes and operation rules after independent schema validation.
+    /// Default contracts add no contextual restriction; standard families must implement their normative checks.
+    /// # Errors
+    /// Invalid or inconsistent output must never authorize settlement.
+    fn validate_result(
+        &self,
+        _invocation: &Invocation,
+        _input: &Value,
+        _output: &Value,
+    ) -> Result<(), Error> {
+        tracing::trace!("Checking default service result contextual restrictions");
+        Ok(())
+    }
     /// Verify original input, agreed terms, complete evidence and local expectations.
     /// # Errors
     /// Return a typed dependency/validation failure; missing expectations should yield Inconclusive.

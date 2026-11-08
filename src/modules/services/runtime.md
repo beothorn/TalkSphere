@@ -31,3 +31,10 @@ start durably records Executing before calling the pinned provider with complete
 input and explicit public invocation contracts. A repeated Executing call returns
 Unknown and does not execute again. Acknowledged dispatch is not validated success;
 completion/status recovery must establish the staged result and subsequent decision.
+
+stage queries the original provider's retained completion, independently validates
+schema and contextual quote rules, recalculates fixed/metered price and persists
+complete output/result/effect bytes before preparing settlement. Metered duration
+comes from the typed completion's billedMilliseconds field. Dispatch/staging are
+not terminal success. Repeated staging never repeats execution and no caller session
+owns the sole copy of a retained durable result.
