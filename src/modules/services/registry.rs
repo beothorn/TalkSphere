@@ -42,6 +42,16 @@ pub struct Registered {
     pub(crate) provider: Option<Arc<dyn Provider>>,
 }
 impl Registered {
+    // Accepted handles cannot substitute another registry's locally installed implementation.
+    pub(crate) fn same_implementation(&self, other: &Self) -> bool {
+        tracing::trace!("Checking exact retained service implementation provenance");
+        Arc::ptr_eq(&self.requester, &other.requester)
+            && match (&self.provider, &other.provider) {
+                (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+                (None, None) => true,
+                _ => false,
+            }
+    }
     /// Borrow the retained requester codec and verifier.
     pub fn requester(&self) -> &dyn Requester {
         tracing::trace!("Borrowing pinned requester implementation");

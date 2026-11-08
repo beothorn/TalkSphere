@@ -23,7 +23,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **13.** Bind quote acceptance to exact terms and context.
 - [ ] **14.** Define durable coordinator records and storage outcomes.
 - [x] **15.** Implement protected local coordinator persistence.
-- [ ] **16.** Reserve Ledger capacity for accepted invocations.
+- [x] **16.** Reserve Ledger capacity for accepted invocations.
 - [ ] **17.** Validate complete input through bounded body references.
 - [ ] **18.** Journal execution attempts before dispatching work.
 - [ ] **19.** Validate outputs and retain complete results durably.
@@ -191,6 +191,8 @@ Step 15 completed: Services-owned Linux store now validates owner-only anchored 
 ### 16. Reserve Ledger capacity for accepted invocations
 
 Persist the operation association and coordinate the real Ledger reservation before execution. Map provider-issued, requester-issued, internal and third-party modes to existing public Ledger terms and authority; third-party maximum plus agreed fee must fit both uint64 and the spending bound. Exact local retries reuse the binding and changed parameters conflict. Resolve lost reservation replies by original-key status/retry without a new hold; exercise finite budgets and issuer policy refusal.
+
+Step 16 completed: durable admission retains exact quote/Board/definition/publisher/direction, roles, pricing, metadata, factors and input bound before one real Ledger reservation. Original-key retries retain one price7 hold (100 balance,93 available); changed bytes conflict, fee ceilings are checked and foreign implementation pins are refused. Concrete private record/version/phase validation now backs the journal. Required checks pass; production coverage 10301/10881 = 94.67%.
 
 ### 17. Validate complete input through bounded body references
 
