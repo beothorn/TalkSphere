@@ -17,7 +17,8 @@ use super::{
 use crate::modules::{board, identity::api::IdentityId, ledger};
 use std::{collections::BTreeMap, sync::Arc};
 struct Fixture {
-    runtime: Coordinator<Memory>,
+    runtime: Coordinator<super::test_support::stores::Services>,
+    store: super::test_support::stores::Services,
     a: Arc<Authority>,
     registry: Arc<Registry>,
     ledger: Arc<ledger::state::Ledger<ledger::persistence::Memory>>,
@@ -29,9 +30,12 @@ struct Fixture {
 }
 // A pre-existing test-resource owner supplies check rules; this does not implement a Storage or Discovery family.
 fn fixture(included: bool, wanted: bool) -> Fixture {
+    fixture_with_family(Arc::new(Bytes::new(included)), wanted)
+}
+// Local-only and evidence fixtures install explicit immutable rules before publication.
+fn fixture_with_family(family: Arc<Bytes>, wanted: bool) -> Fixture {
     let local = IdentityId([2; 32]);
     let a = Arc::new(Authority::new());
-    let family = Arc::new(Bytes::new(included));
     let registry = Arc::new(
         Registry::new(local, a.clone(), Limits::default(), Arc::new(NoStandards)).unwrap(),
     );
@@ -126,6 +130,7 @@ fn fixture(included: bool, wanted: bool) -> Fixture {
         cg,
         Default::default(),
     ));
+    let store = super::test_support::stores::Services::default();
     let runtime = Coordinator::open(
         Config {
             local,
@@ -133,7 +138,7 @@ fn fixture(included: bool, wanted: bool) -> Fixture {
             limits: Limits::default(),
         },
         &context(&rg),
-        Memory::default(),
+        store.clone(),
         adapter,
         registry.clone(),
         true,
@@ -141,6 +146,7 @@ fn fixture(included: bool, wanted: bool) -> Fixture {
     .unwrap();
     Fixture {
         runtime,
+        store,
         a,
         registry,
         ledger,
@@ -648,4 +654,99 @@ fn concurrent_included_admission() {
         assert!(results.contains(&Err(Error::Limit)));
     });
     assert_eq!(f.family.calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+}
+
+// A local-only family refuses remote check admission before work, and consumed included allowances survive coordinator reopening.
+#[test]
+fn local_only_and_reopened_entitlement() {
+    let local = IdentityId([2; 32]);
+    let local_fixture = fixture_with_family(Arc::new(Bytes::local_only()), false);
+    let g = local_fixture
+        .a
+        .grant(local, Action::Coordinate, 1_000_000)
+        .unwrap();
+    let bg = local_fixture
+        .ba
+        .grant(local, board::authority::Action::Select, 1_000_000)
+        .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    let (agreement, _) = consent(&local_fixture, 1);
+    assert_eq!(
+        local_fixture.runtime.admit_check(
+            &context(&g),
+            agreement,
+            &BoardCurrent {
+                owner: &local_fixture.owner,
+                context: &bc
+            }
+        ),
+        Err(Error::Unsupported)
+    );
+    assert_eq!(
+        local_fixture
+            .family
+            .calls
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+    let mut f = fixture(true, false);
+    let g = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let bg =
+        f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+            .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    let (agreement, _) = consent(&f, 1);
+    f.runtime
+        .admit_check(
+            &context(&g),
+            agreement,
+            &BoardCurrent {
+                owner: &f.owner,
+                context: &bc,
+            },
+        )
+        .unwrap();
+    drop(f.runtime);
+    let recover = f.a.grant(local, Action::Recover, 1_000_000).unwrap();
+    let lg =
+        f.la.grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+            .unwrap();
+    let accounting = Arc::new(accounting::Ledger::new(
+        f.ledger.clone(),
+        lg,
+        Default::default(),
+    ));
+    f.runtime = Coordinator::open(
+        Config {
+            local,
+            authority: f.a.clone(),
+            limits: Limits::default(),
+        },
+        &context(&recover),
+        f.store.clone(),
+        accounting,
+        f.registry.clone(),
+        false,
+    )
+    .unwrap();
+    let (agreement, _) = consent(&f, 2);
+    assert_eq!(
+        f.runtime.admit_check(
+            &context(&g),
+            agreement,
+            &BoardCurrent {
+                owner: &f.owner,
+                context: &bc
+            }
+        ),
+        Err(Error::Limit)
+    );
 }

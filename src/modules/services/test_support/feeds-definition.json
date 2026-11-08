@@ -1,0 +1,112 @@
+{
+  "id": "open-social-feed",
+  "service": "cr2se.open-social-messaging",
+  "serviceVersion": 1,
+  "description": "Return bounded pages of this identity's signed public messages.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Operation; version 1 requires read." },
+      "selector": { "type": "string", "description": "Time selector: latest, since, or interval." },
+      "fromInclusive": { "type": "uint64", "description": "Inclusive lower publication-time bound required by since and interval.", "optional": true },
+      "toExclusive": { "type": "uint64", "description": "Exclusive upper publication-time bound required by interval.", "optional": true },
+      "beforePublishedAt": { "type": "uint64", "description": "Publication time in the optional exclusive older-page cursor.", "optional": true },
+      "beforeMessageId": { "type": "bytes", "description": "Exact 32-byte message ID in the optional exclusive older-page cursor.", "optional": true },
+      "limit": { "type": "uint32", "description": "Maximum number of messages requested." }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Completed operation; version 1 returns read." },
+      "selector": { "type": "string", "description": "Selector copied from the read input." },
+      "messages": { "type": "array", "description": "Complete signed public messages in newest-first order.", "items": {
+        "type": "object",
+        "fields": {
+          "messageId": { "type": "bytes", "description": "Publisher-generated 32-byte message identifier." },
+          "publisherId": { "type": "bytes", "description": "Exact 32-byte CR2SE ID owning the feed." },
+          "publishedAt": { "type": "uint64", "description": "Publisher-claimed publication time in Unix seconds." },
+          "body": { "type": "string", "description": "Plain UTF-8 message text." },
+          "attachments": { "type": "array", "description": "Ordered immutable media attachments.", "items": {
+            "type": "object",
+            "fields": {
+              "mediaType": { "type": "string", "description": "Lowercase parameter-free Internet-style media type labeling the data." },
+              "fileName": { "type": "string", "description": "Untrusted suggested display file name.", "optional": true },
+              "altText": { "type": "string", "description": "Plain-text description of the attachment.", "optional": true },
+              "dataSize": { "type": "uint64", "description": "Exact attachment data length in bytes." },
+              "dataHash": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of data." },
+              "data": { "type": "bytes", "description": "Complete immutable attachment bytes." }
+            }
+          } },
+          "messageHash": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of the canonical message bytes." },
+          "publisherPublicKey": { "type": "bytes", "description": "Publisher's exact 32-byte Ed25519 identity public key." },
+          "publisherSignature": { "type": "bytes", "description": "Publisher's exact 64-byte Ed25519 message signature." }
+        }
+      } },
+      "more": { "type": "bool", "description": "Whether another matching message existed immediately after this page." },
+      "price": { "type": "uint64", "description": "Exact credits charged for the successful read." }
+    }
+  },
+  "check": {
+    "description": "Locally validate read metadata, bounds, ordering, sizes, hashes, publisher identity, and every message signature.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "publisherId": { "type": "bytes", "description": "Expected exact 32-byte publisher CR2SE ID." },
+        "expectedReadPrice": { "type": "uint64", "description": "Exact read price accepted from the selected offering." },
+        "readInput": { "type": "object", "description": "Original read input whose selector, cursor, and limit are checked.", "fields": {
+          "operation": { "type": "string", "description": "Original operation; version 1 requires read." },
+          "selector": { "type": "string", "description": "Original selector: latest, since, or interval." },
+          "fromInclusive": { "type": "uint64", "description": "Original inclusive lower time bound.", "optional": true },
+          "toExclusive": { "type": "uint64", "description": "Original exclusive upper time bound.", "optional": true },
+          "beforePublishedAt": { "type": "uint64", "description": "Original cursor publication time.", "optional": true },
+          "beforeMessageId": { "type": "bytes", "description": "Original exact 32-byte cursor message ID.", "optional": true },
+          "limit": { "type": "uint32", "description": "Original maximum requested result count." }
+        } },
+        "offeringLimits": { "type": "object", "description": "Selected offering limits used to validate the result.", "fields": {
+          "maximumResults": { "type": "uint32", "description": "Largest permitted read limit." },
+          "maximumAttachmentsPerMessage": { "type": "uint32", "description": "Largest permitted attachment count per message." },
+          "maximumBodyBytes": { "type": "uint64", "description": "Largest permitted UTF-8 body byte length." },
+          "maximumAttachmentBytes": { "type": "uint64", "description": "Largest permitted attachment data length." },
+          "maximumMessageBytes": { "type": "uint64", "description": "Largest permitted canonical message byte length." },
+          "maximumResponseBytes": { "type": "uint64", "description": "Largest permitted sum of canonical message byte lengths in one result." }
+        } },
+        "readOutput": { "type": "object", "description": "Complete logical read output being checked.", "fields": {
+          "operation": { "type": "string", "description": "Completed operation; version 1 requires read." },
+          "selector": { "type": "string", "description": "Selector copied from the read input." },
+          "messages": { "type": "array", "description": "Returned signed public messages in claimed newest-first order.", "items": {
+            "type": "object",
+            "fields": {
+              "messageId": { "type": "bytes", "description": "Publisher-generated 32-byte message identifier." },
+              "publisherId": { "type": "bytes", "description": "Exact 32-byte CR2SE ID owning the feed." },
+              "publishedAt": { "type": "uint64", "description": "Publisher-claimed publication time in Unix seconds." },
+              "body": { "type": "string", "description": "Plain UTF-8 message text." },
+              "attachments": { "type": "array", "description": "Ordered immutable media attachments.", "items": {
+                "type": "object",
+                "fields": {
+                  "mediaType": { "type": "string", "description": "Lowercase parameter-free Internet-style media type labeling the data." },
+                  "fileName": { "type": "string", "description": "Untrusted suggested display file name.", "optional": true },
+                  "altText": { "type": "string", "description": "Plain-text description of the attachment.", "optional": true },
+                  "dataSize": { "type": "uint64", "description": "Exact attachment data length in bytes." },
+                  "dataHash": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of data." },
+                  "data": { "type": "bytes", "description": "Complete immutable attachment bytes." }
+                }
+              } },
+              "messageHash": { "type": "bytes", "description": "Exact 32-byte SHA-256 hash of the canonical message bytes." },
+              "publisherPublicKey": { "type": "bytes", "description": "Publisher's exact 32-byte Ed25519 identity public key." },
+              "publisherSignature": { "type": "bytes", "description": "Publisher's exact 64-byte Ed25519 message signature." }
+            }
+          } },
+          "more": { "type": "bool", "description": "Claim that another matching message existed immediately after this page." },
+          "price": { "type": "uint64", "description": "Exact credits charged for the successful read." }
+        } }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": { "type": "string", "description": "Requester-computed result: pass, fail, or inconclusive." }
+      }
+    }
+  }
+}

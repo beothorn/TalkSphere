@@ -1,0 +1,106 @@
+{
+  "id": "computation-standard",
+  "service": "cr2se.computation",
+  "serviceVersion": 1,
+  "description": "Evaluate requester-supplied source code for a bounded time.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "language": {
+        "type": "string",
+        "description": "Lowercase identifier of the programming language to execute."
+      },
+      "languageVersion": {
+        "type": "string",
+        "description": "Exact advertised version of the selected programming language."
+      },
+      "source": {
+        "type": "string",
+        "description": "UTF-8 source code evaluated by the selected runtime."
+      },
+      "maxExecutionMilliseconds": {
+        "type": "uint64",
+        "description": "Requester-selected maximum execution time in whole milliseconds."
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "outcome": {
+        "type": "string",
+        "description": "Completion outcome: result, timeLimitReached, or executionError."
+      },
+      "billedMilliseconds": {
+        "type": "uint64",
+        "description": "Whole execution milliseconds used to calculate the final price."
+      },
+      "price": {
+        "type": "uint64",
+        "description": "Final credits charged for this completed computation."
+      },
+      "result": {
+        "type": "string",
+        "description": "Runtime-defined UTF-8 result text; present only when outcome is result.",
+        "optional": true
+      },
+      "diagnostic": {
+        "type": "string",
+        "description": "Unstandardized runtime diagnostic; permitted only when outcome is executionError.",
+        "optional": true
+      }
+    }
+  },
+  "check": {
+    "description": "Independently execute the original source with the same runtime pair and time limit, then compare result text when both executions return a result.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "language": {
+          "type": "string",
+          "description": "Language from the checked invocation."
+        },
+        "languageVersion": {
+          "type": "string",
+          "description": "Exact language version from the checked invocation."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source from the checked invocation."
+        },
+        "maxExecutionMilliseconds": {
+          "type": "uint64",
+          "description": "Maximum execution time from the checked invocation."
+        },
+        "originalOutcome": {
+          "type": "string",
+          "description": "Outcome in the original completion record."
+        },
+        "originalResult": {
+          "type": "string",
+          "description": "Original result text; present only when originalOutcome is result.",
+          "optional": true
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": {
+          "type": "string",
+          "description": "Verification outcome: pass, fail, or inconclusive."
+        },
+        "checkedOutcome": {
+          "type": "string",
+          "description": "Completion outcome produced by the independent execution.",
+          "optional": true
+        },
+        "checkedResult": {
+          "type": "string",
+          "description": "Result text produced by the independent execution, when it produced one.",
+          "optional": true
+        }
+      }
+    }
+  }
+}

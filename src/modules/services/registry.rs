@@ -151,12 +151,10 @@ impl Registry {
             return Err(Error::Invalid);
         }
         let schemas = [
-            super::schema::validate(v.get("input").ok_or(Error::Invalid)?)
-                .map_err(|_| Error::Invalid)?,
+            super::schema::validate(v.get("input").ok_or(Error::Invalid)?).map_err(schema_error)?,
             super::schema::validate(v.get("output").ok_or(Error::Invalid)?)
-                .map_err(|_| Error::Invalid)?,
-            super::schema::check(v.get("check").ok_or(Error::Invalid)?)
-                .map_err(|_| Error::Invalid)?,
+                .map_err(schema_error)?,
+            super::schema::check(v.get("check").ok_or(Error::Invalid)?).map_err(schema_error)?,
         ];
         if schemas.contains(&super::schema::Support::Unknown) {
             return Err(Error::Unsupported);
@@ -237,6 +235,13 @@ impl Registry {
             .get(&(service.to_owned(), version))
             .map(|e| e.registered.clone())
             .ok_or(Error::Unavailable)
+    }
+}
+// Keep structural capacity failures distinct from malformed descriptors at registration.
+fn schema_error(error: super::schema::Error) -> Error {
+    match error {
+        super::schema::Error::Invalid => Error::Invalid,
+        super::schema::Error::Limit => Error::Limit,
     }
 }
 // Preserve structured local failures when serving the Board capability contract.

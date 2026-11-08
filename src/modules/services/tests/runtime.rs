@@ -938,6 +938,11 @@ fn serialized_and_direct_contracts_match() {
         .unwrap();
     let d = accepted(direct.a.clone(), &direct.r, 1, 1);
     let r = accepted(remote.a.clone(), &remote.r, 1, 1);
+    assert_eq!(d.bytes().bytes(), r.bytes().bytes());
+    assert_eq!(
+        <sha2::Sha256 as sha2::Digest>::digest(d.bytes().bytes()),
+        <sha2::Sha256 as sha2::Digest>::digest(r.bytes().bytes())
+    );
     let key = d.assessed().authorized.peer.key;
     direct
         .runtime
@@ -1152,4 +1157,418 @@ fn concurrent_dispatch_and_decisions() {
         Err(Error::Denied)
     );
     assert_eq!(f.executions.load(Ordering::SeqCst), 1);
+}
+// Literal upstream Computation records settle actual owned credits, releasing unused maximum without installing a runtime.
+#[test]
+fn metered_and_negative_completions_settle_real_ledger() {
+    use super::handler::Requester;
+    use super::runtime::RemoteResult;
+    use super::test_support::computation::{Catalogue, Contract};
+    use std::collections::BTreeMap;
+    for (case, outcome, billed, price, maximum) in [
+        ("computation", "result", 1201, 2, 60),
+        ("computation", "executionError", 1201, 2, 60),
+        ("computation", "timeLimitReached", 60000, 60, 60),
+        ("discovery", "empty", 0, 2, 2),
+        ("feeds", "empty", 0, 1, 1),
+    ] {
+        let fixture = runtime_with_family(Arc::new(super::test_support::family::Echo::new()));
+        let local = IdentityId([2; 32]);
+        let remote = IdentityId([1; 32]);
+        let a = fixture.a;
+        let init = a.grant(local, Action::Register, 1_000_000).unwrap();
+        let cg = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+        let rg = a.grant(local, Action::Request, 1_000_000).unwrap();
+        let og = a.grant(local, Action::Observe, 1_000_000).unwrap();
+        let registry = Arc::new(
+            super::registry::Registry::new(
+                local,
+                a.clone(),
+                Limits::default(),
+                Arc::new(Catalogue),
+            )
+            .unwrap(),
+        );
+        let definition: &[u8] = match case {
+            "discovery" => include_bytes!("../test_support/discovery-definition.json"),
+            "feeds" => include_bytes!("../test_support/feeds-definition.json"),
+            _ => include_bytes!("../test_support/computation-definition.json"),
+        };
+        let mut source = serde_json::json!({"id":"computation-standard","service":"cr2se.computation","serviceVersion":1,"description":"Evaluate requester-supplied source code for a bounded time.","creditIssuer":crate::modules::identity::text::format(remote),"pricing":{"model":"cr2se.computation.v1","minimumPrice":1,"executionTimeFactor":{"numerator":1,"denominator":1000}},"info":{"minimumExecutionMilliseconds":1,"maximumExecutionMilliseconds":60000,"maximumSourceBytes":1000000,"runtimes":[{"language":"javascript","languageVersion":"ECMAScript 2024"}]}});
+        if case != "computation" {
+            source = serde_json::from_str(if case == "discovery" {
+                include_str!("../test_support/discovery-offering.json")
+            } else {
+                include_str!("../test_support/feeds-offering.json")
+            })
+            .unwrap();
+            source["creditIssuer"] = crate::modules::identity::text::format(remote).into();
+        }
+        let raw = serde_json::json!({"version":1,"providedServices":[],"wantedServices":[source]})
+            .to_string();
+        let board = board::offering::Board::parse(raw.as_bytes(), Default::default()).unwrap();
+        let o = board.offerings.values().next().unwrap();
+        let family = Arc::new(Contract(
+            board::definition::Definition::parse(definition, o, Default::default()).unwrap(),
+        ));
+        registry
+            .register(&context(&init), family.clone(), None)
+            .unwrap();
+        let ba = Arc::new(board::authority::Authority::new());
+        let owner =
+            board::state::Provider::new(local, ba.clone(), Default::default(), registry.clone())
+                .unwrap();
+        let pubg = ba
+            .grant(local, board::authority::Action::Publish, 1_000_000)
+            .unwrap();
+        let bg = ba
+            .grant(local, board::authority::Action::Select, 1_000_000)
+            .unwrap();
+        let bc = board::contract::Context {
+            grant: &pubg,
+            deadline: context(&cg).deadline,
+            cancelled: false,
+        };
+        let prepared = board::prepared::Prepared::new(
+            local,
+            raw.as_bytes(),
+            &BTreeMap::from([(o.id.clone(), family.definition().document.bytes().to_vec())]),
+            Default::default(),
+            registry.as_ref(),
+        )
+        .unwrap();
+        let snapshot = owner.publish(&bc, prepared).unwrap();
+        let bc = board::contract::Context { grant: &bg, ..bc };
+        let selection = owner
+            .select(
+                &bc,
+                &snapshot,
+                &board::selection::Request {
+                    id: &o.id,
+                    service: &o.service,
+                    version: 1,
+                    description: &o.description,
+                    other: remote,
+                    authenticated: true,
+                },
+            )
+            .unwrap();
+        let mut input = Value::Object(vec![
+            ("language".into(), Value::String("javascript".into())),
+            (
+                "languageVersion".into(),
+                Value::String("ECMAScript 2024".into()),
+            ),
+            ("source".into(), Value::String("1+1".into())),
+            ("maxExecutionMilliseconds".into(), Value::Uint64(60000)),
+        ]);
+        if case != "computation" {
+            let mut fields = vec![
+                (
+                    "operation".into(),
+                    Value::String(
+                        if case == "discovery" {
+                            "listIdentities"
+                        } else {
+                            "read"
+                        }
+                        .into(),
+                    ),
+                ),
+                ("limit".into(), Value::Uint32(1)),
+            ];
+            if case == "feeds" {
+                fields.push(("selector".into(), Value::String("latest".into())));
+            }
+            input = Value::Object(fields);
+        }
+        let peer = Peer {
+            local,
+            remote,
+            key: OperationKey {
+                requester: local,
+                connection: [18; 32],
+                stream: 1,
+            },
+        };
+        let auth = authorize(
+            &context(&rg),
+            &a,
+            local,
+            &registry,
+            selection,
+            peer,
+            Some(input.clone()),
+        )
+        .unwrap();
+        let assessed = super::assessment::remote(
+            &context(&rg),
+            &a,
+            auth,
+            super::handler::Assessment {
+                metadata: input.clone(),
+                factors: Value::Object(vec![]),
+                input_bytes: 4096,
+                pin: None,
+            },
+            Limits::default(),
+        )
+        .unwrap();
+        let quoter = Quoter::new(local, a.clone(), Limits::default()).unwrap();
+        let quote = quoter
+            .issue(
+                &context(&rg),
+                Issue {
+                    assessed,
+                    bytes: Blob::new(b"exact-local-metered-quote".to_vec(), 128).unwrap(),
+                    maximum,
+                    expires: bc.deadline,
+                },
+            )
+            .unwrap();
+        let accepted = quoter
+            .accept(
+                &context(&rg),
+                &quote,
+                peer,
+                quote.hash(),
+                &BoardCurrent {
+                    owner: &owner,
+                    context: &bc,
+                },
+            )
+            .unwrap();
+        let admin = fixture
+            .la
+            .grant(local, ledger::authority::Action::Administer, 1_000_000)
+            .unwrap();
+        let lc = ledger::contract::Context {
+            version: 1,
+            grant: &admin,
+            deadline: bc.deadline,
+            cancelled: false,
+        };
+        fixture.l.set_owned(&lc, remote, 100).unwrap();
+        let lg = fixture
+            .la
+            .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+            .unwrap();
+        let accounting = Arc::new(accounting::Ledger::new(
+            fixture.l.clone(),
+            lg,
+            Default::default(),
+        ));
+        let runtime = Coordinator::open(
+            Config {
+                local,
+                authority: a,
+                limits: Limits::default(),
+            },
+            &context(&init),
+            Memory::default(),
+            accounting,
+            registry,
+            true,
+        )
+        .unwrap();
+        let key = runtime
+            .admit(&context(&cg), accepted, Payment::default())
+            .unwrap();
+        let read = fixture
+            .la
+            .grant(local, ledger::authority::Action::Read, 1_000_000)
+            .unwrap();
+        let readc = ledger::contract::Context { grant: &read, ..lc };
+        assert_eq!(fixture.l.available(&readc, remote, true), Ok(100 - maximum));
+        runtime.supply_input(&context(&cg), key, input).unwrap();
+        let _ = runtime.outbound(&context(&cg), key).unwrap();
+        let mut output = vec![
+            ("outcome".into(), Value::String(outcome.into())),
+            ("billedMilliseconds".into(), Value::Uint64(billed)),
+            ("price".into(), Value::Uint64(price)),
+        ];
+        if outcome == "result" {
+            output.push(("result".into(), Value::String("2".into())));
+        }
+        if case != "computation" {
+            output = vec![
+                (
+                    "operation".into(),
+                    Value::String(
+                        if case == "discovery" {
+                            "listIdentities"
+                        } else {
+                            "read"
+                        }
+                        .into(),
+                    ),
+                ),
+                (
+                    if case == "discovery" {
+                        "identities"
+                    } else {
+                        "messages"
+                    }
+                    .into(),
+                    Value::Array(vec![]),
+                ),
+                ("more".into(), Value::Bool(false)),
+                ("price".into(), Value::Uint64(price)),
+            ];
+            if case == "feeds" {
+                output.push(("selector".into(), Value::String("latest".into())));
+            }
+        }
+        runtime
+            .receive(
+                &context(&cg),
+                peer,
+                RemoteResult {
+                    output: Value::Object(output),
+                    bytes: Blob::new(vec![1, 2], 2).unwrap(),
+                    price,
+                },
+            )
+            .unwrap();
+        runtime.resume(&context(&cg), key).unwrap();
+        assert_eq!(runtime.result(&context(&og), key).unwrap().price, price);
+        assert_eq!(fixture.l.view(&readc, remote).unwrap().owned, 100 - price);
+        assert_eq!(fixture.l.available(&readc, remote, true), Ok(100 - price));
+    }
+}
+
+// Complete logical byte bodies reject missing/extra content, a different hash and wrong type without executing or charging.
+#[test]
+fn complete_body_validation_precedes_execution() {
+    let fixture = runtime_with_family(Arc::new(super::test_support::family::Echo::new()));
+    let local = IdentityId([2; 32]);
+    let family = Arc::new(super::test_support::body_family::Body::new());
+    let provider = Arc::new(super::test_support::family::Echo::new());
+    let (owner, selection, ba, registry) = super::test_support::selection::selected_ports(
+        false,
+        family.clone(),
+        Arc::new(super::test_support::family::Echo::new()),
+        fixture.a.clone(),
+    );
+    let invoke = fixture.a.grant(local, Action::Invoke, 1_000_000).unwrap();
+    let g = fixture
+        .a
+        .grant(local, Action::Coordinate, 1_000_000)
+        .unwrap();
+    let init = fixture.a.grant(local, Action::Register, 1_000_000).unwrap();
+    let peer = Peer {
+        local,
+        remote: IdentityId([1; 32]),
+        key: OperationKey {
+            requester: IdentityId([1; 32]),
+            connection: [22; 32],
+            stream: 1,
+        },
+    };
+    let auth = authorize(
+        &context(&invoke),
+        &fixture.a,
+        local,
+        &registry,
+        selection,
+        peer,
+        None,
+    )
+    .unwrap();
+    // This trusted provider assessment is a test-owned immutable contract result, not peer-supplied authorization.
+    let assessed = super::assessment::Assessed {
+        authorized: auth,
+        assessment: super::handler::Assessment {
+            metadata: Value::Bytes(vec![0, 1, 255]),
+            factors: Value::Object(vec![]),
+            input_bytes: 3,
+            pin: None,
+        },
+    };
+    let q = Quoter::new(local, fixture.a.clone(), Limits::default()).unwrap();
+    let quote = q
+        .issue(
+            &context(&invoke),
+            Issue {
+                assessed,
+                bytes: Blob::new(vec![9], 1).unwrap(),
+                maximum: 7,
+                expires: context(&g).deadline,
+            },
+        )
+        .unwrap();
+    let bg = ba
+        .grant(local, board::authority::Action::Select, 1_000_000)
+        .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    let accepted = q
+        .accept(
+            &context(&invoke),
+            &quote,
+            peer,
+            quote.hash(),
+            &BoardCurrent {
+                owner: &owner,
+                context: &bc,
+            },
+        )
+        .unwrap();
+    let lg = fixture
+        .la
+        .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+        .unwrap();
+    let accounting = Arc::new(accounting::Ledger::new(
+        fixture.l.clone(),
+        lg,
+        Default::default(),
+    ));
+    let runtime = Coordinator::open(
+        Config {
+            local,
+            authority: fixture.a.clone(),
+            limits: Limits::default(),
+        },
+        &context(&init),
+        Memory::default(),
+        accounting,
+        registry,
+        true,
+    )
+    .unwrap();
+    let key = runtime
+        .admit(&context(&g), accepted, Payment::default())
+        .unwrap();
+    for input in [
+        Value::Bytes(vec![0, 1]),
+        Value::Bytes(vec![0, 1, 255, 2]),
+        Value::Bytes(vec![0, 2, 255]),
+        Value::Bool(false),
+    ] {
+        assert!(runtime.supply_input(&context(&g), key, input).is_err());
+        assert_eq!(runtime.start(&context(&g), key), Err(Error::Invalid));
+    }
+    assert_eq!(
+        provider
+            .executions
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+    let read = fixture
+        .la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let lc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    assert_eq!(fixture.l.view(&lc, peer.remote).unwrap().issued, 100);
+    runtime
+        .supply_input(&context(&g), key, Value::Bytes(vec![0, 1, 255]))
+        .unwrap();
 }

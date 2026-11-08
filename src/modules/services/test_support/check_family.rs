@@ -19,10 +19,17 @@ pub(in crate::modules::services) struct Bytes {
     definition: Definition,
     echo: Echo,
     included: bool,
+    local_only: bool,
     pub(in crate::modules::services) calls: AtomicUsize,
     pub(in crate::modules::services) seen: Mutex<Vec<Value>>,
 }
 impl Bytes {
+    // A local-only installed check never has a provider-evidence invocation.
+    pub(in crate::modules::services) fn local_only() -> Self {
+        let mut family = Self::new(false);
+        family.local_only = true;
+        family
+    }
     // The descriptor explicitly distinguishes provider evidence from requester-calculated outcomes.
     pub(in crate::modules::services) fn new(included: bool) -> Self {
         let echo = Echo::new();
@@ -38,6 +45,7 @@ impl Bytes {
             definition,
             echo,
             included,
+            local_only: false,
             calls: AtomicUsize::new(0),
             seen: Mutex::new(Vec::new()),
         }
@@ -46,7 +54,9 @@ impl Bytes {
 impl checks::Rules for Bytes {
     // The included fixture represents one already-paid existing placement with a stable owner reference.
     fn mode(&self, _: &Offering, _: &Value) -> Result<Mode, Error> {
-        Ok(if self.included {
+        Ok(if self.local_only {
+            Mode::Local
+        } else if self.included {
             Mode::Included {
                 scope: Blob::new(vec![42; 32], 32)?,
                 maximum: 1,

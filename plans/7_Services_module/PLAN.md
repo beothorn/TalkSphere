@@ -40,7 +40,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **30.** Verify contracts through a bounded serialized adapter.
 - [x] **31.** Verify concurrent invocation and authority isolation.
 - [x] **32.** Add a discoverable local Services exercise path.
-- [ ] **33.** Complete the Services acceptance matrix.
+- [x] **33.** Complete the Services acceptance matrix.
 - [ ] **34.** Publish Services documentation and the Peer Protocol handoff.
 
 ## Reference baseline and scope
@@ -69,7 +69,7 @@ Also use the existing [Board contracts](../../src/modules/board/README.md),
 [Services schema documentation](../../src/modules/services/schema/mod.md).
 Services acceptance cases supply literal scenarios; peer encoding vectors belong
 to the later Peer Protocol codec and must not be confused with a local adapter.
-No new confirmed protocol defect was identified during this review. Existing
+The initial planning review found no new defect; implementation subsequently confirmed the paid-check timeout ambiguity in [issue10](https://github.com/beothorn/CR2SE/issues/10). Existing
 [Board findings](../../CR2SE%20bugs/README.md) remain relevant to definition and
 precondition validation; verify upstream resolution rather than inventing rules.
 
@@ -317,3 +317,5 @@ Step 30 completed: the bounded versioned local adapter calls the same coordinato
 Step 31 completed: barrier races cover dispatch, opposite immutable decisions, duplicate delivery and included-check admission; foreign/revoked contexts, bounded TRACE privacy, forged definition flags, callback expiry and missing coordinator/retained Ledger history are checked. Runtime responsibilities are split into focused files. Required checks pass; production coverage 11915/12670 = 94.04%.
 
 Step 32 completed: the explicit volatile custom-handler example composes actual Board/Ledger contracts and prints price=7, remaining=93. Its unit test, run/help path, shared services help topic and executable CLI tests pass; docs distinguish restartable protected integration from this fresh-per-run example. Required checks pass; production coverage 11915/12670 = 94.04%.
+
+Step 33 completed: the assertion-level acceptance matrix links every SV/shared/BD-09/LG-13 case to executable evidence, including literal upstream standard requester definitions, max60/final2 release58, billable negative completions, paid empty pages, complete body/hash rejection and reopened included quotas. Upstream contracts remain unchanged; issue10 explicitly limits global timeout conformance. Required checks pass; production coverage 11967/12673 = 94.43%.

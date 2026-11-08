@@ -1,0 +1,31 @@
+{
+  "id": "discovery-standard",
+  "service": "cr2se.discovery",
+  "serviceVersion": 1,
+  "description": "Index and query signed, expiring identity address, public-share availability, and published trust records.",
+  "creditIssuer": "PROVIDER_ID",
+  "pricing": {
+    "model": "cr2se.discovery.v1",
+    "indexBasePrice": 1,
+    "indexRecordPrice": 1,
+    "resolveIdentityPrice": 1,
+    "locateSharePrice": 1,
+    "findTrustPrice": 1,
+    "listIdentitiesPrice": 2,
+    "listTrustPrice": 2
+  },
+  "info": {
+    "maximumIndexRecords": 100,
+    "maximumIndexBytes": 1048576,
+    "maximumIndexRetentionSeconds": 604800,
+    "maximumRecordLifetimeSeconds": 2592000,
+    "maximumClockSkewSeconds": 300,
+    "maximumEndpointsPerRecord": 16,
+    "maximumLookupResults": 100,
+    "maximumListResults": 1000,
+    "checkResponseSeconds": 30
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}

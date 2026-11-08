@@ -105,7 +105,9 @@ mod script_tests {
     }
 }
 
+pub(super) mod body_family;
 pub(super) mod check_family;
+pub(in crate::modules::services) mod computation;
 pub(super) mod durable_family;
 pub(super) mod family;
 pub(super) mod selection;

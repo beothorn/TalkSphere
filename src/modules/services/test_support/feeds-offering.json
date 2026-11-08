@@ -1,0 +1,22 @@
+{
+  "id": "open-social-feed",
+  "service": "cr2se.open-social-messaging",
+  "serviceVersion": 1,
+  "description": "Return bounded pages of this identity's signed public messages.",
+  "creditIssuer": "PUBLISHER_ID",
+  "pricing": {
+    "model": "cr2se.open-social-messaging.v1",
+    "readPrice": 1
+  },
+  "info": {
+    "maximumResults": 100,
+    "maximumAttachmentsPerMessage": 8,
+    "maximumBodyBytes": 65536,
+    "maximumAttachmentBytes": 10000000,
+    "maximumMessageBytes": 20000000,
+    "maximumResponseBytes": 50000000
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}

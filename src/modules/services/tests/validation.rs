@@ -107,3 +107,70 @@ fn structural_mutations() {
         Err(Error::Limit)
     );
 }
+
+// Both endpoints, exact zero signs and finite extrema stay lossless; wider or signed stand-ins cannot cross integer contracts.
+#[test]
+fn literal_type_boundaries() {
+    let b = Budget {
+        depth: 31,
+        nodes: 64,
+        bytes: 4096,
+    };
+    for (kind, values) in [
+        ("bool", vec![Value::Bool(true), Value::Bool(false)]),
+        (
+            "int32",
+            vec![Value::Int32(i32::MIN), Value::Int32(i32::MAX)],
+        ),
+        (
+            "int64",
+            vec![Value::Int64(i64::MIN), Value::Int64(i64::MAX)],
+        ),
+        ("uint32", vec![Value::Uint32(0), Value::Uint32(u32::MAX)]),
+        ("uint64", vec![Value::Uint64(0), Value::Uint64(u64::MAX)]),
+        (
+            "string",
+            vec![Value::String(String::new()), Value::String("€".into())],
+        ),
+        (
+            "bytes",
+            vec![Value::Bytes(vec![]), Value::Bytes(vec![0, 255])],
+        ),
+        (
+            "float",
+            vec![
+                Value::Float(0),
+                Value::Float(0x80000000),
+                Value::Float(0x7f7fffff),
+            ],
+        ),
+        (
+            "double",
+            vec![
+                Value::Double(0),
+                Value::Double(0x8000000000000000),
+                Value::Double(0x7fefffffffffffff),
+            ],
+        ),
+    ] {
+        let descriptor = serde_json::json!({"type":kind});
+        for value in values {
+            assert_eq!(validation::validate(&value, &descriptor, b, false), Ok(()));
+        }
+    }
+    for (kind, invalid) in [
+        ("int32", Value::Int64(-2147483649)),
+        ("int32", Value::Int64(2147483648)),
+        ("uint32", Value::Int32(-1)),
+        ("uint32", Value::Uint64(4294967296)),
+        ("uint64", Value::Int64(-1)),
+        ("int64", Value::Uint64(9223372036854775808)),
+        ("bool", Value::Int32(0)),
+        ("bool", Value::String("true".into())),
+    ] {
+        assert_eq!(
+            validation::validate(&invalid, &serde_json::json!({"type":kind}), b, false),
+            Err(Error::Invalid)
+        );
+    }
+}

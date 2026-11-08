@@ -1,0 +1,85 @@
+{
+  "id": "discovery-standard",
+  "service": "cr2se.discovery",
+  "serviceVersion": 1,
+  "description": "Index and query signed, expiring identity address, public-share availability, and published trust records.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Operation: index, resolveIdentity, locateShare, findTrust, listIdentities, or listTrust." },
+      "records": { "type": "array", "description": "Canonical encoded discovery records submitted for paid retention.", "items": { "type": "bytes" }, "optional": true },
+      "identityId": { "type": "bytes", "description": "Exact 32-byte identity ID selected by resolveIdentity.", "optional": true },
+      "shareId": { "type": "bytes", "description": "Exact 32-byte Public File Sharing share ID selected by locateShare.", "optional": true },
+      "subjectId": { "type": "bytes", "description": "Exact 32-byte subject identity selected by findTrust.", "optional": true },
+      "recordLimit": { "type": "uint32", "description": "Maximum signed records requested from an exact lookup.", "optional": true },
+      "indexerLimit": { "type": "uint32", "description": "Maximum candidate indexers requested from an exact lookup.", "optional": true },
+      "afterIdentityId": { "type": "bytes", "description": "Exclusive 32-byte identity cursor for listIdentities.", "optional": true },
+      "afterEvaluatorId": { "type": "bytes", "description": "Exclusive evaluator part of a listTrust cursor.", "optional": true },
+      "afterSubjectId": { "type": "bytes", "description": "Exclusive subject part of a listTrust cursor.", "optional": true },
+      "afterRecordId": { "type": "bytes", "description": "Exclusive record-ID part of a listTrust cursor.", "optional": true },
+      "limit": { "type": "uint32", "description": "Maximum entries requested from a list operation.", "optional": true }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Completed Discovery operation." },
+      "acceptedAt": { "type": "uint64", "description": "Provider acceptance time for an index operation.", "optional": true },
+      "placements": { "type": "array", "description": "Index placements in submitted-record order.", "items": { "type": "object", "fields": {
+        "indexId": { "type": "bytes", "description": "Provider-generated 32-byte index placement ID." },
+        "recordId": { "type": "bytes", "description": "SHA-256 ID of the accepted discovery-record signing bytes." },
+        "storedUntil": { "type": "uint64", "description": "End of the provider's paid record-retention commitment." }
+      } }, "optional": true },
+      "identityId": { "type": "bytes", "description": "Exact identity selected by resolveIdentity.", "optional": true },
+      "shareId": { "type": "bytes", "description": "Exact share selected by locateShare.", "optional": true },
+      "subjectId": { "type": "bytes", "description": "Exact trust subject selected by findTrust.", "optional": true },
+      "addressRecords": { "type": "array", "description": "Current canonical encoded address records.", "items": { "type": "bytes" }, "optional": true },
+      "shareRecords": { "type": "array", "description": "Current canonical encoded share records, including tied negative records needed to expose equivocation.", "items": { "type": "bytes" }, "optional": true },
+      "trustRecords": { "type": "array", "description": "Current canonical encoded trust records.", "items": { "type": "bytes" }, "optional": true },
+      "indexers": { "type": "array", "description": "Candidate indexers ordered by XOR distance from the lookup key.", "items": { "type": "object", "fields": {
+        "identityId": { "type": "bytes", "description": "Exact 32-byte candidate indexer identity." },
+        "addressRecord": { "type": "bytes", "description": "Current canonical address record signed by the candidate identity." }
+      } }, "optional": true },
+      "identities": { "type": "array", "description": "Known 32-byte identity IDs in unsigned lexicographic order.", "items": { "type": "bytes" }, "optional": true },
+      "more": { "type": "bool", "description": "Whether another listing entry existed when the page was produced.", "optional": true },
+      "price": { "type": "uint64", "description": "Credits charged for the successful operation." }
+    }
+  },
+  "check": {
+    "description": "Locally validate lookup or listing output, or retrieve the exact record bytes for one accepted index placement before its storage end time.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "operation": { "type": "string", "description": "Checked Discovery operation." },
+        "indexId": { "type": "bytes", "description": "Provider-generated 32-byte index placement ID for a retention check.", "optional": true },
+        "recordId": { "type": "bytes", "description": "Expected 32-byte discovery record ID for a retention check.", "optional": true },
+        "identityId": { "type": "bytes", "description": "Requested identity for a resolveIdentity check.", "optional": true },
+        "shareId": { "type": "bytes", "description": "Requested share for a locateShare check.", "optional": true },
+        "subjectId": { "type": "bytes", "description": "Requested trust subject for a findTrust check.", "optional": true },
+        "recordLimit": { "type": "uint32", "description": "Original exact-lookup record limit.", "optional": true },
+        "indexerLimit": { "type": "uint32", "description": "Original exact-lookup candidate-indexer limit.", "optional": true },
+        "afterIdentityId": { "type": "bytes", "description": "Original listIdentities cursor when one was supplied.", "optional": true },
+        "afterEvaluatorId": { "type": "bytes", "description": "Original evaluator part of a listTrust cursor.", "optional": true },
+        "afterSubjectId": { "type": "bytes", "description": "Original subject part of a listTrust cursor.", "optional": true },
+        "afterRecordId": { "type": "bytes", "description": "Original record-ID part of a listTrust cursor.", "optional": true },
+        "limit": { "type": "uint32", "description": "Original list-operation page limit.", "optional": true },
+        "addressRecords": { "type": "array", "description": "Complete address-record array returned by resolveIdentity.", "items": { "type": "bytes" }, "optional": true },
+        "shareRecords": { "type": "array", "description": "Complete share-record array returned by locateShare.", "items": { "type": "bytes" }, "optional": true },
+        "trustRecords": { "type": "array", "description": "Complete trust-record array returned by findTrust or listTrust.", "items": { "type": "bytes" }, "optional": true },
+        "indexers": { "type": "array", "description": "Complete candidate-indexer array returned by an exact lookup.", "items": { "type": "object", "fields": {
+          "identityId": { "type": "bytes", "description": "Exact 32-byte candidate indexer identity." },
+          "addressRecord": { "type": "bytes", "description": "Current canonical address record signed by the candidate identity." }
+        } }, "optional": true },
+        "identities": { "type": "array", "description": "Complete identity-ID page returned by listIdentities.", "items": { "type": "bytes" }, "optional": true },
+        "more": { "type": "bool", "description": "Returned listing continuation indicator.", "optional": true }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": { "type": "string", "description": "Requester-computed verification result: pass, fail, or inconclusive." },
+        "record": { "type": "bytes", "description": "Exact retained discovery-record bytes returned for an index-placement check.", "optional": true }
+      }
+    }
+  }
+}

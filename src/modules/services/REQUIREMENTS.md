@@ -5,8 +5,7 @@ The [specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7f
 [common recovery rules](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md)
 are authoritative over simplified execution pseudocode.
 
-This is an implementation map, not passing acceptance evidence. Existing schema
-format tests cover only structural descriptions. All runtime rows remain pending.
+This requirements map is complemented by the assertion-level [acceptance evidence](ACCEPTANCE.md). Runtime cases use actual Services/Board/Ledger contracts and explicitly test-owned family ports; wire integration remains outside this module.
 
 | Case | Required assertions | Planned steps / dependencies |
 |---|---|---|
@@ -45,11 +44,9 @@ permission is invented: registered contract semantics must supply that permissio
 Family-specific prices, output rules, adjustments and replay guards remain family
 responsibilities. Unsupported adjustments must fail before acceptance. Test
 families prove common lifecycle behavior without advertising Storage, Computation
-or other standard-family support. No new confirmed protocol defect was found;
-existing Board issues #8/#9 remain linked in the local bug index.
+or other standard-family support. The paid-check timeout/committed-response-loss ambiguity is reported in [issue10](https://github.com/beothorn/CR2SE/issues/10); requester-local timeout zero delta must not be presented as global rollback. Existing Board issues #8/#9 remain linked in the local bug index.
 
 ## Validation
 
 Run the repository checks and `cargo test --locked modules::services` from the
-repository root. Replace pending rows with assertion-level evidence as the plan
-progresses; do not infer conformance from a round trip or scaffolding.
+repository root. Use the acceptance matrix to distinguish executable local evidence from remaining network/family integration; do not infer interoperability from a local round trip.
