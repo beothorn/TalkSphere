@@ -38,3 +38,8 @@ pub mod value;
 #[cfg(test)]
 #[path = "tests/validation.rs"]
 mod validation_tests;
+
+pub mod handler;
+#[cfg(test)]
+#[path = "tests/handler.rs"]
+mod handler_tests;

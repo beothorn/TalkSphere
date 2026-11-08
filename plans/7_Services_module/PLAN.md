@@ -13,7 +13,7 @@ The existing Services schema-format validator remains the starting point.
 - [ ] **3.** Add deterministic Services dependencies and failure helpers.
 - [x] **4.** Represent the complete logical value vocabulary exactly.
 - [x] **5.** Validate structured values against bounded schemas.
-- [ ] **6.** Define requester and provider handler contracts.
+- [x] **6.** Define requester and provider handler contracts.
 - [ ] **7.** Register exact contracts through authorized composition.
 - [ ] **8.** Connect registered capabilities to Board selection.
 - [ ] **9.** Authorize provided and wanted invocation roles.
@@ -131,6 +131,8 @@ Step 5 completed: shape and registered semantic validation now compose explicitl
 ### 6. Define requester and provider handler contracts
 
 Expose separate describe, assess, execute, evidence, verify and durable participant ports with owned input/result/effect references. Assessment must not execute or spend; execution may stage effects but cannot independently settle Ledger. Define exact body lengths, backpressure, explicit end/error, reference ownership and snapshot-pin release. Test substitute handlers and dependency failures through these public contracts; keep sockets and module-private tables inaccessible.
+
+Step 6 completed: public requester/provider ports now cover assessment, staged execution, completion recovery, exact participant decisions, checks and retained immutable blobs. Typed test substitutes verify all lifecycle paths, refusal, no execution during assessment and retained result lifetime. Required checks pass; production coverage 8965/9340 = 95.99%.
 
 ### 7. Register exact contracts through authorized composition
 
