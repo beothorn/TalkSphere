@@ -68,3 +68,13 @@ pub mod quote;
 #[cfg(test)]
 #[path = "tests/quote.rs"]
 mod quote_tests;
+
+pub mod codec;
+#[cfg(test)]
+#[path = "tests/codec.rs"]
+mod codec_tests;
+pub mod journal;
+#[cfg(test)]
+#[path = "tests/journal.rs"]
+mod journal_tests;
+pub mod persistence;

@@ -180,6 +180,8 @@ Step 13 completed: finite transient quotes retain exact bytes/SHA256 and are bou
 
 Specify one authoritative writer and identity-bound accepted-attempt records containing exact terms, input identity, participant references, result retention and immutable decisions. Distinguish precommit storage failure from possible commitment. Reserve journal capacity before accepting work and gate uncertainty until recovery. Define versioning, integrity/invariant validation and explicit initialization versus open; start with a volatile test adapter and cut tests.
 
+Step 14 progress: exclusive atomic complete-image persistence, identity/authority binding, compare-and-replace, known-failure versus uncertainty gating and reload recovery are implemented. A bounded exact local value codec provides versionable image primitives. Tests cover lost acknowledgements, immutable copies, conflicts and malformed encodings. The concrete invocation-record schema is completed with runtime admission; step14 remains unchecked until that integration is verified. Required checks pass; production coverage 9749/10161 = 95.95%.
+
 ### 15. Implement protected local coordinator persistence
 
 Add a Services-owned Linux persistence adapter with owner-only storage, no-follow access, exclusive writer coordination and synchronized atomic updates. Use existing public platform contracts or deliberate focused helpers, never another module's private store or paid Storage. Test real reopen, corrupt/wrong-identity data, symlinks, permissions, contention and failures before/after durable replacement. Unsupported platforms must fail explicitly.
