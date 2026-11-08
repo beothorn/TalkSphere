@@ -43,3 +43,8 @@ pub mod handler;
 #[cfg(test)]
 #[path = "tests/handler.rs"]
 mod handler_tests;
+
+pub mod registry;
+#[cfg(test)]
+#[path = "tests/registry.rs"]
+mod registry_tests;

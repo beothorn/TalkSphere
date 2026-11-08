@@ -14,7 +14,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **4.** Represent the complete logical value vocabulary exactly.
 - [x] **5.** Validate structured values against bounded schemas.
 - [x] **6.** Define requester and provider handler contracts.
-- [ ] **7.** Register exact contracts through authorized composition.
+- [x] **7.** Register exact contracts through authorized composition.
 - [ ] **8.** Connect registered capabilities to Board selection.
 - [ ] **9.** Authorize provided and wanted invocation roles.
 - [ ] **10.** Assess input metadata before accepting large bodies.
@@ -137,6 +137,8 @@ Step 6 completed: public requester/provider ports now cover assessment, staged e
 ### 7. Register exact contracts through authorized composition
 
 Register requester codecs and provider handlers independently by exact service/version. Verify whole definitions and supported pricing/check modes, reserving cr2se. for known standard contracts. A matching custom name or downloaded schema is not compatibility or execution authority. Reject conflicting registration, unsupported versions and absent implementations; do not require optional families or install code from descriptions.
+
+Step 7 completed: authorized exact requester/provider registration, reserved-namespace catalogue checks, finite capacity and independent requester-only selection are implemented. Registry pins and draining retain accepted implementations; Board capability adapter groundwork is included. Required checks pass; production coverage 9114/9501 = 95.93%.
 
 ### 8. Connect registered capabilities to Board selection
 
