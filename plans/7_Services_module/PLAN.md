@@ -126,6 +126,8 @@ Step 4 completed: exact logical integer widths, float bits, UTF-8, bytes and nes
 
 Extend the existing Services schema validator without breaking Board callers. Validate required and optional fields, nested arrays, aggregate nodes/depth/bytes and service-specific restrictions through explicit semantic ports. Unknown types or required semantics are unusable; optional metadata cannot confer new behavior. Cover every SV-01–SV-03 mutation, duplicate fields and refusal before proportional allocation. Nonfinite permission must come from an understood contract, not an invented schema extension.
 
+Step 5 progress: exact shape validation, bounded nesting, required/optional fields and trusted nonfinite policy are implemented with unit tests. Family semantic ports and the complete mutation matrix remain pending; this step is unchecked. Required checks pass; production coverage 8944/9319 = 95.98%.
+
 ### 6. Define requester and provider handler contracts
 
 Expose separate describe, assess, execute, evidence, verify and durable participant ports with owned input/result/effect references. Assessment must not execute or spend; execution may stage effects but cannot independently settle Ledger. Define exact body lengths, backpressure, explicit end/error, reference ownership and snapshot-pin release. Test substitute handlers and dependency failures through these public contracts; keep sockets and module-private tables inaccessible.

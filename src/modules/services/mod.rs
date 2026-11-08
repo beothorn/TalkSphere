@@ -32,4 +32,5 @@ pub enum Error {
 #[cfg(test)]
 mod test_support;
 
+pub mod validation;
 pub mod value;
