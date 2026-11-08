@@ -17,7 +17,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **7.** Register exact contracts through authorized composition.
 - [x] **8.** Connect registered capabilities to Board selection.
 - [x] **9.** Authorize provided and wanted invocation roles.
-- [ ] **10.** Assess input metadata before accepting large bodies.
+- [x] **10.** Assess input metadata before accepting large bodies.
 - [ ] **11.** Calculate fixed prices with checked exact arithmetic.
 - [ ] **12.** Validate the Computation metering exception.
 - [ ] **13.** Bind quote acceptance to exact terms and context.
@@ -155,6 +155,8 @@ Step 9 completed: invocation authorization derives exact payer/provider roles fr
 ### 10. Assess input metadata before accepting large bodies
 
 Validate metadata, supported operation, preconditions, declared lengths, capacity and handler assessment before admitting body transfer or execution. Retain bounded provider snapshots and price factors and release pins on rejection, expiry or cancellation before acceptance. Test denied trust/capacity through the correct dependency boundary and all SV-04 rejection rows without successful effects.
+
+Step 10 completed: provider assessment validates caller role, metadata budgets and authority before dispatch, bounds returned factors/metadata/pins/input capacity, then rechecks cancellation and authority. Rejection and oversized metadata have tests; no execution or reservation is performed. Required checks pass; production coverage 9259/9646 = 95.99%.
 
 ### 11. Calculate fixed prices with checked exact arithmetic
 

@@ -56,3 +56,8 @@ pub mod authorization;
 #[cfg(test)]
 #[path = "tests/authorization.rs"]
 mod authorization_tests;
+
+pub mod assessment;
+#[cfg(test)]
+#[path = "tests/assessment.rs"]
+mod assessment_tests;
