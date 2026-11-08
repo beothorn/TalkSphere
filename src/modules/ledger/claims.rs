@@ -59,8 +59,8 @@ impl<P: Persistence> Ledger<P> {
         if amount == 0 || restriction == Some(self.local) {
             return Err(Error::Invalid);
         }
-        let id = *random_bytes::<32>(entropy).map_err(|_| Error::Storage)?;
-        let secret = random_bytes::<32>(entropy).map_err(|_| Error::Storage)?;
+        let id = *random_bytes::<32>(entropy).map_err(Error::from)?;
+        let secret = random_bytes::<32>(entropy).map_err(Error::from)?;
         let hash: [u8; 32] = Sha256::digest(secret.as_ref()).into();
         self.change(context, Action::Administer, |s| {
             if s.claims.contains_key(&id) || s.claims.values().any(|c| c.creation == creation) {

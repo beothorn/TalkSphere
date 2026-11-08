@@ -37,7 +37,7 @@ settlement and durable transfer/claim replay records.
 - [x] **27.** Invalidate unused claims without weakening terminal replay guards.
 - [x] **28.** Preserve obligations and replay records during bounded maintenance.
 - [x] **29.** Verify races across every shared accounting resource.
-- [ ] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
+- [x] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
 - [ ] **31.** Expose bounded local Ledger inspection with discoverable help.
 - [ ] **32.** Complete the Ledger acceptance matrix through public contracts.
 - [ ] **33.** Publish Ledger documentation and the Services handoff.
@@ -446,6 +446,8 @@ structured TRACE logs on success and failure; exclude claim secrets, private key
 raw envelopes and arbitrary peer text, and bound repeated diagnostic volume.
 Use real Identity/Cryptography failure paths and prove missing dependencies cause
 explicit failure without hidden network, signing, grants or retries.
+
+Completed step 30: Added forged-context/token, revocation and cancellation isolation tests plus bounded TRACE payload/secret exclusion. Real protected Identity storage exercises signing/decryption adapters and byte-grant failures; dependency categories remain explicit, per-byte decode logging is avoided and blocked reads recheck authority. Required checks pass; production line coverage 8655/9039 = 95.75%.
 
 ### 31. Local exercise commands
 

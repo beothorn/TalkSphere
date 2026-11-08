@@ -178,6 +178,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Querying durable Ledger participant status");
         context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }

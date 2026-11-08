@@ -110,6 +110,7 @@ impl Quotes {
             return Err(Error::Invalid);
         }
         let mut live = self.live.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Control, 121)?;
         live.retain(|_, q| q.expires > now);
         if live.len() >= self.maximum && !live.contains_key(&peer) {
             return Err(Error::Limit);
@@ -143,6 +144,7 @@ impl Quotes {
             return Err(Error::Denied);
         }
         let mut live = self.live.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Control, 121)?;
         let current = live.get(&peer).ok_or(Error::Denied)?;
         if current.order != quote.order || current.fee != fee || current.expires != quote.expires {
             return Err(Error::Denied);

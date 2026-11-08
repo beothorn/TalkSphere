@@ -95,6 +95,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Querying owner-protected transfer result");
         context.check(&self.authority, self.local, Action::Control, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Control, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -113,6 +114,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Reporting authenticated caller-only issuer balance");
         context.check(&self.authority, self.local, Action::Control, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Control, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -135,6 +137,7 @@ impl<P: Persistence> Ledger<P> {
         context.check(&self.authority, self.local, Action::Control, 121)?;
         super::transfer_crypto::verify(authenticated, self.local, order, key, signature)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Control, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }

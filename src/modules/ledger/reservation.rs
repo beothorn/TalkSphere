@@ -161,6 +161,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Reading unreserved issuance and internal capacity");
         context.check(&self.authority, self.local, Action::Read, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Read, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -184,6 +185,7 @@ impl<P: Persistence> Ledger<P> {
             return Err(Error::Invalid);
         }
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Read, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -385,7 +387,11 @@ pub(super) fn byte_vec(v: &serde_json::Value) -> Result<Vec<u8>, Error> {
     v.as_array()
         .ok_or(Error::Invalid)?
         .iter()
-        .map(|n| u8::try_from(super::state::number(n)?).map_err(|_| Error::Invalid))
+        .map(|n| {
+            n.as_u64()
+                .and_then(|n| u8::try_from(n).ok())
+                .ok_or(Error::Invalid)
+        })
         .collect()
 }
 

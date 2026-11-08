@@ -51,7 +51,7 @@ impl<S: KeyStore<Record = CredentialRecord>, E: Entropy> Decryptor for IdentityD
                 EnvelopeFormat::GenericV1,
                 object,
             )
-            .map_err(|_| Error::Denied)
+            .map_err(Error::from)
     }
 }
 impl Portable {
@@ -81,7 +81,7 @@ impl Portable {
                 recipient,
                 limits,
             })
-            .map_err(|_| Error::Denied)
+            .map_err(Error::from)
     }
 }
 /// Validated guarded redemption; construction authenticates ciphertext and exact local context.

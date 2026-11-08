@@ -39,7 +39,7 @@ impl<S: KeyStore<Record = CredentialRecord>, E: Entropy> TransferSigner
         tracing::trace!("Signing transfer through protected Identity capability");
         self.identity
             .sign(self.handle, self.capability, bytes)
-            .map_err(|_| Error::Denied)
+            .map_err(Error::from)
     }
 }
 /// Construct a fresh random transfer and sign its exact bytes under explicit spending authority.
@@ -82,7 +82,7 @@ pub fn create(
     }
     .encode()?;
     let mut id = [0; 16];
-    entropy.fill(&mut id).map_err(|_| Error::Storage)?;
+    entropy.fill(&mut id).map_err(Error::from)?;
     let order = Order {
         transfer_id: id,
         issuer,
@@ -110,11 +110,11 @@ pub fn verify(
     let bytes = order.encode()?;
     if authenticated != order.owner
         || local != order.issuer
-        || credential::identity_id(key).map_err(|_| Error::Denied)? != order.owner.0
+        || credential::identity_id(key).map_err(Error::from)? != order.owner.0
     {
         return Err(Error::Denied);
     }
-    signature::verify(key, &bytes, sig, 121).map_err(|_| Error::Denied)
+    signature::verify(key, &bytes, sig, 121).map_err(Error::from)
 }
 
 #[cfg(test)]

@@ -228,6 +228,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Reading remaining Ledger budgets");
         context.check(&self.authority, self.local, Action::Read, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Read, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -414,7 +415,10 @@ fn map(v: &Value, maximum: usize) -> Result<BTreeMap<IdentityId, u64>, Error> {
             .ok_or(Error::Invalid)?;
         let mut id = [0; 32];
         for (out, v) in id.iter_mut().zip(bytes) {
-            *out = u8::try_from(number(v)?).map_err(|_| Error::Invalid)?;
+            *out = v
+                .as_u64()
+                .and_then(|n| u8::try_from(n).ok())
+                .ok_or(Error::Invalid)?;
         }
         if out.insert(IdentityId(id), number(&pair[1])?).is_some() {
             return Err(Error::Invalid);

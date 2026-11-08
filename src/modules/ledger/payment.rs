@@ -143,6 +143,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Reading independent payment resolution state");
         context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
@@ -171,6 +172,7 @@ impl<P: Persistence> Ledger<P> {
         tracing::trace!("Describing explicit third-party transfer or status query");
         context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         let i = self.inner.lock().map_err(|_| Error::Unknown)?;
+        context.check(&self.authority, self.local, Action::Coordinate, 0)?;
         if i.uncertain {
             return Err(Error::Unknown);
         }
