@@ -75,6 +75,7 @@ pub(super) fn encode(
 // Reject foreign versions, duplicate operation keys and inconsistent effect/decision records before recovery.
 pub(super) fn decode(
     bytes: &[u8],
+    local: IdentityId,
     l: Limits,
 ) -> Result<std::collections::BTreeMap<OperationKey, Operation>, Error> {
     let root = codec::decode(bytes, budget(l), l.state_bytes)?;
@@ -89,7 +90,7 @@ pub(super) fn decode(
     }
     let mut records = std::collections::BTreeMap::new();
     for value in values {
-        let o = Operation::parse(value)?;
+        let o = Operation::parse(value, local)?;
         if records.insert(o.key, o).is_some() {
             return Err(Error::Invalid);
         }
@@ -236,7 +237,7 @@ impl Operation {
         ]))
     }
     // Require exact field count/kinds and revalidate immutable amount/role/phase associations on restart.
-    fn parse(value: &Value) -> Result<Self, Error> {
+    fn parse(value: &Value, local: IdentityId) -> Result<Self, Error> {
         let Value::Array(v) = value else {
             return Err(Error::Invalid);
         };
@@ -319,6 +320,9 @@ impl Operation {
                 .map(|v| Blob::new(bytes(v)?, usize::MAX))
                 .transpose()?,
         };
+        if local != o.terms.requester && local != o.terms.provider {
+            return Err(Error::Denied);
+        }
         if key.stream == 0
             || o.service.is_empty()
             || version == 0
@@ -349,6 +353,7 @@ impl Operation {
             return Err(Error::Invalid);
         }
         if matches!(phase, Phase::Prepared | Phase::Commit | Phase::Committed)
+            && local == o.terms.provider
             && o.handler.is_none()
         {
             return Err(Error::Invalid);

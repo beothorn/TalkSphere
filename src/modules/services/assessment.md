@@ -13,3 +13,10 @@ execute, reserve money or admit body bytes. Assessed owns the authorization and
 assessment; factors, input_bytes and authorized expose immutable observations.
 Dropping it releases provisional pins. Execution and quote acceptance remain
 separate lifecycle stages.
+
+remote validates an explicitly authorized local requester's remote provider
+assessment without invoking a local provider. It rejects local pins in remote
+data, bounds metadata/factors/input length, checks Request authority and calls the
+installed requester to validate factors against its own authorized input. The
+default permits matching complete metadata and no provider-dependent factors;
+body-bearing or calculated families must supply their normative validation.

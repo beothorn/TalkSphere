@@ -51,3 +51,8 @@ operation rules after Services independently validates output schema/semantics.
 The default has no additional contextual restriction. Installed standard families
 must implement their specified validation; this does not turn optional families
 into runtime dependencies or accept arbitrary descriptions as code.
+
+Requester.validate_assessment independently checks remote metadata and factors
+against the authorized local input source. Descriptions or remote offers cannot
+replace that source. The default requires exact input/metadata equality, known
+schema semantics and empty factors; family overrides remain trusted installed code.

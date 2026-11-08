@@ -81,3 +81,19 @@ an authorized abort before a commit decision, never from a participant timeout.
 Registry and Coordinator must share the same local Services authority domain;
 foreign registration domains are rejected before opening/mutating journal state.
 Ledger retains its separate authority and explicit coordinator grant.
+
+Requester-only coordination needs no local provider. outbound durably records the
+attempt before returning explicit Invocation/input data to the trusted peer adapter;
+a repeated call is Unknown and never resends work. receive accepts only a complete
+successful RemoteResult on the authenticated original provider/stream, validates
+it through the same retained-result rules and prepares only the local Ledger.
+RemoteResult contains output, complete bytes and final price, not a remote private
+effect/token. Services generates its own retained-result reference.
+
+A lost remote response remains Unknown. Generic abort cannot erase a dispatched
+requester's possible obligation or its retained valid successful result. decline
+records an explicit complete original-provider uncommitted failure from the trusted
+peer adapter, permitting local hold release. It is never synthesized from timeout,
+connection loss or cancellation. Local participant commitment still proves no
+atomic cross-peer exchange. Record recovery requires handler tokens only where
+that node actually owns a provider participant.

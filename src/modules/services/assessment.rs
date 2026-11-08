@@ -79,3 +79,46 @@ pub fn assess(
         assessment,
     })
 }
+
+/// Validate a trusted remote provider assessment for an explicitly authorized local requester.
+/// # Errors
+/// Rejects wrong roles, local pins in remote data, fabricated input, unsupported factors and finite limits.
+pub fn remote(
+    context: &Context<'_>,
+    authority: &Authority,
+    authorized: Authorized,
+    assessment: Assessment,
+    limits: Limits,
+) -> Result<Assessed, Error> {
+    tracing::trace!("Validating remote assessment without installing a local provider");
+    limits.validate()?;
+    let local = authorized.peer.local;
+    let (requester, provider, _) = authorized.selection.roles();
+    if local != requester || local == provider || assessment.pin.is_some() {
+        return Err(Error::Denied);
+    }
+    let budget = Budget {
+        depth: 31,
+        nodes: limits.nodes,
+        bytes: limits.state_bytes,
+    };
+    let bytes = assessment
+        .metadata
+        .byte_len(budget)?
+        .checked_add(assessment.factors.byte_len(budget)?)
+        .ok_or(Error::Limit)?;
+    if bytes > limits.state_bytes || assessment.input_bytes > limits.state_bytes as u64 {
+        return Err(Error::Limit);
+    }
+    context.check(authority, local, Action::Request, bytes)?;
+    authorized.implementation.requester().validate_assessment(
+        authorized.input.as_ref().ok_or(Error::Denied)?,
+        &assessment.metadata,
+        &assessment.factors,
+        budget,
+    )?;
+    Ok(Assessed {
+        authorized,
+        assessment,
+    })
+}

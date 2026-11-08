@@ -52,7 +52,7 @@ fn phase_prerequisites() {
     let records = BTreeMap::from([(op.key, op.clone())]);
     let bytes = operation::encode(&records, l).unwrap();
     assert_eq!(
-        operation::decode(&bytes, l).unwrap()[&op.key].phase,
+        operation::decode(&bytes, IdentityId([2; 32]), l).unwrap()[&op.key].phase,
         Phase::Accepted
     );
     for phase in [
@@ -67,6 +67,7 @@ fn phase_prerequisites() {
         assert!(
             operation::decode(
                 &operation::encode(&BTreeMap::from([(bad.key, bad)]), l).unwrap(),
+                IdentityId([2; 32]),
                 l
             )
             .is_err()
@@ -84,6 +85,7 @@ fn phase_prerequisites() {
     assert!(
         operation::decode(
             &operation::encode(&BTreeMap::from([(bad.key, bad)]), l).unwrap(),
+            IdentityId([2; 32]),
             l
         )
         .is_err()
@@ -99,7 +101,7 @@ fn phase_prerequisites() {
     }
     let future = codec::encode(&value, budget, l.state_bytes).unwrap();
     assert!(matches!(
-        operation::decode(&future, l),
+        operation::decode(&future, IdentityId([2; 32]), l),
         Err(Error::Unsupported)
     ));
     let mut value = codec::decode(&bytes, budget, l.state_bytes).unwrap();
@@ -109,7 +111,11 @@ fn phase_prerequisites() {
         entries.push(entries[0].clone());
     }
     assert!(matches!(
-        operation::decode(&codec::encode(&value, budget, l.state_bytes).unwrap(), l),
+        operation::decode(
+            &codec::encode(&value, budget, l.state_bytes).unwrap(),
+            IdentityId([2; 32]),
+            l
+        ),
         Err(Error::Invalid)
     ));
 }

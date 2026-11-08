@@ -153,8 +153,8 @@ impl Quoter {
         if issue.bytes.bytes().len() > self.limits.state_bytes {
             return Err(Error::Limit);
         }
-        let (requester, provider, _) = issue.assessed.authorized.selection.roles();
-        let action = if requester == provider {
+        let (requester, _provider, _) = issue.assessed.authorized.selection.roles();
+        let action = if requester == self.local {
             Action::Request
         } else {
             Action::Invoke
@@ -219,8 +219,8 @@ impl Quoter {
         if original.remote != peer.remote || s.hash != hash {
             return Err(Error::Denied);
         }
-        let (requester, provider, _) = s.issue.assessed.authorized.selection.roles();
-        let action = if requester == provider {
+        let (requester, _provider, _) = s.issue.assessed.authorized.selection.roles();
+        let action = if requester == self.local {
             Action::Request
         } else {
             Action::Invoke
@@ -255,7 +255,12 @@ impl Quoter {
     pub fn disconnect(&self, context: &Context<'_>, connection: [u8; 32]) -> Result<(), Error> {
         tracing::trace!("Releasing unaccepted quote pins after disconnect");
         let mut slots = self.slots.lock().map_err(|_| Error::Unavailable)?;
-        context.check(&self.authority, self.local, Action::Invoke, 0)?;
+        if context
+            .check(&self.authority, self.local, Action::Invoke, 0)
+            .is_err()
+        {
+            context.check(&self.authority, self.local, Action::Request, 0)?;
+        }
         slots.retain(|key, _| key.connection != connection);
         Ok(())
     }

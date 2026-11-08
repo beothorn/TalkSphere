@@ -285,6 +285,13 @@ struct Fixture {
 }
 // Construct an independent real-ledger runtime for a configured local test handler.
 fn runtime_with_family(family: Arc<super::test_support::family::Echo>) -> Fixture {
+    configured_runtime(family, false)
+}
+// Requester-only fixtures share the same real finite Ledger without installing a local provider.
+fn configured_runtime(
+    family: Arc<super::test_support::family::Echo>,
+    requester_only: bool,
+) -> Fixture {
     let local = IdentityId([2; 32]);
     let requester = IdentityId([1; 32]);
     let a = Arc::new(Authority::new());
@@ -318,8 +325,11 @@ fn runtime_with_family(family: Arc<super::test_support::family::Echo>) -> Fixtur
         .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
         .unwrap();
     let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, Default::default()));
-    let (_, _, _, r) =
-        super::test_support::selection::selected_with_family(false, family, a.clone());
+    let (_, _, _, r) = if requester_only {
+        super::test_support::selection::selected_requester(family, a.clone())
+    } else {
+        super::test_support::selection::selected_with_family(false, family, a.clone())
+    };
     let runtime = Coordinator::open(
         Config {
             local,
@@ -445,4 +455,194 @@ fn cancellation_and_absent_hold_abort() {
         .unwrap();
     runtime.abort(&c, absent).unwrap();
     assert_eq!(l.available(&rc, IdentityId([1; 32]), false), Ok(2));
+}
+
+// Remote assessment and consent are independently checked against locally authorized wanted input.
+fn remote_accepted(a: Arc<Authority>, r: &super::registry::Registry) -> (Accepted, Peer) {
+    let (owner, selection, ba, _) = selected(true);
+    let local = IdentityId([2; 32]);
+    let g = a.grant(local, Action::Request, 65536).unwrap();
+    let c = context(&g);
+    let peer = Peer {
+        local,
+        remote: IdentityId([1; 32]),
+        key: OperationKey {
+            requester: local,
+            connection: [8; 32],
+            stream: 1,
+        },
+    };
+    let auth = || {
+        authorize(
+            &c,
+            &a,
+            local,
+            r,
+            selection.clone(),
+            peer,
+            Some(Value::String("input".into())),
+        )
+        .unwrap()
+    };
+    let assessment = |metadata| super::handler::Assessment {
+        metadata,
+        factors: Value::Object(vec![]),
+        input_bytes: 128,
+        pin: None,
+    };
+    assert!(matches!(
+        super::assessment::remote(
+            &c,
+            &a,
+            auth(),
+            assessment(Value::String("fabricated".into())),
+            Limits::default()
+        ),
+        Err(Error::Invalid)
+    ));
+    let assessed = super::assessment::remote(
+        &c,
+        &a,
+        auth(),
+        assessment(Value::String("input".into())),
+        Limits::default(),
+    )
+    .unwrap();
+    let q = Quoter::new(local, a, Limits::default()).unwrap();
+    let quote = q
+        .issue(
+            &c,
+            Issue {
+                assessed,
+                bytes: Blob::new(vec![1], 1).unwrap(),
+                maximum: 7,
+                expires: c.deadline,
+            },
+        )
+        .unwrap();
+    let bg = ba
+        .grant(local, board::authority::Action::Select, 65536)
+        .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    (
+        q.accept(
+            &c,
+            &quote,
+            peer,
+            quote.hash(),
+            &BoardCurrent {
+                owner: &owner,
+                context: &bc,
+            },
+        )
+        .unwrap(),
+        peer,
+    )
+}
+// A wanted publisher can receive and settle remote work with a requester codec and no local provider.
+#[test]
+fn requester_only_wanted_result_and_uncertainty() {
+    let Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    } = configured_runtime(Arc::new(super::test_support::family::Echo::new()), true);
+    let local = IdentityId([2; 32]);
+    assert!(r.select("org.example.echo", 1, true).is_err());
+    let g = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&g);
+    let (accepted, peer) = remote_accepted(a.clone(), &r);
+    let key = runtime.admit(&c, accepted, Payment::default()).unwrap();
+    runtime
+        .supply_input(&c, key, Value::String("input".into()))
+        .unwrap();
+    assert_eq!(runtime.start(&c, key), Err(Error::Unsupported));
+    let (invocation, input) = runtime.outbound(&c, key).unwrap();
+    assert_eq!(invocation.requester, local);
+    assert_eq!(invocation.provider, peer.remote);
+    assert_eq!(input, Value::String("input".into()));
+    assert!(matches!(runtime.outbound(&c, key), Err(Error::Unknown)));
+    assert_eq!(
+        runtime.decide(&c, key, super::runtime::Decision::Abort),
+        Err(Error::Unknown)
+    );
+    assert_eq!(runtime.resume(&c, key), Err(Error::Unknown));
+    let result = || super::runtime::RemoteResult {
+        output: Value::String("input".into()),
+        bytes: Blob::new(b"input".to_vec(), 128).unwrap(),
+        price: 7,
+    };
+    assert_eq!(
+        runtime.receive(
+            &c,
+            Peer {
+                remote: IdentityId([9; 32]),
+                ..peer
+            },
+            result()
+        ),
+        Err(Error::Denied)
+    );
+    runtime.receive(&c, peer, result()).unwrap();
+    runtime.receive(&c, peer, result()).unwrap();
+    assert_eq!(
+        runtime.decide(&c, key, super::runtime::Decision::Abort),
+        Err(Error::Unknown)
+    );
+    assert_eq!(runtime.resume(&c, key), Ok(Phase::Committed));
+    assert_eq!(runtime.decline(&c, peer), Err(Error::Conflict));
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let rc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    assert_eq!(l.view(&rc, peer.remote).unwrap().issued, 107);
+    assert_eq!(l.budgets(&rc).unwrap().0, 893);
+}
+// An explicit original-provider uncommitted failure can release the original requester hold; a timeout cannot.
+#[test]
+fn requester_explicit_decline() {
+    let Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    } = configured_runtime(Arc::new(super::test_support::family::Echo::new()), true);
+    let local = IdentityId([2; 32]);
+    let g = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&g);
+    let (accepted, peer) = remote_accepted(a.clone(), &r);
+    let key = runtime.admit(&c, accepted, Payment::default()).unwrap();
+    runtime
+        .supply_input(&c, key, Value::String("input".into()))
+        .unwrap();
+    runtime.outbound(&c, key).unwrap();
+    runtime.decline(&c, peer).unwrap();
+    runtime.abort(&c, key).unwrap();
+    assert_eq!(
+        runtime.decide(&c, key, super::runtime::Decision::Commit),
+        Err(Error::Conflict)
+    );
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let rc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    assert_eq!(l.view(&rc, peer.remote).unwrap().issued, 100);
+    assert_eq!(l.budgets(&rc).unwrap().0, 900);
 }

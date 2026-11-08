@@ -39,7 +39,7 @@ pub(in crate::modules::services) fn selected_with_family(
 ) {
     selected_ports(wanted, f.clone(), f, authority)
 }
-// Compose independently supplied requester/provider ports under the same receiving Services authority.
+// Compose explicitly supplied requester/provider ports with default literal economic roles.
 pub(in crate::modules::services) fn selected_ports(
     wanted: bool,
     f: Arc<dyn Requester>,
@@ -51,8 +51,42 @@ pub(in crate::modules::services) fn selected_ports(
     Arc<board::authority::Authority>,
     Arc<Registry>,
 ) {
+    selected_terms(
+        wanted,
+        f,
+        Some(provider),
+        a,
+        IdentityId([2; 32]),
+        IdentityId([1; 32]),
+    )
+}
+// Select wanted work with a requester codec and genuinely absent local provider.
+pub(in crate::modules::services) fn selected_requester(
+    f: Arc<dyn Requester>,
+    a: Arc<Authority>,
+) -> (
+    Provider,
+    Selection,
+    Arc<board::authority::Authority>,
+    Arc<Registry>,
+) {
+    selected_terms(true, f, None, a, IdentityId([2; 32]), IdentityId([1; 32]))
+}
+// Exact issuer/other identities are supplied explicitly to exercise independent settlement modes.
+pub(in crate::modules::services) fn selected_terms(
+    wanted: bool,
+    f: Arc<dyn Requester>,
+    provider: Option<Arc<dyn FamilyProvider>>,
+    a: Arc<Authority>,
+    issuer: IdentityId,
+    other: IdentityId,
+) -> (
+    Provider,
+    Selection,
+    Arc<board::authority::Authority>,
+    Arc<Registry>,
+) {
     let publisher = IdentityId([2; 32]);
-    let other = IdentityId([1; 32]);
     let g = a.grant(publisher, Action::Register, 65536).unwrap();
     let context = Context {
         version: 1,
@@ -62,7 +96,7 @@ pub(in crate::modules::services) fn selected_ports(
     };
     let r =
         Arc::new(Registry::new(publisher, a, Limits::default(), Arc::new(NoStandards)).unwrap());
-    r.register(&context, f.clone(), Some(provider)).unwrap();
+    r.register(&context, f.clone(), provider).unwrap();
     let ba = Arc::new(board::authority::Authority::new());
     let p = Provider::new(publisher, ba.clone(), Default::default(), r.clone()).unwrap();
     let publish = ba
@@ -76,7 +110,8 @@ pub(in crate::modules::services) fn selected_ports(
         deadline: context.deadline,
         cancelled: false,
     };
-    let o = offering(wanted).source;
+    let mut o = offering(wanted).source;
+    o["creditIssuer"] = crate::modules::identity::text::format(issuer).into();
     let raw = if wanted {
         serde_json::json!({"version":1,"providedServices":[],"wantedServices":[o]})
     } else {

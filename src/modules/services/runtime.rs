@@ -45,6 +45,15 @@ pub enum Decision {
     /// Release uncommitted local resources without charging.
     Abort,
 }
+/// Complete original-provider result event, authenticated and assembled by the peer adapter.
+pub struct RemoteResult {
+    /// Complete typed logical output after peer decoding and explicit stream success/end.
+    pub output: Value,
+    /// Complete immutable original result bytes, independent of client session lifetime.
+    pub bytes: super::handler::Blob,
+    /// Exact reported final price, independently recalculated by Services.
+    pub price: u64,
+}
 struct State {
     records: BTreeMap<OperationKey, Operation>,
     pins: BTreeMap<OperationKey, Registered>,
@@ -88,7 +97,7 @@ impl<P: Persistence> Coordinator<P> {
         } else {
             journal.read(context, Action::Recover)?
         };
-        let records = operation::decode(&bytes, config.limits)?;
+        let records = operation::decode(&bytes, config.local, config.limits)?;
         let mut pins = BTreeMap::new();
         for (key, op) in &records {
             if op.terms.requester != config.local && op.terms.provider != config.local {
@@ -349,6 +358,9 @@ impl<P: Persistence> Coordinator<P> {
         {
             return Err(Error::Unknown);
         }
+        if op.terms.provider != self.config.local {
+            return Err(Error::Unsupported);
+        }
         let input = op.input.clone().ok_or(Error::Invalid)?;
         let invocation = op.invocation(self.config.limits)?;
         op.phase = Phase::Executing;
@@ -367,10 +379,10 @@ impl<P: Persistence> Coordinator<P> {
     /// # Errors
     /// Invalid output, quoted sizes, final price, absent completion and persistence uncertainty reject success.
     pub fn stage(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
-        tracing::trace!("Validating and durably retaining complete staged service result");
+        tracing::trace!("Recovering original local provider completion for durable staging");
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
-        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        let op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
         if matches!(
             op.phase,
             Phase::Staged | Phase::Prepared | Phase::Commit | Phase::Committed
@@ -380,8 +392,28 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Executing {
             return Err(Error::Conflict);
         }
-        let pin = state.pins.get(&key).ok_or(Error::Unavailable)?;
-        let completion = pin.provider()?.completion(key)?;
+        if op.terms.provider != self.config.local {
+            return Err(Error::Unknown);
+        }
+        let completion = state
+            .pins
+            .get(&key)
+            .ok_or(Error::Unavailable)?
+            .provider()?
+            .completion(key)?;
+        self.retain(context, &mut state, op, completion)
+    }
+
+    // Both local and remote result paths independently enforce schema, contextual terms and exact final price.
+    fn retain(
+        &self,
+        context: &Context<'_>,
+        state: &mut State,
+        mut op: Operation,
+        completion: super::handler::Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Validating complete service result before durable retention");
+        let pin = state.pins.get(&op.key).ok_or(Error::Unavailable)?;
         let invocation = op.invocation(self.config.limits)?;
         let budget = Budget {
             depth: 31,
@@ -399,8 +431,10 @@ impl<P: Persistence> Coordinator<P> {
             op.input.as_ref().ok_or(Error::Invalid)?,
             &completion.output,
         )?;
+        if completion.effect.bytes().is_empty() {
+            return Err(Error::Invalid);
+        }
         if completion.result.bytes().len() > self.config.limits.state_bytes
-            || completion.effect.bytes().is_empty()
             || completion.effect.bytes().len() > self.config.limits.state_bytes
         {
             return Err(Error::Limit);
@@ -423,6 +457,119 @@ impl<P: Persistence> Coordinator<P> {
         }
         op.completion = Some(completion);
         op.phase = Phase::Staged;
+        self.save(context, state, op)
+    }
+
+    /// Retain the outgoing attempt before returning complete invocation data to the trusted peer adapter.
+    /// Repeated calls never resend accepted work after an ambiguous local reply.
+    /// # Errors
+    /// Requires a local requester with complete input; uncertain/pending decisions and repeated dispatch return Unknown.
+    pub fn outbound(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+    ) -> Result<(super::handler::Invocation, Value), Error> {
+        tracing::trace!("Journaling requester dispatch before returning outbound invocation data");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.terms.requester != self.config.local || op.terms.provider == self.config.local {
+            return Err(Error::Denied);
+        }
+        if op.phase == Phase::Executing {
+            return Err(Error::Unknown);
+        }
+        if op.phase != Phase::Reserved {
+            return Err(Error::Conflict);
+        }
+        if state
+            .records
+            .values()
+            .any(|o| matches!(o.phase, Phase::Commit | Phase::Abort))
+        {
+            return Err(Error::Unknown);
+        }
+        let input = op.input.clone().ok_or(Error::Invalid)?;
+        let invocation = op.invocation(self.config.limits)?;
+        op.phase = Phase::Executing;
+        self.save(context, &mut state, op)?;
+        Ok((invocation, input))
+    }
+
+    /// Retain a complete successful result from the authenticated original provider and stream.
+    /// # Errors
+    /// Wrong provenance, changed replayed result, invalid output/price and storage failures preserve the original attempt.
+    pub fn receive(
+        &self,
+        context: &Context<'_>,
+        peer: super::handler::Peer,
+        result: RemoteResult,
+    ) -> Result<(), Error> {
+        use sha2::{Digest, Sha256};
+        tracing::trace!("Validating authenticated original-provider result event");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let op = state.records.get(&peer.key).cloned().ok_or(Error::Denied)?;
+        if peer.local != self.config.local
+            || op.terms.requester != self.config.local
+            || op.terms.provider == self.config.local
+            || peer.remote != op.terms.provider
+        {
+            return Err(Error::Denied);
+        }
+        if let Some(original) = &op.completion {
+            return if original.output == result.output
+                && original.result == result.bytes
+                && original.price == result.price
+            {
+                Ok(())
+            } else {
+                Err(Error::Conflict)
+            };
+        }
+        if op.phase != Phase::Executing {
+            return Err(Error::Conflict);
+        }
+        let effect = super::handler::Blob::new(Sha256::digest(result.bytes.bytes()).to_vec(), 32)?;
+        self.retain(
+            context,
+            &mut state,
+            op,
+            super::handler::Completion {
+                output: result.output,
+                result: result.bytes,
+                price: result.price,
+                effect,
+            },
+        )
+    }
+
+    /// Record an explicit complete original-provider failure, never inferred from timeout or disconnect.
+    /// # Errors
+    /// Wrong peer/stream and failure after a retained successful result are denied or conflicting.
+    pub fn decline(&self, context: &Context<'_>, peer: super::handler::Peer) -> Result<(), Error> {
+        tracing::trace!("Recording explicit original-provider uncommitted failure");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&peer.key).cloned().ok_or(Error::Denied)?;
+        if peer.local != self.config.local
+            || op.terms.requester != self.config.local
+            || peer.remote != op.terms.provider
+            || op.terms.provider == self.config.local
+        {
+            return Err(Error::Denied);
+        }
+        if matches!(op.phase, Phase::Abort | Phase::Aborted) {
+            return Ok(());
+        }
+        if !matches!(
+            op.phase,
+            Phase::Accepted | Phase::Reserved | Phase::Executing
+        ) || op.completion.is_some()
+        {
+            return Err(Error::Conflict);
+        }
+        op.phase = Phase::Abort;
         self.save(context, &mut state, op)
     }
 
@@ -441,7 +588,7 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Conflict);
         }
         let completion = op.completion.clone().ok_or(Error::Invalid)?;
-        if op.handler.is_none() {
+        if op.terms.provider == self.config.local && op.handler.is_none() {
             let token = state
                 .pins
                 .get(&key)
@@ -478,6 +625,13 @@ impl<P: Persistence> Coordinator<P> {
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
         let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if decision == Decision::Abort
+            && op.terms.requester == self.config.local
+            && op.terms.provider != self.config.local
+            && matches!(op.phase, Phase::Executing | Phase::Staged | Phase::Prepared)
+        {
+            return Err(Error::Unknown);
+        }
         match (op.phase, decision) {
             (Phase::Commit | Phase::Committed, Decision::Commit)
             | (Phase::Abort | Phase::Aborted, Decision::Abort) => return Ok(()),
@@ -485,7 +639,9 @@ impl<P: Persistence> Coordinator<P> {
                 return Err(Error::Conflict);
             }
             (Phase::Prepared, Decision::Commit) => {
-                if op.completion.is_none() || op.handler.is_none() {
+                if op.completion.is_none()
+                    || (op.terms.provider == self.config.local && op.handler.is_none())
+                {
                     return Err(Error::Invalid);
                 }
                 op.phase = Phase::Commit;
@@ -511,14 +667,20 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Conflict);
         }
         let completion = op.completion.as_ref().ok_or(Error::Invalid)?;
-        let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
-        let token = op.handler.as_ref().ok_or(Error::Invalid)?;
-        match provider.status(key)? {
-            super::handler::Status::Committed => {}
-            super::handler::Status::Prepared(original) if &original == token => {
-                provider.commit(key, token)?
+        let provider = if op.terms.provider == self.config.local {
+            Some(state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?)
+        } else {
+            None
+        };
+        if let Some(provider) = provider {
+            let token = op.handler.as_ref().ok_or(Error::Invalid)?;
+            match provider.status(key)? {
+                super::handler::Status::Committed => {}
+                super::handler::Status::Prepared(original) if &original == token => {
+                    provider.commit(key, token)?
+                }
+                _ => return Err(Error::Unknown),
             }
-            _ => return Err(Error::Unknown),
         }
         match self.accounting.status(context, key)? {
             Some(crate::modules::ledger::reservation::Status::Committed) => {}
@@ -531,9 +693,13 @@ impl<P: Persistence> Coordinator<P> {
             )?,
             _ => return Err(Error::Unknown),
         }
-        if !matches!(provider.status(key)?, super::handler::Status::Committed)
-            || self.accounting.status(context, key)?
-                != Some(crate::modules::ledger::reservation::Status::Committed)
+        if let Some(provider) = provider
+            && !matches!(provider.status(key)?, super::handler::Status::Committed)
+        {
+            return Err(Error::Unknown);
+        }
+        if self.accounting.status(context, key)?
+            != Some(crate::modules::ledger::reservation::Status::Committed)
         {
             return Err(Error::Unknown);
         }
@@ -577,17 +743,19 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Abort {
             return Err(Error::Conflict);
         }
-        let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
-        let token = if op.handler.is_some() {
-            op.handler.clone()
-        } else {
-            match provider.status(key)? {
-                super::handler::Status::Prepared(token) => Some(token),
-                super::handler::Status::Committed => return Err(Error::Conflict),
-                _ => None,
-            }
-        };
-        provider.abort(key, token.as_ref())?;
+        if op.terms.provider == self.config.local {
+            let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
+            let token = if op.handler.is_some() {
+                op.handler.clone()
+            } else {
+                match provider.status(key)? {
+                    super::handler::Status::Prepared(token) => Some(token),
+                    super::handler::Status::Committed => return Err(Error::Conflict),
+                    _ => None,
+                }
+            };
+            provider.abort(key, token.as_ref())?;
+        }
         let reference = if op.completion.is_some() {
             Some(op.reference(self.config.limits)?)
         } else {

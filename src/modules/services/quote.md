@@ -24,3 +24,8 @@ requires durable operation admission and Ledger reservation. A duplicate local
 acceptance has no second slot; later durable retries use the original operation
 key, not a fresh quote. disconnect releases only unaccepted connection slots
 under trusted invocation authority. Accepted work has independent ownership.
+
+Requester-side remote assessments use Request authority and requester validation,
+including when the node has no local provider. Quoting and acceptance derive this
+purpose from application roles. Transient disconnect cleanup accepts the relevant
+owner-issued Invoke or Request grant and never touches accepted coordinator state.

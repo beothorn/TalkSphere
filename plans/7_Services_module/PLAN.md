@@ -295,3 +295,9 @@ No implementation or CLI behavior changed.
 Step 1 completed: published the requirements map with SV-01–SV-12, shared contracts, BD-09 and LG-13 assertions; reconciled schematic execution with normative durable coordination. Runtime acceptance remains pending.
 
 Step 2 completed: added separate Services authority domains, action/identity/byte scoping, revocation, contract version, operation keys, deadlines/cancellation and finite limits. Required checks pass; production coverage 8871/9245 = 95.95%.
+
+Requester-path completion audit (SV-07/SV-11): added independently validated remote
+assessments, requester-only wanted dispatch and original-peer complete-result/failure
+events. No local provider installation or automatic peer retry occurs. Unknown
+remote outcomes retain holds; valid received results settle finite local issuance.
+Required checks pass; production coverage 10978/11513 = 95.35%.

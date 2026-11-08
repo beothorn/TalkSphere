@@ -136,6 +136,32 @@ pub trait Requester: super::validation::Semantics {
             .ok_or(Error::Unsupported)?;
         Ok(super::pricing::Price::Fixed(price))
     }
+    /// Independently validate remote metadata/factors against the authorized local source of input.
+    /// The conservative default permits complete matching input and no provider-dependent factors.
+    /// # Errors
+    /// Fabricated input and unsupported factors fail before consent or spending.
+    fn validate_assessment(
+        &self,
+        input: &Value,
+        metadata: &Value,
+        factors: &Value,
+        budget: super::value::Budget,
+    ) -> Result<(), Error> {
+        tracing::trace!("Validating remote quote factors against authorized requester input");
+        super::validation::complete(
+            input,
+            &self.definition().document.value()["input"],
+            budget,
+            self,
+        )?;
+        if input != metadata {
+            return Err(Error::Invalid);
+        }
+        if !matches!(factors,Value::Object(fields) if fields.is_empty()) {
+            return Err(Error::Unsupported);
+        }
+        Ok(())
+    }
     /// Validate complete input against schema and the previously assessed metadata.
     /// The default permits only exact complete metadata/input equality; body-bearing families must override it.
     /// # Errors
