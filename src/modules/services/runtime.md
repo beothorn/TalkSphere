@@ -38,3 +38,10 @@ complete output/result/effect bytes before preparing settlement. Metered duratio
 comes from the typed completion's billedMilliseconds field. Dispatch/staging are
 not terminal success. Repeated staging never repeats execution and no caller session
 owns the sole copy of a retained durable result.
+
+prepare obtains a durable owner/key/effect-bound handler token and persists it
+before preparing the real Ledger charge. Ledger receives a domain-bound SHA256
+reference to the coordinator-retained input/result/effect and accepted terms.
+Exact retry/status reconstruction recovers participant tokens without repeating
+execution. Only after both participants acknowledge preparation does the journal
+enter Prepared; partial acknowledgement loss preserves holds and recovery data.

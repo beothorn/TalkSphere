@@ -209,6 +209,12 @@ fn durable_binding_and_real_reservation() {
         runtime.status(&context(&observe), key),
         Ok(Some(Phase::Staged))
     );
+    assert_eq!(runtime.prepare(&context(&coordinate), key), Ok(()));
+    assert_eq!(runtime.prepare(&context(&coordinate), key), Ok(()));
+    assert_eq!(
+        runtime.status(&context(&observe), key),
+        Ok(Some(Phase::Prepared))
+    );
     assert!(matches!(
         runtime.admit(
             &context(&observe),

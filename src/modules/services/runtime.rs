@@ -401,6 +401,45 @@ impl<P: Persistence> Coordinator<P> {
         self.save(context, &mut state, op)
     }
 
+    /// Durably prepare the pinned family and exact Ledger charge, retaining tokens before a decision.
+    /// # Errors
+    /// Changed/invalid tokens, participant uncertainty and storage failures retain original holds for recovery.
+    pub fn prepare(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
+        tracing::trace!("Preparing exact family and Ledger effects before coordinator decision");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if matches!(op.phase, Phase::Prepared | Phase::Commit | Phase::Committed) {
+            return Ok(());
+        }
+        if op.phase != Phase::Staged {
+            return Err(Error::Conflict);
+        }
+        let completion = op.completion.clone().ok_or(Error::Invalid)?;
+        if op.handler.is_none() {
+            let token = state
+                .pins
+                .get(&key)
+                .ok_or(Error::Unavailable)?
+                .provider()?
+                .prepare(key, &completion.effect)?;
+            if token.bytes().is_empty() || token.bytes().len() > self.config.limits.state_bytes {
+                return Err(Error::Invalid);
+            }
+            op.handler = Some(token);
+            self.save(context, &mut state, op.clone())?;
+        }
+        self.accounting.prepare(
+            context,
+            key,
+            &op.terms,
+            completion.price,
+            &op.reference(self.config.limits)?,
+        )?;
+        op.phase = Phase::Prepared;
+        self.save(context, &mut state, op)
+    }
+
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.
     /// # Errors
     /// Requires Observe authority and reconciled complete coordinator state.

@@ -49,6 +49,17 @@ impl Echo {
         }
     }
 }
+// Fixture tokens bind owner, original attempt and staged effect independently of response delivery.
+fn token(key: OperationKey, effect: &Blob) -> Blob {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(b"Services echo fixture owner B");
+    hash.update(key.requester.0);
+    hash.update(key.connection);
+    hash.update(key.stream.to_be_bytes());
+    hash.update(effect.bytes());
+    Blob::new(hash.finalize().to_vec(), 32).unwrap()
+}
 impl Semantics for Echo {
     // Exact echo data is text; unfamiliar required schema semantics cannot be accepted.
     fn validate(&self, s: &serde_json::Value, v: &Value) -> Result<(), Error> {
@@ -147,15 +158,15 @@ impl Provider for Echo {
             return Err(Error::Conflict);
         }
         if !matches!(status, Status::Committed) {
-            *status = Status::Prepared(e.clone());
+            *status = Status::Prepared(token(k, e));
         }
-        Ok(e.clone())
+        Ok(token(k, e))
     }
     // Duplicate commit is idempotent; missing preparation never manufactures successful work.
     fn commit(&self, k: OperationKey, t: &Blob) -> Result<(), Error> {
         let mut s = self.state.lock().unwrap();
         let (c, status) = s.get_mut(&k).ok_or(Error::Unknown)?;
-        if &c.effect != t || !matches!(status, Status::Prepared(_) | Status::Committed) {
+        if &token(k, &c.effect) != t || !matches!(status, Status::Prepared(_) | Status::Committed) {
             return Err(Error::Conflict);
         }
         *status = Status::Committed;
@@ -168,7 +179,7 @@ impl Provider for Echo {
             if matches!(status, Status::Committed) {
                 return Err(Error::Conflict);
             }
-            if matches!(status, Status::Prepared(_)) && t != Some(&c.effect) {
+            if matches!(status, Status::Prepared(_)) && t != Some(&token(k, &c.effect)) {
                 return Err(Error::Denied);
             }
             *status = Status::Aborted;

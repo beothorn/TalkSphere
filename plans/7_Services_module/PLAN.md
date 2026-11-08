@@ -27,7 +27,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **17.** Validate complete input through bounded body references.
 - [x] **18.** Journal execution attempts before dispatching work.
 - [x] **19.** Validate outputs and retain complete results durably.
-- [ ] **20.** Prepare handler and Ledger effects through public contracts.
+- [x] **20.** Prepare handler and Ledger effects through public contracts.
 - [ ] **21.** Persist one immutable commit or abort decision.
 - [ ] **22.** Deliver commit decisions without duplicate effects.
 - [ ] **23.** Abort uncommitted work without erasing obligations.
@@ -215,6 +215,8 @@ Step 19 completed: staged completion recovery independently validates output sch
 ### 20. Prepare handler and Ledger effects through public contracts
 
 Prepare the staged handler effect and exact Ledger charge using the original key and retained validated result reference. Persist opaque owner/key/effect-bound tokens and status; duplicate prepare returns the same binding and conflicting data fails. Handle reply loss from either participant without duplicate execution or reservation. Unsupported family adjustments fail before acceptance until a compatible authorized participant exists.
+
+Step 20 completed: pinned family preparation returns an owner/key/effect token that is journaled before real Ledger preparation. Ledger references bind exact retained input/output/result/effect and terms; repeated preparation preserves one hold and token association without execution. Fixture tokens now explicitly bind original keys. Required checks pass; production coverage 10584/11165 = 94.80%.
 
 ### 21. Persist one immutable commit or abort decision
 

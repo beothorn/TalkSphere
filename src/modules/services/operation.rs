@@ -158,6 +158,29 @@ impl Operation {
             pricing: self.pricing,
         })
     }
+    // Bind the exact retained input, output, bytes and accepted terms without making Ledger own family payloads.
+    pub(super) fn reference(&self, limits: Limits) -> Result<Vec<u8>, Error> {
+        use sha2::{Digest, Sha256};
+        tracing::trace!("Binding retained Services result and exact settlement effect");
+        let c = self.completion.as_ref().ok_or(Error::Invalid)?;
+        let value = Value::Array(vec![
+            self.input.clone().ok_or(Error::Invalid)?,
+            c.output.clone(),
+            Value::Bytes(c.result.bytes().to_vec()),
+            Value::Bytes(c.effect.bytes().to_vec()),
+            Value::Uint64(c.price),
+            Value::Bytes(self.terms.accepted.clone()),
+            self.factors.clone(),
+        ]);
+        let bytes = codec::encode(&value, budget(limits), limits.state_bytes)?;
+        let mut hash = Sha256::new();
+        hash.update(b"TalkSphere Services retained result v1");
+        hash.update(self.key.requester.0);
+        hash.update(self.key.connection);
+        hash.update(self.key.stream.to_be_bytes());
+        hash.update(bytes);
+        Ok(hash.finalize().to_vec())
+    }
     // Serialize every immutable binding, retained input/result and preparation token explicitly.
     fn value(&self) -> Result<Value, Error> {
         let price = match self.pricing {
