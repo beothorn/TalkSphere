@@ -9,7 +9,7 @@ The existing Services schema-format validator remains the starting point.
 ## Steps
 
 - [x] **1.** Reconcile Services requirements and acceptance cases with upstream.
-- [ ] **2.** Define Services authority, operation contexts and resource limits.
+- [x] **2.** Define Services authority, operation contexts and resource limits.
 - [ ] **3.** Add deterministic Services dependencies and failure helpers.
 - [ ] **4.** Represent the complete logical value vocabulary exactly.
 - [ ] **5.** Validate structured values against bounded schemas.
@@ -249,3 +249,5 @@ not rerun because this change only adds planning documentation and links.
 No implementation or CLI behavior changed.
 
 Step 1 completed: published the requirements map with SV-01–SV-12, shared contracts, BD-09 and LG-13 assertions; reconciled schematic execution with normative durable coordination. Runtime acceptance remains pending.
+
+Step 2 completed: added separate Services authority domains, action/identity/byte scoping, revocation, contract version, operation keys, deadlines/cancellation and finite limits. Required checks pass; production coverage 8871/9245 = 95.95%.
