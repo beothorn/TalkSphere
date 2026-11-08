@@ -106,3 +106,5 @@ pub mod checks;
 #[cfg(test)]
 #[path = "tests/lifecycle.rs"]
 mod lifecycle_tests;
+
+pub mod adapter;

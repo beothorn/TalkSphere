@@ -916,3 +916,145 @@ fn lifetime_capacity_keeps_results() {
     );
     assert_eq!(f.executions.load(std::sync::atomic::Ordering::SeqCst), 1);
 }
+// Independent coordinators produce identical visible outcomes through direct and serialized calls, even after a lost dispatch reply.
+#[test]
+fn serialized_and_direct_contracts_match() {
+    use super::adapter::{Adapter, Request};
+    use super::runtime::Decision;
+    let direct = runtime_with_family(Arc::new(super::test_support::family::Echo::new()));
+    let family = Arc::new(super::test_support::family::Echo::new());
+    let remote = runtime_with_family(family.clone());
+    let dg = direct
+        .a
+        .grant(IdentityId([2; 32]), Action::Coordinate, 1_000_000)
+        .unwrap();
+    let rg = remote
+        .a
+        .grant(IdentityId([2; 32]), Action::Coordinate, 1_000_000)
+        .unwrap();
+    let obs = remote
+        .a
+        .grant(IdentityId([2; 32]), Action::Observe, 1_000_000)
+        .unwrap();
+    let d = accepted(direct.a.clone(), &direct.r, 1, 1);
+    let r = accepted(remote.a.clone(), &remote.r, 1, 1);
+    let key = d.assessed().authorized.peer.key;
+    direct
+        .runtime
+        .admit(&context(&dg), d, Payment::default())
+        .unwrap();
+    remote
+        .runtime
+        .admit(&context(&rg), r, Payment::default())
+        .unwrap();
+    let adapter = Adapter::new(&remote.runtime, Limits::default()).unwrap();
+    let input = Value::String("input".into());
+    direct
+        .runtime
+        .supply_input(&context(&dg), key, input.clone())
+        .unwrap();
+    adapter
+        .dispatch(
+            &context(&rg),
+            &adapter.encode(Request::Input(key, input)).unwrap(),
+        )
+        .unwrap();
+    direct.runtime.start(&context(&dg), key).unwrap();
+    let start = adapter.encode(Request::Start(key)).unwrap();
+    drop(adapter.dispatch(&context(&rg), &start).unwrap());
+    assert_eq!(adapter.dispatch(&context(&rg), &start), Err(Error::Unknown));
+    direct.runtime.stage(&context(&dg), key).unwrap();
+    direct.runtime.prepare(&context(&dg), key).unwrap();
+    direct
+        .runtime
+        .decide(&context(&dg), key, Decision::Commit)
+        .unwrap();
+    direct.runtime.commit(&context(&dg), key).unwrap();
+    for request in [
+        Request::Stage(key),
+        Request::Prepare(key),
+        Request::Decide(key, Decision::Commit),
+        Request::Commit(key),
+    ] {
+        assert_eq!(
+            adapter.decode(
+                &adapter
+                    .dispatch(&context(&rg), &adapter.encode(request).unwrap())
+                    .unwrap()
+            ),
+            Ok(Value::Bool(true))
+        );
+    }
+    let result = adapter.encode(Request::Result(key)).unwrap();
+    let reply = adapter.dispatch(&context(&obs), &result).unwrap();
+    let dob = direct
+        .a
+        .grant(IdentityId([2; 32]), Action::Observe, 1_000_000)
+        .unwrap();
+    let expected = direct.runtime.result(&context(&dob), key).unwrap();
+    assert_eq!(
+        adapter.decode(&reply),
+        Ok(Value::Array(vec![
+            expected.output,
+            Value::Bytes(expected.result.bytes().to_vec()),
+            Value::Uint64(7)
+        ]))
+    );
+    assert_eq!(adapter.dispatch(&context(&obs), &result).unwrap(), reply);
+    let status = adapter.encode(Request::Status(key)).unwrap();
+    assert_eq!(
+        adapter.decode(&adapter.dispatch(&context(&obs), &status).unwrap()),
+        Ok(Value::String("Committed".into()))
+    );
+    let foreign = Authority::new()
+        .grant(IdentityId([2; 32]), Action::Observe, 1_000_000)
+        .unwrap();
+    assert_eq!(
+        adapter.dispatch(&context(&foreign), &status),
+        Err(Error::Denied)
+    );
+    for n in 0..status.len() {
+        assert!(adapter.dispatch(&context(&obs), &status[..n]).is_err());
+    }
+    let mut future = status.clone();
+    // Array header is five bytes; the first uint32 value follows its one-byte tag.
+    future[9] = 2;
+    assert_eq!(
+        adapter.dispatch(&context(&obs), &future),
+        Err(Error::Unsupported)
+    );
+    let narrow = Adapter::new(
+        &remote.runtime,
+        Limits {
+            state_bytes: 8,
+            ..Limits::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(narrow.dispatch(&context(&obs), &status), Err(Error::Limit));
+    assert_eq!(
+        family.executions.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    let second = accepted(remote.a.clone(), &remote.r, 2, 2);
+    let other_key = second.assessed().authorized.peer.key;
+    remote
+        .runtime
+        .admit(&context(&rg), second, Payment::default())
+        .unwrap();
+    for request in [
+        Request::Decide(other_key, Decision::Abort),
+        Request::Abort(other_key),
+    ] {
+        adapter
+            .dispatch(&context(&rg), &adapter.encode(request).unwrap())
+            .unwrap();
+    }
+    assert_eq!(
+        remote.runtime.status(&context(&obs), other_key),
+        Ok(Some(Phase::Aborted))
+    );
+    // The original reply remains valid after the entire adapter is gone.
+    drop(remote.runtime);
+    assert!(!reply.is_empty());
+}
