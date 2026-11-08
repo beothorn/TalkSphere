@@ -17,7 +17,10 @@ The [Board module](src/modules/board/README.md) now implements direct-call
 publication, protected persistence, attributed caches, selection and document tools.
 The Ledger direct-call module now supports durable finite accounting, settlement,
 transfers and encrypted claims with protected Linux persistence and local inspection.
-Services, Peer Protocol and paid Storage remain later milestones.
+The [Services library](src/modules/services/README.md) now supports typed handler
+registration, exact quotes and durable local coordination, with
+[acceptance evidence](src/modules/services/ACCEPTANCE.md) over real Board/Ledger
+contracts. Peer Protocol and paid Storage remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
@@ -149,7 +152,7 @@ Individual protocol findings and confirmed upstream issue URLs are retained in
 The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
-module is Services; Peer Protocol, minimum-profile services and paid recovery remain later work.
+module is Peer Protocol; paid Storage, minimum-profile services and paid recovery remain later work.
 
 ## Board document tools
 

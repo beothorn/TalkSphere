@@ -59,10 +59,11 @@ exposed. These dependencies use contracts, not private state or cross-module loc
 Ledger owns its accounting/replay database. Local platform persistence works without
 paid Storage. Family service effects and the Services coordinator remain separate;
 Ledger's prepared participant does not own their database or execute service work.
-Network quote/transfer/claim exchanges, actual Services coordination and serialized
-module IPC remain later composition. This module does not establish a minimum useful
+[Actual Services coordination](../services/ACCEPTANCE.md) now exercises this public
+participant across all eight fault cuts and a protected-store subprocess restart.
+Network quote/transfer/claim exchanges and standalone module IPC remain later composition. This module does not establish a minimum useful
 node, cross-peer atomic payment, independent interoperability or physical power-loss
-validation. The next roadmap module is Services.
+validation. The next roadmap module is Peer Protocol.
 
 ## Exact accounting, authority and limits
 

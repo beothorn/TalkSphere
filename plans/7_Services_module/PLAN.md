@@ -1,6 +1,6 @@
 # Services module plan
 
-Status: implementation in progress; see checked steps and evidence below.
+Status: all 34 local Services steps complete; see [acceptance evidence](../../src/modules/services/ACCEPTANCE.md) and the explicit paid-check timeout/network limitations.
 
 This is roadmap milestone 8 and planning folder 7, following completed Ledger.
 Services owns typed invocation, handler dispatch and durable local coordination.
@@ -41,7 +41,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **31.** Verify concurrent invocation and authority isolation.
 - [x] **32.** Add a discoverable local Services exercise path.
 - [x] **33.** Complete the Services acceptance matrix.
-- [ ] **34.** Publish Services documentation and the Peer Protocol handoff.
+- [x] **34.** Publish Services documentation and the Peer Protocol handoff.
 
 ## Reference baseline and scope
 
@@ -290,8 +290,8 @@ Finish module README, same-stem public contract documents, root status/links, ex
 
 ## Planning review evidence
 
-All 34 checklist items remain unchecked, each is one actionable sentence, and
-all have matching detail sections in order. Local documentation links and
+At the initial planning review, all 34 checklist items were left unchecked,
+each with one actionable sentence and matching detail sections in order. Local documentation links and
 whitespace checks pass. Formatting, strict Clippy, build and overview help pass.
 The full locked test suite passes with loopback sockets enabled; the sandboxed
 attempt denied socket creation in three existing Transport tests. Coverage was
@@ -319,3 +319,16 @@ Step 31 completed: barrier races cover dispatch, opposite immutable decisions, d
 Step 32 completed: the explicit volatile custom-handler example composes actual Board/Ledger contracts and prints price=7, remaining=93. Its unit test, run/help path, shared services help topic and executable CLI tests pass; docs distinguish restartable protected integration from this fresh-per-run example. Required checks pass; production coverage 11915/12670 = 94.04%.
 
 Step 33 completed: the assertion-level acceptance matrix links every SV/shared/BD-09/LG-13 case to executable evidence, including literal upstream standard requester definitions, max60/final2 release58, billable negative completions, paid empty pages, complete body/hash rejection and reopened included quotas. Upstream contracts remain unchanged; issue10 explicitly limits global timeout conformance. Required checks pass; production coverage 11967/12673 = 94.43%.
+
+Step 34 completed: module/public contracts, runnable example, root roadmap/status,
+Board/Ledger integration supplements and Peer Protocol handoff are current. Final
+audit adds concurrent original-key admission/reservation/drain evidence and checks
+that input rejection observes the actual installed provider counter. Formatting,
+strict all-target Clippy, locked tests/build, overview/Services help, example
+run/test/help aliases/invalid syntax and warning-free API docs pass. All local
+Markdown links and 34 ordered checklist/detail pairs validate. Production line
+coverage: 11967/12673 = 94.43%, using the documented test-code exclusions and valid
+LLVM captures; intentionally terminated children can leave incomplete profiles.
+No new protocol contract changes appeared upstream. Issue10 remains reported and
+explicitly limits global paid-check timeout claims. Peer Protocol and paid Storage
+are next; no application network protocol or standard-family provider was added.

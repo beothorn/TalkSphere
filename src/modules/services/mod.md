@@ -10,5 +10,7 @@ precommit storage failure, possibly committed unknown outcome and unavailable
 dependency. Unknown never establishes rollback. Authority and contract submodules
 specify local version, identity, action, deadline and resource checks.
 
-The runtime coordinator remains under development; these types alone do not
-register handlers or execute work.
+The [runtime coordinator](runtime/mod.md) implements durable local invocation and
+evidence-check coordination through explicit installed handler/accounting ports.
+The [local adapter](adapter.md) preserves these contracts under bounded serialized
+calls. Neither module installs a standard family or network application protocol.

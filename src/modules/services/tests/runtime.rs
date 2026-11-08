@@ -1447,7 +1447,7 @@ fn complete_body_validation_precedes_execution() {
     let (owner, selection, ba, registry) = super::test_support::selection::selected_ports(
         false,
         family.clone(),
-        Arc::new(super::test_support::family::Echo::new()),
+        provider.clone(),
         fixture.a.clone(),
     );
     let invoke = fixture.a.grant(local, Action::Invoke, 1_000_000).unwrap();
@@ -1571,4 +1571,72 @@ fn complete_body_validation_precedes_execution() {
     runtime
         .supply_input(&context(&g), key, Value::Bytes(vec![0, 1, 255]))
         .unwrap();
+}
+
+// Duplicate concurrent consent reserves one original hold; draining concurrently with a new admission never loses retained work.
+#[test]
+fn concurrent_reservation_and_drain() {
+    use std::sync::Barrier;
+    let family = Arc::new(super::test_support::family::Echo::new());
+    let f = runtime_with_family(family.clone());
+    let local = IdentityId([2; 32]);
+    let g = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let rg = f.a.grant(local, Action::Register, 1_000_000).unwrap();
+    let og = f.a.grant(local, Action::Observe, 1_000_000).unwrap();
+    let a = accepted(f.a.clone(), &f.r, 1, 1);
+    let b = accepted(f.a.clone(), &f.r, 1, 1);
+    let key = a.assessed().authorized.peer.key;
+    let gate = Barrier::new(3);
+    std::thread::scope(|scope| {
+        let one = scope.spawn(|| {
+            gate.wait();
+            f.runtime.admit(&context(&g), a, Payment::default())
+        });
+        let two = scope.spawn(|| {
+            gate.wait();
+            f.runtime.admit(&context(&g), b, Payment::default())
+        });
+        gate.wait();
+        assert_eq!(one.join().unwrap(), Ok(key));
+        assert_eq!(two.join().unwrap(), Ok(key));
+    });
+    let read =
+        f.la.grant(local, ledger::authority::Action::Read, 1_000_000)
+            .unwrap();
+    let lc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    assert_eq!(f.l.available(&lc, IdentityId([1; 32]), false), Ok(93));
+    let next = accepted(f.a.clone(), &f.r, 2, 2);
+    let next_key = next.assessed().authorized.peer.key;
+    let gate = Barrier::new(3);
+    let admitted = std::thread::scope(|scope| {
+        let one = scope.spawn(|| {
+            gate.wait();
+            f.runtime.admit(&context(&g), next, Payment::default())
+        });
+        let two = scope.spawn(|| {
+            gate.wait();
+            f.r.drain(&context(&rg), "org.example.echo", 1)
+        });
+        gate.wait();
+        assert_eq!(two.join().unwrap(), Ok(()));
+        one.join().unwrap()
+    });
+    assert!(admitted == Ok(next_key) || admitted == Err(Error::Unsupported));
+    assert!(f.r.select("org.example.echo", 1, true).is_err());
+    f.runtime
+        .supply_input(&context(&g), key, Value::String("input".into()))
+        .unwrap();
+    f.runtime.start(&context(&g), key).unwrap();
+    f.runtime.resume(&context(&g), key).unwrap();
+    assert_eq!(f.runtime.result(&context(&og), key).unwrap().price, 7);
+    assert_eq!(
+        family.executions.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    assert_eq!(f.l.view(&lc, IdentityId([1; 32])).unwrap().issued, 93);
 }

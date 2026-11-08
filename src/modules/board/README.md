@@ -7,7 +7,7 @@ and explicit role-aware selection. All 24 implementation steps are recorded in
 [the plan](../../../plans/5_Board_module/PLAN.md); executed rows and deferred
 integration are in [acceptance evidence](ACCEPTANCE.md).
 
-Board is called by trusted local administration, future Services and Peer Control.
+Board is called by trusted local administration, Services and future Peer Control.
 Composition supplies one coordinated publication owner per publisher, grants,
 platform storage and actual provider/requester capabilities. Identity supplies
 public ID/text contracts; Services supplies schema formats without requiring its
@@ -105,10 +105,11 @@ terms stay immutable. Recovering storage does not resume an application invocati
 finite freshness and no hidden network refresh. [Definition association](cache_definitions.md)
 rejects delayed replies against replaced receipts. [Selection](selection.md)
 assigns requester/provider from provided/wanted direction, preserves the exact
-issuer and rejects changed or removed terms. Quote acceptance, actual charges and
-durable accepted obligations are deferred to Services/Peer Protocol; the BD-09
-integration rows remain explicitly deferred.
+issuer and rejects changed or removed terms. [Services](../services/README.md) now binds quote acceptance, actual local charges
+and durable accepted obligations through these public contracts; its
+[acceptance matrix](../services/ACCEPTANCE.md) supplements BD-09. Network
+exchange and wire quote encoding remain Peer Protocol work.
 
 Production CLI registers no fake Board/service protocol and has no publication
 command bypassing absent handlers. Completing Board's library and tools does not
-complete a minimum useful node. Ledger is the next roadmap module.
+complete a minimum useful node. Peer Protocol is the next roadmap module.

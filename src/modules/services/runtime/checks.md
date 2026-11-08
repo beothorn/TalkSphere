@@ -30,3 +30,9 @@ check_outcome runs only for the local requester with private expectations and
 retained timing; no automatic refund or trust update follows. Missing evidence is
 Inconclusive. Ordinary result/verify APIs reject check-purpose records so evidence
 cannot be mistaken for a provider-calculated correctness outcome.
+
+The uncharged timeout above is requester-local. A provider's already durable commit
+is never reversed from response loss; the two local credit views may disagree.
+[Upstream issue #10](https://github.com/beothorn/CR2SE/issues/10) requests clarification.
+No cross-peer zero-charge guarantee, automatic refund or invented wire receipt
+protocol is implied. Paid-check network composition must revisit that finding.

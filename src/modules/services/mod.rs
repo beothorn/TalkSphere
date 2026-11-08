@@ -1,8 +1,30 @@
 //! Services validates typed contracts for Board and coordinates authorized family work.
 //! Composition owns grants and dependencies; network dispatch remains Peer Protocol work.
+pub mod accounting;
+pub mod adapter;
+pub mod assessment;
 pub mod authority;
+pub mod authorization;
+pub mod body;
+pub mod checks;
+pub mod codec;
 pub mod contract;
+pub mod handler;
+pub mod journal;
+pub mod persistence;
+pub mod pricing;
+pub mod quote;
+pub mod registry;
+pub mod runtime;
 pub mod schema;
+pub mod validation;
+pub mod value;
+
+#[cfg(target_os = "linux")]
+pub mod linux;
+mod operation;
+#[cfg(target_os = "linux")]
+mod record_codec;
 
 /// Typed local failures, preserving uncertainty separately from explicit refusal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,69 +54,50 @@ pub enum Error {
 #[cfg(test)]
 mod test_support;
 
-pub mod validation;
-pub mod value;
-
 #[cfg(test)]
 #[path = "tests/validation.rs"]
 mod validation_tests;
 
-pub mod handler;
 #[cfg(test)]
 #[path = "tests/handler.rs"]
 mod handler_tests;
 
-pub mod registry;
 #[cfg(test)]
 #[path = "tests/registry.rs"]
 mod registry_tests;
+
 #[cfg(test)]
 #[path = "tests/selection.rs"]
 mod selection_tests;
 
-pub mod authorization;
 #[cfg(test)]
 #[path = "tests/authorization.rs"]
 mod authorization_tests;
 
-pub mod assessment;
 #[cfg(test)]
 #[path = "tests/assessment.rs"]
 mod assessment_tests;
 
-pub mod pricing;
-
-pub mod quote;
 #[cfg(test)]
 #[path = "tests/quote.rs"]
 mod quote_tests;
 
-pub mod codec;
 #[cfg(test)]
 #[path = "tests/codec.rs"]
 mod codec_tests;
-pub mod journal;
+
 #[cfg(test)]
 #[path = "tests/journal.rs"]
 mod journal_tests;
-pub mod persistence;
 
-#[cfg(target_os = "linux")]
-pub mod linux;
-#[cfg(target_os = "linux")]
-mod record_codec;
-
-pub mod accounting;
-mod operation;
 #[cfg(test)]
 #[path = "tests/operation.rs"]
 mod operation_tests;
-pub mod runtime;
+
 #[cfg(test)]
 #[path = "tests/runtime.rs"]
 mod runtime_tests;
 
-pub mod body;
 #[cfg(test)]
 #[path = "tests/recovery.rs"]
 mod recovery_tests;
@@ -102,12 +105,10 @@ mod recovery_tests;
 #[cfg(test)]
 #[path = "tests/checks.rs"]
 mod check_tests;
-pub mod checks;
+
 #[cfg(test)]
 #[path = "tests/lifecycle.rs"]
 mod lifecycle_tests;
-
-pub mod adapter;
 
 #[cfg(test)]
 #[path = "tests/privacy.rs"]

@@ -22,7 +22,7 @@ and, on Linux, `cargo test --locked --test board_persistence`.
 | BD-07 | `definition::tests::definitions_match_exact_fields`, `bd06_bd07_unknown_siblings_and_mismatches`, `cache_definitions::tests::definition_receipts_never_mix_revisions`, `state::tests::immutable_atomic_revisions_and_owner_scope` | Each identity/schema mismatch, remote races, absent/removed IDs, no version substitution; failed preparation cannot mutate publication |
 | BD-08 | `scenarios::concurrent_reads_pin_complete_pairs`, `state::tests::immutable_atomic_revisions_and_owner_scope`, `recovery_tests::uncertain_commit_requires_recovery_without_replay`, `linux::tests::restart_at_each_durable_cut`, integration `acknowledged_snapshot_survives_process_restart` | Barrier-driven reader/writer races, immutable pins, atomic commit cuts, old/new complete restart state, actual new process reopen |
 | BD-09 Board layer | `scenarios::repricing_and_removal_preserve_retained_terms` | Price 7 becomes stale after price 9/removal; retained price-7 copied terms survive owner drop; Board never accepts new terms or cancels work |
-| BD-09 quote integration | Deferred | Actual quote acceptance, charge/refusal and durable accepted-invocation obligations require Services and Peer Protocol; not marked passed by a test-owned terms copy |
+| BD-09 quote integration | [Services evidence](../services/ACCEPTANCE.md) | Real Board selection/current-quote checks, coordinator holds/charges and durable accepted work now pass in Services; actual network exchange and wire quote encoding remain Peer Protocol work |
 | BD-10 | `cache::tests::provenance_expiry_and_capacity`, `remote_selection_requires_direct_provenance`, `response::tests::exact_response_limits`, `bd01_bd03_bd10_multiple_ids_and_array_order` | Trusted direct vs forwarded provenance, exact complete response bounds, no array priority; reordering leaves explicit selection unchanged |
 
 ## Shared boundary assertions
@@ -93,8 +93,9 @@ same-version definitions, withdrawn capabilities, unpinned cache replacement and
 private record envelope arithmetic/declared-length rejection. Complete API examples
 run as rustdoc tests. Updated public companions describe the resulting contracts.
 
-Quote/payment integration remains the deferred BD-09 row above. Ledger is next;
-this module does not register a fake service or establish minimum-node conformance.
+The later Services evidence supplements the original BD-09 Board-layer result
+with real local coordination; network quote/payment exchange remains deferred.
+This module does not register a fake service or establish minimum-node conformance.
 
 `scenarios::known_contract_cannot_be_redefined_by_schema` verifies that schema
 structural validity cannot redefine a known service/version: the explicit trusted

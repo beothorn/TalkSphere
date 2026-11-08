@@ -59,16 +59,19 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   snapshots, using Services schema formats without requiring its runtime.
   Direct-call implementation and Linux persistence are complete; validate consistency,
   unknown metadata and unsupported required semantics with the
-  [Board evidence matrix](../src/modules/board/ACCEPTANCE.md). BD-09 quote/payment
-  integration remains explicitly deferred to Services/Peer Protocol.
+  [Board evidence matrix](../src/modules/board/ACCEPTANCE.md). BD-09 local quote/payment
+  integration is supplemented by Services; network exchange remains Peer Protocol work.
 - [x] **7. [Ledger module](6_Ledger_module/PLAN.md).** Implement exact issuer-specific balances, trust,
   finite grants, bounded reservations, settlement, transfer/claim controls,
   durable state and replay protection. Direct-call implementation, protected Linux
   persistence, inspection and [Ledger evidence](../src/modules/ledger/ACCEPTANCE.md)
-  cover concurrent spending and restart; real Services/network integration remains later.
-- [ ] **8. [Services module](7_Services_module/PLAN.md).** Implement typed schemas, handler registration,
+  cover concurrent spending and restart; Services now verifies actual local coordination, while network integration remains later.
+- [x] **8. [Services module](7_Services_module/PLAN.md).** Implement typed schemas, handler registration,
   authority, quotes/pricing, provided/wanted roles and durable coordination
-  with Board/Ledger through contracts. Test failures and unknown outcomes.
+  with Board/Ledger through contracts. Local direct/serialized coordination, protected
+  recovery and [acceptance evidence](../src/modules/services/ACCEPTANCE.md) are complete;
+  the paid-check timeout ambiguity in upstream issue #10 remains explicit. Network
+  application binding and standard-family providers remain later milestones.
 - [ ] **9. Peer Control / Peer Protocol module.** Bind metadata, quotes, service
   invocation and ledger control to Transport streams. Implement canonical
   records, detached bodies and exact value codecs; match encoding vectors and
