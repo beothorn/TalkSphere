@@ -78,3 +78,8 @@ pub mod journal;
 #[path = "tests/journal.rs"]
 mod journal_tests;
 pub mod persistence;
+
+#[cfg(target_os = "linux")]
+pub mod linux;
+#[cfg(target_os = "linux")]
+mod record_codec;

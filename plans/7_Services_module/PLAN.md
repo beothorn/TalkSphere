@@ -22,7 +22,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **12.** Validate the Computation metering exception.
 - [x] **13.** Bind quote acceptance to exact terms and context.
 - [ ] **14.** Define durable coordinator records and storage outcomes.
-- [ ] **15.** Implement protected local coordinator persistence.
+- [x] **15.** Implement protected local coordinator persistence.
 - [ ] **16.** Reserve Ledger capacity for accepted invocations.
 - [ ] **17.** Validate complete input through bounded body references.
 - [ ] **18.** Journal execution attempts before dispatching work.
@@ -185,6 +185,8 @@ Step 14 progress: exclusive atomic complete-image persistence, identity/authorit
 ### 15. Implement protected local coordinator persistence
 
 Add a Services-owned Linux persistence adapter with owner-only storage, no-follow access, exclusive writer coordination and synchronized atomic updates. Use existing public platform contracts or deliberate focused helpers, never another module's private store or paid Storage. Test real reopen, corrupt/wrong-identity data, symlinks, permissions, contention and failures before/after durable replacement. Unsupported platforms must fail explicitly.
+
+Step 15 completed: Services-owned Linux store now validates owner-only anchored directories/files, rejects symlinks, retains exclusive writer locking and acknowledges synchronized atomic snapshots. Framing/version/size checks, reopen, contention and all five write/sync cuts pass. This verifies simulated filesystem cuts, not physical power loss. Required checks pass; production coverage 9917/10340 = 95.91%.
 
 ### 16. Reserve Ledger capacity for accepted invocations
 
