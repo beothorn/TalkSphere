@@ -872,6 +872,59 @@ impl<P: Persistence> Coordinator<P> {
         self.accounting.payment_problem(context, key, unknown)
     }
 
+    /// Run the installed requester-local verifier on original retained evidence without spending or refunds.
+    /// Private expectations are borrowed for this call and never persisted or sent to a provider.
+    /// # Errors
+    /// Authority, malformed input and unusable contracts remain explicit; unavailable evidence is Inconclusive.
+    pub fn verify(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+        expectations: Option<&Value>,
+    ) -> Result<super::handler::Check, Error> {
+        tracing::trace!("Running requester-local verification without financial side effects");
+        let state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Observe, &state)?;
+        let op = state.records.get(&key).ok_or(Error::Denied)?;
+        if op.phase != Phase::Committed {
+            return Ok(super::handler::Check::Inconclusive);
+        }
+        let bytes = expectations
+            .map(|v| {
+                v.byte_len(Budget {
+                    depth: 31,
+                    nodes: self.config.limits.nodes,
+                    bytes: self.config.limits.state_bytes,
+                })
+            })
+            .transpose()?
+            .unwrap_or(0);
+        context.check(
+            &self.config.authority,
+            self.config.local,
+            Action::Observe,
+            bytes,
+        )?;
+        let Some(input) = &op.input else {
+            return Ok(super::handler::Check::Inconclusive);
+        };
+        let Some(completion) = &op.completion else {
+            return Ok(super::handler::Check::Inconclusive);
+        };
+        let accepted =
+            super::handler::Blob::new(op.terms.accepted.clone(), self.config.limits.state_bytes)?;
+        match state
+            .pins
+            .get(&key)
+            .ok_or(Error::Unavailable)?
+            .requester()
+            .verify(input, &accepted, &completion.output, expectations)
+        {
+            Err(Error::Unavailable | Error::Unknown) => Ok(super::handler::Check::Inconclusive),
+            result => result,
+        }
+    }
+
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.
     /// # Errors
     /// Requires Observe authority and reconciled complete coordinator state.

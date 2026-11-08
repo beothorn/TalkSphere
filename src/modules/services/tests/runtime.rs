@@ -281,6 +281,28 @@ fn durable_binding_and_real_reservation() {
     assert_eq!(l.view(&rc, requester).unwrap().issued, 93);
     assert_eq!(l.available(&rc, requester, false), Ok(93));
     assert_eq!(
+        runtime.verify(&context(&observe), key, None),
+        Ok(super::handler::Check::Inconclusive)
+    );
+    assert_eq!(
+        runtime.verify(
+            &context(&observe),
+            key,
+            Some(&Value::String("input".into()))
+        ),
+        Ok(super::handler::Check::Pass)
+    );
+    assert_eq!(
+        runtime.verify(
+            &context(&observe),
+            key,
+            Some(&Value::String("wrong".into()))
+        ),
+        Ok(super::handler::Check::Fail)
+    );
+    assert_eq!(l.view(&rc, requester).unwrap().issued, 93);
+    assert_eq!(l.view(&rc, requester).unwrap().trust.millionths(), 1);
+    assert_eq!(
         runtime.abort(&context(&coordinate), key),
         Err(Error::Conflict)
     );

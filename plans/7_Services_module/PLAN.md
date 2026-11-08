@@ -33,7 +33,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **23.** Abort uncommitted work without erasing obligations.
 - [x] **24.** Recover coordination across every durable failure cut.
 - [x] **25.** Track payment state separately from completed work.
-- [ ] **26.** Run requester-local checks without side effects.
+- [x] **26.** Run requester-local checks without side effects.
 - [ ] **27.** Coordinate paid evidence and included check entitlements.
 - [ ] **28.** Drain handlers while preserving accepted recovery paths.
 - [ ] **29.** Bound retention without discarding recovery obligations.
@@ -251,6 +251,8 @@ Step 25 completed: Services exposes original Ledger payment observations, explic
 ### 26. Run requester-local checks without side effects
 
 Invoke registered verifiers with original input, immutable terms, complete result and locally held expectations. Return pass/fail/inconclusive, including missing evidence/resources, and reject remote requests for local-only checks. Test that provider assertions cannot establish pass and no check implicitly spends, refunds or updates trust. Retain only authorized bounded evidence and respect independent requester codec support.
+
+Step 26 completed: local verification uses retained original input/terms/output and privately borrowed expectations. Pass/fail/inconclusive are requester-computed; no provider call, spending, refund or trust update occurs. Real Ledger balances/trust remain unchanged across all outcomes. Missing successful evidence or unavailable verification is inconclusive. Required checks pass; production coverage 11111/11687 = 95.07%.
 
 ### 27. Coordinate paid evidence and included check entitlements
 

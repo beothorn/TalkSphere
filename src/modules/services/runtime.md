@@ -106,3 +106,10 @@ validates provenance and exact roles/ID/gross/net/fee and applies evidence once.
 payment_problem records refusal or delivery uncertainty without changing service
 Phase, erasing results or executing again. Issuer networking/signing remains an
 explicit later Peer Protocol/Identity composition responsibility.
+
+verify invokes only the installed requester-local verifier with original input,
+accepted terms, retained complete output and optionally borrowed local expectations.
+It never calls a provider, reserves money, refunds work or changes trust. Missing
+successful evidence or unavailable verification dependencies yield Inconclusive.
+The requester computes Pass/Fail; provider assertions alone cannot establish it.
+Expectations are neither journaled nor transmitted and remain caller-owned.
