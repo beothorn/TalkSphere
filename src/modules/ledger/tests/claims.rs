@@ -50,6 +50,14 @@ fn finite_creation() {
         .create_claim(&context(&admin), [1; 32], 7, Some(b), &mut entropy)
         .unwrap();
     assert_eq!(claim.id(), [4; 32]);
+    assert_eq!(
+        ledger.inner.lock().unwrap().state.claims[&[4; 32]]
+            .hash
+            .as_slice(),
+        crate::modules::cryptography::test_support::hex(
+            "f849d67325facf04177bc663b2dc544051831c589ef581d412f2eba44834e77c"
+        )
+    );
     assert_eq!(claim.amount(), 7);
     assert_eq!(
         ledger.claim_creation(&context(&admin), [1; 32]),

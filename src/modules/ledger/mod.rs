@@ -97,3 +97,7 @@ mod protected_adapters;
 mod security;
 
 pub mod inspection;
+
+#[cfg(test)]
+#[path = "tests/acceptance.rs"]
+mod acceptance;

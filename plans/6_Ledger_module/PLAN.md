@@ -39,7 +39,7 @@ settlement and durable transfer/claim replay records.
 - [x] **29.** Verify races across every shared accounting resource.
 - [x] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
 - [x] **31.** Expose bounded local Ledger inspection with discoverable help.
-- [ ] **32.** Complete the Ledger acceptance matrix through public contracts.
+- [x] **32.** Complete the Ledger acceptance matrix through public contracts.
 - [ ] **33.** Publish Ledger documentation and the Services handoff.
 
 ## Reference baseline and scope
@@ -471,6 +471,8 @@ paths. LG-13 uses the real Ledger participant with the simulated coordinator fro
 step16; full Services SV-09 and Peer Protocol network controls remain named later
 integration obligations. Confirm new protocol issues are linked/reported and
 upstream fixes verified; do not mark missing integration or vectors as passed.
+
+Completed step 32: Completed assertion-level LG01–LG13 and shared-contract evidence with literal two-party/internal price7, exact uint64 spending/headroom, finite grant5 bootstrap, real signed fee acceptance/replay, zero-fee transfer and independent claim-hash oracle tests. Documented direct-call/Linux scope and deferred real Services/network integration without claiming node conformance. Required checks pass; production line coverage 8779/9150 = 95.95%.
 
 ### 33. Completion and handoff
 

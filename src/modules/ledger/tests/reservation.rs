@@ -789,18 +789,24 @@ fn issuer_payment_evidence() {
             Receipt::authenticated(&context(&control), auth.clone(), local, c, result.clone())
                 .is_err()
         );
-        for mutation in 0..5 {
+        for mutation in 0..6 {
             let mut changed = result.clone();
             match mutation {
                 0 => changed.order.owner = u,
                 1 => changed.order.new_owner = u,
                 2 => changed.order.transfer_id = [8; 16],
                 3 => changed.order.amount = 10,
-                _ => changed.fee = 1,
+                4 => changed.fee = 1,
+                _ => changed.order.issuer = u,
             };
-            let receipt =
-                Receipt::authenticated(&context(&evidence), auth.clone(), local, c, changed)
-                    .unwrap();
+            let receipt = Receipt::authenticated(
+                &context(&evidence),
+                auth.clone(),
+                local,
+                changed.order.issuer,
+                changed,
+            )
+            .unwrap();
             assert!(
                 ledger
                     .confirm_payment(&context(&coord), key, &receipt)
