@@ -7,3 +7,5 @@ pub mod identity;
 pub mod server;
 
 pub mod logging;
+
+pub mod services;

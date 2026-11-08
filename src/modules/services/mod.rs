@@ -103,3 +103,6 @@ mod recovery_tests;
 #[path = "tests/checks.rs"]
 mod check_tests;
 pub mod checks;
+#[cfg(test)]
+#[path = "tests/lifecycle.rs"]
+mod lifecycle_tests;

@@ -810,3 +810,51 @@ fn third_party_payment_is_independent() {
         Err(Error::Conflict)
     );
 }
+
+// Draining excludes new work but cannot discard the exact code needed by an accepted reservation.
+#[test]
+fn accepted_work_survives_handler_drain() {
+    let family = Arc::new(super::test_support::family::Echo::new());
+    let Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    } = runtime_with_family(family.clone());
+    let local = IdentityId([2; 32]);
+    let coordinate = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&coordinate);
+    let key = runtime
+        .admit(&c, accepted(a.clone(), &r, 1, 1), Payment::default())
+        .unwrap();
+    runtime
+        .supply_input(&c, key, Value::String("input".into()))
+        .unwrap();
+    let register = a.grant(local, Action::Register, 1_000_000).unwrap();
+    r.drain(&context(&register), "org.example.echo", 1).unwrap();
+    assert!(r.select("org.example.echo", 1, true).is_err());
+    runtime.start(&c, key).unwrap();
+    assert_eq!(runtime.resume(&c, key), Ok(Phase::Committed));
+    assert_eq!(
+        family.executions.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    assert_eq!(
+        l.view(
+            &ledger::contract::Context {
+                version: 1,
+                grant: &read,
+                deadline: c.deadline,
+                cancelled: false
+            },
+            IdentityId([1; 32])
+        )
+        .unwrap()
+        .issued,
+        93
+    );
+}

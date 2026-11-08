@@ -35,7 +35,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **25.** Track payment state separately from completed work.
 - [x] **26.** Run requester-local checks without side effects.
 - [x] **27.** Coordinate paid evidence and included check entitlements.
-- [ ] **28.** Drain handlers while preserving accepted recovery paths.
+- [x] **28.** Drain handlers while preserving accepted recovery paths.
 - [ ] **29.** Bound retention without discarding recovery obligations.
 - [ ] **30.** Verify contracts through a bounded serialized adapter.
 - [ ] **31.** Verify concurrent invocation and authority isolation.
@@ -307,3 +307,5 @@ assessments, requester-only wanted dispatch and original-peer complete-result/fa
 events. No local provider installation or automatic peer retry occurs. Unknown
 remote outcomes retain holds; valid received results settle finite local issuance.
 Required checks pass; production coverage 10978/11513 = 95.35%.
+
+Step 28 completed: composition unpublishes before draining, retained pins finish accepted work, and startup explicitly gates missing recovery providers. Required checks pass; production coverage 11728/12472 = 94.03%.

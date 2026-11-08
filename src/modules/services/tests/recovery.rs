@@ -426,3 +426,79 @@ fn fresh_process_recovers_pending_commit() {
     drop(h);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+// Missing provider recovery code gates startup instead of substituting a requester-only codec for accepted obligations.
+#[test]
+fn missing_recovery_provider_is_explicit() {
+    let svc = stores::Services::default();
+    let accounts = stores::Ledger::default();
+    let image = Arc::new(Mutex::new(Vec::new()));
+    let h = open(svc.clone(), accounts.clone(), image, true);
+    let local = IdentityId([2; 32]);
+    let grant = h
+        .authority
+        .grant(local, Action::Coordinate, 1_000_000)
+        .unwrap();
+    let c = context(&grant);
+    h.runtime
+        .admit(
+            &c,
+            accepted(h.authority.clone(), &h.registry, 1, 1),
+            Payment::default(),
+        )
+        .unwrap();
+    drop(h);
+    let authority = Arc::new(Authority::new());
+    let requester = Arc::new(super::test_support::family::Echo::new());
+    let registry = Arc::new(
+        Registry::new(
+            local,
+            authority.clone(),
+            Limits::default(),
+            Arc::new(super::registry::NoStandards),
+        )
+        .unwrap(),
+    );
+    let registration = authority.grant(local, Action::Register, 1_000_000).unwrap();
+    registry
+        .register(&context(&registration), requester, None)
+        .unwrap();
+    let la = Arc::new(ledger::authority::Authority::new());
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let lc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    let ledger = Arc::new(
+        ledger::state::Ledger::open(local, la.clone(), accounts, Default::default(), &lc).unwrap(),
+    );
+    let coordinate = la
+        .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+        .unwrap();
+    let adapter = Arc::new(accounting::Ledger::new(
+        ledger.clone(),
+        coordinate,
+        Default::default(),
+    ));
+    let recovery = authority.grant(local, Action::Recover, 1_000_000).unwrap();
+    assert!(matches!(
+        Coordinator::open(
+            Config {
+                local,
+                authority: authority.clone(),
+                limits: Limits::default()
+            },
+            &context(&recovery),
+            svc,
+            adapter,
+            registry,
+            false
+        ),
+        Err(Error::Unavailable)
+    ));
+    assert_eq!(ledger.view(&lc, IdentityId([1; 32])).unwrap().issued, 100);
+}

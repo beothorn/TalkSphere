@@ -104,6 +104,9 @@ impl<P: Persistence> Coordinator<P> {
                 return Err(Error::Denied);
             }
             let pin = registry.recover(context, &op.service, op.version)?;
+            if op.terms.provider == config.local {
+                pin.provider().map_err(|_| Error::Unavailable)?;
+            }
             let definition = if op.check.is_some() {
                 op.check_invocation(config.limits, context.deadline)?
                     .definition

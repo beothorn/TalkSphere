@@ -24,3 +24,9 @@ for provided offerings. Wanted offerings require requester support; local input
 and spending still require invocation authority. Only cr2se.identity is built in
 as a precondition and requires trusted authentication. Unknown conditions fail.
 Failures stay typed; a conflicting registration maps to stale Board state.
+
+local_identity returns only the configured receiver ID. validate_update checks
+registration purpose/domain/bytes without effects, allowing composition to validate
+authority before unpublishing. Registry.drain alone changes registry eligibility;
+application publication writers use the serialized composition Publication facade
+to remove advertised offerings durably before disabling implementations.

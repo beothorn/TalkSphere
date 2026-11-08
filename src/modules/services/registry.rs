@@ -97,6 +97,18 @@ impl Registry {
             entries: RwLock::new(BTreeMap::new()),
         })
     }
+    /// Read the configured local receiver identity; this does not prove network authentication.
+    pub fn local_identity(&self) -> IdentityId {
+        tracing::trace!("Reading configured Services registry identity");
+        self.local
+    }
+    /// Check local registration authority without changing code or publication state.
+    /// # Errors
+    /// Foreign/revoked/wrong-purpose grants and byte overruns fail before lifecycle composition effects.
+    pub fn validate_update(&self, context: &Context<'_>, bytes: usize) -> Result<(), Error> {
+        tracing::trace!("Validating Services lifecycle authority before composition changes");
+        context.check(&self.authority, self.local, Action::Register, bytes)
+    }
     // All stateful Services receivers must share the same local authority rather than laundering foreign registrations.
     pub(crate) fn belongs_to(&self, local: IdentityId, authority: &Arc<Authority>) -> bool {
         tracing::trace!("Checking receiving registry identity and authority domain");
