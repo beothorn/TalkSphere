@@ -63,3 +63,8 @@ pub mod assessment;
 mod assessment_tests;
 
 pub mod pricing;
+
+pub mod quote;
+#[cfg(test)]
+#[path = "tests/quote.rs"]
+mod quote_tests;

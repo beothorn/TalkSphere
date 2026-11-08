@@ -20,7 +20,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **10.** Assess input metadata before accepting large bodies.
 - [x] **11.** Calculate fixed prices with checked exact arithmetic.
 - [x] **12.** Validate the Computation metering exception.
-- [ ] **13.** Bind quote acceptance to exact terms and context.
+- [x] **13.** Bind quote acceptance to exact terms and context.
 - [ ] **14.** Define durable coordinator records and storage outcomes.
 - [ ] **15.** Implement protected local coordinator persistence.
 - [ ] **16.** Reserve Ledger capacity for accepted invocations.
@@ -173,6 +173,8 @@ Step 12 completed: only cr2se.computation version1 permits accepted metering, wi
 ### 13. Bind quote acceptance to exact terms and context
 
 Retain bounded quotes, exact received or emitted quote bytes/hash, offering/definition, price mode, limits, sizes, adjustments and payment binding. Accept only matching trusted stream context and explicit requester approval; reject changed hashes, issuer, contract, expiry or terms without silent reselection. Peer Protocol supplies peer serialization and quote identifiers through its future port. Test byte-preserving binding, current-Board checks and no execution before acceptance.
+
+Step 13 completed: finite transient quotes retain exact bytes/SHA256 and are bound to original peer, requester/connection/stream and owner domain. Explicit acceptance rechecks current complete Board terms, price ceiling, expiry and authority; wrong hashes, streams, foreign brokers, duplicate acceptance, capacity and removal are tested. Disconnect releases only unaccepted state. Required checks pass; production coverage 9482/9881 = 95.96%.
 
 ### 14. Define durable coordinator records and storage outcomes
 
