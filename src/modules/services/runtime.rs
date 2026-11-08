@@ -215,6 +215,13 @@ impl<P: Persistence> Coordinator<P> {
         };
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
+        if state
+            .records
+            .values()
+            .any(|o| matches!(o.phase, Phase::Commit | Phase::Abort))
+        {
+            return Err(Error::Unknown);
+        }
         let installed = if let Some(pin) = state.pins.get(&key) {
             pin.clone()
         } else {
@@ -331,6 +338,13 @@ impl<P: Persistence> Coordinator<P> {
         }
         if op.phase != Phase::Reserved {
             return Err(Error::Conflict);
+        }
+        if state
+            .records
+            .values()
+            .any(|o| matches!(o.phase, Phase::Commit | Phase::Abort))
+        {
+            return Err(Error::Unknown);
         }
         let input = op.input.clone().ok_or(Error::Invalid)?;
         let invocation = op.invocation(self.config.limits)?;
@@ -477,6 +491,73 @@ impl<P: Persistence> Coordinator<P> {
             (_, Decision::Abort) => op.phase = Phase::Abort,
         }
         self.save(context, &mut state, op)
+    }
+
+    /// Deliver an already recorded commit to every prepared participant without repeating execution.
+    /// # Errors
+    /// Missing/contradictory decisions and dependency loss preserve pending commitment; success requires all acknowledgements.
+    pub fn commit(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
+        tracing::trace!("Delivering recorded Services commit to all local participants");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.phase == Phase::Committed {
+            return Ok(());
+        }
+        if op.phase != Phase::Commit {
+            return Err(Error::Conflict);
+        }
+        let completion = op.completion.as_ref().ok_or(Error::Invalid)?;
+        let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
+        let token = op.handler.as_ref().ok_or(Error::Invalid)?;
+        match provider.status(key)? {
+            super::handler::Status::Committed => {}
+            super::handler::Status::Prepared(original) if &original == token => {
+                provider.commit(key, token)?
+            }
+            _ => return Err(Error::Unknown),
+        }
+        match self.accounting.status(context, key)? {
+            Some(crate::modules::ledger::reservation::Status::Committed) => {}
+            Some(crate::modules::ledger::reservation::Status::Prepared) => self.accounting.commit(
+                context,
+                key,
+                &op.terms,
+                completion.price,
+                &op.reference(self.config.limits)?,
+            )?,
+            _ => return Err(Error::Unknown),
+        }
+        if !matches!(provider.status(key)?, super::handler::Status::Committed)
+            || self.accounting.status(context, key)?
+                != Some(crate::modules::ledger::reservation::Status::Committed)
+        {
+            return Err(Error::Unknown);
+        }
+        op.phase = Phase::Committed;
+        self.save(context, &mut state, op)
+    }
+
+    /// Return a retained complete result only after all local effects are durably acknowledged.
+    /// Payment completion and remote receipt remain independent of this local outcome.
+    /// # Errors
+    /// Pending/uncertain work returns Unknown; aborted work conflicts and authority remains required.
+    pub fn result(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+    ) -> Result<super::handler::Completion, Error> {
+        tracing::trace!("Reading locally committed retained Services result");
+        let state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Observe, &state)?;
+        let op = state.records.get(&key).ok_or(Error::Denied)?;
+        if matches!(op.phase, Phase::Abort | Phase::Aborted) {
+            return Err(Error::Conflict);
+        }
+        if op.phase != Phase::Committed {
+            return Err(Error::Unknown);
+        }
+        op.completion.clone().ok_or(Error::Invalid)
     }
 
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.

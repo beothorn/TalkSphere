@@ -236,6 +236,30 @@ fn durable_binding_and_real_reservation() {
         Ok(Some(Phase::Commit))
     );
     assert!(matches!(
+        runtime.result(&context(&observe), key),
+        Err(Error::Unknown)
+    ));
+    assert!(matches!(
+        runtime.admit(
+            &context(&coordinate),
+            accepted(a.clone(), &r, 2, 1),
+            Payment::default()
+        ),
+        Err(Error::Unknown)
+    ));
+    runtime.commit(&context(&coordinate), key).unwrap();
+    runtime.commit(&context(&coordinate), key).unwrap();
+    assert_eq!(
+        runtime.status(&context(&observe), key),
+        Ok(Some(Phase::Committed))
+    );
+    let result = runtime.result(&context(&observe), key).unwrap();
+    assert_eq!(result.output, Value::String("input".into()));
+    assert_eq!(result.result.bytes(), b"input");
+    assert_eq!(result.price, 7);
+    assert_eq!(l.view(&rc, requester).unwrap().issued, 93);
+    assert_eq!(l.available(&rc, requester, false), Ok(93));
+    assert!(matches!(
         runtime.admit(
             &context(&observe),
             accepted(a, &r, 2, 1),

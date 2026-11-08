@@ -51,3 +51,15 @@ allowed only from Prepared with retained complete output and participant tokens.
 Exact decision repetition is idempotent; opposite decisions conflict before any
 participant delivery. Abort can resolve uncommitted work but can never replace
 Commit/Committed. A decision is independent of peer receipt and payment status.
+
+commit requires a previously recorded Commit. It queries original participant
+status, skips already committed effects and delivers only matching prepared
+effects. Missing/contradictory participant state is Unknown; it never creates a
+replacement obligation after losing history. It enters Committed only after both
+participants acknowledge durable commitment. Lost replies retain Commit for
+status recovery and decision replay, without execution or duplicate charges.
+
+result requires Observe and returns owned complete output only from Committed;
+pending states are Unknown and aborted work conflicts. Admission/new execution
+is conservatively gated while any decision awaits delivery. This sacrifices local
+availability to avoid successful partial work or conflicting resource observations.

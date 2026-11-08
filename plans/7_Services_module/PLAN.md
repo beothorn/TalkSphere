@@ -29,7 +29,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **19.** Validate outputs and retain complete results durably.
 - [x] **20.** Prepare handler and Ledger effects through public contracts.
 - [x] **21.** Persist one immutable commit or abort decision.
-- [ ] **22.** Deliver commit decisions without duplicate effects.
+- [x] **22.** Deliver commit decisions without duplicate effects.
 - [ ] **23.** Abort uncommitted work without erasing obligations.
 - [ ] **24.** Recover coordination across every durable failure cut.
 - [ ] **25.** Track payment state separately from completed work.
@@ -227,6 +227,8 @@ Step 21 completed: immutable decision recording permits commit only after comple
 ### 22. Deliver commit decisions without duplicate effects
 
 Deliver the recorded commit using exact participant tokens and recover acknowledgements through status. Report local success only when all required local effects and result retention are durable. Gate conflicting access while a participant is unresolved and release unused metered capacity through Ledger. Test both delivery orders, duplicate delivery, one unavailable participant and exactly one resource/price effect; local completion is not proof of remote receipt.
+
+Step 22 completed: commit delivery queries original participant status, skips committed effects, delivers only matching preparations and acknowledges terminal success only after both durable statuses. New admission/execution gates incomplete decisions; retained results remain Unknown before completion. Real Ledger credit100 becomes93 once across duplicate delivery, with exact retained output/price7. Required checks pass; production coverage 10680/11252 = 94.92%.
 
 ### 23. Abort uncommitted work without erasing obligations
 
