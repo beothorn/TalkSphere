@@ -97,6 +97,67 @@ pub(super) fn decode(
     Ok(records)
 }
 impl Operation {
+    // Reconstruct explicit public handler contracts without exposing this private record representation.
+    pub(super) fn invocation(&self, limits: Limits) -> Result<super::handler::Invocation, Error> {
+        tracing::trace!("Reconstructing exact public invocation contract from retained binding");
+        let value = codec::decode(&self.terms.accepted, budget(limits), limits.state_bytes)?;
+        let Value::Array(fields) = value else {
+            return Err(Error::Invalid);
+        };
+        if fields.len() != 5 || bytes(&fields[1])? != self.definition {
+            return Err(Error::Invalid);
+        }
+        let publisher = IdentityId(fixed(&fields[3])?);
+        let wanted = boolean(&fields[4])?;
+        let source = crate::modules::board::document::Document::parse(
+            &bytes(&fields[2])?,
+            Default::default(),
+        )
+        .map_err(|_| Error::Invalid)?;
+        let root = if wanted {
+            serde_json::json!({"version":1,"providedServices":[],"wantedServices":[source.value()]})
+        } else {
+            serde_json::json!({"version":1,"providedServices":[source.value()],"wantedServices":[]})
+        };
+        let board = crate::modules::board::offering::Board::parse(
+            root.to_string().as_bytes(),
+            Default::default(),
+        )
+        .map_err(|_| Error::Invalid)?;
+        let offering = board.offerings.into_values().next().ok_or(Error::Invalid)?;
+        if offering.service != self.service
+            || offering.version != self.version
+            || offering.issuer != self.terms.issuer
+            || (wanted && publisher != self.terms.requester)
+            || (!wanted && publisher != self.terms.provider)
+        {
+            return Err(Error::Invalid);
+        }
+        let definition = crate::modules::board::definition::Definition::parse(
+            &self.definition,
+            &offering,
+            Default::default(),
+        )
+        .map_err(|_| Error::Invalid)?;
+        let quote = Blob::new(bytes(&fields[0])?, limits.state_bytes)?;
+        if quote.bytes().is_empty() {
+            return Err(Error::Invalid);
+        }
+        Ok(super::handler::Invocation {
+            key: self.key,
+            requester: self.terms.requester,
+            provider: self.terms.provider,
+            accepted: Blob::new(self.terms.accepted.clone(), limits.state_bytes)?,
+            maximum: self.terms.maximum,
+            publisher,
+            issuer: self.terms.issuer,
+            offering,
+            definition,
+            quote,
+            factors: self.factors.clone(),
+            pricing: self.pricing,
+        })
+    }
     // Serialize every immutable binding, retained input/result and preparation token explicitly.
     fn value(&self) -> Result<Value, Error> {
         let price = match self.pricing {

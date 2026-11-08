@@ -198,6 +198,15 @@ fn durable_binding_and_real_reservation() {
     assert_eq!(l.available(&rc, requester, false), Ok(93));
     assert_eq!(l.view(&rc, requester).unwrap().issued, 100);
     assert_eq!(runtime.reserve(&context(&coordinate), key), Ok(()));
+    assert_eq!(runtime.start(&context(&coordinate), key), Ok(()));
+    assert_eq!(
+        runtime.start(&context(&coordinate), key),
+        Err(Error::Unknown)
+    );
+    assert_eq!(
+        runtime.status(&context(&observe), key),
+        Ok(Some(Phase::Executing))
+    );
     assert!(matches!(
         runtime.admit(
             &context(&observe),

@@ -40,3 +40,8 @@ accepted metadata and finite Budget. The conservative default requires identical
 metadata/input after complete schema/semantic validation. Body-bearing families
 must explicitly validate their own length/hash/content relations in an override;
 descriptions cannot relax this requirement.
+
+Invocation exposes publisher, issuer, complete public Offering/Definition, original
+quote, accepted pricing and factors explicitly. Handlers must not decode Services'
+private journal/binding format to reconstruct their contracts. These copies remain
+immutable at execution even if the Board or registry changes.

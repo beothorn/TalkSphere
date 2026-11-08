@@ -25,7 +25,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **15.** Implement protected local coordinator persistence.
 - [x] **16.** Reserve Ledger capacity for accepted invocations.
 - [x] **17.** Validate complete input through bounded body references.
-- [ ] **18.** Journal execution attempts before dispatching work.
+- [x] **18.** Journal execution attempts before dispatching work.
 - [ ] **19.** Validate outputs and retain complete results durably.
 - [ ] **20.** Prepare handler and Ledger effects through public contracts.
 - [ ] **21.** Persist one immutable commit or abort decision.
@@ -203,6 +203,8 @@ Step 17 completed: bounded ordered bodies reject gaps, overlap, missing/excess b
 ### 18. Journal execution attempts before dispatching work
 
 Persist an execution-attempt marker before invoking the selected handler with immutable accepted terms and complete input. Ensure concurrent or duplicate local messages cannot execute twice. Recover staged work through handler status; never restart an external side effect after an ambiguous reply. Test explicit failure versus unknown execution, changed operation bindings and a new stream with identical input as a distinct attempt.
+
+Step 18 completed: execution requires reserved complete input and persists an Executing marker before dispatch. Retried starts in Executing return Unknown without running again. Handlers now receive explicit public offering/definition, quote, factors and price snapshots rather than needing coordinator-private decoding. Real Board/Ledger integration verifies lifecycle and preserved uncharged holds. Required checks pass; production coverage 10464/11047 = 94.72%.
 
 ### 19. Validate outputs and retain complete results durably
 

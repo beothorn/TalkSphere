@@ -46,6 +46,13 @@ fn public_lifecycle_and_checks() {
         provider: b,
         accepted: accepted.clone(),
         maximum: 7,
+        publisher: b,
+        issuer: b,
+        offering: offering(false),
+        definition: family.definition().clone(),
+        quote: accepted.clone(),
+        factors: Value::Object(vec![]),
+        pricing: super::pricing::Price::Fixed(7),
     };
     let c = family.execute(&i, &input).unwrap();
     assert_eq!(c.output, input);
@@ -101,6 +108,13 @@ fn participant_refusals() {
         provider: IdentityId([2; 32]),
         accepted: Blob::new(vec![1], 1).unwrap(),
         maximum: 7,
+        publisher: IdentityId([2; 32]),
+        issuer: IdentityId([2; 32]),
+        offering: offering(false),
+        definition: f.definition().clone(),
+        quote: Blob::new(vec![1], 1).unwrap(),
+        factors: Value::Object(vec![]),
+        pricing: super::pricing::Price::Fixed(7),
     };
     assert!(matches!(
         f.execute(&i, &Value::Bool(false)),

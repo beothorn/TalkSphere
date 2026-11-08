@@ -84,15 +84,8 @@ impl<P: Persistence> Coordinator<P> {
                 return Err(Error::Denied);
             }
             let pin = registry.recover(context, &op.service, op.version)?;
-            let document = crate::modules::board::document::Document::parse(
-                &op.definition,
-                Default::default(),
-            )
-            .map_err(|_| Error::Invalid)?;
-            let definition = crate::modules::board::definition::Definition {
-                document,
-                support: super::schema::Support::Known,
-            };
+            let invocation = op.invocation(config.limits)?;
+            let definition = invocation.definition;
             if !pin.requester().definition().same_contract(&definition) {
                 return Err(Error::Unsupported);
             }
@@ -305,6 +298,40 @@ impl<P: Persistence> Coordinator<P> {
             .validate_input(&op.metadata, &input, budget)?;
         op.input = Some(input);
         self.save(context, &mut state, op)
+    }
+
+    /// Persist one execution-attempt marker before dispatching the already reserved complete input.
+    /// Success here means dispatch completed, not validated service success or payment.
+    /// # Errors
+    /// An Executing retry returns Unknown and never re-executes; wrong phase/input, dependency or storage failures propagate.
+    pub fn start(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
+        tracing::trace!("Journaling service execution attempt before dispatch");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.phase == Phase::Executing {
+            return Err(Error::Unknown);
+        }
+        if matches!(
+            op.phase,
+            Phase::Staged | Phase::Prepared | Phase::Commit | Phase::Committed
+        ) {
+            return Ok(());
+        }
+        if op.phase != Phase::Reserved {
+            return Err(Error::Conflict);
+        }
+        let input = op.input.clone().ok_or(Error::Invalid)?;
+        let invocation = op.invocation(self.config.limits)?;
+        op.phase = Phase::Executing;
+        self.save(context, &mut state, op)?;
+        state
+            .pins
+            .get(&key)
+            .ok_or(Error::Unavailable)?
+            .provider()?
+            .execute(&invocation, &input)
+            .map(|_| ())
     }
 
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.

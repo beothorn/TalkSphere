@@ -26,3 +26,8 @@ requester validates accepted metadata, schema, content and original byte limit.
 Exact local re-delivery reuses the retained value; changed delivery conflicts.
 Malformed input leaves the hold uncharged and never executes. Body fragments must
 first complete through bounded Body ownership or an equivalent validated adapter.
+
+start durably records Executing before calling the pinned provider with complete
+input and explicit public invocation contracts. A repeated Executing call returns
+Unknown and does not execute again. Acknowledged dispatch is not validated success;
+completion/status recovery must establish the staged result and subsequent decision.

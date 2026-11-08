@@ -70,6 +70,20 @@ pub struct Invocation {
     pub accepted: Blob,
     /// Accepted fixed price or maximum metered price.
     pub maximum: u64,
+    /// Publisher retained from the original Board selection.
+    pub publisher: IdentityId,
+    /// Exact issuer of accepted payment credits.
+    pub issuer: IdentityId,
+    /// Immutable public offering contract; handlers never decode coordinator-private records.
+    pub offering: Offering,
+    /// Complete matching public definition retained at acceptance.
+    pub definition: Definition,
+    /// Exact original quote bytes from the trusted peer adapter.
+    pub quote: Blob,
+    /// Explicit provider factors retained at acceptance.
+    pub factors: Value,
+    /// Exact accepted price formula or fixed charge.
+    pub pricing: super::pricing::Price,
 }
 /// Complete staged output, invisible as successful work until coordinator commitment.
 #[derive(Clone)]
