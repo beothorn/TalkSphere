@@ -114,6 +114,8 @@ Define versioned local contracts, typed failures, caller/peer identity provenanc
 
 Provide test-owned custom handlers, immutable Board selections, controlled clocks, body sources and durable failure scripts with independently specified outputs. Reuse real Ledger fixtures where applicable. Self-test exhaustion and refusal behavior, track assess/execute/prepare/commit calls, and restart from durable bytes only. Use barriers for races and explicit boundary cuts rather than timing sleeps; helpers must never become production handlers.
 
+Step 3 progress: deterministic atomic-register cuts, explicit clock and generic reply/call-count scripts are implemented and self-tested. Typed handler lifecycle and Board-selection adapters remain pending, so this step is unchecked.
+
 ### 4. Represent the complete logical value vocabulary exactly
 
 Introduce bounded logical booleans, signed and unsigned 32/64-bit integers, binary32/binary64, UTF-8 strings, bytes, objects and arrays. Preserve float bits including signed zero and explicitly permitted nonfinite values; never route integers through floating point. Distinguish absent fields from null. Test literal SV-02 extrema and invalid representations; Peer Protocol retains ownership of canonical peer encodings.

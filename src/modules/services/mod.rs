@@ -28,3 +28,7 @@ pub enum Error {
     /// A required local dependency is unavailable.
     Unavailable,
 }
+
+#[cfg(test)]
+mod test_support;
+
