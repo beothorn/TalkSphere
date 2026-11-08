@@ -51,3 +51,8 @@ mod registry_tests;
 #[cfg(test)]
 #[path = "tests/selection.rs"]
 mod selection_tests;
+
+pub mod authorization;
+#[cfg(test)]
+#[path = "tests/authorization.rs"]
+mod authorization_tests;

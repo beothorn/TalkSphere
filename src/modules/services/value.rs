@@ -46,6 +46,16 @@ impl Value {
         budget.depth = budget.depth.min(31);
         self.walk(0, &mut budget)
     }
+    /// Measure aggregate text, byte and field-name bytes under independent structural budgets.
+    /// # Errors
+    /// Returns the same malformed-object and admission failures as bounded.
+    pub fn byte_len(&self, mut budget: Budget) -> Result<usize, Error> {
+        tracing::trace!("Measuring bounded logical input bytes for caller authority");
+        budget.depth = budget.depth.min(31);
+        let maximum = budget.bytes;
+        self.walk(0, &mut budget)?;
+        Ok(maximum - budget.bytes)
+    }
     // Walk only bounded nesting and decrement shared aggregate budgets before visiting children.
     fn walk(&self, depth: usize, budget: &mut Budget) -> Result<(), Error> {
         if depth > budget.depth {

@@ -16,7 +16,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **6.** Define requester and provider handler contracts.
 - [x] **7.** Register exact contracts through authorized composition.
 - [x] **8.** Connect registered capabilities to Board selection.
-- [ ] **9.** Authorize provided and wanted invocation roles.
+- [x] **9.** Authorize provided and wanted invocation roles.
 - [ ] **10.** Assess input metadata before accepting large bodies.
 - [ ] **11.** Calculate fixed prices with checked exact arithmetic.
 - [ ] **12.** Validate the Computation metering exception.
@@ -149,6 +149,8 @@ Step 8 completed: actual Board publication/selection now uses the Services regis
 ### 9. Authorize provided and wanted invocation roles
 
 Derive requester/provider roles from offering direction independently of connection opener. Require an authorized local source of input and finite spending authority when a wanted publisher becomes requester. Test fabricated input, installation hints, reversed TCP direction and requester-only codecs; unsolicited offers cannot start work, load code or spend. Local same-identity work still requires explicit finite-budget authority.
+
+Step 9 completed: invocation authorization derives exact payer/provider roles from Board selection; wanted requester work requires local input and Request authority, provider work requires Invoke authority. Trusted peer and attempt bindings, installed contract equality, definition/input byte grants and value budgets are checked. Required checks pass; production coverage 9205/9590 = 95.99%.
 
 ### 10. Assess input metadata before accepting large bodies
 
