@@ -36,7 +36,7 @@ settlement and durable transfer/claim replay records.
 - [x] **26.** Redeem claims atomically with owner-bound retry results.
 - [x] **27.** Invalidate unused claims without weakening terminal replay guards.
 - [x] **28.** Preserve obligations and replay records during bounded maintenance.
-- [ ] **29.** Verify races across every shared accounting resource.
+- [x] **29.** Verify races across every shared accounting resource.
 - [ ] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
 - [ ] **31.** Expose bounded local Ledger inspection with discoverable help.
 - [ ] **32.** Complete the Ledger acceptance matrix through public contracts.
@@ -435,6 +435,8 @@ balances, finite capacity, headroom, unique payment bindings and no duplicate
 effects after retries. Test writer contention across processes and isolation
 between identities. Validate recovered invariants and explicitly document any
 conservative local rejection policy instead of implying distributed consensus.
+
+Completed step 29: Added barrier races for shared issued sources, transfers versus holds, revocations versus holds, finite issuance versus grants and duplicate commit delivery. Added separate-process writer contention; existing incoming-headroom and real claim invalidation races complete the shared-resource evidence. Required checks pass; production line coverage 8602/9002 = 95.56%.
 
 ### 30. Security and logging
 

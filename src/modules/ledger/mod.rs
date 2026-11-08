@@ -49,3 +49,7 @@ pub mod linux;
 mod record_codec;
 
 pub mod maintenance;
+
+#[cfg(test)]
+#[path = "tests/races.rs"]
+mod races;

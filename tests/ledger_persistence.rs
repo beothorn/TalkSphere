@@ -127,3 +127,10 @@ fn committed_state_survives_process_reopen() {
     assert!(result.success());
     std::fs::remove_dir_all(path).unwrap();
 }
+
+// A separately executed process cannot acquire a store while its authoritative writer remains live.
+#[test]
+fn child_writer_contention(){let Some(path)=std::env::var_os("TALKSPHERE_LEDGER_LOCK")else{return};assert!(FileStore::open(std::path::Path::new(&path),limits(),false).is_err());}
+// CLOEXEC prevents inherited descriptors from creating a false positive in the child lock check.
+#[test]
+fn exclusive_writer_across_processes(){let path=std::env::temp_dir().join(format!("talksphere-ledger-lock-{}",std::process::id()));let store=FileStore::open(&path,limits(),true).unwrap();let result=std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact","child_writer_contention"]).env("TALKSPHERE_LEDGER_LOCK",&path).status().unwrap();assert!(result.success());drop(store);std::fs::remove_dir_all(path).unwrap();}
