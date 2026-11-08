@@ -63,3 +63,9 @@ result requires Observe and returns owned complete output only from Committed;
 pending states are Unknown and aborted work conflicts. Admission/new execution
 is conservatively gated while any decision awaits delivery. This sacrifices local
 availability to avoid successful partial work or conflicting resource observations.
+
+abort delivers only an explicit stored Abort, resolving original prepared handler
+and Ledger tokens and releasing uncommitted resources once. A missing Ledger hold
+is not recreated merely to abort it. Abort cannot replace Commit/Committed; a
+cancelled call alone changes no decision or obligation. Lost participant replies
+leave Abort pending for recovery, and no service execution is retried.

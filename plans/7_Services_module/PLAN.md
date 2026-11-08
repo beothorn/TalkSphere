@@ -30,7 +30,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **20.** Prepare handler and Ledger effects through public contracts.
 - [x] **21.** Persist one immutable commit or abort decision.
 - [x] **22.** Deliver commit decisions without duplicate effects.
-- [ ] **23.** Abort uncommitted work without erasing obligations.
+- [x] **23.** Abort uncommitted work without erasing obligations.
 - [ ] **24.** Recover coordination across every durable failure cut.
 - [ ] **25.** Track payment state separately from completed work.
 - [ ] **26.** Run requester-local checks without side effects.
@@ -233,6 +233,8 @@ Step 22 completed: commit delivery queries original participant status, skips co
 ### 23. Abort uncommitted work without erasing obligations
 
 Record and deliver authorized abort for explicit uncommitted failures and release reservations, staged effects, pins and provisional bodies safely. Distinguish cancellation/deadlines before acceptance, during preparation and after a durable decision. Never abort committed work or infer rollback from disconnect. Test duplicate abort, commit-versus-cancel races and retained unknown status when a dependency cannot establish its outcome.
+
+Step 23 completed: only stored Abort decisions release original handler/Ledger preparations; committed work cannot be undone. Cancellation alone retains holds and decisions. Tests cover invalid-result abort, idempotent release and an admission failure with no Ledger hold, proving abort never creates a replacement reservation. Required checks pass; production coverage 10732/11289 = 95.07%.
 
 ### 24. Recover coordination across every durable failure cut
 

@@ -560,6 +560,54 @@ impl<P: Persistence> Coordinator<P> {
         op.completion.clone().ok_or(Error::Invalid)
     }
 
+    /// Deliver only an explicit recorded abort, releasing uncommitted resources without a charge.
+    /// # Errors
+    /// Commit decisions cannot be replaced; unavailable participants retain the abort decision for recovery.
+    pub fn abort(&self, context: &Context<'_>, key: OperationKey) -> Result<(), Error> {
+        tracing::trace!("Delivering explicit Services abort without erasing committed obligations");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.phase == Phase::Aborted {
+            return Ok(());
+        }
+        if op.phase != Phase::Abort {
+            return Err(Error::Conflict);
+        }
+        let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
+        let token = if op.handler.is_some() {
+            op.handler.clone()
+        } else {
+            match provider.status(key)? {
+                super::handler::Status::Prepared(token) => Some(token),
+                super::handler::Status::Committed => return Err(Error::Conflict),
+                _ => None,
+            }
+        };
+        provider.abort(key, token.as_ref())?;
+        let reference = if op.completion.is_some() {
+            Some(op.reference(self.config.limits)?)
+        } else {
+            None
+        };
+        let effect = match (
+            self.accounting.status(context, key)?,
+            op.completion.as_ref(),
+            reference.as_ref(),
+        ) {
+            (Some(crate::modules::ledger::reservation::Status::Prepared), Some(c), Some(r)) => {
+                Some((c.price, r.as_slice()))
+            }
+            (Some(crate::modules::ledger::reservation::Status::Committed), _, _) => {
+                return Err(Error::Conflict);
+            }
+            _ => None,
+        };
+        self.accounting.abort(context, key, &op.terms, effect)?;
+        op.phase = Phase::Aborted;
+        self.save(context, &mut state, op)
+    }
+
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.
     /// # Errors
     /// Requires Observe authority and reconciled complete coordinator state.

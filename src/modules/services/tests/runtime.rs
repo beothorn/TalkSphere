@@ -259,6 +259,10 @@ fn durable_binding_and_real_reservation() {
     assert_eq!(result.price, 7);
     assert_eq!(l.view(&rc, requester).unwrap().issued, 93);
     assert_eq!(l.available(&rc, requester, false), Ok(93));
+    assert_eq!(
+        runtime.abort(&context(&coordinate), key),
+        Err(Error::Conflict)
+    );
     assert!(matches!(
         runtime.admit(
             &context(&observe),
@@ -363,6 +367,15 @@ fn reject_invalid_completion_without_charge() {
             family.executions.load(std::sync::atomic::Ordering::SeqCst),
             1
         );
+        runtime
+            .decide(&c, key, super::runtime::Decision::Abort)
+            .unwrap();
+        runtime.abort(&c, key).unwrap();
+        runtime.abort(&c, key).unwrap();
+        assert_eq!(
+            runtime.decide(&c, key, super::runtime::Decision::Commit),
+            Err(Error::Conflict)
+        );
         let rg = la
             .grant(local, ledger::authority::Action::Read, 1_000_000)
             .unwrap();
@@ -374,4 +387,59 @@ fn reject_invalid_completion_without_charge() {
         };
         assert_eq!(l.view(&rc, IdentityId([1; 32])).unwrap().issued, 100);
     }
+}
+
+// Cancellation does not release a hold or decide rollback; explicit authorized abort is a separate durable transition.
+#[test]
+fn cancellation_and_absent_hold_abort() {
+    let Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    } = runtime_with_family(Arc::new(super::test_support::family::Echo::new()));
+    let local = IdentityId([2; 32]);
+    let g = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&g);
+    let key = runtime
+        .admit(&c, accepted(a.clone(), &r, 1, 1), Payment::default())
+        .unwrap();
+    let cancelled = Context {
+        cancelled: true,
+        ..c
+    };
+    assert_eq!(
+        runtime.decide(&cancelled, key, super::runtime::Decision::Abort),
+        Err(Error::Cancelled)
+    );
+    runtime
+        .decide(&c, key, super::runtime::Decision::Abort)
+        .unwrap();
+    runtime.abort(&c, key).unwrap();
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let rc = ledger::contract::Context {
+        version: 1,
+        grant: &read,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    assert_eq!(l.available(&rc, IdentityId([1; 32]), false), Ok(100));
+    for stream in 2..=15 {
+        runtime
+            .admit(&c, accepted(a.clone(), &r, stream, 1), Payment::default())
+            .unwrap();
+    }
+    assert_eq!(
+        runtime.admit(&c, accepted(a.clone(), &r, 16, 1), Payment::default()),
+        Err(Error::Insufficient)
+    );
+    let absent = OperationKey { stream: 16, ..key };
+    runtime
+        .decide(&c, absent, super::runtime::Decision::Abort)
+        .unwrap();
+    runtime.abort(&c, absent).unwrap();
+    assert_eq!(l.available(&rc, IdentityId([1; 32]), false), Ok(2));
 }

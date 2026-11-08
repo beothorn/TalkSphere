@@ -136,6 +136,9 @@ impl<P: Persistence> Accounting for Ledger<P> {
     ) -> Result<(), Error> {
         tracing::trace!("Delivering recorded Services abort to Ledger");
         let c = self.context(c);
+        if self.ledger.status(&c, key(k))?.is_none() {
+            return Ok(());
+        }
         let r = self.ledger.reserve(&c, key(k), t.clone(), self.policy)?;
         let token = e
             .map(|(p, e)| self.ledger.prepare(&c, &r, p, e.to_vec()))
