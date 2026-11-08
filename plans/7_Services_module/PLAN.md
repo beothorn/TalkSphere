@@ -21,7 +21,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **11.** Calculate fixed prices with checked exact arithmetic.
 - [x] **12.** Validate the Computation metering exception.
 - [x] **13.** Bind quote acceptance to exact terms and context.
-- [ ] **14.** Define durable coordinator records and storage outcomes.
+- [x] **14.** Define durable coordinator records and storage outcomes.
 - [x] **15.** Implement protected local coordinator persistence.
 - [x] **16.** Reserve Ledger capacity for accepted invocations.
 - [ ] **17.** Validate complete input through bounded body references.
@@ -180,7 +180,7 @@ Step 13 completed: finite transient quotes retain exact bytes/SHA256 and are bou
 
 Specify one authoritative writer and identity-bound accepted-attempt records containing exact terms, input identity, participant references, result retention and immutable decisions. Distinguish precommit storage failure from possible commitment. Reserve journal capacity before accepting work and gate uncertainty until recovery. Define versioning, integrity/invariant validation and explicit initialization versus open; start with a volatile test adapter and cut tests.
 
-Step 14 progress: exclusive atomic complete-image persistence, identity/authority binding, compare-and-replace, known-failure versus uncertainty gating and reload recovery are implemented. A bounded exact local value codec provides versionable image primitives. Tests cover lost acknowledgements, immutable copies, conflicts and malformed encodings. The concrete invocation-record schema is completed with runtime admission; step14 remains unchecked until that integration is verified. Required checks pass; production coverage 9749/10161 = 95.95%.
+Step 14 progress: exclusive atomic complete-image persistence, identity/authority binding, compare-and-replace, known-failure versus uncertainty gating and reload recovery are implemented. A bounded exact local value codec provides versionable image primitives. Tests cover lost acknowledgements, immutable copies, conflicts and malformed encodings. The concrete invocation-record schema is now integrated and verified with durable runtime admission, including exact retained terms, inputs/results, lifecycle prerequisites and tokens. Step14 is complete. Required checks pass; production coverage 9749/10161 = 95.95%.
 
 ### 15. Implement protected local coordinator persistence
 
