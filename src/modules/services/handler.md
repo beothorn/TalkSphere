@@ -34,3 +34,9 @@ Requester.pricing calculates exact Price from validated offering terms and provi
 factors. The default checks terms and supports only positive fixed prices; custom
 calculated models must explicitly override it. Computation metering remains subject
 to the exact service/version eligibility rules in the shared pricing validator.
+
+Requester.validate_input independently validates complete typed input against the
+accepted metadata and finite Budget. The conservative default requires identical
+metadata/input after complete schema/semantic validation. Body-bearing families
+must explicitly validate their own length/hash/content relations in an override;
+descriptions cannot relax this requirement.

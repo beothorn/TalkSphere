@@ -20,3 +20,9 @@ and single-writer serialization guard concurrent journal updates. Possibly commi
 writes gate dependent calls. Raw input/output and secrets never enter logs.
 Runtime execution, settlement and recovery transitions remain subsequent steps;
 admission alone is not successful execution or a complete Services capability.
+
+supply_input retains complete input only while Reserved, after the installed
+requester validates accepted metadata, schema, content and original byte limit.
+Exact local re-delivery reuses the retained value; changed delivery conflicts.
+Malformed input leaves the hold uncharged and never executes. Body fragments must
+first complete through bounded Body ownership or an equivalent validated adapter.

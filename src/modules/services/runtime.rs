@@ -263,6 +263,50 @@ impl<P: Persistence> Coordinator<P> {
         op.phase = Phase::Reserved;
         self.save(context, &mut state, op)
     }
+    /// Retain only complete family-validated input within the original assessed byte bound.
+    /// No execution is performed, and exact local delivery retries reuse the retained input.
+    /// # Errors
+    /// Invalid or changed content, missing holds, wrong phase and caller/storage failures reject admission.
+    pub fn supply_input(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+        input: Value,
+    ) -> Result<(), Error> {
+        tracing::trace!("Retaining complete validated input before service execution");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if matches!(op.phase, Phase::Abort | Phase::Aborted) {
+            return Err(Error::Conflict);
+        }
+        if let Some(original) = &op.input {
+            return if original == &input {
+                Ok(())
+            } else {
+                Err(Error::Conflict)
+            };
+        }
+        if op.phase != Phase::Reserved {
+            return Err(Error::Conflict);
+        }
+        let budget = Budget {
+            depth: 31,
+            nodes: self.config.limits.nodes,
+            bytes: usize::try_from(op.input_bytes)
+                .map_err(|_| Error::Limit)?
+                .min(self.config.limits.state_bytes),
+        };
+        state
+            .pins
+            .get(&key)
+            .ok_or(Error::Unavailable)?
+            .requester()
+            .validate_input(&op.metadata, &input, budget)?;
+        op.input = Some(input);
+        self.save(context, &mut state, op)
+    }
+
     /// Observe durable local lifecycle without disclosing payloads or assuming payment completion.
     /// # Errors
     /// Requires Observe authority and reconciled complete coordinator state.

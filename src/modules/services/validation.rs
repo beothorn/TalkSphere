@@ -72,11 +72,11 @@ pub trait Semantics: Send + Sync {
 /// Validate shape and then mandatory registered semantics without executing work.
 /// # Errors
 /// Propagates schema, aggregate limit and family semantic failures before dispatch.
-pub fn complete(
+pub fn complete<S: Semantics + ?Sized>(
     value: &Value,
     descriptor: &Schema,
     budget: Budget,
-    semantics: &dyn Semantics,
+    semantics: &S,
 ) -> Result<(), Error> {
     tracing::trace!("Checking logical shape and registered contract restrictions");
     validate(value, descriptor, budget, semantics.nonfinite())?;

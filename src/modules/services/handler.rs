@@ -122,6 +122,28 @@ pub trait Requester: super::validation::Semantics {
             .ok_or(Error::Unsupported)?;
         Ok(super::pricing::Price::Fixed(price))
     }
+    /// Validate complete input against schema and the previously assessed metadata.
+    /// The default permits only exact complete metadata/input equality; body-bearing families must override it.
+    /// # Errors
+    /// Rejects malformed values, exhausted limits and changed or incomplete content before execution.
+    fn validate_input(
+        &self,
+        metadata: &Value,
+        input: &Value,
+        budget: super::value::Budget,
+    ) -> Result<(), Error> {
+        tracing::trace!("Validating complete service input against accepted metadata");
+        super::validation::complete(
+            input,
+            &self.definition().document.value()["input"],
+            budget,
+            self,
+        )?;
+        if metadata != input {
+            return Err(Error::Invalid);
+        }
+        Ok(())
+    }
     /// Verify original input, agreed terms, complete evidence and local expectations.
     /// # Errors
     /// Return a typed dependency/validation failure; missing expectations should yield Inconclusive.

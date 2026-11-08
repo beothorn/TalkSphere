@@ -24,7 +24,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **14.** Define durable coordinator records and storage outcomes.
 - [x] **15.** Implement protected local coordinator persistence.
 - [x] **16.** Reserve Ledger capacity for accepted invocations.
-- [ ] **17.** Validate complete input through bounded body references.
+- [x] **17.** Validate complete input through bounded body references.
 - [ ] **18.** Journal execution attempts before dispatching work.
 - [ ] **19.** Validate outputs and retain complete results durably.
 - [ ] **20.** Prepare handler and Ledger effects through public contracts.
@@ -197,6 +197,8 @@ Step 16 completed: durable admission retains exact quote/Board/definition/publis
 ### 17. Validate complete input through bounded body references
 
 Consume accepted bodies with exact declared lengths, ordered delivery, bounded buffering and explicit completion. Run all handler-required content validation, including hashes where applicable, before successful execution admission. Test missing/extra bytes, broken source, wrong values and cancellation; incomplete input cannot become a valid result or charge. Keep local body references portable across adapters and reject raw paths or pointers as portable handles.
+
+Step 17 completed: bounded ordered bodies reject gaps, overlap, missing/excess bytes and hash mismatch before producing immutable complete bytes. Runtime input admission checks original byte limits, schema and installed content/metadata validation, persists owned input before execution and rejects changed retries. Independent SHA256(abc) and real Ledger no-charge/unchanged-balance scenarios pass; foreign implementation admission is explicitly tested. Required checks pass; production coverage 10393/10975 = 94.70%.
 
 ### 18. Journal execution attempts before dispatching work
 

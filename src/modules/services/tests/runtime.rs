@@ -166,6 +166,31 @@ fn durable_binding_and_real_reservation() {
         ),
         Err(Error::Conflict)
     );
+    assert_eq!(
+        runtime.supply_input(&context(&coordinate), key, Value::String("changed".into())),
+        Err(Error::Invalid)
+    );
+    assert_eq!(
+        runtime.supply_input(&context(&coordinate), key, Value::String("input".into())),
+        Ok(())
+    );
+    assert_eq!(
+        runtime.supply_input(&context(&coordinate), key, Value::String("input".into())),
+        Ok(())
+    );
+    assert_eq!(
+        runtime.supply_input(&context(&coordinate), key, Value::String("changed".into())),
+        Err(Error::Conflict)
+    );
+    let (_, _, _, foreign) = selected(false);
+    assert!(matches!(
+        runtime.admit(
+            &context(&coordinate),
+            accepted(a.clone(), &foreign, 2, 1),
+            Payment::default()
+        ),
+        Err(Error::Denied)
+    ));
     let read = la
         .grant(local, ledger::authority::Action::Read, 1_000_000)
         .unwrap();
