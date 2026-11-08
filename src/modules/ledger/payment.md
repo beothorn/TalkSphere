@@ -15,3 +15,7 @@ Receipt. Payment problem records explicit issuer refusal or uncertain delivery,
 never service failure or a request to execute work again. Unresolved holds remain
 conservatively reserved until authenticated confirmation/reconciliation; no timeout
 pretends to roll back a possible issuer transfer. No method performs hidden network I/O.
+
+Payment request returns the exact unsigned order, agreed fee and submit-versus-query
+role for a committed unresolved invocation. Coordinator authority is required; it
+never sends a transfer or authorizes a new service invocation.

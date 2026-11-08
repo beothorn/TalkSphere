@@ -18,5 +18,5 @@ caller checks against the actual image size and commits before publication. Stor
 failure preserves old state. Unknown gates reads and writes until Coordinate-authorized
 recover loads/validates the possibly committed image without repeating a mutation.
 Corrupt/missing recovery state keeps the gate. No method changes another peer's
-ledger, executes services or opens sockets. Later reservation steps constrain
+ledger, executes services or opens sockets. Reservations constrain
 administration to preserve accepted holds and incoming balance headroom.

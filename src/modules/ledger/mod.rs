@@ -1,5 +1,5 @@
 //! Local Ledger contracts for composition, Services and authenticated control adapters.
-//! Accounting and persistence transitions are implemented in subsequent plan steps.
+//! Owns durable local accounting and replay; composition supplies protected dependencies and authority.
 pub mod accounting;
 pub mod authority;
 pub mod claim;

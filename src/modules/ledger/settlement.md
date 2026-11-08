@@ -12,7 +12,7 @@ Prepared is opaque and binds local identity, attempt key and a domain-separated
 hash of final price and exact reference bytes. It is not authority or a peer field.
 Status requires Coordinator authority and reports absent or Reserved/Prepared/
 Committed/Aborted from the recovered image; it never repeats service execution.
-Only later explicit commit/abort decisions change a prepared effect.
+Only explicit commit/abort decisions change a prepared effect.
 
 Commit accepts only the authorized coordinator's recorded decision with the exact
 Prepared token. It applies the local role's debit, issuance, owned receipt or

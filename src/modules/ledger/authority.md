@@ -11,3 +11,6 @@ durable obligations. Recovery must receive separately authorized coordinator gra
 These tokens are process-local, never peer JSON or proof of peer authentication.
 Possession of the authority issuer is privileged. Control adapters must validate
 Transport authentication before requesting grants or constructing peer context.
+
+Evidence is a separate privileged action for adapters asserting original-issuer
+authentication; ordinary peer Control handlers cannot manufacture payment evidence.

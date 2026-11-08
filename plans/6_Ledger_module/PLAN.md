@@ -1,6 +1,6 @@
 # Ledger module plan
 
-Status: execution in progress; requirements review complete.
+Status: all 33 steps complete; direct-call Ledger and protected Linux persistence verified.
 
 This is roadmap milestone 7 and planning folder 6, following completed Board.
 Ledger owns local trust, issuer-separated balances, finite budgets, reservations,
@@ -40,7 +40,7 @@ settlement and durable transfer/claim replay records.
 - [x] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
 - [x] **31.** Expose bounded local Ledger inspection with discoverable help.
 - [x] **32.** Complete the Ledger acceptance matrix through public contracts.
-- [ ] **33.** Publish Ledger documentation and the Services handoff.
+- [x] **33.** Publish Ledger documentation and the Services handoff.
 
 ## Reference baseline and scope
 
@@ -484,3 +484,10 @@ and the production coverage procedure; require >80% and record the actual result
 Mark only implemented scope complete in this plan/roadmap and root README, list
 remaining composition work, and hand off to Services without expanding its plan.
 Commit focused completed steps with descriptive titles and bodies after checks.
+
+Completed step 33: Published the complete Ledger guide, companion contracts, runnable finite accounting example and Services handoff. Verified API docs without warnings, local links, public companions, every new detailed-help spelling and lifecycle status summaries; real Services/network/IPC and minimum-node integration remain explicitly deferred. Required checks pass; production line coverage 8791/9150 = 96.08%.
+
+Final verification on 2026-11-08: all required checks, warning-free API docs,
+runnable accounting example, local links, public companions and detailed help pass.
+Production line coverage: 8791/9150 = 96.08%. Services owns the next coordinator
+integration; Peer Protocol owns real network Ledger controls and issuer exchanges.

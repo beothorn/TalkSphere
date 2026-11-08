@@ -15,7 +15,9 @@ Frame integrity protects against modification and connection-local replay;
 Production registers no application protocol yet, so unsupported OPENs are refused.
 The [Board module](src/modules/board/README.md) now implements direct-call
 publication, protected persistence, attributed caches, selection and document tools.
-Ledger, Services, Peer Protocol and paid Storage remain later milestones.
+The Ledger direct-call module now supports durable finite accounting, settlement,
+transfers and encrypted claims with protected Linux persistence and local inspection.
+Services, Peer Protocol and paid Storage remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Ledger plan](plans/6_Ledger_module/PLAN.md),
 [Board plan](plans/5_Board_module/PLAN.md),
@@ -146,7 +148,7 @@ Individual protocol findings and confirmed upstream issue URLs are retained in
 The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
-module is Ledger; Services, Peer Protocol, minimum-profile services and paid recovery remain later work.
+module is Services; Peer Protocol, minimum-profile services and paid recovery remain later work.
 
 ## Board document tools
 
@@ -168,3 +170,7 @@ Inspection acquires the exclusive writer lock and never initializes or repairs
 accounting. Use `cargo run --locked -- help ledger-show` or help with any option
 spelling for defaults and errors. Ledger mutations currently use its authorized
 library contracts; network controls await Peer Protocol composition.
+
+Run `cargo run --locked --example ledger` for the bounded volatile accounting
+walkthrough, and see the [Ledger evidence](src/modules/ledger/ACCEPTANCE.md) for
+all local payment modes, failure/replay tests and later composition obligations.

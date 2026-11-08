@@ -73,6 +73,8 @@ Local storage formats and grant tokens add no wire fields.
 
 No new confirmed language-independent protocol defect was identified in this module;
 implementation recovery/validation defects were corrected locally. Existing Board
-issues do not change Ledger behavior. Production coverage is recorded after the
-acceptance audit and final required check run; passing round trips alone does not
-establish interoperability or security under every failure.
+issues do not change Ledger behavior. Final required checks pass; production line coverage is **8791/9150 = 96.08%**
+under [the production procedure](../../../docs/coverage.md). Formatting, strict
+Clippy, tests, build, overview/detailed help, warning-free API docs and the runnable
+accounting example pass. Passing round trips alone does not establish
+interoperability or security under every failure.

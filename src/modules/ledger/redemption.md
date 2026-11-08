@@ -13,3 +13,6 @@ issuer/owner before constructing guarded Redemption. Public observations reveal 
 claimId, owner and SHA256 commitment, never the bearer secret. All caller/source
 buffers remain the adapter's cleanup responsibility. Transport integrity alone is
 insufficient confidentiality. No plaintext is released provisionally or logged.
+
+ENVELOPE_BYTES is exactly 297 (149 plaintext plus the generic148-byte overhead).
+The fixed size is checked before decryption; no claimed portable amount is included.

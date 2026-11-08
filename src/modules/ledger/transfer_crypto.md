@@ -11,3 +11,6 @@ checks the key-derived identity and applies existing strict CR2SE Ed25519 verifi
 to exact order bytes. A valid proof establishes no issuer credit policy or trust.
 Composition supplies both entropy and signer; deterministic substitutes exist only
 in tests. No function opens a connection or changes a balance.
+
+Create groups issuer, new owner, gross amount and local public key in an explicit
+local request. Local owner comes from the authorized call, not a peer-provided field.

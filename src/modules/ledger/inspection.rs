@@ -53,3 +53,7 @@ impl<P: Persistence> Ledger<P> {
         Ok(out)
     }
 }
+
+#[cfg(test)]
+#[path = "tests/inspection.rs"]
+mod tests;

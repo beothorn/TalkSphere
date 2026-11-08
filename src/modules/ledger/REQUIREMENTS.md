@@ -10,7 +10,9 @@ Authority: [specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430
 [acceptance suite](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/ledger/acceptanceTests/README.md),
 and [common recovery contract](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md).
 
-Every row below is pending execution; requirements review is not conformance evidence.
+Every row below is mapped to executed assertions in [ACCEPTANCE.md](ACCEPTANCE.md);
+requirements review alone is not conformance evidence. Real Services/network
+composition obligations remain explicitly deferred in that evidence.
 Split mutation lists into individual assertions when implementing their owning step.
 
 | Case | Observable assertions | Steps / dependencies |
