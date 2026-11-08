@@ -83,7 +83,24 @@ fn public_lifecycle_and_checks() {
         ),
         Ok(Check::Fail)
     );
-    assert_eq!(family.evidence(&i, &input), Err(Error::Unsupported));
+    assert_eq!(
+        family.evidence(
+            &super::checks::Invocation {
+                key: k,
+                requester: a,
+                provider: b,
+                issuer: b,
+                offering: offering(false),
+                definition: family.definition().clone(),
+                quote: accepted.clone(),
+                price: 7,
+                response_milliseconds: 1000,
+                deadline: std::time::Instant::now() + std::time::Duration::from_secs(30)
+            },
+            &input
+        ),
+        Err(Error::Unsupported)
+    );
     let kept = c.result.clone();
     drop(c);
     drop(family);

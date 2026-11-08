@@ -124,7 +124,11 @@ impl Provider for Durable {
         self.echo.status(k)
     }
     // This custom fixture has no remote evidence operation.
-    fn evidence(&self, i: &Invocation, v: &Value) -> Result<Value, Error> {
+    fn evidence(
+        &self,
+        i: &crate::modules::services::checks::Invocation,
+        v: &Value,
+    ) -> Result<Value, Error> {
         self.echo.evidence(i, v)
     }
 }

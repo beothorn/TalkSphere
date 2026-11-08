@@ -1,4 +1,4 @@
-//! Durable local invocation coordinator; stage transitions retain exact accepted bindings before participant calls.
+//! Durable local invocation coordinator for work and evidence checks over explicit module contracts.
 use super::{
     Error,
     accounting::Accounting,
@@ -104,8 +104,12 @@ impl<P: Persistence> Coordinator<P> {
                 return Err(Error::Denied);
             }
             let pin = registry.recover(context, &op.service, op.version)?;
-            let invocation = op.invocation(config.limits)?;
-            let definition = invocation.definition;
+            let definition = if op.check.is_some() {
+                op.check_invocation(config.limits, context.deadline)?
+                    .definition
+            } else {
+                op.invocation(config.limits)?.definition
+            };
             if !pin.requester().definition().same_contract(&definition) {
                 return Err(Error::Unsupported);
             }
@@ -114,21 +118,34 @@ impl<P: Persistence> Coordinator<P> {
                 nodes: config.limits.nodes,
                 bytes: config.limits.state_bytes,
             };
-            if let Some(input) = &op.input {
-                super::validation::complete(
-                    input,
-                    &definition.document.value()["input"],
-                    budget,
-                    pin.requester(),
-                )?;
-            }
-            if let Some(completion) = &op.completion {
-                super::validation::complete(
-                    &completion.output,
-                    &definition.document.value()["output"],
-                    budget,
-                    pin.requester(),
-                )?;
+            if op.check.is_some() {
+                let rules = pin.requester().checks().ok_or(Error::Unsupported)?;
+                rules.shape(&op.metadata)?;
+                if let Some(input) = &op.input
+                    && input != &op.metadata
+                {
+                    return Err(Error::Invalid);
+                }
+                if let Some(c) = &op.completion {
+                    rules.evidence(&op.metadata, &c.output)?;
+                }
+            } else {
+                if let Some(input) = &op.input {
+                    crate::modules::services::validation::complete(
+                        input,
+                        &definition.document.value()["input"],
+                        budget,
+                        pin.requester(),
+                    )?;
+                }
+                if let Some(c) = &op.completion {
+                    crate::modules::services::validation::complete(
+                        &c.output,
+                        &definition.document.value()["output"],
+                        budget,
+                        pin.requester(),
+                    )?;
+                }
             }
             pins.insert(*key, pin);
         }
@@ -176,6 +193,9 @@ impl<P: Persistence> Coordinator<P> {
         let selection = &auth.selection;
         let o = selection.offering();
         let (requester, provider, issuer) = selection.roles();
+        if accepted.price == super::pricing::Price::Included {
+            return Err(Error::Invalid);
+        }
         let maximum = accepted.price.maximum(&o.service, o.version)?;
         if maximum
             .checked_add(payment.fee.unwrap_or(0))
@@ -218,6 +238,7 @@ impl<P: Persistence> Coordinator<P> {
             definition: selection.definition().document.bytes().to_vec(),
             metadata: accepted.assessed.assessment.metadata.clone(),
             pricing: accepted.price,
+            check: None,
             input_bytes: accepted.assessed.assessment.input_bytes,
             factors: accepted.assessed.assessment.factors.clone(),
             phase: Phase::Accepted,
@@ -279,7 +300,13 @@ impl<P: Persistence> Coordinator<P> {
                 Err(Error::Conflict)
             };
         }
-        self.accounting.reserve(context, key, &op.terms)?;
+        if !op
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            self.accounting.reserve(context, key, &op.terms)?;
+        }
         op.phase = Phase::Reserved;
         self.save(context, &mut state, op)
     }
@@ -317,15 +344,26 @@ impl<P: Persistence> Coordinator<P> {
                 .map_err(|_| Error::Limit)?
                 .min(self.config.limits.state_bytes),
         };
-        let invocation = op.invocation(self.config.limits)?;
         let requester = state.pins.get(&key).ok_or(Error::Unavailable)?.requester();
-        super::validation::complete(
-            &input,
-            &invocation.definition.document.value()["input"],
-            budget,
-            requester,
-        )?;
-        requester.validate_input(&op.metadata, &input, budget)?;
+        if op.check.is_some() {
+            input.bounded(budget)?;
+            if input != op.metadata {
+                return Err(Error::Invalid);
+            }
+            requester.checks().ok_or(Error::Unsupported)?.challenge(
+                &op.check_invocation(self.config.limits, context.deadline)?,
+                &input,
+            )?;
+        } else {
+            let invocation = op.invocation(self.config.limits)?;
+            crate::modules::services::validation::complete(
+                &input,
+                &invocation.definition.document.value()["input"],
+                budget,
+                requester,
+            )?;
+            requester.validate_input(&op.metadata, &input, budget)?;
+        }
         op.input = Some(input);
         self.save(context, &mut state, op)
     }
@@ -362,6 +400,37 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Unsupported);
         }
         let input = op.input.clone().ok_or(Error::Invalid)?;
+        if let Some(info) = &op.check {
+            let deadline = context.deadline.min(
+                std::time::Instant::now()
+                    .checked_add(std::time::Duration::from_millis(info.response))
+                    .ok_or(Error::Limit)?,
+            );
+            let invocation = op.check_invocation(self.config.limits, deadline)?;
+            state
+                .pins
+                .get(&key)
+                .ok_or(Error::Unavailable)?
+                .requester()
+                .checks()
+                .ok_or(Error::Unsupported)?
+                .challenge(&invocation, &input)?;
+            op.phase = Phase::Executing;
+            self.save(context, &mut state, op.clone())?;
+            let evidence = state
+                .pins
+                .get(&key)
+                .ok_or(Error::Unavailable)?
+                .provider()?
+                .evidence(&invocation, &input)?;
+            let bounded = Context {
+                version: context.version,
+                grant: context.grant,
+                deadline,
+                cancelled: context.cancelled,
+            };
+            return self.retain_check(&bounded, &mut state, op, evidence);
+        }
         let invocation = op.invocation(self.config.limits)?;
         op.phase = Phase::Executing;
         self.save(context, &mut state, op)?;
@@ -392,7 +461,7 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Executing {
             return Err(Error::Conflict);
         }
-        if op.terms.provider != self.config.local {
+        if op.check.is_some() || op.terms.provider != self.config.local {
             return Err(Error::Unknown);
         }
         let completion = state
@@ -473,6 +542,9 @@ impl<P: Persistence> Coordinator<P> {
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
         let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.check.is_some() {
+            return Err(Error::Unsupported);
+        }
         if op.terms.requester != self.config.local || op.terms.provider == self.config.local {
             return Err(Error::Denied);
         }
@@ -510,6 +582,9 @@ impl<P: Persistence> Coordinator<P> {
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
         let op = state.records.get(&peer.key).cloned().ok_or(Error::Denied)?;
+        if op.check.is_some() {
+            return Err(Error::Unsupported);
+        }
         if peer.local != self.config.local
             || op.terms.requester != self.config.local
             || op.terms.provider == self.config.local
@@ -588,7 +663,7 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Conflict);
         }
         let completion = op.completion.clone().ok_or(Error::Invalid)?;
-        if op.terms.provider == self.config.local && op.handler.is_none() {
+        if op.check.is_none() && op.terms.provider == self.config.local && op.handler.is_none() {
             let token = state
                 .pins
                 .get(&key)
@@ -601,13 +676,19 @@ impl<P: Persistence> Coordinator<P> {
             op.handler = Some(token);
             self.save(context, &mut state, op.clone())?;
         }
-        self.accounting.prepare(
-            context,
-            key,
-            &op.terms,
-            completion.price,
-            &op.reference(self.config.limits)?,
-        )?;
+        if !op
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            self.accounting.prepare(
+                context,
+                key,
+                &op.terms,
+                completion.price,
+                &op.reference(self.config.limits)?,
+            )?;
+        }
         op.phase = Phase::Prepared;
         self.save(context, &mut state, op)
     }
@@ -640,7 +721,9 @@ impl<P: Persistence> Coordinator<P> {
             }
             (Phase::Prepared, Decision::Commit) => {
                 if op.completion.is_none()
-                    || (op.terms.provider == self.config.local && op.handler.is_none())
+                    || (op.check.is_none()
+                        && op.terms.provider == self.config.local
+                        && op.handler.is_none())
                 {
                     return Err(Error::Invalid);
                 }
@@ -667,7 +750,7 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Conflict);
         }
         let completion = op.completion.as_ref().ok_or(Error::Invalid)?;
-        let provider = if op.terms.provider == self.config.local {
+        let provider = if op.check.is_none() && op.terms.provider == self.config.local {
             Some(state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?)
         } else {
             None
@@ -682,24 +765,36 @@ impl<P: Persistence> Coordinator<P> {
                 _ => return Err(Error::Unknown),
             }
         }
-        match self.accounting.status(context, key)? {
-            Some(crate::modules::ledger::reservation::Status::Committed) => {}
-            Some(crate::modules::ledger::reservation::Status::Prepared) => self.accounting.commit(
-                context,
-                key,
-                &op.terms,
-                completion.price,
-                &op.reference(self.config.limits)?,
-            )?,
-            _ => return Err(Error::Unknown),
+        if !op
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            match self.accounting.status(context, key)? {
+                Some(crate::modules::ledger::reservation::Status::Committed) => {}
+                Some(crate::modules::ledger::reservation::Status::Prepared) => {
+                    self.accounting.commit(
+                        context,
+                        key,
+                        &op.terms,
+                        completion.price,
+                        &op.reference(self.config.limits)?,
+                    )?
+                }
+                _ => return Err(Error::Unknown),
+            }
         }
         if let Some(provider) = provider
             && !matches!(provider.status(key)?, super::handler::Status::Committed)
         {
             return Err(Error::Unknown);
         }
-        if self.accounting.status(context, key)?
-            != Some(crate::modules::ledger::reservation::Status::Committed)
+        if !op
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+            && self.accounting.status(context, key)?
+                != Some(crate::modules::ledger::reservation::Status::Committed)
         {
             return Err(Error::Unknown);
         }
@@ -720,6 +815,9 @@ impl<P: Persistence> Coordinator<P> {
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Observe, &state)?;
         let op = state.records.get(&key).ok_or(Error::Denied)?;
+        if op.check.is_some() {
+            return Err(Error::Unsupported);
+        }
         if matches!(op.phase, Phase::Abort | Phase::Aborted) {
             return Err(Error::Conflict);
         }
@@ -743,7 +841,7 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Abort {
             return Err(Error::Conflict);
         }
-        if op.terms.provider == self.config.local {
+        if op.check.is_none() && op.terms.provider == self.config.local {
             let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
             let token = if op.handler.is_some() {
                 op.handler.clone()
@@ -756,25 +854,31 @@ impl<P: Persistence> Coordinator<P> {
             };
             provider.abort(key, token.as_ref())?;
         }
-        let reference = if op.completion.is_some() {
-            Some(op.reference(self.config.limits)?)
-        } else {
-            None
-        };
-        let effect = match (
-            self.accounting.status(context, key)?,
-            op.completion.as_ref(),
-            reference.as_ref(),
-        ) {
-            (Some(crate::modules::ledger::reservation::Status::Prepared), Some(c), Some(r)) => {
-                Some((c.price, r.as_slice()))
-            }
-            (Some(crate::modules::ledger::reservation::Status::Committed), _, _) => {
-                return Err(Error::Conflict);
-            }
-            _ => None,
-        };
-        self.accounting.abort(context, key, &op.terms, effect)?;
+        if !op
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            let reference = if op.completion.is_some() {
+                Some(op.reference(self.config.limits)?)
+            } else {
+                None
+            };
+            let effect = match (
+                self.accounting.status(context, key)?,
+                op.completion.as_ref(),
+                reference.as_ref(),
+            ) {
+                (Some(crate::modules::ledger::reservation::Status::Prepared), Some(c), Some(r)) => {
+                    Some((c.price, r.as_slice()))
+                }
+                (Some(crate::modules::ledger::reservation::Status::Committed), _, _) => {
+                    return Err(Error::Conflict);
+                }
+                _ => None,
+            };
+            self.accounting.abort(context, key, &op.terms, effect)?;
+        }
         op.phase = Phase::Aborted;
         self.save(context, &mut state, op)
     }
@@ -816,6 +920,16 @@ impl<P: Persistence> Coordinator<P> {
         tracing::trace!("Observing service-independent issuer payment state");
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Observe, &state)?;
+        if state
+            .records
+            .get(&key)
+            .ok_or(Error::Denied)?
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            return Err(Error::Unsupported);
+        }
         if state.records.get(&key).ok_or(Error::Denied)?.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
@@ -832,6 +946,16 @@ impl<P: Persistence> Coordinator<P> {
         tracing::trace!("Describing explicit issuer payment action for composition");
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
+        if state
+            .records
+            .get(&key)
+            .ok_or(Error::Denied)?
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            return Err(Error::Unsupported);
+        }
         if state.records.get(&key).ok_or(Error::Denied)?.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
@@ -849,6 +973,16 @@ impl<P: Persistence> Coordinator<P> {
         tracing::trace!("Confirming original issuer evidence independently of service result");
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
+        if state
+            .records
+            .get(&key)
+            .ok_or(Error::Denied)?
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            return Err(Error::Unsupported);
+        }
         if state.records.get(&key).ok_or(Error::Denied)?.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
@@ -866,6 +1000,16 @@ impl<P: Persistence> Coordinator<P> {
         tracing::trace!("Recording independent issuer refusal or delivery uncertainty");
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Coordinate, &state)?;
+        if state
+            .records
+            .get(&key)
+            .ok_or(Error::Denied)?
+            .check
+            .as_ref()
+            .is_some_and(crate::modules::services::checks::Info::included)
+        {
+            return Err(Error::Unsupported);
+        }
         if state.records.get(&key).ok_or(Error::Denied)?.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
@@ -886,6 +1030,9 @@ impl<P: Persistence> Coordinator<P> {
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Observe, &state)?;
         let op = state.records.get(&key).ok_or(Error::Denied)?;
+        if op.check.is_some() {
+            return Err(Error::Unsupported);
+        }
         if op.phase != Phase::Committed {
             return Ok(super::handler::Check::Inconclusive);
         }
@@ -935,3 +1082,5 @@ impl<P: Persistence> Coordinator<P> {
         Ok(state.records.get(&key).map(|o| o.phase))
     }
 }
+
+mod checks;

@@ -36,6 +36,7 @@ fn record() -> Operation {
         definition: vec![1],
         metadata: Value::String("input".into()),
         pricing: Price::Fixed(7),
+        check: None,
         input_bytes: 128,
         factors: Value::Object(vec![]),
         phase: Phase::Accepted,
@@ -97,7 +98,7 @@ fn phase_prerequisites() {
     };
     let mut value = codec::decode(&bytes, budget, l.state_bytes).unwrap();
     if let Value::Array(root) = &mut value {
-        root[0] = Value::Uint32(2);
+        root[0] = Value::Uint32(3);
     }
     let future = codec::encode(&value, budget, l.state_bytes).unwrap();
     assert!(matches!(

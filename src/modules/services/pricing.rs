@@ -4,6 +4,8 @@ use super::{Error, assessment::Assessed};
 /// Complete immutable price authorization accepted before execution.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Price {
+    /// No additional charge for an existing included check entitlement; never ordinary work.
+    Included,
     /// Exact positive price required for every successful completion.
     Fixed(u64),
     /// Computation rate in credits per billed millisecond, with accepted duration bound.
@@ -25,6 +27,7 @@ impl Price {
     pub fn maximum(self, service: &str, version: u32) -> Result<u64, Error> {
         tracing::trace!("Calculating exact accepted service price bound");
         match self {
+            Self::Included => Ok(0),
             Self::Fixed(p) if p > 0 => Ok(p),
             Self::Fixed(_) => Err(Error::Invalid),
             Self::Computation {
@@ -53,6 +56,8 @@ impl Price {
         tracing::trace!("Recalculating final price from accepted exact formula");
         self.maximum(service, version)?;
         match self {
+            Self::Included if billed.is_none() => Ok(0),
+            Self::Included => Err(Error::Invalid),
             Self::Fixed(p) if billed.is_none() => Ok(p),
             Self::Fixed(_) => Err(Error::Invalid),
             Self::Computation {
@@ -96,6 +101,9 @@ pub fn quote(assessed: &Assessed, requester_maximum: u64) -> Result<Price, Error
         .implementation()
         .requester()
         .pricing(o, assessed.factors())?;
+    if price == Price::Included {
+        return Err(Error::Invalid);
+    }
     if price.maximum(&o.service, o.version)? > requester_maximum {
         return Err(Error::Insufficient);
     }

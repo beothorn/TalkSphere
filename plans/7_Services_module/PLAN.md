@@ -34,7 +34,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **24.** Recover coordination across every durable failure cut.
 - [x] **25.** Track payment state separately from completed work.
 - [x] **26.** Run requester-local checks without side effects.
-- [ ] **27.** Coordinate paid evidence and included check entitlements.
+- [x] **27.** Coordinate paid evidence and included check entitlements.
 - [ ] **28.** Drain handlers while preserving accepted recovery paths.
 - [ ] **29.** Bound retention without discarding recovery obligations.
 - [ ] **30.** Verify contracts through a bounded serialized adapter.
@@ -257,6 +257,8 @@ Step 26 completed: local verification uses retained original input/terms/output 
 ### 27. Coordinate paid evidence and included check entitlements
 
 Bind remote evidence operations to accepted positive checkPrice in the correct issuer or a service-defined included entitlement with bounded allowance. Never create a zero-price ordinary Ledger reservation for an included check. Keep expected bytes local and send only the defined challenge. Test complete wrong evidence as paid fail, missing evidence as uncharged/inconclusive, allowance replay/exhaustion and Discovery-style included checks using explicitly test-owned fixtures.
+
+Step 27 completed: paid evidence and included entitlements share the durable invocation namespace, with distinct challenge/evidence contracts, private expectations, current checkPrice/issuer and finite stable-scope allowances. Complete wrong evidence is paid fail; malformed or timed-out requester evidence is uncharged/inconclusive; included checks create no Ledger operation. Restored timing is clock-domain-aware and never reruns evidence reads. Private payload schema2 records purpose/allowance/timing. Required checks pass; production coverage 11640/12335 = 94.37%. Confirmed the postcommit two-node timeout ambiguity and filed [CR2SE#10](https://github.com/beothorn/CR2SE/issues/10), with [local evidence](../../CR2SE%20bugs/0007-check-timeout-settlement.md); no global uncharged-timeout claim is made.
 
 ### 28. Drain handlers while preserving accepted recovery paths
 

@@ -39,6 +39,7 @@ pub(super) struct Operation {
     pub definition: Vec<u8>,
     pub metadata: Value,
     pub pricing: Price,
+    pub check: Option<super::checks::Info>,
     pub input_bytes: u64,
     pub factors: Value,
     pub phase: Phase,
@@ -67,7 +68,7 @@ pub(super) fn encode(
         .map(Operation::value)
         .collect::<Result<Vec<_>, _>>()?;
     codec::encode(
-        &Value::Array(vec![Value::Uint32(1), Value::Array(values)]),
+        &Value::Array(vec![Value::Uint32(2), Value::Array(values)]),
         budget(l),
         l.state_bytes,
     )
@@ -82,7 +83,7 @@ pub(super) fn decode(
     let Value::Array(root) = root else {
         return Err(Error::Invalid);
     };
-    let [Value::Uint32(1), Value::Array(values)] = root.as_slice() else {
+    let [Value::Uint32(2), Value::Array(values)] = root.as_slice() else {
         return Err(Error::Unsupported);
     };
     if values.len() > l.operations {
@@ -99,13 +100,20 @@ pub(super) fn decode(
 }
 impl Operation {
     // Reconstruct explicit public handler contracts without exposing this private record representation.
-    pub(super) fn invocation(&self, limits: Limits) -> Result<super::handler::Invocation, Error> {
+    fn context(&self, limits: Limits) -> Result<super::handler::Invocation, Error> {
         tracing::trace!("Reconstructing exact public invocation contract from retained binding");
         let value = codec::decode(&self.terms.accepted, budget(limits), limits.state_bytes)?;
         let Value::Array(fields) = value else {
             return Err(Error::Invalid);
         };
-        if fields.len() != 5 || bytes(&fields[1])? != self.definition {
+        if fields.len() != if self.check.is_some() { 6 } else { 5 }
+            || bytes(&fields[1])? != self.definition
+        {
+            return Err(Error::Invalid);
+        }
+        if let Some(info) = &self.check
+            && fields[5] != info.binding()
+        {
             return Err(Error::Invalid);
         }
         let publisher = IdentityId(fixed(&fields[3])?);
@@ -159,6 +167,34 @@ impl Operation {
             pricing: self.pricing,
         })
     }
+    // Only ordinary work exposes the ordinary execution context.
+    pub(super) fn invocation(&self, limits: Limits) -> Result<super::handler::Invocation, Error> {
+        if self.check.is_some() {
+            return Err(Error::Unsupported);
+        }
+        self.context(limits)
+    }
+    // Evidence calls receive their own explicit contract, never an invalid zero-price work invocation.
+    pub(super) fn check_invocation(
+        &self,
+        limits: Limits,
+        deadline: std::time::Instant,
+    ) -> Result<super::checks::Invocation, Error> {
+        let info = self.check.as_ref().ok_or(Error::Unsupported)?;
+        let c = self.context(limits)?;
+        Ok(super::checks::Invocation {
+            key: self.key,
+            requester: self.terms.requester,
+            provider: self.terms.provider,
+            issuer: self.terms.issuer,
+            offering: c.offering,
+            definition: c.definition,
+            quote: c.quote,
+            price: self.terms.maximum,
+            response_milliseconds: info.response,
+            deadline,
+        })
+    }
     // Bind the exact retained input, output, bytes and accepted terms without making Ledger own family payloads.
     pub(super) fn reference(&self, limits: Limits) -> Result<Vec<u8>, Error> {
         use sha2::{Digest, Sha256};
@@ -185,6 +221,7 @@ impl Operation {
     // Serialize every immutable binding, retained input/result and preparation token explicitly.
     fn value(&self) -> Result<Value, Error> {
         let price = match self.pricing {
+            Price::Included => vec![],
             Price::Fixed(n) => vec![Value::Uint64(n)],
             Price::Computation {
                 minimum,
@@ -234,6 +271,7 @@ impl Operation {
             ),
             Value::Uint64(self.input_bytes),
             self.factors.clone(),
+            optional(self.check.as_ref().map(super::checks::Info::value)),
         ]))
     }
     // Require exact field count/kinds and revalidate immutable amount/role/phase associations on restart.
@@ -241,7 +279,7 @@ impl Operation {
         let Value::Array(v) = value else {
             return Err(Error::Invalid);
         };
-        if v.len() != 22 {
+        if v.len() != 23 {
             return Err(Error::Invalid);
         }
         let key = OperationKey {
@@ -266,6 +304,7 @@ impl Operation {
             return Err(Error::Invalid);
         };
         let pricing = match p.as_slice() {
+            [] => Price::Included,
             [n] => Price::Fixed(amount(n)?),
             [m, n, d, t] => Price::Computation {
                 minimum: amount(m)?,
@@ -314,6 +353,7 @@ impl Operation {
             phase,
             input_bytes: amount(&v[20])?,
             factors: v[21].clone(),
+            check: some(&v[22])?.map(super::checks::Info::parse).transpose()?,
             input: some(&v[17])?.cloned(),
             completion,
             handler: some(&v[19])?
@@ -329,7 +369,7 @@ impl Operation {
             || o.terms.accepted.is_empty()
             || o.definition.is_empty()
             || o.pricing.maximum(&o.service, version)? != o.terms.maximum
-            || o.terms.fixed != matches!(pricing, Price::Fixed(_))
+            || o.terms.fixed != matches!(pricing, Price::Fixed(_) | Price::Included)
             || o.terms
                 .maximum
                 .checked_add(o.terms.fee.unwrap_or(0))
@@ -354,12 +394,22 @@ impl Operation {
         }
         if matches!(phase, Phase::Prepared | Phase::Commit | Phase::Committed)
             && local == o.terms.provider
+            && o.check.is_none()
             && o.handler.is_none()
         {
             return Err(Error::Invalid);
         }
+        let included = o.check.as_ref().is_some_and(super::checks::Info::included);
+        if o.check.is_some() && !included && !matches!(pricing,Price::Fixed(p) if p>0) {
+            return Err(Error::Invalid);
+        }
+        if included != (pricing == Price::Included)
+            || (included && (o.terms.transfer.is_some() || o.terms.fee.is_some()))
+        {
+            return Err(Error::Invalid);
+        }
         if let Some(c) = &o.completion
-            && (c.price == 0
+            && ((!included && c.price == 0)
                 || c.price > o.terms.maximum
                 || (o.terms.fixed && c.price != o.terms.maximum)
                 || c.effect.bytes().is_empty())

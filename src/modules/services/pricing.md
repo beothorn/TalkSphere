@@ -20,3 +20,8 @@ products and quotient/remainder ceiling division; final billed time must be in
 back to uint64 is checked. Literal rate1/1000, max60000 gives maximum60; billed1201
 gives2. Runtime completion shape/outcome validation remains with the installed
 Computation contract; language errors and time limits can be billable completions.
+
+Price.Included represents no additional charge for a proven existing check
+entitlement. Ordinary work quoting/admission rejects it. It is accepted only by
+the explicit evidence-check path with installed rules, stable scope and finite
+allowance. No zero-valued Ledger operation or hidden transfer fee is created.

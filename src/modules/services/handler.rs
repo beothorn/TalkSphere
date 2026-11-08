@@ -162,6 +162,11 @@ pub trait Requester: super::validation::Semantics {
         }
         Ok(())
     }
+    /// Return installed remote check rules, or None for a requester-local-only check.
+    fn checks(&self) -> Option<&dyn super::checks::Rules> {
+        tracing::trace!("Declaring requester-local-only check support");
+        None
+    }
     /// Validate complete input against schema and the previously assessed metadata.
     /// The default permits only exact complete metadata/input equality; body-bearing families must override it.
     /// # Errors
@@ -246,5 +251,9 @@ pub trait Provider: Send + Sync {
     /// Return only contract-defined evidence for an independently authorized check.
     /// # Errors
     /// Local-only checks return Unsupported; absent entitlement or spending returns Denied.
-    fn evidence(&self, invocation: &Invocation, challenge: &Value) -> Result<Value, Error>;
+    fn evidence(
+        &self,
+        invocation: &super::checks::Invocation,
+        challenge: &Value,
+    ) -> Result<Value, Error>;
 }

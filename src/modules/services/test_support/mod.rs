@@ -105,6 +105,7 @@ mod script_tests {
     }
 }
 
+pub(super) mod check_family;
 pub(super) mod durable_family;
 pub(super) mod family;
 pub(super) mod selection;

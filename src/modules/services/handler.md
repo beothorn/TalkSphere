@@ -56,3 +56,10 @@ Requester.validate_assessment independently checks remote metadata and factors
 against the authorized local input source. Descriptions or remote offers cannot
 replace that source. The default requires exact input/metadata equality, known
 schema semantics and empty factors; family overrides remain trusted installed code.
+
+Requester.checks returns installed remote Rules or None for local-only checking.
+Provider.evidence receives the separate check-specific Invocation, containing
+explicit charge/timing and original public contracts but no expected values.
+Evidence is read-only family output; the coordinator durably retains it before
+charging, rather than inventing an ordinary service execution or a correctness
+assertion from the provider.

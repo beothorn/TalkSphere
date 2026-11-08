@@ -197,7 +197,11 @@ impl Provider for Echo {
             .unwrap_or(Status::Absent))
     }
     // Echo's check is requester-local, so no remote evidence operation exists.
-    fn evidence(&self, _: &Invocation, _: &Value) -> Result<Value, Error> {
+    fn evidence(
+        &self,
+        _: &crate::modules::services::checks::Invocation,
+        _: &Value,
+    ) -> Result<Value, Error> {
         Err(Error::Unsupported)
     }
 }

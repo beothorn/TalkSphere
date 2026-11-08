@@ -12,3 +12,9 @@ Board and definition bytes, publisher/direction, pricing/bound/fees, metadata,
 input, complete staged output/result/effect and participant tokens. Recovery checks
 exact kinds/widths, duplicate keys, limits, phase prerequisites and price bounds.
 Image format is local and does not define peer wire behavior.
+
+The development coordinator payload now uses private schema version2 to retain
+check purpose, stable entitlement, response interval and clock-domain observations.
+Old alpha version1 payloads are explicitly Unsupported; no missing/corrupt image is
+reinitialized as recovery. Outer protected-file framing and local call contract
+version1 are unchanged; no CR2SE peer encoding/version changes are introduced.

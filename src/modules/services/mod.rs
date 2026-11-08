@@ -98,3 +98,8 @@ pub mod body;
 #[cfg(test)]
 #[path = "tests/recovery.rs"]
 mod recovery_tests;
+
+#[cfg(test)]
+#[path = "tests/checks.rs"]
+mod check_tests;
+pub mod checks;

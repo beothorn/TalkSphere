@@ -14,6 +14,8 @@ Confirmed reports:
 - [0005: Board duplicate-member pseudocode contradicts mandatory rejection](0005-board-duplicate-json-members.md) — reported upstream as [#8](https://github.com/beothorn/CR2SE/issues/8).
 - [0006: Board precondition validation contradicts required nonempty names](0006-board-precondition-validation.md) — reported upstream as [#9](https://github.com/beothorn/CR2SE/issues/9).
 
+- [0007: Check timeout charging after provider commitment is ambiguous](0007-check-timeout-settlement.md) — reported upstream as [#10](https://github.com/beothorn/CR2SE/issues/10).
+
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision
 and sections. Include a minimal trace, conflicting statements or vector that
