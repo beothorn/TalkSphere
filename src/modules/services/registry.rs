@@ -110,8 +110,7 @@ impl Registry {
             .filter(|s| !s.is_empty())
             .ok_or(Error::Invalid)?
             .to_owned();
-        let version = v["serviceVersion"]
-            .as_u64()
+        let version = board::offering::integer(&v["serviceVersion"])
             .and_then(|n| u32::try_from(n).ok())
             .filter(|n| *n > 0)
             .ok_or(Error::Invalid)?;

@@ -15,7 +15,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **5.** Validate structured values against bounded schemas.
 - [x] **6.** Define requester and provider handler contracts.
 - [x] **7.** Register exact contracts through authorized composition.
-- [ ] **8.** Connect registered capabilities to Board selection.
+- [x] **8.** Connect registered capabilities to Board selection.
 - [ ] **9.** Authorize provided and wanted invocation roles.
 - [ ] **10.** Assess input metadata before accepting large bodies.
 - [ ] **11.** Calculate fixed prices with checked exact arithmetic.
@@ -143,6 +143,8 @@ Step 7 completed: authorized exact requester/provider registration, reserved-nam
 ### 8. Connect registered capabilities to Board selection
 
 Implement the Board semantic capability adapter through public contracts, including required preconditions and actual provider versus requester support. Consume immutable selections and verify definition, publisher, direction and issuer. Revalidate current local offering terms at the acceptance boundary and fail changed terms explicitly. Cover BD-09 selection behavior without modifying Board private state; a schema-only registration cannot advertise an operational provider.
+
+Step 8 completed: actual Board publication/selection now uses the Services registry capabilities through public contracts; provided/wanted roles, immutable selection and stale-current-selection refusal are tested. Added reserved catalogue/capacity refusals and exact integral version interpretation. Required checks pass; production coverage 9119/9500 = 95.99%. Quote acceptance will call the same current-selection contract in step13.
 
 ### 9. Authorize provided and wanted invocation roles
 

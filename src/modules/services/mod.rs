@@ -48,3 +48,6 @@ pub mod registry;
 #[cfg(test)]
 #[path = "tests/registry.rs"]
 mod registry_tests;
+#[cfg(test)]
+#[path = "tests/selection.rs"]
+mod selection_tests;

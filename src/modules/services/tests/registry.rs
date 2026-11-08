@@ -101,3 +101,83 @@ fn requester_only_and_refusals() {
     a.revoke();
     assert_eq!(r.drain(&c, "org.example.echo", 1), Err(Error::Denied));
 }
+
+struct Alternate {
+    base: Echo,
+    definition: crate::modules::board::definition::Definition,
+}
+impl super::validation::Semantics for Alternate {
+    // Alternate fixture explicitly preserves the installed echo value semantics.
+    fn validate(&self, s: &serde_json::Value, v: &super::value::Value) -> Result<(), Error> {
+        self.base.validate(s, v)
+    }
+    // No arbitrary metadata enables nonfinite values.
+    fn nonfinite(&self) -> bool {
+        false
+    }
+}
+impl Requester for Alternate {
+    // A literal alternate name exercises capacity and reserved namespace checks.
+    fn definition(&self) -> &crate::modules::board::definition::Definition {
+        &self.definition
+    }
+    // Economic validation remains the independently installed fixture rule.
+    fn terms(&self, o: &crate::modules::board::offering::Offering) -> Result<(), Error> {
+        self.base.terms(o)
+    }
+    // Check outcomes remain local even when registry admission rejects a description.
+    fn verify(
+        &self,
+        i: &super::value::Value,
+        t: &super::handler::Blob,
+        r: &super::value::Value,
+        e: Option<&super::value::Value>,
+    ) -> Result<super::handler::Check, Error> {
+        self.base.verify(i, t, r, e)
+    }
+}
+// Reserved names require a catalogue; finite registration capacity never evicts accepted implementations.
+#[test]
+fn catalogue_and_capacity() {
+    let local = IdentityId([2; 32]);
+    let a = Arc::new(Authority::new());
+    let g = a.grant(local, Action::Register, 65536).unwrap();
+    let c = Context {
+        version: 1,
+        grant: &g,
+        deadline: Instant::now() + Duration::from_secs(60),
+        cancelled: false,
+    };
+    let r = Registry::new(
+        local,
+        a,
+        Limits {
+            handlers: 1,
+            ..Limits::default()
+        },
+        Arc::new(NoStandards),
+    )
+    .unwrap();
+    let alternate = |name: &str| {
+        let base = Echo::new();
+        let mut definition = base.definition().clone();
+        let mut v = definition.document.value().clone();
+        v["service"] = name.into();
+        definition.document = crate::modules::board::document::Document::parse(
+            v.to_string().as_bytes(),
+            Default::default(),
+        )
+        .unwrap();
+        Arc::new(Alternate { base, definition })
+    };
+    assert_eq!(
+        r.register(&c, alternate("cr2se.storage"), None),
+        Err(Error::Unsupported)
+    );
+    r.register(&c, Arc::new(Echo::new()), None).unwrap();
+    assert_eq!(
+        r.register(&c, alternate("org.example.other"), None),
+        Err(Error::Limit)
+    );
+    assert!(r.select("org.example.echo", 1, false).is_ok());
+}
