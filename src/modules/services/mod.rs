@@ -108,3 +108,7 @@ pub mod checks;
 mod lifecycle_tests;
 
 pub mod adapter;
+
+#[cfg(test)]
+#[path = "tests/privacy.rs"]
+mod privacy_tests;

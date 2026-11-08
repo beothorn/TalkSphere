@@ -18,6 +18,19 @@ use std::{
     time::Instant,
 };
 
+/// Trusted monotonic clock dependency; it never reads a peer-supplied timestamp.
+pub trait Clock: Send + Sync {
+    /// Return the current local monotonic instant for expiry and reclamation.
+    fn now(&self) -> Instant;
+}
+struct SystemClock;
+impl Clock for SystemClock {
+    // Production expiry follows the process monotonic clock.
+    fn now(&self) -> Instant {
+        tracing::trace!("Reading local quote expiry clock");
+        Instant::now()
+    }
+}
 /// Current-offering validation port; acceptance cannot assume copied terms remain current.
 pub trait Current {
     /// Confirm current exact offering/definition and resource policy without changing accepted terms.
@@ -121,6 +134,7 @@ pub struct Quoter {
     limits: Limits,
     domain: Arc<()>,
     slots: Mutex<BTreeMap<OperationKey, Slot>>,
+    clock: Arc<dyn Clock>,
 }
 impl Quoter {
     /// Create an empty quote domain with finite capacity and identity-bound authority.
@@ -131,6 +145,17 @@ impl Quoter {
         authority: Arc<Authority>,
         limits: Limits,
     ) -> Result<Self, Error> {
+        Self::with_clock(local, authority, limits, Arc::new(SystemClock))
+    }
+    /// Create a quote owner using an explicitly trusted local monotonic clock dependency.
+    /// # Errors
+    /// Rejects invalid finite limits; composition must supply a nondecreasing clock.
+    pub fn with_clock(
+        local: IdentityId,
+        authority: Arc<Authority>,
+        limits: Limits,
+        clock: Arc<dyn Clock>,
+    ) -> Result<Self, Error> {
         tracing::trace!("Creating bounded Services quote owner");
         limits.validate()?;
         Ok(Self {
@@ -139,6 +164,7 @@ impl Quoter {
             limits,
             domain: Arc::new(()),
             slots: Mutex::new(BTreeMap::new()),
+            clock,
         })
     }
     /// Retain one exact quote after pricing and caller-bound admission; stale quotes are reclaimed first.
@@ -165,7 +191,7 @@ impl Quoter {
             action,
             issue.bytes.bytes().len(),
         )?;
-        if issue.expires <= Instant::now() {
+        if issue.expires <= self.clock.now() {
             return Err(Error::Cancelled);
         }
         let price = pricing::quote(&issue.assessed, issue.maximum)?;
@@ -183,7 +209,7 @@ impl Quoter {
             action,
             issue.bytes.bytes().len(),
         )?;
-        slots.retain(|_, slot| slot.issue.expires > Instant::now());
+        slots.retain(|_, slot| slot.issue.expires > self.clock.now());
         if slots.contains_key(&peer.key) {
             return Err(Error::Conflict);
         }
@@ -231,7 +257,7 @@ impl Quoter {
             action,
             s.issue.bytes.bytes().len(),
         )?;
-        if s.issue.expires <= Instant::now() {
+        if s.issue.expires <= self.clock.now() {
             return Err(Error::Cancelled);
         }
         current.check(&s.issue.assessed.authorized.selection)?;
@@ -241,6 +267,9 @@ impl Quoter {
             action,
             s.issue.bytes.bytes().len(),
         )?;
+        if s.issue.expires <= self.clock.now() {
+            return Err(Error::Cancelled);
+        }
         let s = slots.remove(&quote.key).ok_or(Error::Conflict)?;
         Ok(Accepted {
             assessed: s.issue.assessed,

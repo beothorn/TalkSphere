@@ -194,6 +194,9 @@ impl<P: Persistence> Coordinator<P> {
                     return Err(Error::Limit);
                 }
             }
+            if !included && self.accounting.status(context, key)?.is_some() {
+                return Err(Error::Conflict);
+            }
             self.save(context, &mut state, op)?;
             state.pins.insert(key, installed);
         }

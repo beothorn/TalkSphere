@@ -502,3 +502,55 @@ fn missing_recovery_provider_is_explicit() {
     ));
     assert_eq!(ledger.view(&lc, IdentityId([1; 32])).unwrap().issued, 100);
 }
+
+// A new empty coordinator cannot reinterpret existing Ledger history as permission to execute an old key again.
+#[test]
+fn missing_coordinator_history_cannot_reuse_ledger_key() {
+    let h = open(
+        stores::Services::default(),
+        stores::Ledger::default(),
+        Arc::new(Mutex::new(Vec::new())),
+        true,
+    );
+    let local = IdentityId([2; 32]);
+    let g = h
+        .authority
+        .grant(local, Action::Coordinate, 1_000_000)
+        .unwrap();
+    let accepted = accepted(h.authority.clone(), &h.registry, 1, 1);
+    h.runtime
+        .admit(&context(&g), accepted, Payment::default())
+        .unwrap();
+    let lg = h
+        .ledger_authority
+        .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+        .unwrap();
+    let accounting = Arc::new(accounting::Ledger::new(
+        h.ledger.clone(),
+        lg,
+        Default::default(),
+    ));
+    let init = h
+        .authority
+        .grant(local, Action::Register, 1_000_000)
+        .unwrap();
+    let empty = Coordinator::open(
+        Config {
+            local,
+            authority: h.authority.clone(),
+            limits: Limits::default(),
+        },
+        &context(&init),
+        stores::Services::default(),
+        accounting,
+        h.registry.clone(),
+        true,
+    )
+    .unwrap();
+    let same = super::runtime_tests::accepted(h.authority.clone(), &h.registry, 1, 1);
+    assert_eq!(
+        empty.admit(&context(&g), same, Payment::default()),
+        Err(Error::Conflict)
+    );
+    assert_eq!(h.family.executions(), 0);
+}

@@ -205,3 +205,71 @@ fn expired_and_foreign_quotes() {
         Err(Error::Cancelled)
     ));
 }
+
+struct TestClock(std::sync::Mutex<Instant>);
+impl super::quote::Clock for TestClock {
+    // The fixture controls local time explicitly without sleeping or using a peer clock.
+    fn now(&self) -> Instant {
+        *self.0.lock().unwrap()
+    }
+}
+struct ExpireDuringCurrent(Arc<TestClock>, Instant);
+impl super::quote::Current for ExpireDuringCurrent {
+    // A potentially slow dependency callback advances monotonic time across quote expiry.
+    fn check(&self, _: &board::selection::Selection) -> Result<(), Error> {
+        *self.0.0.lock().unwrap() = self.1;
+        Ok(())
+    }
+}
+// Quote validity must still hold after a callback; a successful current-offering check cannot revive expiry.
+#[test]
+fn expiry_after_dependency_callback() {
+    let (_, selection, _, registry) = selected(false);
+    let local = IdentityId([2; 32]);
+    let a = Arc::new(Authority::new());
+    let g = a.grant(local, Action::Invoke, 65536).unwrap();
+    let c = super::runtime_tests::context(&g);
+    let peer = Peer {
+        local,
+        remote: IdentityId([1; 32]),
+        key: OperationKey {
+            requester: IdentityId([1; 32]),
+            connection: [8; 32],
+            stream: 1,
+        },
+    };
+    let authorized = authorize(&c, &a, local, &registry, selection, peer, None).unwrap();
+    let assessed = assess(
+        &c,
+        &a,
+        authorized,
+        &Value::String("input".into()),
+        Limits::default(),
+    )
+    .unwrap();
+    let now = Instant::now();
+    let clock = Arc::new(TestClock(std::sync::Mutex::new(now)));
+    let q = Quoter::with_clock(local, a, Limits::default(), clock.clone()).unwrap();
+    let expires = now + Duration::from_secs(1);
+    let quote = q
+        .issue(
+            &c,
+            Issue {
+                assessed,
+                bytes: Blob::new(vec![1], 1).unwrap(),
+                maximum: 7,
+                expires,
+            },
+        )
+        .unwrap();
+    assert!(matches!(
+        q.accept(
+            &c,
+            &quote,
+            peer,
+            quote.hash(),
+            &ExpireDuringCurrent(clock, expires)
+        ),
+        Err(Error::Cancelled)
+    ));
+}

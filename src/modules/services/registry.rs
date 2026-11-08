@@ -141,6 +141,26 @@ impl Registry {
             .and_then(|n| u32::try_from(n).ok())
             .filter(|n| *n > 0)
             .ok_or(Error::Invalid)?;
+        // Definition fields are public: revalidate instead of trusting a caller-supplied support flag.
+        board::offering::string(v, "id").map_err(|_| Error::Invalid)?;
+        board::offering::string(v, "description").map_err(|_| Error::Invalid)?;
+        if ["creditIssuer", "price", "pricing", "checkPrice", "info"]
+            .iter()
+            .any(|field| v.get(*field).is_some())
+        {
+            return Err(Error::Invalid);
+        }
+        let schemas = [
+            super::schema::validate(v.get("input").ok_or(Error::Invalid)?)
+                .map_err(|_| Error::Invalid)?,
+            super::schema::validate(v.get("output").ok_or(Error::Invalid)?)
+                .map_err(|_| Error::Invalid)?,
+            super::schema::check(v.get("check").ok_or(Error::Invalid)?)
+                .map_err(|_| Error::Invalid)?,
+        ];
+        if schemas.contains(&super::schema::Support::Unknown) {
+            return Err(Error::Unsupported);
+        }
         if d.support != super::schema::Support::Known {
             return Err(Error::Unsupported);
         }

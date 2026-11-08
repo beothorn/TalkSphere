@@ -1058,3 +1058,98 @@ fn serialized_and_direct_contracts_match() {
     drop(remote.runtime);
     assert!(!reply.is_empty());
 }
+// Simultaneous dispatch and decision delivery serialize to one execution and one immutable terminal outcome.
+#[test]
+fn concurrent_dispatch_and_decisions() {
+    use super::runtime::Decision;
+    use std::sync::{Barrier, atomic::Ordering};
+    let f = Arc::new(super::test_support::family::Echo::new());
+    let fixture = runtime_with_family(f.clone());
+    let g = fixture
+        .a
+        .grant(IdentityId([2; 32]), Action::Coordinate, 1_000_000)
+        .unwrap();
+    let o = fixture
+        .a
+        .grant(IdentityId([2; 32]), Action::Observe, 1_000_000)
+        .unwrap();
+    let accepted = accepted(fixture.a.clone(), &fixture.r, 1, 1);
+    let key = accepted.assessed().authorized.peer.key;
+    fixture
+        .runtime
+        .admit(&context(&g), accepted, Payment::default())
+        .unwrap();
+    fixture
+        .runtime
+        .supply_input(&context(&g), key, Value::String("input".into()))
+        .unwrap();
+    let gate = Barrier::new(3);
+    std::thread::scope(|scope| {
+        let one = scope.spawn(|| {
+            gate.wait();
+            fixture.runtime.start(&context(&g), key)
+        });
+        let two = scope.spawn(|| {
+            gate.wait();
+            fixture.runtime.start(&context(&g), key)
+        });
+        gate.wait();
+        let results = [one.join().unwrap(), two.join().unwrap()];
+        assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+        assert!(results.contains(&Err(Error::Unknown)));
+    });
+    assert_eq!(f.executions.load(Ordering::SeqCst), 1);
+    fixture.runtime.stage(&context(&g), key).unwrap();
+    fixture.runtime.prepare(&context(&g), key).unwrap();
+    let gate = Barrier::new(3);
+    let decision = std::thread::scope(|scope| {
+        let one = scope.spawn(|| {
+            gate.wait();
+            fixture.runtime.decide(&context(&g), key, Decision::Commit)
+        });
+        let two = scope.spawn(|| {
+            gate.wait();
+            fixture.runtime.decide(&context(&g), key, Decision::Abort)
+        });
+        gate.wait();
+        let a = one.join().unwrap();
+        let b = two.join().unwrap();
+        assert_eq!(usize::from(a.is_ok()) + usize::from(b.is_ok()), 1);
+        assert!(a == Err(Error::Conflict) || b == Err(Error::Conflict));
+        if a.is_ok() {
+            Decision::Commit
+        } else {
+            Decision::Abort
+        }
+    });
+    let gate = Barrier::new(3);
+    std::thread::scope(|scope| {
+        let deliver = || {
+            gate.wait();
+            match decision {
+                Decision::Commit => fixture.runtime.commit(&context(&g), key),
+                Decision::Abort => fixture.runtime.abort(&context(&g), key),
+            }
+        };
+        let one = scope.spawn(deliver);
+        let two = scope.spawn(deliver);
+        gate.wait();
+        assert_eq!(one.join().unwrap(), Ok(()));
+        assert_eq!(two.join().unwrap(), Ok(()));
+    });
+    let terminal = fixture.runtime.status(&context(&o), key).unwrap();
+    assert_eq!(
+        terminal,
+        Some(if decision == Decision::Commit {
+            Phase::Committed
+        } else {
+            Phase::Aborted
+        })
+    );
+    fixture.a.revoke();
+    assert_eq!(
+        fixture.runtime.status(&context(&o), key),
+        Err(Error::Denied)
+    );
+    assert_eq!(f.executions.load(Ordering::SeqCst), 1);
+}

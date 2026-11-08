@@ -38,7 +38,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **28.** Drain handlers while preserving accepted recovery paths.
 - [x] **29.** Bound retention without discarding recovery obligations.
 - [x] **30.** Verify contracts through a bounded serialized adapter.
-- [ ] **31.** Verify concurrent invocation and authority isolation.
+- [x] **31.** Verify concurrent invocation and authority isolation.
 - [ ] **32.** Add a discoverable local Services exercise path.
 - [ ] **33.** Complete the Services acceptance matrix.
 - [ ] **34.** Publish Services documentation and the Peer Protocol handoff.
@@ -313,3 +313,5 @@ Step 28 completed: composition unpublishes before draining, retained pins finish
 Step 29 completed: aggregate retained byte-body limits apply on every write and reopen alongside operations, nodes and image bytes. Lower-limit recovery and a full lifetime table refuse without evicting results or replay guards; no unsafe compaction is exposed. Required checks pass; production coverage 11767/12508 = 94.08%.
 
 Step 30 completed: the bounded versioned local adapter calls the same coordinator APIs with out-of-band authority; direct/serialized results, lost replies, truncation, finite buffers, foreign callers and result ownership are tested. Literal codec fixtures cover full-width values and IEEE bits. This is not peer wire or independent-process adapter conformance. Required checks pass; production coverage 11871/12619 = 94.07%.
+
+Step 31 completed: barrier races cover dispatch, opposite immutable decisions, duplicate delivery and included-check admission; foreign/revoked contexts, bounded TRACE privacy, forged definition flags, callback expiry and missing coordinator/retained Ledger history are checked. Runtime responsibilities are split into focused files. Required checks pass; production coverage 11915/12670 = 94.04%.

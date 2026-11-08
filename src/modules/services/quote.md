@@ -29,3 +29,5 @@ Requester-side remote assessments use Request authority and requester validation
 including when the node has no local provider. Quoting and acceptance derive this
 purpose from application roles. Transient disconnect cleanup accepts the relevant
 owner-issued Invoke or Request grant and never touches accepted coordinator state.
+
+Clock is a trusted nondecreasing local monotonic time port; new uses the system clock, and with_clock accepts an injected clock. Expiry is rechecked after current-publication callbacks, before acceptance consumes the slot. No peer timestamp controls this clock.

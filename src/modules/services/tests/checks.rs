@@ -611,3 +611,41 @@ fn timeout_and_provider_commit_have_distinct_local_credit_views() {
         97
     );
 }
+
+// Concurrent distinct streams share one stable included entitlement; one winner never grants a second free check.
+#[test]
+fn concurrent_included_admission() {
+    let f = fixture(true, false);
+    let local = IdentityId([2; 32]);
+    let g = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let bg =
+        f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+            .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: context(&g).deadline,
+        cancelled: false,
+    };
+    let current = BoardCurrent {
+        owner: &f.owner,
+        context: &bc,
+    };
+    let (a, _) = consent(&f, 1);
+    let (b, _) = consent(&f, 2);
+    let gate = std::sync::Barrier::new(3);
+    std::thread::scope(|scope| {
+        let one = scope.spawn(|| {
+            gate.wait();
+            f.runtime.admit_check(&context(&g), a, &current)
+        });
+        let two = scope.spawn(|| {
+            gate.wait();
+            f.runtime.admit_check(&context(&g), b, &current)
+        });
+        gate.wait();
+        let results = [one.join().unwrap(), two.join().unwrap()];
+        assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+        assert!(results.contains(&Err(Error::Limit)));
+    });
+    assert_eq!(f.family.calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+}

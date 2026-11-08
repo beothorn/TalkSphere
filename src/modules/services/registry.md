@@ -30,3 +30,5 @@ registration purpose/domain/bytes without effects, allowing composition to valid
 authority before unpublishing. Registry.drain alone changes registry eligibility;
 application publication writers use the serialized composition Publication facade
 to remove advertised offerings durably before disabling implementations.
+
+Registration independently checks required definition fields, all three schema descriptions and forbidden economic fields; a caller-supplied Known support flag cannot bypass validation.

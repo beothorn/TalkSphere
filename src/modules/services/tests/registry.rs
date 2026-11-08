@@ -181,3 +181,32 @@ fn catalogue_and_capacity() {
     );
     assert!(r.select("org.example.echo", 1, false).is_ok());
 }
+
+// Public Definition construction cannot forge a Known marker to bypass mandatory schemas or descriptions.
+#[test]
+fn fabricated_support_marker_is_not_validation() {
+    let local = IdentityId([2; 32]);
+    let a = Arc::new(Authority::new());
+    let g = a.grant(local, Action::Register, 65536).unwrap();
+    let r = Registry::new(local, a, Limits::default(), Arc::new(NoStandards)).unwrap();
+    for field in ["id", "description", "input", "output", "check"] {
+        let base = Echo::new();
+        let mut definition = base.definition().clone();
+        let mut value = definition.document.value().clone();
+        value.as_object_mut().unwrap().remove(field);
+        definition.document = crate::modules::board::document::Document::parse(
+            value.to_string().as_bytes(),
+            Default::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            r.register(
+                &super::runtime_tests::context(&g),
+                Arc::new(Alternate { base, definition }),
+                None
+            ),
+            Err(Error::Invalid)
+        );
+    }
+    assert!(r.select("org.example.echo", 1, false).is_err());
+}
