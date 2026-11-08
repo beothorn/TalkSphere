@@ -37,6 +37,14 @@ pub struct Payment {
     /// Exact agreed issuer fee, absent outside third-party work.
     pub fee: Option<u64>,
 }
+/// Immutable coordinator decision; it does not assert remote receipt or payment success.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Decision {
+    /// Deliver the exact already prepared successful local effects.
+    Commit,
+    /// Release uncommitted local resources without charging.
+    Abort,
+}
 struct State {
     records: BTreeMap<OperationKey, Operation>,
     pins: BTreeMap<OperationKey, Registered>,
@@ -437,6 +445,37 @@ impl<P: Persistence> Coordinator<P> {
             &op.reference(self.config.limits)?,
         )?;
         op.phase = Phase::Prepared;
+        self.save(context, &mut state, op)
+    }
+
+    /// Persist one immutable local decision; commit requires every participant prepared and retained valid output.
+    /// # Errors
+    /// Premature commit, contradictory decisions, missing bindings and caller/storage failures are explicit errors.
+    pub fn decide(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+        decision: Decision,
+    ) -> Result<(), Error> {
+        tracing::trace!("Persisting immutable Services coordinator decision");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        match (op.phase, decision) {
+            (Phase::Commit | Phase::Committed, Decision::Commit)
+            | (Phase::Abort | Phase::Aborted, Decision::Abort) => return Ok(()),
+            (Phase::Commit | Phase::Committed | Phase::Abort | Phase::Aborted, _) => {
+                return Err(Error::Conflict);
+            }
+            (Phase::Prepared, Decision::Commit) => {
+                if op.completion.is_none() || op.handler.is_none() {
+                    return Err(Error::Invalid);
+                }
+                op.phase = Phase::Commit;
+            }
+            (_, Decision::Commit) => return Err(Error::Conflict),
+            (_, Decision::Abort) => op.phase = Phase::Abort,
+        }
         self.save(context, &mut state, op)
     }
 

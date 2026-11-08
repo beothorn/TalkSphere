@@ -45,3 +45,9 @@ reference to the coordinator-retained input/result/effect and accepted terms.
 Exact retry/status reconstruction recovers participant tokens without repeating
 execution. Only after both participants acknowledge preparation does the journal
 enter Prepared; partial acknowledgement loss preserves holds and recovery data.
+
+decide durably records exactly one Decision.Commit or Decision.Abort. Commit is
+allowed only from Prepared with retained complete output and participant tokens.
+Exact decision repetition is idempotent; opposite decisions conflict before any
+participant delivery. Abort can resolve uncommitted work but can never replace
+Commit/Committed. A decision is independent of peer receipt and payment status.

@@ -28,7 +28,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **18.** Journal execution attempts before dispatching work.
 - [x] **19.** Validate outputs and retain complete results durably.
 - [x] **20.** Prepare handler and Ledger effects through public contracts.
-- [ ] **21.** Persist one immutable commit or abort decision.
+- [x] **21.** Persist one immutable commit or abort decision.
 - [ ] **22.** Deliver commit decisions without duplicate effects.
 - [ ] **23.** Abort uncommitted work without erasing obligations.
 - [ ] **24.** Recover coordination across every durable failure cut.
@@ -221,6 +221,8 @@ Step 20 completed: pinned family preparation returns an owner/key/effect token t
 ### 21. Persist one immutable commit or abort decision
 
 Allow commit only after complete valid input/result, retained result data, valid finite reservation and every required preparation. Durably record one decision before delivery and forbid replacement. Recover an absent or uncertain decision through the authoritative coordinator store, never participant timeout guesses. Test each preparation/decision ordering, conflicting decisions, failed persistence and coordinator authority isolation.
+
+Step 21 completed: immutable decision recording permits commit only after complete retained result and both preparations. Exact decision replay is idempotent; premature commits and commit-to-abort replacement conflict before delivery. Tests retain the pending Commit state separately from terminal success. Required checks pass; production coverage 10603/11186 = 94.79%.
 
 ### 22. Deliver commit decisions without duplicate effects
 
