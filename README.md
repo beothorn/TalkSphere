@@ -157,3 +157,14 @@ protected Linux snapshot with `cargo run --locked -- board-show --board-store
 board-state --publisher CR2SE_ID`. The publisher must match the stored identity.
 Use `talksphere help --board-file` or `talksphere help --board-store` for limits,
 output and failure rules. These commands do not publish or open peer connections.
+
+## Ledger inspection
+
+Inspect an existing protected Linux Ledger through
+`cargo run --locked -- ledger-show --ledger-store DIRECTORY --local-identity CR2SE_ID --account CR2SE_ID`.
+All options are required in this order. Output keeps owned/issued currencies
+separate and shows exact available amounts and participant/payment status counts.
+Inspection acquires the exclusive writer lock and never initializes or repairs
+accounting. Use `cargo run --locked -- help ledger-show` or help with any option
+spelling for defaults and errors. Ledger mutations currently use its authorized
+library contracts; network controls await Peer Protocol composition.

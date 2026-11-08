@@ -38,7 +38,7 @@ settlement and durable transfer/claim replay records.
 - [x] **28.** Preserve obligations and replay records during bounded maintenance.
 - [x] **29.** Verify races across every shared accounting resource.
 - [x] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
-- [ ] **31.** Expose bounded local Ledger inspection with discoverable help.
+- [x] **31.** Expose bounded local Ledger inspection with discoverable help.
 - [ ] **32.** Complete the Ledger acceptance matrix through public contracts.
 - [ ] **33.** Publish Ledger documentation and the Services handoff.
 
@@ -459,6 +459,8 @@ help <topic> alias, README and executable tests synchronized. Errors go to stder
 with syntax2/runtime1; no arguments still show successful help. Exercise mutations
 through runnable library scenarios until deliberate administration composition
 exists; do not add an unsafe peer-facing admin or secret-on-command-line interface.
+
+Completed step 31: Added bounded existing-store ledger-show with explicit local/account identities, exact issuer-separated output and aggregate pending/unknown payment status. Shared help covers every new spelling; executable tests cover help/syntax, contention, uint64 maximum, wrong owner, corruption and no implicit initialization. Required checks pass; production line coverage 8752/9150 = 95.65%.
 
 ### 32. Acceptance audit
 

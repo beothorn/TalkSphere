@@ -6,6 +6,11 @@ pub(super) enum Command {
     Help(Topic),
     Version,
     ServeConfigured(super::server_args::ServerArgs),
+    Ledger {
+        path: std::path::PathBuf,
+        local: crate::modules::identity::api::IdentityId,
+        account: crate::modules::identity::api::IdentityId,
+    },
     Board {
         path: std::path::PathBuf,
         publisher: Option<crate::modules::identity::api::IdentityId>,
@@ -20,6 +25,27 @@ pub(super) enum Command {
 pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
     tracing::trace!(function = "args::parse", "Parsing CLI command forms");
     match arguments {
+        [command, flag] if command == "ledger-show" && matches!(flag.as_str(), "--help" | "-h") => {
+            Ok(Command::Help(Topic::Ledger))
+        }
+        [command, store, path, identity, local, account_flag, account]
+            if command == "ledger-show"
+                && store == "--ledger-store"
+                && !path.is_empty()
+                && identity == "--local-identity"
+                && account_flag == "--account" =>
+        {
+            let local = crate::modules::identity::text::parse(local)
+                .map_err(|_| "--local-identity requires a valid CR2SE ID".to_owned())?;
+            let account = crate::modules::identity::text::parse(account)
+                .map_err(|_| "--account requires a valid CR2SE ID".to_owned())?;
+            Ok(Command::Ledger {
+                path: path.into(),
+                local,
+                account,
+            })
+        }
+
         [command, option]
             if matches!(command.as_str(), "board-validate" | "board-show")
                 && matches!(option.as_str(), "--help" | "-h") =>

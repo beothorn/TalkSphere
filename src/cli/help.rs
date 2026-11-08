@@ -7,6 +7,7 @@ pub(super) enum Topic {
     Serve,
     Identity,
     Board,
+    Ledger,
     ServerOptions,
     Logging,
 }
@@ -22,6 +23,18 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Ledger,
+        names: &[
+            "ledger-show",
+            "--ledger-store",
+            "--local-identity",
+            "--account",
+        ],
+        label: "ledger-show",
+        summary: "Inspect issuer-separated accounting in an existing protected Ledger.",
+        details: "Usage: talksphere ledger-show --ledger-store DIRECTORY --local-identity CR2SE_ID --account CR2SE_ID\n\nAll three options are required in the displayed order. --ledger-store selects an existing owner-only Linux Ledger directory; --local-identity is its exact expected owner; --account selects one external issuer/owner account.\nOutputs exact integer balances, available credits, trust in millionths and aggregate participant/payment statuses; currencies remain separate. Local inspection limits are 4096 accounts per view, 4096 operations, 65536 transfers/claims and 16777216 state bytes; quote capacity defaults to 64.\nInspection takes the exclusive writer lock and validates complete state; missing/corrupt/insecure stores, contention or unsupported platforms exit 1 without initializing or repairing accounting. Invalid syntax exits 2; success/help exits 0. No secrets, grants, claims, network calls or new spending are produced.\nSee plans/6_Ledger_module/PLAN.md and src/modules/ledger/README.md.\n",
+    },
     HelpTopic {
         topic: Topic::Board,
         names: &[

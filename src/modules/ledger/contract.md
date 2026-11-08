@@ -16,3 +16,8 @@ Limits names maximum accounts per view, durable operations, lifetime transfer
 records, all claims, simultaneous quotes and serialized state bytes. All must be
 positive, with room for 64 bytes of framing without overflow. Owners enforce each
 budget before admission. Limits never authorize dropping retained obligations.
+
+Default local capacities are 4096 accounts per view and operations, 65536 transfers
+and claims, 64 live quotes, and 16777216 serialized state bytes. These are deliberate
+local policy, not new peer protocol maxima; reopening with smaller incompatible
+limits fails instead of dropping records.

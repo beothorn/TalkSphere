@@ -70,6 +70,20 @@ pub struct Limits {
     /// Maximum serialized local record bytes.
     pub state_bytes: usize,
 }
+impl Default for Limits {
+    /// Finite local inspection/runtime defaults; these are not new protocol maxima.
+    fn default() -> Self {
+        tracing::trace!("Selecting bounded local Ledger defaults");
+        Self {
+            accounts: 4096,
+            operations: 4096,
+            transfers: 65536,
+            claims: 65536,
+            quotes: 64,
+            state_bytes: 16_777_216,
+        }
+    }
+}
 impl Limits {
     /// Require positive limits and arithmetic-safe record framing before allocation.
     /// # Errors

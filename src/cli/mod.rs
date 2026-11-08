@@ -4,6 +4,7 @@ mod args;
 mod board;
 mod help;
 mod identity;
+mod ledger;
 mod serve;
 mod server_args;
 
@@ -26,7 +27,10 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
 
     if matches!(
         &command,
-        Ok(Command::ServeConfigured(_) | Command::Identity { .. } | Command::Board { .. })
+        Ok(Command::ServeConfigured(_)
+            | Command::Identity { .. }
+            | Command::Board { .. }
+            | Command::Ledger { .. })
     ) && let Err(error) = crate::composition::logging::initialize()
     {
         eprintln!("error: {error}");
@@ -42,6 +46,24 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
             println!("talksphere {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Ok(Command::Ledger {
+            path,
+            local,
+            account,
+        }) => match ledger::show(&path, local, account) {
+            Ok(output) => {
+                print!("{output}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                if tracing::enabled!(tracing::Level::ERROR) {
+                    tracing::error!(%error,"Ledger inspection failed without changing accounting");
+                } else {
+                    eprintln!("error: {error}");
+                }
+                ExitCode::FAILURE
+            }
+        },
         Ok(Command::Board { path, publisher }) => {
             let result = match publisher {
                 Some(id) => board::show(&path, id),
