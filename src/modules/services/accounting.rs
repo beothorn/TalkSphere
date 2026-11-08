@@ -44,6 +44,44 @@ pub trait Accounting: Send + Sync {
     ) -> Result<(), Error>;
     /// Observe original durable status without creating another attempt.
     fn status(&self, context: &Context<'_>, key: OperationKey) -> Result<Option<Status>, Error>;
+    /// Observe payment independently of service completion through the authoritative Ledger owner.
+    fn payment(
+        &self,
+        _context: &Context<'_>,
+        _key: OperationKey,
+    ) -> Result<Option<ledger::payment::Payment>, Error> {
+        tracing::trace!("Refusing absent accounting payment observation capability");
+        Err(Error::Unsupported)
+    }
+    /// Describe an explicit original transfer/query action; never open a connection here.
+    fn payment_request(
+        &self,
+        _context: &Context<'_>,
+        _key: OperationKey,
+    ) -> Result<ledger::payment::PaymentRequest, Error> {
+        tracing::trace!("Refusing absent issuer payment request capability");
+        Err(Error::Unsupported)
+    }
+    /// Apply only original-issuer authenticated evidence to the original accounting operation.
+    fn confirm_payment(
+        &self,
+        _context: &Context<'_>,
+        _key: OperationKey,
+        _receipt: &ledger::payment::Receipt,
+    ) -> Result<(), Error> {
+        tracing::trace!("Refusing absent issuer receipt confirmation capability");
+        Err(Error::Unsupported)
+    }
+    /// Preserve independent unknown/refused payment without undoing completed service work.
+    fn payment_problem(
+        &self,
+        _context: &Context<'_>,
+        _key: OperationKey,
+        _unknown: bool,
+    ) -> Result<(), Error> {
+        tracing::trace!("Refusing absent payment uncertainty capability");
+        Err(Error::Unsupported)
+    }
     /// Reload an uncertain Ledger participant; never repeat the financial mutation.
     fn recover(&self, context: &Context<'_>) -> Result<(), Error>;
 }
@@ -152,6 +190,52 @@ impl<P: Persistence> Accounting for Ledger<P> {
         tracing::trace!("Querying Ledger participant status for Services");
         self.ledger
             .status(&self.context(c), key(k))
+            .map_err(Into::into)
+    }
+    // Ledger keeps pending/unsettled/unknown/settled provenance separate from local service commitment.
+    fn payment(
+        &self,
+        c: &Context<'_>,
+        k: OperationKey,
+    ) -> Result<Option<ledger::payment::Payment>, Error> {
+        tracing::trace!("Observing original Ledger payment status");
+        self.ledger
+            .payment(&self.context(c), key(k))
+            .map_err(Into::into)
+    }
+    // Composition consumes the bounded action through explicit authenticated issuer control later.
+    fn payment_request(
+        &self,
+        c: &Context<'_>,
+        k: OperationKey,
+    ) -> Result<ledger::payment::PaymentRequest, Error> {
+        tracing::trace!("Describing original invocation issuer action");
+        self.ledger
+            .payment_request(&self.context(c), key(k))
+            .map_err(Into::into)
+    }
+    // The Ledger validates receiver-domain evidence and all original gross/net/fee/identity bindings.
+    fn confirm_payment(
+        &self,
+        c: &Context<'_>,
+        k: OperationKey,
+        r: &ledger::payment::Receipt,
+    ) -> Result<(), Error> {
+        tracing::trace!("Confirming original authenticated issuer payment through Ledger");
+        self.ledger
+            .confirm_payment(&self.context(c), key(k), r)
+            .map_err(Into::into)
+    }
+    // No refund, trust change or service execution follows issuer uncertainty/refusal.
+    fn payment_problem(
+        &self,
+        c: &Context<'_>,
+        k: OperationKey,
+        unknown: bool,
+    ) -> Result<(), Error> {
+        tracing::trace!("Recording independent original payment uncertainty");
+        self.ledger
+            .payment_problem(&self.context(c), key(k), unknown)
             .map_err(Into::into)
     }
     // Ledger owns synchronized recovery of its possibly committed complete image.

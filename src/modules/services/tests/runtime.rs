@@ -33,7 +33,26 @@ pub(super) fn accepted(
     stream: u32,
     bytes: u8,
 ) -> Accepted {
-    let (owner, s, ba, _) = selected(false);
+    accepted_terms(a, registry, stream, bytes, 7, IdentityId([2; 32]))
+}
+// Exact issuer and total spending bounds remain caller-selected immutable quote terms.
+fn accepted_terms(
+    a: Arc<Authority>,
+    registry: &super::registry::Registry,
+    stream: u32,
+    bytes: u8,
+    maximum: u64,
+    issuer: IdentityId,
+) -> Accepted {
+    let f = Arc::new(super::test_support::family::Echo::new());
+    let (owner, s, ba, _) = super::test_support::selection::selected_terms(
+        false,
+        f.clone(),
+        Some(f),
+        Arc::new(Authority::new()),
+        issuer,
+        IdentityId([1; 32]),
+    );
     let local = IdentityId([2; 32]);
     let g = a.grant(local, Action::Invoke, 65536).unwrap();
     let c = context(&g);
@@ -62,7 +81,7 @@ pub(super) fn accepted(
             Issue {
                 assessed,
                 bytes: Blob::new(vec![bytes], 1).unwrap(),
-                maximum: 7,
+                maximum,
                 expires: c.deadline,
             },
         )
@@ -292,6 +311,14 @@ fn configured_runtime(
     family: Arc<super::test_support::family::Echo>,
     requester_only: bool,
 ) -> Fixture {
+    configured_policy(family, requester_only, Default::default())
+}
+// Optional third-party acceptance is explicit composition policy, not peer metadata.
+fn configured_policy(
+    family: Arc<super::test_support::family::Echo>,
+    requester_only: bool,
+    policy: ledger::terms::Policy,
+) -> Fixture {
     let local = IdentityId([2; 32]);
     let requester = IdentityId([1; 32]);
     let a = Arc::new(Authority::new());
@@ -324,7 +351,7 @@ fn configured_runtime(
     let lg = la
         .grant(local, ledger::authority::Action::Coordinate, 1_000_000)
         .unwrap();
-    let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, Default::default()));
+    let adapter = Arc::new(accounting::Ledger::new(l.clone(), lg, policy));
     let (_, _, _, r) = if requester_only {
         super::test_support::selection::selected_requester(family, a.clone())
     } else {
@@ -645,4 +672,119 @@ fn requester_explicit_decline() {
     };
     assert_eq!(l.view(&rc, peer.remote).unwrap().issued, 100);
     assert_eq!(l.budgets(&rc).unwrap().0, 900);
+}
+
+// Successful third-party work remains committed while issuer refusal, uncertainty and authenticated receipt evolve independently.
+#[test]
+fn third_party_payment_is_independent() {
+    let family = Arc::new(super::test_support::family::Echo::new());
+    let Fixture {
+        runtime,
+        a,
+        r,
+        l,
+        la,
+    } = configured_policy(
+        family.clone(),
+        false,
+        ledger::terms::Policy {
+            third_party: true,
+            ..Default::default()
+        },
+    );
+    let local = IdentityId([2; 32]);
+    let requester = IdentityId([1; 32]);
+    let issuer = IdentityId([3; 32]);
+    let g = a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&g);
+    let observe = a.grant(local, Action::Observe, 1_000_000).unwrap();
+    let key = runtime
+        .admit(
+            &c,
+            accepted_terms(a.clone(), &r, 1, 1, 9, issuer),
+            Payment {
+                transfer: Some([4; 16]),
+                fee: Some(2),
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        runtime.payment(&context(&observe), key),
+        Err(Error::Unknown)
+    );
+    runtime
+        .supply_input(&c, key, Value::String("input".into()))
+        .unwrap();
+    runtime.start(&c, key).unwrap();
+    assert_eq!(runtime.resume(&c, key), Ok(Phase::Committed));
+    assert_eq!(
+        runtime.payment(&context(&observe), key),
+        Ok(ledger::payment::Payment::Pending)
+    );
+    let request = runtime.payment_request(&c, key).unwrap();
+    assert!(!request.submit);
+    assert_eq!(request.order.amount, 9);
+    assert_eq!(request.fee, 2);
+    runtime.payment_problem(&c, key, false).unwrap();
+    assert_eq!(
+        runtime.payment(&context(&observe), key),
+        Ok(ledger::payment::Payment::Unsettled)
+    );
+    runtime.payment_problem(&c, key, true).unwrap();
+    assert_eq!(
+        runtime.payment(&context(&observe), key),
+        Ok(ledger::payment::Payment::Unknown)
+    );
+    assert_eq!(runtime.result(&context(&observe), key).unwrap().price, 7);
+    let evidence = la
+        .grant(local, ledger::authority::Action::Evidence, 1_000_000)
+        .unwrap();
+    let ec = ledger::contract::Context {
+        version: 1,
+        grant: &evidence,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    let receipt = |amount| {
+        ledger::payment::Receipt::authenticated(
+            &ec,
+            la.clone(),
+            local,
+            issuer,
+            ledger::transfer_state::TransferResult {
+                order: ledger::transfer::Order {
+                    transfer_id: [4; 16],
+                    issuer,
+                    owner: requester,
+                    new_owner: local,
+                    amount,
+                },
+                fee: 2,
+            },
+        )
+        .unwrap()
+    };
+    assert_eq!(
+        runtime.confirm_payment(&c, key, &receipt(10)),
+        Err(Error::Denied)
+    );
+    runtime.confirm_payment(&c, key, &receipt(9)).unwrap();
+    runtime.confirm_payment(&c, key, &receipt(9)).unwrap();
+    assert_eq!(
+        runtime.payment(&context(&observe), key),
+        Ok(ledger::payment::Payment::Settled)
+    );
+    let read = la
+        .grant(local, ledger::authority::Action::Read, 1_000_000)
+        .unwrap();
+    let rc = ledger::contract::Context { grant: &read, ..ec };
+    assert_eq!(l.view(&rc, issuer).unwrap().owned, 7);
+    assert_eq!(
+        family.executions.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+    assert_eq!(
+        runtime.decide(&c, key, super::runtime::Decision::Abort),
+        Err(Error::Conflict)
+    );
 }

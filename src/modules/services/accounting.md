@@ -15,3 +15,10 @@ prepare calls using the retained key, terms, price and effect. No private token
 fields are forged or serialized. Commit/abort require the coordinator's original
 durable decision; callers must not infer abort from timeout. Structured Ledger
 errors map one-for-one, preserving insufficient funds and commitment uncertainty.
+
+The payment ports independently observe Ledger payment state, describe a bounded
+original transfer/query action, apply receiver-bound original-issuer Receipt and
+record issuer refusal/uncertainty. Missing capabilities fail Unsupported. The real
+adapter delegates every check to Ledger, preserving exact gross/net/fee and issuer,
+owner, recipient and transfer bindings. No port opens sockets, signs transfers,
+refunds service work or changes trust.

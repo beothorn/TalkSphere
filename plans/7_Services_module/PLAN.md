@@ -32,7 +32,7 @@ The existing Services schema-format validator remains the starting point.
 - [x] **22.** Deliver commit decisions without duplicate effects.
 - [x] **23.** Abort uncommitted work without erasing obligations.
 - [x] **24.** Recover coordination across every durable failure cut.
-- [ ] **25.** Track payment state separately from completed work.
+- [x] **25.** Track payment state separately from completed work.
 - [ ] **26.** Run requester-local checks without side effects.
 - [ ] **27.** Coordinate paid evidence and included check entitlements.
 - [ ] **28.** Drain handlers while preserving accepted recovery paths.
@@ -245,6 +245,8 @@ Step 24 completed: the real coordinator, real Ledger and byte-persistent test ha
 ### 25. Track payment state separately from completed work
 
 Integrate Ledger payment requests/status and authenticated original-issuer receipts through explicit dependency ports for third-party settlement. Match requester/provider/issuer/transfer identity, final gross/net and fee exactly. Preserve pending, unknown and unsettled payment without rerunning work or presenting payment refusal as service rollback. Test duplicate evidence, wrong provenance and restart; live issuer network controls remain Peer Protocol work.
+
+Step 25 completed: Services exposes original Ledger payment observations, explicit issuer actions, authenticated receipt confirmation and independent refusal/uncertainty updates. Real third-party provider tests keep valid work committed while payment transitions Pending/Unsettled/Unknown/Settled; gross9/fee2 credits7 once and wrong gross is denied without re-execution. Required checks pass; production coverage 11072/11643 = 95.10%.
 
 ### 26. Run requester-local checks without side effects
 

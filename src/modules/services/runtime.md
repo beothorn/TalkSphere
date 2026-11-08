@@ -97,3 +97,12 @@ peer adapter, permitting local hold release. It is never synthesized from timeou
 connection loss or cancellation. Local participant commitment still proves no
 atomic cross-peer exchange. Record recovery requires handler tokens only where
 that node actually owns a provider participant.
+
+payment reads authoritative Ledger state only after local Committed; missing
+accounting history is Unknown. payment_request requires coordinator authority
+and returns explicit original issuer transfer/query data for composition.
+confirm_payment accepts only Ledger's opaque original-issuer Receipt; Ledger
+validates provenance and exact roles/ID/gross/net/fee and applies evidence once.
+payment_problem records refusal or delivery uncertainty without changing service
+Phase, erasing results or executing again. Issuer networking/signing remains an
+explicit later Peer Protocol/Identity composition responsibility.
