@@ -60,6 +60,9 @@ impl<P: Persistence> Ledger<P> {
         policy: Policy,
     ) -> Result<Reservation, Error> {
         tracing::trace!("Reserving finite Ledger settlement capacity");
+        if terms.accepted.len() > self.limits.state_bytes {
+            return Err(Error::Limit);
+        }
         if key.requester != terms.requester {
             return Err(Error::Invalid);
         }
@@ -347,7 +350,7 @@ pub(super) fn decode(
             _ => return Err(Error::Invalid),
         };
         let held = number(&a[15])?;
-        if key.requester != terms.requester || held == 0 || held < terms.maximum {
+        if key.requester != terms.requester || held == 0 {
             return Err(Error::Invalid);
         }
         if out
@@ -389,3 +392,99 @@ pub(super) fn byte_vec(v: &serde_json::Value) -> Result<Vec<u8>, Error> {
 #[cfg(test)]
 #[path = "tests/reservation.rs"]
 mod tests;
+
+// Validate recovered role/resource/effect associations without reapplying mutable trust or price policy.
+pub(super) fn validate(local: IdentityId, key: OperationKey, op: &Operation) -> Result<(), Error> {
+    tracing::trace!("Checking complete Ledger operation recovery invariants");
+    if key.requester != op.terms.requester {
+        return Err(Error::Invalid);
+    }
+    let mode = op.terms.assess(
+        local,
+        super::accounting::Trust::new(1)?,
+        Policy {
+            requester_credits: true,
+            third_party: true,
+        },
+    )?;
+    if mode != op.mode {
+        return Err(Error::Invalid);
+    }
+    let expected = match mode {
+        Mode::Provider => {
+            if local == op.terms.requester {
+                Resource::Owned(op.terms.provider)
+            } else {
+                Resource::Issued(op.terms.requester)
+            }
+        }
+        Mode::Requester => {
+            if local == op.terms.requester {
+                Resource::Issuance
+            } else {
+                Resource::Incoming(op.terms.requester)
+            }
+        }
+        Mode::Internal => Resource::Internal,
+        Mode::ThirdParty => {
+            if local == op.terms.requester {
+                Resource::Owned(op.terms.issuer)
+            } else {
+                Resource::Incoming(op.terms.issuer)
+            }
+        }
+    };
+    if op.resource != expected {
+        return Err(Error::Invalid);
+    }
+    let price = if let Some((price, effect)) = &op.effect {
+        if *price == 0
+            || *price > op.terms.maximum
+            || (op.terms.fixed && *price != op.terms.maximum)
+            || effect.is_empty()
+        {
+            return Err(Error::Invalid);
+        }
+        *price
+    } else {
+        if matches!(op.status, Status::Prepared | Status::Committed) {
+            return Err(Error::Invalid);
+        }
+        op.terms.maximum
+    };
+    if op.status == Status::Reserved && op.effect.is_some() {
+        return Err(Error::Invalid);
+    }
+    let amount = if mode == Mode::ThirdParty && op.status == Status::Committed {
+        price
+    } else {
+        op.terms.maximum
+    };
+    let held = if mode == Mode::ThirdParty && local == op.terms.requester {
+        amount
+            .checked_add(op.terms.fee.ok_or(Error::Invalid)?)
+            .ok_or(Error::Invalid)?
+    } else {
+        amount
+    };
+    if held != op.held {
+        return Err(Error::Invalid);
+    }
+    if mode != Mode::ThirdParty {
+        if !op.confirmed
+            || op.payment
+                != if op.status == Status::Committed {
+                    super::payment::Payment::Settled
+                } else {
+                    super::payment::Payment::Pending
+                }
+        {
+            return Err(Error::Invalid);
+        }
+    } else if op.confirmed != (op.payment == super::payment::Payment::Settled)
+        || (op.payment != super::payment::Payment::Pending && op.status != Status::Committed)
+    {
+        return Err(Error::Invalid);
+    }
+    Ok(())
+}

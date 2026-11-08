@@ -323,7 +323,26 @@ impl State {
             return Err(Error::Limit);
         }
         super::reservation::available(self, super::reservation::Resource::Issuance)?;
-        for op in self.operations.values() {
+        let mut payments = std::collections::BTreeSet::new();
+        if self.transfers.len() > limits.transfers {
+            return Err(Error::Limit);
+        }
+        if self.accounts.trust.contains_key(&local) {
+            return Err(Error::Invalid);
+        }
+        for (key, op) in &self.operations {
+            super::reservation::validate(local, *key, op)?;
+            if let Some(transfer) = op.terms.transfer
+                && !payments.insert((op.terms.issuer, op.terms.requester, transfer))
+            {
+                return Err(Error::Invalid);
+            }
+            if op.resource == super::reservation::Resource::Issuance {
+                super::reservation::available(
+                    self,
+                    super::reservation::Resource::IssuedRoom(op.terms.provider),
+                )?;
+            }
             super::reservation::available(self, op.resource)?;
         }
         let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations),"transfers":super::transfer_state::encode(self)?,"claims":super::claims::encode(self)})).map_err(|_|Error::Invalid)?;

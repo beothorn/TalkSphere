@@ -35,7 +35,7 @@ settlement and durable transfer/claim replay records.
 - [x] **25.** Encrypt and validate owner-bound claim redemption requests.
 - [x] **26.** Redeem claims atomically with owner-bound retry results.
 - [x] **27.** Invalidate unused claims without weakening terminal replay guards.
-- [ ] **28.** Preserve obligations and replay records during bounded maintenance.
+- [x] **28.** Preserve obligations and replay records during bounded maintenance.
 - [ ] **29.** Verify races across every shared accounting resource.
 - [ ] **30.** Verify Ledger authority isolation and secret-safe diagnostics.
 - [ ] **31.** Expose bounded local Ledger inspection with discoverable help.
@@ -424,6 +424,8 @@ lifetime transfer guards and terminal claims, accepted terms and unresolved hold
 Test near-capacity writes, growing replay sets, interrupted maintenance, schema
 version refusal and recovery with smaller configured limits. Never reset replay
 history while retaining balances or silently discard durable obligations.
+
+Completed step 28: Added conservative zero-balance maintenance that retains all obligations and lifetime replay records, strict recovered role/effect/payment invariants and admission bounds. Tests reject smaller reopen limits without rewriting data and verify metered third-party holds survive restart at the final gross amount. Required checks pass; production line coverage 8602/9002 = 95.56%.
 
 ### 29. Concurrency invariants
 
