@@ -217,10 +217,14 @@ impl Harness {
     // Select explicit expected-ID policy while keeping all primitives and stored credentials real.
     pub fn configured(role: ConnectionRole, write_limit: usize, expected: ExpectedPeer) -> Self {
         let local = role_name(role);
+        // Interrupted test processes can leave stores behind; PID/counter pairs are reused across runs.
+        let mut directory_nonce = [0u8; 16];
+        getrandom::fill(&mut directory_nonce).expect("temporary directory uniqueness entropy");
         let path = std::env::temp_dir().join(format!(
-            "talksphere-real-wire-{}-{}",
+            "talksphere-real-wire-{}-{}-{:032x}",
             std::process::id(),
-            NEXT.fetch_add(1, Ordering::SeqCst)
+            NEXT.fetch_add(1, Ordering::SeqCst),
+            u128::from_be_bytes(directory_nonce),
         ));
         let limits = Limits::new(1024, 64, 65548, 65536, 65536).unwrap();
         let (store, admin) = FileStore::open(&path, limits).unwrap();
