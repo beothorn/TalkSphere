@@ -7,8 +7,7 @@ and monotonic expiry. The adapter must bind those bytes to the assessed economic
 fields; this module does not parse or redefine the peer wire format.
 
 issue checks authority, bytes, positivity/pricing/ceiling, duplicate stream,
-expiry and quote capacity. It returns an opaque Quote exposing only exact bytes
-and SHA256 hash. Expired unaccepted slots are reclaimed. Neither quoting nor the
+expiry and quote capacity. It returns an opaque Quote exposing exact bytes, SHA256 hash and the immutable calculated price. Expired unaccepted slots are reclaimed. Neither quoting nor the
 returned handle reserves credits or executes work.
 
 accept checks original owner domain, local/remote peer, requester/connection/stream,
@@ -31,3 +30,9 @@ purpose from application roles. Transient disconnect cleanup accepts the relevan
 owner-issued Invoke or Request grant and never touches accepted coordinator state.
 
 Clock is a trusted nondecreasing local monotonic time port; new uses the system clock, and with_clock accepts an injected clock. Expiry is rechecked after current-publication callbacks, before acceptance consumes the slot. No peer timestamp controls this clock.
+
+Each issued slot also has a unique opaque generation. Even if an operation key and
+all JSON bytes are reused after consumption, an old handle cannot accept or discard
+the replacement. discard checks owner, purpose, peer and generation, and releases
+only that unaccepted slot; repeated release of an absent slot succeeds. Accepted
+coordinator work is outside this transient map and is never rolled back by discard.

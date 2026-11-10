@@ -25,6 +25,7 @@ use std::{
 pub(in crate::modules::peer_protocol) struct Echo {
     definition: Definition,
     bytes: bool,
+    prices: Mutex<std::collections::VecDeque<u64>>,
     state: Mutex<BTreeMap<OperationKey, (Completion, Status)>>,
     pub(in crate::modules::peer_protocol) assessments: AtomicUsize,
     pub(in crate::modules::peer_protocol) executions: AtomicUsize,
@@ -49,10 +50,15 @@ impl Echo {
             definition: Definition::parse(raw.to_string().as_bytes(), &o, Default::default())
                 .unwrap(),
             bytes,
+            prices: Mutex::new(std::collections::VecDeque::new()),
             state: Mutex::new(BTreeMap::new()),
             assessments: AtomicUsize::new(0),
             executions: AtomicUsize::new(0),
         }
+    }
+    // Deliberately inconsistent local price callbacks exercise the quote owner's independent snapshot checks.
+    pub(in crate::modules::peer_protocol) fn script_prices(&self, prices: &[u64]) {
+        *self.prices.lock().unwrap() = prices.iter().copied().collect();
     }
     // Offering economics are literal fixed seven and an explicit issuer; definition schemas contain none of them.
     fn make_offering(bytes: bool, issuer: IdentityId) -> Offering {
@@ -118,6 +124,17 @@ impl Requester for Echo {
         } else {
             Err(Error::Unsupported)
         }
+    }
+    // Default behavior is the offering's literal price; scripts inject a broken local pricing implementation for failure tests.
+    fn pricing(
+        &self,
+        o: &Offering,
+        _: &Value,
+    ) -> Result<crate::modules::services::pricing::Price, Error> {
+        self.terms(o)?;
+        Ok(crate::modules::services::pricing::Price::Fixed(
+            self.prices.lock().unwrap().pop_front().unwrap_or(7),
+        ))
     }
     // Byte and UTF-8 text metadata project exact logical byte length independently.
     fn assessment_metadata(&self, input: &Value, budget: Budget) -> Result<Value, Error> {

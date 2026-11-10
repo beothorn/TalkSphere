@@ -80,8 +80,15 @@ pub struct Quote {
     key: OperationKey,
     hash: [u8; 32],
     bytes: Blob,
+    price: Price,
+    generation: Arc<()>,
 }
 impl Quote {
+    /// Read the immutable price captured when this exact handle was issued.
+    pub fn price(&self) -> Price {
+        tracing::trace!("Reading frozen issued quote price");
+        self.price
+    }
     /// Borrow exact quote bytes retained for hashing and transmission.
     pub fn bytes(&self) -> &[u8] {
         tracing::trace!("Borrowing exact quote bytes");
@@ -123,6 +130,7 @@ impl Accepted {
     }
 }
 struct Slot {
+    generation: Arc<()>,
     issue: Issue,
     price: Price,
     hash: [u8; 32],
@@ -196,11 +204,14 @@ impl Quoter {
         }
         let price = pricing::quote(&issue.assessed, issue.maximum)?;
         let hash = Sha256::digest(issue.bytes.bytes()).into();
+        let generation = Arc::new(());
         let q = Quote {
             domain: Arc::downgrade(&self.domain),
             key: peer.key,
             hash,
             bytes: issue.bytes.clone(),
+            price,
+            generation: generation.clone(),
         };
         let mut slots = self.slots.lock().map_err(|_| Error::Unavailable)?;
         context.check(
@@ -216,7 +227,15 @@ impl Quoter {
         if slots.len() >= self.limits.quotes {
             return Err(Error::Limit);
         }
-        slots.insert(peer.key, Slot { issue, price, hash });
+        slots.insert(
+            peer.key,
+            Slot {
+                generation,
+                issue,
+                price,
+                hash,
+            },
+        );
         Ok(q)
     }
     /// Accept only the original exact quote on its trusted stream after current Board revalidation.
@@ -241,6 +260,9 @@ impl Quoter {
         }
         let mut slots = self.slots.lock().map_err(|_| Error::Unavailable)?;
         let s = slots.get(&quote.key).ok_or(Error::Conflict)?;
+        if !Arc::ptr_eq(&s.generation, &quote.generation) {
+            return Err(Error::Conflict);
+        }
         let original = s.issue.assessed.authorized.peer;
         if original.remote != peer.remote || s.hash != hash {
             return Err(Error::Denied);
@@ -277,6 +299,40 @@ impl Quoter {
             bytes: s.issue.bytes,
             maximum: s.issue.maximum,
         })
+    }
+    /// Release only this exact unaccepted quote generation; accepted work is never cancelled by this operation.
+    /// # Errors
+    /// Foreign owners/peers, stale handles and caller failures cannot release another quote; an absent slot is already released.
+    pub fn discard(&self, context: &Context<'_>, quote: &Quote, peer: Peer) -> Result<(), Error> {
+        tracing::trace!("Releasing one exact unaccepted quote without changing accepted work");
+        let domain = quote.domain.upgrade().ok_or(Error::Denied)?;
+        if !Arc::ptr_eq(&domain, &self.domain) || peer.local != self.local || peer.key != quote.key
+        {
+            return Err(Error::Denied);
+        }
+        let action = if peer.key.requester == self.local {
+            Action::Request
+        } else {
+            Action::Invoke
+        };
+        context.check(
+            &self.authority,
+            self.local,
+            action,
+            quote.bytes.bytes().len(),
+        )?;
+        let mut slots = self.slots.lock().map_err(|_| Error::Unavailable)?;
+        let Some(slot) = slots.get(&quote.key) else {
+            return Ok(());
+        };
+        if !Arc::ptr_eq(&slot.generation, &quote.generation) {
+            return Err(Error::Conflict);
+        }
+        if slot.issue.assessed.authorized.peer.remote != peer.remote {
+            return Err(Error::Denied);
+        }
+        slots.remove(&quote.key);
+        Ok(())
     }
     /// Release unaccepted quotes on a trusted disconnect event; accepted work is coordinator-owned.
     /// # Errors

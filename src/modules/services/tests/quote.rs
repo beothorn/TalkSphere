@@ -273,3 +273,83 @@ fn expiry_after_dependency_callback() {
         Err(Error::Cancelled)
     ));
 }
+
+// Reusing identical public bytes/key cannot revive an older opaque generation or release its replacement slot.
+#[test]
+fn exact_quote_generation_and_discard() {
+    let (owner, selection, ba, registry) = selected(false);
+    let local = IdentityId([2; 32]);
+    let authority = Arc::new(Authority::new());
+    let g = authority.grant(local, Action::Invoke, 65536).unwrap();
+    let c = super::runtime_tests::context(&g);
+    let peer = Peer {
+        local,
+        remote: IdentityId([1; 32]),
+        key: OperationKey {
+            requester: IdentityId([1; 32]),
+            connection: [8; 32],
+            stream: 1,
+        },
+    };
+    let q = Quoter::new(local, authority.clone(), Limits::default()).unwrap();
+    let make = || {
+        let auth = authorize(
+            &c,
+            &authority,
+            local,
+            &registry,
+            selection.clone(),
+            peer,
+            None,
+        )
+        .unwrap();
+        let assessed = assess(
+            &c,
+            &authority,
+            auth,
+            &Value::String("input".into()),
+            Limits::default(),
+        )
+        .unwrap();
+        q.issue(
+            &c,
+            Issue {
+                assessed,
+                bytes: Blob::new(vec![1], 1).unwrap(),
+                maximum: 7,
+                expires: c.deadline,
+            },
+        )
+        .unwrap()
+    };
+    let bg = ba
+        .grant(local, board::authority::Action::Select, 65536)
+        .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    let current = BoardCurrent {
+        owner: &owner,
+        context: &bc,
+    };
+    let first = make();
+    assert_eq!(first.price(), super::pricing::Price::Fixed(7));
+    q.accept(&c, &first, peer, first.hash(), &current).unwrap();
+    let second = make();
+    assert_eq!(first.hash(), second.hash());
+    assert_eq!(q.discard(&c, &first, peer), Err(Error::Conflict));
+    assert!(matches!(
+        q.accept(&c, &first, peer, first.hash(), &current),
+        Err(Error::Conflict)
+    ));
+    q.accept(&c, &second, peer, second.hash(), &current)
+        .unwrap();
+    let third = make();
+    q.discard(&c, &third, peer).unwrap();
+    assert!(matches!(
+        q.accept(&c, &third, peer, third.hash(), &current),
+        Err(Error::Conflict)
+    ));
+}

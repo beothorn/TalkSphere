@@ -23,7 +23,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **15.** Serve bounded Board and definition requests.
 - [x] **16.** Consume metadata with authenticated publisher provenance.
 - [x] **17.** Authorize provided invocation proposals.
-- [ ] **18.** Construct exact stream-bound service quotes.
+- [x] **18.** Construct exact stream-bound service quotes.
 - [ ] **19.** Validate requester quotes and explicit spending consent.
 - [ ] **20.** Bind acceptance to quote bytes and one reservation.
 - [ ] **21.** Deliver complete input only after its terminal markers.
@@ -287,3 +287,5 @@ Step15 completed: real Board Read contexts serve exact current Board/definition 
 Step16 completed: opaque local metadata requests require separate outgoing/incoming authority, exact original endpoint/connection/stream association and captured deadlines. Raw subdocument spans feed public Board cache store/attach; wrong attribution, forwarded receipts and stale definitions fail. Required checks pass; production coverage13305/14090 =94.43%.
 
 Step17 completed: provided proposals bind original peer/stream, selected publisher/issuer/contract, installed Registry and read-only Ledger trust/credit policy before callbacks or holds. Added an explicit Services unresolved-input metadata contract and conservative assessment defaults instead of placeholder bodies. Actual-module refusal and large-body metadata tests pass; required checks pass at13671/14533 =94.07% production coverage.
+
+Step18 completed: exact current provider quotes retain random IDs, raw JSON/hash, permitted factors and original payment fields under finite expiry/capacity. Scoped quote generations prevent stale handles from accepting or releasing replacements; failed randomness or inconsistent family pricing leaves no hold/work. Required checks pass; production coverage13921/14822 =93.92%.
