@@ -72,7 +72,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   recovery and [acceptance evidence](../src/modules/services/ACCEPTANCE.md) are complete;
   the paid-check timeout ambiguity in upstream issue #10 remains explicit. Network
   application binding and standard-family providers remain later milestones.
-- [ ] **9. Peer Control / Peer Protocol module.** Bind metadata, quotes, service
+- [ ] **9. [Peer Control / Peer Protocol module](8_Peer_Protocol_module/PLAN.md).** Bind metadata, quotes, service
   invocation and ledger control to Transport streams. Implement canonical
   records, detached bodies and exact value codecs; match encoding vectors and
   reject malformed data without silently retrying accepted operations.

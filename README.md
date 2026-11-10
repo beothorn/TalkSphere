@@ -22,7 +22,7 @@ registration, exact quotes and durable local coordination, with
 [acceptance evidence](src/modules/services/ACCEPTANCE.md) over real Board/Ledger
 contracts. Peer Protocol and paid Storage remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
-[roadmap](plans/PLAN.md), [Services plan](plans/7_Services_module/PLAN.md),
+[roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
 [Board plan](plans/5_Board_module/PLAN.md),
 [integration plan](plans/4_Transport_integration/PLAN.md)
