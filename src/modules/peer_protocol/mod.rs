@@ -134,6 +134,7 @@ mod metadata_client_tests;
 
 pub mod acceptance;
 pub mod admission;
+pub mod input_transfer;
 pub mod proposal;
 impl From<crate::modules::ledger::Error> for Error {
     // Preserve financial refusal versus uncertainty without reading Ledger-owned state.
@@ -173,3 +174,7 @@ mod requester_tests;
 #[cfg(test)]
 #[path = "tests/acceptance.rs"]
 mod acceptance_tests;
+
+#[cfg(test)]
+#[path = "tests/input_transfer.rs"]
+mod input_transfer_tests;
