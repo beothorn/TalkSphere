@@ -15,7 +15,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **7.** Parse lossless bounded control objects.
 - [x] **8.** Validate control fields and fixed identifiers.
 - [x] **9.** Bind exact integer and floating-point service values.
-- [ ] **10.** Implement canonical inline byte values.
+- [x] **10.** Implement canonical inline byte values.
 - [ ] **11.** Assign deterministic detached body descriptors.
 - [ ] **12.** Receive ordered bodies through bounded ownership.
 - [ ] **13.** Stream outgoing bodies in descriptor order.
@@ -271,3 +271,5 @@ Step7 completed: wire-specific lossless control parsing preserves exact source/l
 Step8 completed: typed known discriminators and required/optional representation validation cover metadata, quotes, results, failures and Ledger controls, with canonical identities, exact fixed-byte sizes, Base64 and unsigned fields. Deleting/nulling every required field fails; semantic authority remains at exchange ports. Required checks pass; production coverage12532/13279 =94.37%.
 
 Step9 completed: exact integer widths, canonical64-bit strings and lowercase IEEE wrappers preserve pinned values and signed zero; exceptional floats require trusted contract permission and canonical NaNs. Independent extrema/invalid-form tests and required checks pass; production coverage12608/13354 =94.41%.
+
+Step10 completed: canonical inline bytes enforce the4096 decoded-byte threshold, exact wrappers and empty-inline representation independently of control identifiers. Fixed examples, padding/unused-bit rejection and4097-byte refusal pass. Required checks pass; production coverage12623/13372 =94.40%.

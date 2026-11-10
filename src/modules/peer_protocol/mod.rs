@@ -56,3 +56,8 @@ pub mod scalar;
 #[cfg(test)]
 #[path = "tests/scalar.rs"]
 mod scalar_tests;
+
+pub mod inline;
+#[cfg(test)]
+#[path = "tests/inline.rs"]
+mod inline_tests;
