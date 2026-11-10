@@ -136,6 +136,7 @@ pub mod acceptance;
 pub mod admission;
 pub mod input_transfer;
 pub mod proposal;
+pub mod result_receiver;
 pub mod result_sender;
 mod sequence;
 impl From<crate::modules::ledger::Error> for Error {
@@ -184,3 +185,7 @@ mod input_transfer_tests;
 #[cfg(test)]
 #[path = "tests/result_sender.rs"]
 mod result_sender_tests;
+
+#[cfg(test)]
+#[path = "tests/result_receiver.rs"]
+mod result_receiver_tests;

@@ -28,7 +28,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **20.** Bind acceptance to quote bytes and one reservation.
 - [x] **21.** Deliver complete input only after its terminal markers.
 - [x] **22.** Transmit durably committed service results.
-- [ ] **23.** Accept results only after normal stream completion.
+- [x] **23.** Accept results only after normal stream completion.
 - [ ] **24.** Preserve failure codes and uncertain outcomes.
 - [ ] **25.** Implement wanted-offering role reversal.
 - [ ] **26.** Bind paid checks to challenge-only evidence.
@@ -297,3 +297,5 @@ Step20 completed: exact quote ID/hash and authenticated stream validation preced
 Step21 completed: reserved input is gated on exact bodies, input.end and original requester END before complete family validation and once-only effectful dispatch. Ordered senders retain original sources under bounded queue backpressure; malformed/early/duplicate controls and incomplete transfers cannot dispatch. Required checks pass; production coverage14559/15492 =93.98%.
 
 Step22 completed: a new public committed-invocation observation port supplies original terms and retained output; senders cannot emit uncommitted results. Output price/finalPrice must equal the independently validated envelope during Services retention and wire transmission. Metadata/body/result.end queues preserve progress and durable ownership on backpressure/loss. Required checks pass; production coverage14659/15589 =94.03%.
+
+Step23 completed: requester output stays inaccessible until exact bodies, result.end and normal original-stream completion, then passes independent Services content/schema/final-price validation. Actual two-sided commitment tests expose output only via the committed result port; wrong peers/content/prices, missing markers and abnormal completion retain accepted obligations. Required checks pass; production coverage14777/15712 =94.05%.

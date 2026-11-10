@@ -252,6 +252,65 @@ impl Pair {
             message,
         )
     }
+    // Run complete accepted input through actual terminal gates and commit the real provider participants once.
+    pub fn commit_provider(&self, incoming: Incoming, input: &services::value::Value) {
+        let p = &self.provider;
+        let a = incoming.association();
+        let pg = p
+            .authority
+            .grant(p.local, Action::Invoke, 16_777_216)
+            .unwrap();
+        let pc = context(&pg);
+        let cg = p
+            .services
+            .grant(p.local, services::authority::Action::Coordinate, 16_777_216)
+            .unwrap();
+        let cc = service_context(&cg);
+        let mut transfer = crate::modules::peer_protocol::input_transfer::InputTransfer::new(
+            &pc,
+            p.authority.clone(),
+            incoming,
+        )
+        .unwrap();
+        let encoded =
+            crate::modules::peer_protocol::value::encode(input, Limits::default(), false).unwrap();
+        for (id, body) in encoded.bodies.iter().enumerate() {
+            let mut offset = 0;
+            for chunk in body.bytes().chunks(65_536) {
+                transfer
+                    .body(
+                        &pc,
+                        a,
+                        &crate::modules::peer_protocol::record::Record::Body {
+                            id: id as u32,
+                            offset,
+                            data: chunk.to_vec(),
+                        },
+                    )
+                    .unwrap();
+                offset += chunk.len() as u64;
+            }
+        }
+        transfer
+            .marker(
+                &pc,
+                a,
+                &Message::parse(b"{\"type\":\"input.end\"}", 65536).unwrap(),
+            )
+            .unwrap();
+        transfer
+            .end(&pc, a)
+            .unwrap()
+            .dispatch(&cc, p.runtime.as_ref())
+            .unwrap();
+        let key = crate::modules::peer_protocol::acceptance::peer(a).key;
+        p.runtime.stage(&cc, key).unwrap();
+        p.runtime.prepare(&cc, key).unwrap();
+        p.runtime
+            .decide(&cc, key, services::runtime::Decision::Commit)
+            .unwrap();
+        p.runtime.commit(&cc, key).unwrap();
+    }
     // Read the independent requester's actual owned-credit availability, not the provider's issued map.
     pub fn owned_available(&self) -> u64 {
         let r = &self.requester;
