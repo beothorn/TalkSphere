@@ -1,4 +1,4 @@
-//! Original-peer provided proposals bind exact selected contracts before family assessment or large body transfer.
+//! Original-peer provided and invited wanted proposals bind exact selected contracts before family assessment or large body transfer.
 use super::{
     Error,
     admission::{Gate, Roles},
@@ -93,7 +93,7 @@ impl Authorizer {
             gate,
         })
     }
-    /// Validate a provided proposal against a current owner-issued selection and trusted original stream association.
+    /// Validate a proposal against current owner-issued terms and its trusted provided or invited wanted stream association.
     /// # Errors
     /// Wrong authority/roles/publisher/issuer, unsupported capabilities/preconditions, bad metadata or policy are refused without effects.
     pub fn authorize(
@@ -111,16 +111,17 @@ impl Authorizer {
             Action::Invoke,
             message.bytes().len(),
         )?;
-        if message.kind() != Kind::Propose
-            || association.local != self.local
-            || selection.offering().direction != Direction::Provided
-        {
+        if message.kind() != Kind::Propose || association.local != self.local {
             return Err(Error::Denied);
         }
         let v = message.value();
         let o = selection.offering();
         let (requester, provider, issuer) = selection.roles();
-        if selection.publisher() != self.local
+        let expected_publisher = match o.direction {
+            Direction::Provided => self.local,
+            Direction::Wanted => requester,
+        };
+        if selection.publisher() != expected_publisher
             || provider != self.local
             || requester != association.peer
             || association.operation.requester != requester

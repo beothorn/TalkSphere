@@ -30,7 +30,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **22.** Transmit durably committed service results.
 - [x] **23.** Accept results only after normal stream completion.
 - [x] **24.** Preserve failure codes and uncertain outcomes.
-- [ ] **25.** Implement wanted-offering role reversal.
+- [x] **25.** Implement wanted-offering role reversal.
 - [ ] **26.** Bind paid checks to challenge-only evidence.
 - [ ] **27.** Reconcile included allowances with complete evidence delivery.
 - [ ] **28.** Add explicit family-authorized cached retry handling.
@@ -301,3 +301,5 @@ Step22 completed: a new public committed-invocation observation port supplies or
 Step23 completed: requester output stays inaccessible until exact bodies, result.end and normal original-stream completion, then passes independent Services content/schema/final-price validation. Actual two-sided commitment tests expose output only via the committed result port; wrong peers/content/prices, missing markers and abnormal completion retain accepted obligations. Required checks pass; production coverage14777/15712 =94.05%.
 
 Step24 completed: all specified failure codes remain distinct, unknown codes are generic, diagnostics are bounded and access can be concealed. Actual provider abort acknowledgement is required before claiming an accepted failure; requester holds release only after a complete normal failure exchange. Failures after result.end, committed response loss and interrupted END cannot manufacture rollback. Required checks pass; production coverage14895/15833 =94.08%.
+
+Step25 completed: installed prospective providers create owner-scoped wanted invitations, and publisher-side local policy alone supplies input/spending after exact invitation/current-term checks. Real Registry/Board/Services/Ledger tests complete reversed-role work and settlement, reject absent providers and refused/malformed invitations, and keep untrusted input/installation suggestions inert. Required checks pass; production coverage15040/15988 =94.07%.

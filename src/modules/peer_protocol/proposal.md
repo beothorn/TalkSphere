@@ -1,4 +1,4 @@
-# Provided proposal authorization
+# Provided and invited wanted proposal authorization
 
 Authorizer binds receiving identity, separate Peer Protocol/Services authority
 domains, installed Registry, positive Limits and read-only Gate. Construction
@@ -7,7 +7,8 @@ Services Invoke Context, trusted original Association, current owner-issued
 Selection and structurally validated Message. The caller must select current
 Board terms through public Board contracts, not construct selection from payloads.
 
-It checks provided direction, local provider/publisher, opposite requester and
+It checks local provider and opposite requester, a local publisher for provided
+work or requester publisher for invited wanted work, and
 operation identity, exact offering/service/version, publisher/issuer text and
 explicit spending bound. Ordinary work cannot have zero bound. Transfer ID/fee
 are required only for a third-party issuer. Services independently authorizes the
@@ -23,3 +24,6 @@ independent pricing, explicit acceptance and one atomic reservation are subseque
 mandatory operations. Untrusted implementation hints cannot install or execute
 code. Metadata assessment uses Services Input and public family ports, never
 placeholder payloads or access to another module's private state.
+
+Wanted proposals use the original Offerer invitation and Exchange ordering; an
+incoming offer alone cannot manufacture local requester input or spending policy.
