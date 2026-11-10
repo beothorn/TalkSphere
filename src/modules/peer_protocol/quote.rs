@@ -284,8 +284,16 @@ impl Issuer {
     }
 }
 // Read only the already validated operation discriminant; unresolved bytes cannot invent an operation.
-fn operation(metadata: &Input) -> Option<&str> {
+pub(crate) fn operation(metadata: &Input) -> Option<&str> {
+    tracing::trace!("Reading validated proposal operation discriminant");
     match metadata {
+        Input::Complete(Value::Object(fields)) => fields
+            .iter()
+            .find(|(n, _)| n == "operation")
+            .and_then(|(_, v)| match v {
+                Value::String(s) => Some(s.as_str()),
+                _ => None,
+            }),
         Input::Object(fields) => {
             fields
                 .iter()
@@ -299,7 +307,7 @@ fn operation(metadata: &Input) -> Option<&str> {
     }
 }
 // Only specified provider-dependent factors enter version-one pricingInputs; Messaging removal binds release separately.
-fn factors(
+pub(crate) fn factors(
     service: &str,
     operation: Option<&str>,
     factors: &Value,

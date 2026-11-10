@@ -56,6 +56,38 @@ impl Selection {
         tracing::trace!("Reading selection publisher identity");
         self.publisher
     }
+    /// Bind a directly authenticated quote's offering to this exact retrieved contract without consenting to changed economics.
+    /// # Errors
+    /// Changed identifiers, version, description or direction require fresh discovery; unsupported terms/preconditions fail.
+    pub fn quote_terms(
+        &self,
+        value: &serde_json::Value,
+        caps: &dyn Capabilities,
+        limits: super::config::Limits,
+    ) -> Result<Self, Error> {
+        tracing::trace!("Validating quoted terms against the retrieved contract");
+        let mut document =
+            serde_json::json!({"version":1,"providedServices":[],"wantedServices":[]});
+        let field = match self.offering.direction {
+            Direction::Provided => "providedServices",
+            Direction::Wanted => "wantedServices",
+        };
+        document[field] = serde_json::json!([value]);
+        let bytes = serde_json::to_vec(&document).map_err(|_| Error::Invalid)?;
+        let board = super::offering::Board::parse(&bytes, limits)?;
+        let offering = board.offerings.get(&self.offering.id).ok_or(Error::Stale)?;
+        if offering.service != self.offering.service
+            || offering.version != self.offering.version
+            || offering.description != self.offering.description
+        {
+            return Err(Error::Stale);
+        }
+        semantics::assess(caps, offering, &self.definition, true, false)?;
+        Ok(Self {
+            offering: offering.clone(),
+            ..self.clone()
+        })
+    }
     /// Conservatively compare logical contracts; matching terms still require explicit economic policy.
     pub fn contract_matches(&self, other: &Self) -> bool {
         tracing::trace!("Comparing selected contracts without accepting terms");

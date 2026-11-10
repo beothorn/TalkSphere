@@ -3,7 +3,8 @@
 Peer Control will bind cr2se.peer version1 to authenticated Transport streams,
 Board metadata, Services coordination and Ledger controls. Current status includes local authority, bounded record/control/value codecs,
 canonical scalar/byte binding and provisional detached body reception/transmission;
-provided-proposal authorization and immutable provider quote construction are also available.
+provided-proposal authorization, immutable provider quotes, independent requester
+validation and explicit spending consent are also available.
 Exchange orchestration and real module/network composition are still in progress.
 No peer application protocol is registered yet. Application composition supplies grants
 and verified peer context; protocol internals do not own sockets or balances.

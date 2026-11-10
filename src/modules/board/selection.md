@@ -23,3 +23,10 @@ arrays alone adds no priority and does not change individual offering terms.
 Previously copied selections remain immutable and do not cancel existing work;
 actual quote acceptance and durable accepted-invocation ownership belong to later
 Services/Peer Protocol integration. Board never accepts a changed price for callers.
+
+quote_terms checks an offering received on a directly authenticated exchange
+against the original selection's exact ID, service/version and description. It
+revalidates complete structural terms and installed semantics/preconditions while
+retaining the original publisher, roles and definition. Changed contract identity
+returns Stale and requires a new definition exchange. Returned economics remain
+unaccepted; a caller must separately approve issuer, price and payment policy.

@@ -117,9 +117,9 @@ impl Requester for Echo {
     fn definition(&self) -> &Definition {
         &self.definition
     }
-    // Fixed seven is the only accepted model for this installed fixture.
+    // Only explicit positive fixed prices are supported by this installed custom fixture.
     fn terms(&self, o: &Offering) -> Result<(), Error> {
-        if board::offering::integer(&o.source["price"]) == Some(7) {
+        if board::offering::integer(&o.source["price"]).is_some_and(|p| p > 0) {
             Ok(())
         } else {
             Err(Error::Unsupported)
@@ -133,7 +133,11 @@ impl Requester for Echo {
     ) -> Result<crate::modules::services::pricing::Price, Error> {
         self.terms(o)?;
         Ok(crate::modules::services::pricing::Price::Fixed(
-            self.prices.lock().unwrap().pop_front().unwrap_or(7),
+            self.prices
+                .lock()
+                .unwrap()
+                .pop_front()
+                .unwrap_or_else(|| board::offering::integer(&o.source["price"]).unwrap()),
         ))
     }
     // Byte and UTF-8 text metadata project exact logical byte length independently.

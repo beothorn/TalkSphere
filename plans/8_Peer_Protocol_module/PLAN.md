@@ -24,7 +24,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **16.** Consume metadata with authenticated publisher provenance.
 - [x] **17.** Authorize provided invocation proposals.
 - [x] **18.** Construct exact stream-bound service quotes.
-- [ ] **19.** Validate requester quotes and explicit spending consent.
+- [x] **19.** Validate requester quotes and explicit spending consent.
 - [ ] **20.** Bind acceptance to quote bytes and one reservation.
 - [ ] **21.** Deliver complete input only after its terminal markers.
 - [ ] **22.** Transmit durably committed service results.
@@ -289,3 +289,5 @@ Step16 completed: opaque local metadata requests require separate outgoing/incom
 Step17 completed: provided proposals bind original peer/stream, selected publisher/issuer/contract, installed Registry and read-only Ledger trust/credit policy before callbacks or holds. Added an explicit Services unresolved-input metadata contract and conservative assessment defaults instead of placeholder bodies. Actual-module refusal and large-body metadata tests pass; required checks pass at13671/14533 =94.07% production coverage.
 
 Step18 completed: exact current provider quotes retain random IDs, raw JSON/hash, permitted factors and original payment fields under finite expiry/capacity. Scoped quote generations prevent stale handles from accepting or releasing replacements; failed randomness or inconsistent family pricing leaves no hold/work. Required checks pass; production coverage13921/14822 =93.92%.
+
+Step19 completed: requester-only installed codecs validate original-stream quote attribution, exact retrieved contract, issuer/payment equality, specified factors and independently calculated prices. Supported term changes require separate exact-hash local consent under both spending ceilings. Raw whitespace is retained for hashing; invalid contracts, factors, fees, authority and streams cause no holds/execution. Required checks pass; production coverage14270/15188 =93.96%.

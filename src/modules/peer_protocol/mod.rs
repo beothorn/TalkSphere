@@ -159,7 +159,12 @@ impl From<crate::modules::ledger::Error> for Error {
 mod proposal_tests;
 
 pub mod quote;
+pub mod requester;
 
 #[cfg(test)]
 #[path = "tests/quote.rs"]
 mod quote_tests;
+
+#[cfg(test)]
+#[path = "tests/requester.rs"]
+mod requester_tests;
