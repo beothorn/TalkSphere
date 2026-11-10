@@ -17,7 +17,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **9.** Bind exact integer and floating-point service values.
 - [x] **10.** Implement canonical inline byte values.
 - [x] **11.** Assign deterministic detached body descriptors.
-- [ ] **12.** Receive ordered bodies through bounded ownership.
+- [x] **12.** Receive ordered bodies through bounded ownership.
 - [ ] **13.** Stream outgoing bodies in descriptor order.
 - [ ] **14.** Implement exchange ordering and terminal states.
 - [ ] **15.** Serve bounded Board and definition requests.
@@ -275,3 +275,5 @@ Step9 completed: exact integer widths, canonical64-bit strings and lowercase IEE
 Step10 completed: canonical inline bytes enforce the4096 decoded-byte threshold, exact wrappers and empty-inline representation independently of control identifiers. Fixed examples, padding/unused-bit rejection and4097-byte refusal pass. Required checks pass; production coverage12623/13372 =94.40%.
 
 Step11 completed: schema-directed provisional metadata validates deterministic UTF-8/index traversal, unique sequential IDs, exact descriptors and aggregate declared budgets before body allocation. Complete assembly preserves typed known values and consumes ignored extension bodies without application authority. Required checks pass; 12842/13606 = 94.38%.
+
+Step12 completed: ordered receivers use public Services Body buffers, validate exact ID/offset/chunk bounds and final UTF-8, poison malformed transfers and expose only a consumed complete Value. Split multibyte text, missing/extra data, wrong IDs/order and inline-only cases pass. Required checks pass; production coverage12924/13683 =94.45%.

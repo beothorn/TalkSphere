@@ -87,3 +87,8 @@ impl From<crate::modules::services::Error> for Error {
         }
     }
 }
+
+pub mod receiver;
+#[cfg(test)]
+#[path = "tests/receiver.rs"]
+mod receiver_tests;
