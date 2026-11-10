@@ -202,6 +202,13 @@ impl Message {
         tracing::trace!("Borrowing structurally validated peer message");
         self.control.value()
     }
+    /// Borrow a complete top-level field's exact source without reserializing its document.
+    /// # Errors
+    /// Absent fields return None; internal structural failure remains explicit.
+    pub fn field_bytes(&self, name: &str) -> Result<Option<&[u8]>, Error> {
+        tracing::trace!("Reading an exact peer message subdocument");
+        self.control.field_bytes(name)
+    }
     /// Borrow exact received source for quote hashing and immutable association.
     pub fn bytes(&self) -> &[u8] {
         tracing::trace!("Borrowing exact validated peer message source");

@@ -12,3 +12,8 @@ Bytes returns the immutable original JSON body for exact quote hashing. Value
 borrows the complete lossless tree; neither getter permits mutation. No raw input
 or per-byte diagnostic event is logged. This parser is wire-specific; it does not
 relax Board's document contracts or imply exchange authority.
+
+Field_bytes locates a top-level field through the already validated immutable
+source and borrows its exact JSON span, including adjacent value whitespace.
+It returns None for absence and never reserializes nested documents. Message
+exposes the same operation for metadata cache and exact offering association.

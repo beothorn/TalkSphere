@@ -15,7 +15,7 @@ pub enum Action {
     Observe,
     /// Reserve and coordinate a local accepted operation.
     Coordinate,
-    /// Submit authenticated provider-side invocations.
+    /// Submit trusted authenticated incoming peer events and provider-side calls.
     Invoke,
     /// Authorize local requester input and bounded spending.
     Request,

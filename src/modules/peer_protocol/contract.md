@@ -19,3 +19,8 @@ data record support. Exchange engine admission must charge aggregate resources;
 these contract declarations alone do not enforce queues or rate policy.
 
 Additional admission defaults are256 connections,16777216 queued bytes and4096 control messages per composition-configured monotonic rate window. These are independent positive budgets; enforcement and rate-window ownership belong to the exchange engine.
+
+Association is an observation containing local identity, authenticated peer
+identity and the complete OperationKey. Trusted Transport composition supplies
+it and the incoming-event grant; it is not decoded from peer JSON or itself a
+financial capability. Metadata requests correlate all fields before attribution.

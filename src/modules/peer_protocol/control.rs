@@ -42,6 +42,46 @@ impl Control {
             value,
         })
     }
+    /// Borrow a top-level field's exact JSON source, including adjacent value whitespace, without reserialization.
+    /// # Errors
+    /// Returns None for absent fields; malformed internal structure remains an explicit failure.
+    pub fn field_bytes(&self, name: &str) -> Result<Option<&[u8]>, Error> {
+        tracing::trace!("Borrowing exact peer control subdocument source");
+        let mut scan = Scan {
+            bytes: &self.bytes,
+            pos: 0,
+            nodes: self.bytes.len(),
+        };
+        scan.space();
+        if scan.bytes.get(scan.pos) != Some(&b'{') {
+            return Err(Error::Invalid);
+        }
+        scan.pos += 1;
+        loop {
+            scan.space();
+            if scan.bytes.get(scan.pos) == Some(&b'}') {
+                return Ok(None);
+            }
+            let key = scan.string()?;
+            scan.space();
+            if scan.bytes.get(scan.pos) != Some(&b':') {
+                return Err(Error::Invalid);
+            }
+            scan.pos += 1;
+            let start = scan.pos;
+            scan.value(1)?;
+            scan.space();
+            let end = scan.pos;
+            if key == name {
+                return Ok(Some(&self.bytes[start..end]));
+            }
+            match scan.bytes.get(scan.pos) {
+                Some(b',') => scan.pos += 1,
+                Some(b'}') => return Ok(None),
+                _ => return Err(Error::Invalid),
+            }
+        }
+    }
     /// Borrow exact original JSON body bytes without reserialization.
     pub fn bytes(&self) -> &[u8] {
         tracing::trace!("Borrowing exact peer control source");

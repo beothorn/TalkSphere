@@ -107,3 +107,27 @@ pub mod metadata;
 #[cfg(test)]
 #[path = "tests/metadata.rs"]
 mod metadata_tests;
+
+pub mod metadata_client;
+impl From<crate::modules::board::Error> for Error {
+    // Preserve uncertainty and distinguish stale selections from unavailable metadata at the local boundary.
+    fn from(error: crate::modules::board::Error) -> Self {
+        tracing::trace!("Mapping Board failure at the Peer Protocol boundary");
+        use crate::modules::board::Error as Source;
+        match error {
+            Source::Invalid => Self::Invalid,
+            Source::Unsupported => Self::Unsupported,
+            Source::Denied => Self::Denied,
+            Source::Limit => Self::Limit,
+            Source::Missing => Self::Unavailable,
+            Source::Stale => Self::Conflict,
+            Source::Cancelled => Self::Cancelled,
+            Source::Storage => Self::Storage,
+            Source::Unknown => Self::Unknown,
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "tests/metadata_client.rs"]
+mod metadata_client_tests;

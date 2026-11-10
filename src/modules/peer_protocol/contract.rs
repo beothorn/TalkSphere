@@ -20,6 +20,18 @@ pub struct OperationKey {
     pub stream: u32,
 }
 
+/// Authenticated endpoint/stream association asserted only by trusted Transport composition.
+/// It is an observation, not authority and never deserialized from peer control bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Association {
+    /// Identity receiving local calls.
+    pub local: IdentityId,
+    /// Authenticated opposite endpoint.
+    pub peer: IdentityId,
+    /// Trusted unique connection/stream correlation, independent of payload identifiers.
+    pub operation: OperationKey,
+}
+
 /// Per-call controls supplied by trusted local composition.
 pub struct Context<'a> {
     /// Supported local contract version.

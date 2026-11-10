@@ -21,7 +21,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **13.** Stream outgoing bodies in descriptor order.
 - [x] **14.** Implement exchange ordering and terminal states.
 - [x] **15.** Serve bounded Board and definition requests.
-- [ ] **16.** Consume metadata with authenticated publisher provenance.
+- [x] **16.** Consume metadata with authenticated publisher provenance.
 - [ ] **17.** Authorize provided invocation proposals.
 - [ ] **18.** Construct exact stream-bound service quotes.
 - [ ] **19.** Validate requester quotes and explicit spending consent.
@@ -283,3 +283,5 @@ Step13 completed: immutable sources validate exact IDs/lengths/text and aggregat
 Step14 completed: direction-aware metadata, invocation, wanted and Ledger ordering requires correct markers/ENDs, rejects early bodies/results and preserves accepted uncertainty after interruption. Independent exchanges remain usable after a poisoned instance. Required checks pass; production coverage13141/13907 =94.49%.
 
 Step15 completed: real Board Read contexts serve exact current Board/definition controls under shared response bounds; absent offerings return not_available without synthetic definitions or Ledger/Services execution. Directional END and authority tests pass. An existing stale temporary identity-path collision was corrected separately. Required checks pass; production coverage13173/13941 =94.49%.
+
+Step16 completed: opaque local metadata requests require separate outgoing/incoming authority, exact original endpoint/connection/stream association and captured deadlines. Raw subdocument spans feed public Board cache store/attach; wrong attribution, forwarded receipts and stale definitions fail. Required checks pass; production coverage13305/14090 =94.43%.
