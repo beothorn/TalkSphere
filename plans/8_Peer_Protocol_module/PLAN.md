@@ -19,7 +19,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **11.** Assign deterministic detached body descriptors.
 - [x] **12.** Receive ordered bodies through bounded ownership.
 - [x] **13.** Stream outgoing bodies in descriptor order.
-- [ ] **14.** Implement exchange ordering and terminal states.
+- [x] **14.** Implement exchange ordering and terminal states.
 - [ ] **15.** Serve bounded Board and definition requests.
 - [ ] **16.** Consume metadata with authenticated publisher provenance.
 - [ ] **17.** Authorize provided invocation proposals.
@@ -279,3 +279,5 @@ Step11 completed: schema-directed provisional metadata validates deterministic U
 Step12 completed: ordered receivers use public Services Body buffers, validate exact ID/offset/chunk bounds and final UTF-8, poison malformed transfers and expose only a consumed complete Value. Split multibyte text, missing/extra data, wrong IDs/order and inline-only cases pass. Required checks pass; production coverage12924/13683 =94.45%.
 
 Step13 completed: immutable sources validate exact IDs/lengths/text and aggregate bounds; queue-aware chunks preserve offsets under backpressure and never exceed65536 data bytes. Tiny-queue and maximum-chunk tests pass. Required checks pass; production coverage12988/13751 =94.45%.
+
+Step14 completed: direction-aware metadata, invocation, wanted and Ledger ordering requires correct markers/ENDs, rejects early bodies/results and preserves accepted uncertainty after interruption. Independent exchanges remain usable after a poisoned instance. Required checks pass; production coverage13141/13907 =94.49%.

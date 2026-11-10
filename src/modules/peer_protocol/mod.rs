@@ -97,3 +97,8 @@ pub mod sender;
 #[cfg(test)]
 #[path = "tests/sender.rs"]
 mod sender_tests;
+
+pub mod exchange;
+#[cfg(test)]
+#[path = "tests/exchange.rs"]
+mod exchange_tests;
