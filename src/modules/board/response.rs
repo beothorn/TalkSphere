@@ -8,6 +8,18 @@ pub const CONTROL_BYTES: usize = 1_048_576;
 /// Returns Unsupported for unknown response kinds and Limit if the wrapper would exceed size/depth.
 pub fn encode(kind: &str, document: &Document) -> Result<Vec<u8>, Error> {
     tracing::trace!("Sizing a complete peer metadata response");
+    encode_source(kind, document.bytes())
+}
+/// Encode a complete Board response from an owner-issued immutable snapshot without reparsing its source.
+/// # Errors
+/// Limit rejects a wrapped response exceeding the fixed control maximum before allocation.
+pub fn encode_snapshot(snapshot: &super::contract::Snapshot) -> Result<Vec<u8>, Error> {
+    tracing::trace!("Encoding a pinned Board peer response");
+    encode_source("board", snapshot.bytes())
+}
+// Both public inputs already own validated documents; preserve their exact source and check wrapper overhead first.
+fn encode_source(kind: &str, bytes: &[u8]) -> Result<Vec<u8>, Error> {
+    tracing::trace!("Checking and encoding exact metadata response source");
     let prefix: &[u8] = match kind {
         "board" => br#"{"type":"board","board":"#,
         "definition" => br#"{"type":"definition","definition":"#,
@@ -15,7 +27,7 @@ pub fn encode(kind: &str, document: &Document) -> Result<Vec<u8>, Error> {
     };
     let length = prefix
         .len()
-        .checked_add(document.bytes().len())
+        .checked_add(bytes.len())
         .and_then(|n| n.checked_add(1))
         .ok_or(Error::Limit)?;
     if length > CONTROL_BYTES {
@@ -24,7 +36,7 @@ pub fn encode(kind: &str, document: &Document) -> Result<Vec<u8>, Error> {
     // Document already has at most 31 containers; one wrapper preserves the peer depth limit of 32.
     let mut result = Vec::with_capacity(length);
     result.extend_from_slice(prefix);
-    result.extend_from_slice(document.bytes());
+    result.extend_from_slice(bytes);
     result.push(b'}');
     Ok(result)
 }

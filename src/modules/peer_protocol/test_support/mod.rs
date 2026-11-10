@@ -91,4 +91,5 @@ fn deterministic_boundaries() {
     assert_eq!(script.calls, 3);
 }
 
+pub(super) mod board;
 pub(super) mod fixtures;

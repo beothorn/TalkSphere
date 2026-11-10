@@ -7,3 +7,5 @@ The exact body must be at most CONTROL_BYTES (1048576); the five-byte record
 header is outside this budget. Document has at most 31 containers and the response
 adds one, preserving Peer Protocol's depth-32 bound. Excess length returns Limit
 before allocating the response. This helper implements no network exchange.
+
+encode_snapshot takes an owner-issued immutable Snapshot and returns the same bounded Board response using its exact source, without imposing a second parser policy or reading private publication state. It shares the checked wrapper encoder with encode.

@@ -20,7 +20,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **12.** Receive ordered bodies through bounded ownership.
 - [x] **13.** Stream outgoing bodies in descriptor order.
 - [x] **14.** Implement exchange ordering and terminal states.
-- [ ] **15.** Serve bounded Board and definition requests.
+- [x] **15.** Serve bounded Board and definition requests.
 - [ ] **16.** Consume metadata with authenticated publisher provenance.
 - [ ] **17.** Authorize provided invocation proposals.
 - [ ] **18.** Construct exact stream-bound service quotes.
@@ -281,3 +281,5 @@ Step12 completed: ordered receivers use public Services Body buffers, validate e
 Step13 completed: immutable sources validate exact IDs/lengths/text and aggregate bounds; queue-aware chunks preserve offsets under backpressure and never exceed65536 data bytes. Tiny-queue and maximum-chunk tests pass. Required checks pass; production coverage12988/13751 =94.45%.
 
 Step14 completed: direction-aware metadata, invocation, wanted and Ledger ordering requires correct markers/ENDs, rejects early bodies/results and preserves accepted uncertainty after interruption. Independent exchanges remain usable after a poisoned instance. Required checks pass; production coverage13141/13907 =94.49%.
+
+Step15 completed: real Board Read contexts serve exact current Board/definition controls under shared response bounds; absent offerings return not_available without synthetic definitions or Ledger/Services execution. Directional END and authority tests pass. An existing stale temporary identity-path collision was corrected separately. Required checks pass; production coverage13173/13941 =94.49%.

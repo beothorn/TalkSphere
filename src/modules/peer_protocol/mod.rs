@@ -102,3 +102,8 @@ pub mod exchange;
 #[cfg(test)]
 #[path = "tests/exchange.rs"]
 mod exchange_tests;
+
+pub mod metadata;
+#[cfg(test)]
+#[path = "tests/metadata.rs"]
+mod metadata_tests;
