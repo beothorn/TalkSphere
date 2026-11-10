@@ -90,3 +90,5 @@ fn deterministic_boundaries() {
     assert_eq!(script.next(), Err(Error::Unavailable));
     assert_eq!(script.calls, 3);
 }
+
+pub(super) mod fixtures;

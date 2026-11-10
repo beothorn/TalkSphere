@@ -9,7 +9,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **1.** Reconcile Peer Protocol requirements with existing module contracts.
 - [x] **2.** Define authenticated exchange contexts and finite limits.
 - [x] **3.** Add deterministic stream and dependency helpers.
-- [ ] **4.** Import pinned independent wire fixtures.
+- [x] **4.** Import pinned independent wire fixtures.
 - [ ] **5.** Decode bounded records across Transport frames.
 - [ ] **6.** Encode records with bounded outbound buffering.
 - [ ] **7.** Parse lossless bounded control objects.
@@ -259,3 +259,5 @@ Step1: reviewed unchanged upstream contracts and published the requirements/port
 Step2: added independent Peer Protocol authority, scoped grants, exact operation identities, version/deadline/cancellation contexts and finite connection/exchange/body/quote/node/queue/control budgets with unit tests. Contract declarations do not advertise wire dispatch. Required checks pass; measured production coverage12046/12774 =94.30%.
 
 Step3 completed: test-only fragmented stream/terminal scripts, bounded sends and counted generic dependency/entropy replies fail closed on exhaustion. Required checks pass; production coverage12050/12774 =94.33%. Corrupt generated Cargo metadata was removed and verification rerun successfully.
+
+Step4 completed: pinned literal control/binary and canonical typed-value fixtures with upstream revision/blob provenance and a separately calculated exact-source quote hash. Fixture tests and required checks pass; no production code changed, so step3 production coverage remains applicable.
