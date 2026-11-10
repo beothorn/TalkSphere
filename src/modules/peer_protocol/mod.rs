@@ -45,3 +45,10 @@ pub mod control;
 #[cfg(test)]
 #[path = "tests/control.rs"]
 mod control_tests;
+
+pub mod base64;
+pub mod message;
+#[cfg(test)]
+#[path = "tests/message.rs"]
+mod message_tests;
+pub mod scalar;
