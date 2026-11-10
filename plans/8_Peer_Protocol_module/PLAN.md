@@ -14,7 +14,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **6.** Encode records with bounded outbound buffering.
 - [x] **7.** Parse lossless bounded control objects.
 - [x] **8.** Validate control fields and fixed identifiers.
-- [ ] **9.** Bind exact integer and floating-point service values.
+- [x] **9.** Bind exact integer and floating-point service values.
 - [ ] **10.** Implement canonical inline byte values.
 - [ ] **11.** Assign deterministic detached body descriptors.
 - [ ] **12.** Receive ordered bodies through bounded ownership.
@@ -269,3 +269,5 @@ Step6 completed: aggregate outbound admission checks encoded size before allocat
 Step7 completed: wire-specific lossless control parsing preserves exact source/large integers and rejects duplicate decoded keys, malformed/trailing JSON, bad type/UTF-8 and depth33. Full1048576-byte controls and depth32 pass. Required checks pass; production coverage12296/13032 =94.35%.
 
 Step8 completed: typed known discriminators and required/optional representation validation cover metadata, quotes, results, failures and Ledger controls, with canonical identities, exact fixed-byte sizes, Base64 and unsigned fields. Deleting/nulling every required field fails; semantic authority remains at exchange ports. Required checks pass; production coverage12532/13279 =94.37%.
+
+Step9 completed: exact integer widths, canonical64-bit strings and lowercase IEEE wrappers preserve pinned values and signed zero; exceptional floats require trusted contract permission and canonical NaNs. Independent extrema/invalid-form tests and required checks pass; production coverage12608/13354 =94.41%.

@@ -52,3 +52,7 @@ pub mod message;
 #[path = "tests/message.rs"]
 mod message_tests;
 pub mod scalar;
+
+#[cfg(test)]
+#[path = "tests/scalar.rs"]
+mod scalar_tests;
