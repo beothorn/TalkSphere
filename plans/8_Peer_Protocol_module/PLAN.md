@@ -1,12 +1,12 @@
 # Peer Protocol module plan
 
-Status: proposed for review; implementation has not started.
+Status: implementation in progress; checked steps record verified work.
 
 This is roadmap milestone9 and planning folder8, following Services.
 
 ## Steps
 
-- [ ] **1.** Reconcile Peer Protocol requirements with existing module contracts.
+- [x] **1.** Reconcile Peer Protocol requirements with existing module contracts.
 - [ ] **2.** Define authenticated exchange contexts and finite limits.
 - [ ] **3.** Add deterministic stream and dependency helpers.
 - [ ] **4.** Import pinned independent wire fixtures.
@@ -254,3 +254,5 @@ All items remain unchecked with matching numbered details in order. Local links
 and whitespace validate. Formatting, strict all-target Clippy, locked tests,
 build and overview help pass. Coverage was not rerun because only planning and
 navigation documents changed; implementation must measure it as described above.
+
+Step1: reviewed unchanged upstream contracts and published the requirements/port audit in [REQUIREMENTS.md](../../src/modules/peer_protocol/REQUIREMENTS.md). Detached metadata, price-envelope equality, allowance consumption and exact acceptance ordering require explicit integration work.
