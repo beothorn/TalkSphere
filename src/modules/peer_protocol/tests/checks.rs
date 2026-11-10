@@ -554,3 +554,150 @@ fn local_only_checks_and_entropy_failure_are_explicit() {
     assert_eq!(p.available(), 100);
     assert_eq!(p.family.evidence_calls.load(Ordering::SeqCst), 0);
 }
+// Included evidence consumes only complete responses; definite incomplete sends release capacity while uncertain delivery retains its durable guard.
+#[test]
+fn included_allowance_tracks_complete_and_uncertain_responses() {
+    use services::checks::{Allowance, Delivery};
+    for delivery in [Delivery::Complete, Delivery::Incomplete, Delivery::Unknown] {
+        let f = Checks::new(true);
+        let (issued, request) = f.quote(1, Value::Uint64(0), 0).unwrap();
+        assert_eq!(issued.price(), 0);
+        let wire = Message::parse(issued.bytes(), 65536).unwrap();
+        assert!(wire.value().get("transferId").is_none());
+        let outgoing = f.reserve(&issued, request).unwrap();
+        let incoming = f.accept(issued, outgoing.accept()).unwrap();
+        let pa = incoming.association();
+        let ra = outgoing.association();
+        let p = &f.pair.provider;
+        let r = &f.pair.requester;
+        assert_eq!(p.available(), 100);
+        assert_eq!(f.pair.owned_available(), 100);
+        let pg = p
+            .authority
+            .grant(p.local, Action::Invoke, 16_777_216)
+            .unwrap();
+        let pc = context(&pg);
+        let cg = p
+            .services
+            .grant(p.local, services::authority::Action::Coordinate, 16_777_216)
+            .unwrap();
+        let cc = service_context(&cg);
+        let po = p
+            .services
+            .grant(p.local, services::authority::Action::Observe, 16_777_216)
+            .unwrap();
+        let poc = service_context(&po);
+        let rc = r
+            .services
+            .grant(r.local, services::authority::Action::Coordinate, 16_777_216)
+            .unwrap();
+        let rcc = service_context(&rc);
+        let ro = r
+            .services
+            .grant(r.local, services::authority::Action::Observe, 16_777_216)
+            .unwrap();
+        let roc = service_context(&ro);
+        let pk = super::acceptance::peer(pa).key;
+        let rk = super::acceptance::peer(ra).key;
+        assert_eq!(p.runtime.check_allowance(&poc, pk), Ok(Allowance::Reserved));
+        r.runtime
+            .check_sent(
+                &rcc,
+                rk,
+                services::checks::Stamp {
+                    epoch: [4; 32],
+                    milliseconds: 100,
+                },
+            )
+            .unwrap();
+        let mut input = checks::input::Receiver::new(
+            &pc,
+            p.authority.clone(),
+            incoming,
+            Arc::new(ScriptClock::new(&[0])),
+        )
+        .unwrap();
+        input
+            .marker(
+                &pc,
+                pa,
+                &Message::parse(br#"{"type":"input.end"}"#, 65536).unwrap(),
+            )
+            .unwrap();
+        let dispatched = input.end(&pc, pa, &cc, p.runtime.as_ref()).unwrap();
+        let mut sender = f.commit(dispatched, pa).unwrap();
+        assert_eq!(p.runtime.check_allowance(&poc, pk), Ok(Allowance::Reserved));
+        let mut queue = Outbound::new(1024).unwrap();
+        if delivery != Delivery::Incomplete {
+            while sender.enqueue_next(&mut queue, 100).unwrap() {}
+        }
+        let records = drain(&mut queue);
+        if delivery == Delivery::Complete {
+            let ig = r
+                .authority
+                .grant(r.local, Action::Invoke, 16_777_216)
+                .unwrap();
+            let ic = context(&ig);
+            let mut received = checks::evidence::Receiver::new(
+                &ic,
+                r.authority.clone(),
+                &outgoing,
+                Limits::default(),
+                Arc::new(ScriptClock::new(&[200])),
+            )
+            .unwrap();
+            for record in records {
+                match record {
+                    Record::Control(bytes) => received
+                        .control(&ic, ra, &Message::parse(&bytes, 65536).unwrap())
+                        .unwrap(),
+                    body => received.body(&ic, ra, &body).unwrap(),
+                }
+            }
+            received
+                .finish(&ic, ra, true, &rcc, r.runtime.as_ref())
+                .unwrap();
+            assert_eq!(r.runtime.check_allowance(&roc, rk), Ok(Allowance::Consumed));
+            r.runtime.prepare(&rcc, rk).unwrap();
+            r.runtime
+                .decide(&rcc, rk, services::runtime::Decision::Commit)
+                .unwrap();
+            r.runtime.commit(&rcc, rk).unwrap();
+        } else {
+            r.runtime
+                .check_timeout(
+                    &rcc,
+                    rk,
+                    services::checks::Stamp {
+                        epoch: [4; 32],
+                        milliseconds: 1101,
+                    },
+                )
+                .unwrap();
+            assert_eq!(r.runtime.check_allowance(&roc, rk), Ok(Allowance::Released));
+        }
+        sender
+            .delivery(&cc, p.runtime.as_ref(), &queue, delivery)
+            .unwrap();
+        let expected = match delivery {
+            Delivery::Complete => Allowance::Consumed,
+            Delivery::Incomplete => Allowance::Released,
+            Delivery::Unknown => Allowance::Unknown,
+        };
+        assert_eq!(p.runtime.check_allowance(&poc, pk), Ok(expected));
+        assert_eq!(p.available(), 100);
+        assert_eq!(f.pair.owned_available(), 100);
+        let (next, request) = f.quote(2, Value::Uint64(0), 0).unwrap();
+        if delivery == Delivery::Complete {
+            assert!(matches!(f.reserve(&next, request), Err(Error::Limit)));
+        } else {
+            let outgoing = f.reserve(&next, request).unwrap();
+            let result = f.accept(next, outgoing.accept());
+            if delivery == Delivery::Incomplete {
+                assert!(result.is_ok());
+            } else {
+                assert!(matches!(result, Err(Error::Limit)));
+            }
+        }
+    }
+}

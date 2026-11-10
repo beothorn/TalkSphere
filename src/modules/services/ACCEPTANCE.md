@@ -65,3 +65,12 @@ using [the repository procedure](../../../docs/coverage.md). Abrupt child-proces
 tests may leave incomplete LLVM profiles; valid captures are merged without
 suppressing test failures or excluding uncovered production code. Build and
 coverage artifacts remain ignored. The acceptance limits above remain in force.
+
+Peer Protocol step27 further verifies included allowance reservations separately
+from complete evidence consumption: acknowledged abort and definitive incomplete
+delivery release capacity, uncertainty retains guards, and restart/write-loss tests
+preserve the authoritative observation. See `included_delivery_and_recovery_preserve_consumption_evidence`,
+`included_abort_releases_only_acknowledged_unconsumed_capacity`,
+`included_delivery_storage_failures_reconcile_after_reopen` and Peer Protocol
+`included_allowance_tracks_complete_and_uncertain_responses`. These do not resolve
+the separate paid response-loss ambiguity in issue10.

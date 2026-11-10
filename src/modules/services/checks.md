@@ -34,3 +34,19 @@ remote eligibility, positive paid checkPrice or valid included scope/limit and
 positive response interval. Agreement now includes these quoted Terms; admission
 recalculates them once and rejects any drift before a hold or execution. Original
 persisted mode, charge and response fields already retain this binding.
+
+Included limits count complete responses rather than all accepted attempts.
+Allowance distinguishes Reserved, Consumed, Released and Unknown. Delivery is a
+trusted local provider observation: Complete normal response, definitively
+Incomplete before terminal transmission, or Unknown possible delivery. Acceptance
+reserves a finite slot; acknowledged abort without complete evidence releases it.
+Requester receive_check consumes the allowance only after valid complete evidence.
+Provider commitment alone keeps it Reserved until the wire owner records delivery.
+Unknown observations retain a guard and cannot be silently changed to Incomplete.
+These observations are local owner contracts, not new wire receipts.
+
+The mutable private image appends a delivery tag while keeping original six-field
+accepted bindings unchanged. Legacy six-field images with known received evidence
+restore consumed state; other legacy guards restore Unknown conservatively. New
+images preserve all observations across restart. Older binaries may refuse the
+extended mutable image; no code resets or overwrites it to permit downgrade.

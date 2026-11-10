@@ -676,7 +676,7 @@ fn concurrent_included_admission() {
     assert_eq!(f.family.calls.load(std::sync::atomic::Ordering::SeqCst), 0);
 }
 
-// A local-only family refuses remote check admission before work, and consumed included allowances survive coordinator reopening.
+// A local-only family refuses remote admission, and in-flight included reservations survive coordinator reopening.
 #[test]
 fn local_only_and_reopened_entitlement() {
     let local = IdentityId([2; 32]);
@@ -806,5 +806,225 @@ fn frozen_check_agreement_rejects_changed_terms() {
             Err(Error::Conflict)
         ));
         assert_eq!(f.family.calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+}
+// An in-flight included attempt blocks peers until acknowledged abort; failed attempts do not consume the existing entitlement.
+#[test]
+fn included_abort_releases_only_acknowledged_unconsumed_capacity() {
+    let f = fixture(true, false);
+    let local = IdentityId([2; 32]);
+    let cg = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+    let c = context(&cg);
+    let og = f.a.grant(local, Action::Observe, 1_000_000).unwrap();
+    let oc = context(&og);
+    let bg =
+        f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+            .unwrap();
+    let bc = board::contract::Context {
+        grant: &bg,
+        deadline: c.deadline,
+        cancelled: false,
+    };
+    let current = BoardCurrent {
+        owner: &f.owner,
+        context: &bc,
+    };
+    let (a, _) = consent(&f, 1);
+    let key = f.runtime.admit_check(&c, a, &current).unwrap();
+    assert_eq!(
+        f.runtime.check_allowance(&oc, key),
+        Ok(super::checks::Allowance::Reserved)
+    );
+    let (b, _) = consent(&f, 2);
+    assert_eq!(f.runtime.admit_check(&c, b, &current), Err(Error::Limit));
+    f.runtime
+        .decide(&c, key, super::runtime::Decision::Abort)
+        .unwrap();
+    let (b, _) = consent(&f, 2);
+    // A pending durable abort gates all admissions as Unknown until its participants acknowledge.
+    assert_eq!(f.runtime.admit_check(&c, b, &current), Err(Error::Unknown));
+    f.runtime.abort(&c, key).unwrap();
+    assert_eq!(
+        f.runtime.check_allowance(&oc, key),
+        Ok(super::checks::Allowance::Released)
+    );
+    let (b, _) = consent(&f, 2);
+    assert!(f.runtime.admit_check(&c, b, &current).is_ok());
+}
+// Retained evidence commitment is distinct from complete response delivery; definite failure releases capacity across restart, ambiguity does not.
+#[test]
+fn included_delivery_and_recovery_preserve_consumption_evidence() {
+    use super::checks::{Allowance, Delivery};
+    for delivery in [Delivery::Incomplete, Delivery::Unknown, Delivery::Complete] {
+        let mut f = fixture(true, false);
+        let local = IdentityId([2; 32]);
+        let cg = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+        let c = context(&cg);
+        let og = f.a.grant(local, Action::Observe, 1_000_000).unwrap();
+        let oc = context(&og);
+        let bg =
+            f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+                .unwrap();
+        let bc = board::contract::Context {
+            grant: &bg,
+            deadline: c.deadline,
+            cancelled: false,
+        };
+        let (a, _) = consent(&f, 1);
+        let key = f
+            .runtime
+            .admit_check(
+                &c,
+                a,
+                &BoardCurrent {
+                    owner: &f.owner,
+                    context: &bc,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            f.runtime.check_delivery(&c, key, Delivery::Incomplete),
+            Err(Error::Conflict)
+        );
+        f.runtime.supply_input(&c, key, Value::Uint64(0)).unwrap();
+        f.runtime.start(&c, key).unwrap();
+        f.runtime.resume(&c, key).unwrap();
+        assert_eq!(f.runtime.check_allowance(&oc, key), Ok(Allowance::Reserved));
+        f.runtime.check_delivery(&c, key, delivery).unwrap();
+        assert_eq!(f.runtime.check_delivery(&c, key, delivery), Ok(()));
+        let expected = match delivery {
+            Delivery::Incomplete => Allowance::Released,
+            Delivery::Unknown => Allowance::Unknown,
+            Delivery::Complete => Allowance::Consumed,
+        };
+        assert_eq!(f.runtime.check_allowance(&oc, key), Ok(expected));
+        if delivery == Delivery::Unknown {
+            assert_eq!(
+                f.runtime.check_delivery(&c, key, Delivery::Incomplete),
+                Err(Error::Unknown)
+            );
+        }
+        if delivery == Delivery::Complete {
+            assert_eq!(
+                f.runtime.check_delivery(&c, key, Delivery::Incomplete),
+                Err(Error::Conflict)
+            );
+        }
+        drop(f.runtime);
+        let recover = f.a.grant(local, Action::Recover, 1_000_000).unwrap();
+        let lg =
+            f.la.grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+                .unwrap();
+        f.runtime = Coordinator::open(
+            Config {
+                local,
+                authority: f.a.clone(),
+                limits: Limits::default(),
+            },
+            &context(&recover),
+            f.store.clone(),
+            Arc::new(accounting::Ledger::new(
+                f.ledger.clone(),
+                lg,
+                Default::default(),
+            )),
+            f.registry.clone(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(f.runtime.check_allowance(&oc, key), Ok(expected));
+        let (next, _) = consent(&f, 2);
+        let result = f.runtime.admit_check(
+            &c,
+            next,
+            &BoardCurrent {
+                owner: &f.owner,
+                context: &bc,
+            },
+        );
+        if delivery == Delivery::Incomplete {
+            assert!(result.is_ok());
+        } else {
+            assert_eq!(result, Err(Error::Limit));
+        }
+    }
+}
+// Lost delivery-write acknowledgements require authoritative reload and cannot silently free or consume the included guard.
+#[test]
+fn included_delivery_storage_failures_reconcile_after_reopen() {
+    use super::{
+        checks::{Allowance, Delivery},
+        test_support::Cut,
+    };
+    for after in [false, true] {
+        let mut f = fixture(true, false);
+        let local = IdentityId([2; 32]);
+        let cg = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+        let c = context(&cg);
+        let og = f.a.grant(local, Action::Observe, 1_000_000).unwrap();
+        let oc = context(&og);
+        let bg =
+            f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+                .unwrap();
+        let bc = board::contract::Context {
+            grant: &bg,
+            deadline: c.deadline,
+            cancelled: false,
+        };
+        let (agreement, _) = consent(&f, 1);
+        let key = f
+            .runtime
+            .admit_check(
+                &c,
+                agreement,
+                &BoardCurrent {
+                    owner: &f.owner,
+                    context: &bc,
+                },
+            )
+            .unwrap();
+        f.runtime.supply_input(&c, key, Value::Uint64(0)).unwrap();
+        f.runtime.start(&c, key).unwrap();
+        f.runtime.resume(&c, key).unwrap();
+        f.store
+            .script([if after { Cut::After } else { Cut::Before }]);
+        assert_eq!(
+            f.runtime.check_delivery(&c, key, Delivery::Complete),
+            Err(if after {
+                Error::Unknown
+            } else {
+                Error::Storage
+            })
+        );
+        drop(f.runtime);
+        let recover = f.a.grant(local, Action::Recover, 1_000_000).unwrap();
+        let lg =
+            f.la.grant(local, ledger::authority::Action::Coordinate, 1_000_000)
+                .unwrap();
+        f.runtime = Coordinator::open(
+            Config {
+                local,
+                authority: f.a.clone(),
+                limits: Limits::default(),
+            },
+            &context(&recover),
+            f.store.clone(),
+            Arc::new(accounting::Ledger::new(
+                f.ledger.clone(),
+                lg,
+                Default::default(),
+            )),
+            f.registry.clone(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            f.runtime.check_allowance(&oc, key),
+            Ok(if after {
+                Allowance::Consumed
+            } else {
+                Allowance::Reserved
+            })
+        );
     }
 }

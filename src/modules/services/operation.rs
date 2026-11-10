@@ -425,6 +425,18 @@ impl Operation {
         {
             return Err(Error::Invalid);
         }
+        if let Some(info) = &o.check {
+            if (info.received.is_some() || info.delivery == Some(super::checks::Delivery::Complete))
+                && o.completion.is_none()
+            {
+                return Err(Error::Invalid);
+            }
+            if info.delivery == Some(super::checks::Delivery::Incomplete)
+                && phase != Phase::Committed
+            {
+                return Err(Error::Invalid);
+            }
+        }
         let included = o.check.as_ref().is_some_and(super::checks::Info::included);
         if o.check.is_some() && !included && !matches!(pricing,Price::Fixed(p) if p>0) {
             return Err(Error::Invalid);

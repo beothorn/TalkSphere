@@ -14,13 +14,35 @@ pub enum Mode {
     Local,
     /// Each complete valid evidence response costs the offering's positive checkPrice.
     Paid,
-    /// Existing paid work includes this finite number of accepted check attempts, with no new Ledger reservation.
+    /// Existing paid work includes this finite number of complete evidence responses, with bounded in-flight reservation and no new Ledger hold.
     Included {
         /// Stable owner-scoped entitlement identity, independent of mutable offering/issuer/version.
         scope: Blob,
-        /// Maximum accepted attempts allowed by the original family contract.
+        /// Maximum complete evidence responses allowed by the original family contract.
         maximum: u32,
     },
+}
+/// Trusted local provider transmission observation; it is not a new wire receipt protocol.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Delivery {
+    /// A complete normal evidence response was observed by this local transport owner.
+    Complete,
+    /// The owner knows the terminal response was never sent, so no complete response could have arrived.
+    Incomplete,
+    /// Response delivery may have completed; absence of acknowledgement is not proof of failure.
+    Unknown,
+}
+/// Local included-entitlement accounting, distinct from payment and evidence correctness.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Allowance {
+    /// One in-flight attempt temporarily holds the finite allowance.
+    Reserved,
+    /// Complete evidence consumed the allowance.
+    Consumed,
+    /// Authoritatively incomplete or acknowledged aborted work did not consume the allowance.
+    Released,
+    /// Ambiguous delivery/recovered legacy guard still occupies the allowance.
+    Unknown,
 }
 /// Trusted local monotonic observation; epochs distinguish clocks that cannot be compared across restart.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -158,6 +180,7 @@ pub(crate) struct Info {
     pub response: u64,
     pub sent: Option<Stamp>,
     pub received: Option<Stamp>,
+    pub delivery: Option<Delivery>,
 }
 impl Info {
     // Stable consent excludes later local timing observations while retaining original allowance/timing terms.
@@ -165,23 +188,37 @@ impl Info {
         let mut copy = self.clone();
         copy.sent = None;
         copy.received = None;
-        copy.value()
+        copy.delivery = None;
+        Value::Array(copy.fields())
     }
     // Explicit local image representation is independent of any CR2SE peer record encoding.
     pub(crate) fn value(&self) -> Value {
+        tracing::trace!("Encoding local check delivery observations");
+        let mut fields = self.fields();
+        fields.push(Value::Uint32(match self.delivery {
+            None => 0,
+            Some(Delivery::Complete) => 1,
+            Some(Delivery::Incomplete) => 2,
+            Some(Delivery::Unknown) => 3,
+        }));
+        Value::Array(fields)
+    }
+    // Six original binding fields stay byte-compatible; delivery observations are appended only to the mutable image.
+    fn fields(&self) -> Vec<Value> {
+        tracing::trace!("Encoding stable check mode and timing fields");
         let (mode, scope, maximum) = match &self.mode {
             Mode::Paid => (0, Vec::new(), 0),
             Mode::Included { scope, maximum } => (1, scope.bytes().to_vec(), *maximum),
             Mode::Local => (2, Vec::new(), 0),
         };
-        Value::Array(vec![
+        vec![
             Value::Uint32(mode),
             Value::Bytes(scope),
             Value::Uint32(maximum),
             Value::Uint64(self.response),
             stamp(self.sent),
             stamp(self.received),
-        ])
+        ]
     }
     // Reject malformed restored entitlements, timing and unknown private modes before any effect.
     pub(crate) fn parse(value: &Value) -> Result<Self, Error> {
@@ -195,6 +232,7 @@ impl Info {
             Value::Uint64(response),
             sent,
             received,
+            tail @ ..,
         ] = v.as_slice()
         else {
             return Err(Error::Invalid);
@@ -210,12 +248,45 @@ impl Info {
         if *response == 0 {
             return Err(Error::Invalid);
         }
+        let received = parse_stamp(received)?;
+        let delivery = match tail {
+            [] => Some(
+                if matches!(mode, Mode::Included { .. }) && received.is_some() {
+                    Delivery::Complete
+                } else {
+                    Delivery::Unknown
+                },
+            ),
+            [Value::Uint32(0)] => None,
+            [Value::Uint32(1)] => Some(Delivery::Complete),
+            [Value::Uint32(2)] => Some(Delivery::Incomplete),
+            [Value::Uint32(3)] => Some(Delivery::Unknown),
+            _ => return Err(Error::Invalid),
+        };
+        if (!matches!(mode, Mode::Included { .. })
+            && matches!(delivery, Some(Delivery::Complete | Delivery::Incomplete)))
+            || (received.is_some() && delivery == Some(Delivery::Incomplete))
+        {
+            return Err(Error::Invalid);
+        }
         Ok(Self {
             mode,
             response: *response,
             sent: parse_stamp(sent)?,
-            received: parse_stamp(received)?,
+            received,
+            delivery,
         })
+    }
+    // In-flight reservations and uncertain delivery hold capacity without falsely reporting completed consumption.
+    pub(crate) fn allowance(&self, aborted: bool) -> Allowance {
+        tracing::trace!("Reading local included allowance state");
+        match self.delivery {
+            Some(Delivery::Complete) => Allowance::Consumed,
+            Some(Delivery::Incomplete) => Allowance::Released,
+            Some(Delivery::Unknown) => Allowance::Unknown,
+            None if aborted => Allowance::Released,
+            None => Allowance::Reserved,
+        }
     }
     // An included entitlement is never modeled as a zero-valued ordinary Ledger operation.
     pub(crate) fn included(&self) -> bool {
@@ -253,5 +324,48 @@ fn parse_stamp(v: &Value) -> Result<Option<Stamp>, Error> {
             }))
         }
         _ => Err(Error::Invalid),
+    }
+}
+#[cfg(test)]
+mod allowance_codec_tests {
+    use super::*;
+    // New delivery fields round-trip while legacy accepted-attempt guards remain conservative instead of silently resetting.
+    #[test]
+    fn stable_binding_and_legacy_allowance_guards() {
+        let mut info = Info {
+            mode: Mode::Included {
+                scope: Blob::new(vec![42; 32], 32).unwrap(),
+                maximum: 1,
+            },
+            response: 1000,
+            sent: None,
+            received: None,
+            delivery: None,
+        };
+        let original = info.binding();
+        let Value::Array(fields) = &original else {
+            panic!("expected binding fields")
+        };
+        assert_eq!(fields.len(), 6);
+        for delivery in [
+            None,
+            Some(Delivery::Complete),
+            Some(Delivery::Incomplete),
+            Some(Delivery::Unknown),
+        ] {
+            info.delivery = delivery;
+            assert_eq!(info.binding(), original);
+            let restored = Info::parse(&info.value()).unwrap();
+            assert_eq!(restored.delivery, delivery);
+        }
+        let legacy = Info::parse(&original).unwrap();
+        assert_eq!(legacy.allowance(true), Allowance::Unknown);
+        assert_eq!(legacy.binding(), original);
+        let mut invalid = info.value();
+        let Value::Array(fields) = &mut invalid else {
+            panic!("expected image fields")
+        };
+        fields[6] = Value::Uint32(4);
+        assert!(Info::parse(&invalid).is_err());
     }
 }

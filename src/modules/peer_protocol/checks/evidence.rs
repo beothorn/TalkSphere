@@ -117,6 +117,32 @@ impl Sender {
         tracing::trace!("Queueing committed evidence without a correctness assertion");
         self.sequence.enqueue_next(queue, chunk)
     }
+    /// Consume this sender after a trusted local included-response delivery observation, independently of evidence commitment.
+    /// # Errors
+    /// Complete requires all records drained; paid checks and contradictory/uncertain resets cannot release an included guard.
+    pub fn delivery<P: Persistence>(
+        self,
+        context: &services::contract::Context<'_>,
+        runtime: &Coordinator<P>,
+        queue: &Outbound,
+        delivery: services::checks::Delivery,
+    ) -> Result<(), Error> {
+        tracing::trace!("Reconciling one included evidence response delivery observation");
+        if runtime.local_identity() != self.association.local {
+            return Err(Error::Denied);
+        }
+        if delivery == services::checks::Delivery::Complete
+            && (!self.sequence.queued() || queue.pending() != 0)
+        {
+            return Err(Error::Conflict);
+        }
+        runtime.check_delivery(
+            context,
+            super::super::acceptance::peer(self.association).key,
+            delivery,
+        )?;
+        Ok(())
+    }
     /// Confirm local marker admission; composition must drain queued bytes before Transport END.
     pub fn queued(&self) -> bool {
         tracing::trace!("Checking committed evidence queue completion");

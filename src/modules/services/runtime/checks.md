@@ -5,7 +5,9 @@ explicit authenticated role consent, challenge-only input, full quote hash,
 current Board terms and installed remote Rules. Local-only checks fail Unsupported.
 It records accepted challenge/price/issuer/timing/allowance before a real positive
 Ledger hold. Included checks reserve only their existing finite entitlement;
-accepted attempts retain their usage guard even after interruption. Mutable
+in-flight attempts hold a slot without consuming it; complete responses consume
+it, confirmed incomplete/aborted attempts release it and ambiguous delivery retains
+an Unknown guard. Mutable
 Board/issuer/version changes cannot reset a stable allowance.
 
 supply_input independently validates check challenge rules. A local provider start
@@ -43,3 +45,12 @@ local callback cannot silently change the peer-approved snapshot. completed_chec
 returns the original check Invocation and complete evidence only after the same
 acknowledged commitment required by check_evidence, allowing wire composition to
 bind roles/quote/price without accessing private coordinator records.
+
+check_delivery records provider-owned included-response observations only after
+local commitment. Paid effects cannot be undone through this port. A consumed or
+released observation is immutable; Unknown cannot silently become Incomplete.
+check_allowance exposes local reservation/consumption under Observe permission.
+Concurrent admission counts reserved, consumed and unknown matching owner scopes,
+retains original limits across all history and releases only acknowledged aborts
+or definitively incomplete responses. Journal uncertainty requires authoritative
+reload; delivery-write failures do not silently change local guard accounting.

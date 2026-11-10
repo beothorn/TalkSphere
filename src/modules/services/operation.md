@@ -20,3 +20,8 @@ reinitialized as recovery. Outer protected-file framing and local call contract
 version1 are unchanged; no CR2SE peer encoding/version changes are introduced.
 
 Encoding and reopening both enforce aggregate retained bodies, operation count, nodes and complete image bytes. Terminal records are retained as lifetime replay guards; this version offers no compaction because no proof discharges every retry/accounting obligation. Lower limits reject reopening without rewriting or evicting history. Storage failures preserve the previously acknowledged image or explicitly gate on uncertainty.
+
+Included delivery observations extend only the mutable private image; immutable
+accepted six-field check bindings remain unchanged. Recovery validates completion
+evidence behind consumed state and refuses inconsistent released/phase records.
+Legacy guards restore conservatively, without creating new free allowances.

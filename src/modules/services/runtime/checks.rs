@@ -86,6 +86,7 @@ impl<P: Persistence> Coordinator<P> {
             response,
             sent: None,
             received: None,
+            delivery: None,
         };
         let accepted = codec::encode(
             &Value::Array(vec![
@@ -180,7 +181,15 @@ impl<P: Persistence> Coordinator<P> {
                         if maximum != limit {
                             return Err(Error::Conflict);
                         }
-                        used = used.checked_add(1).ok_or(Error::Limit)?;
+                        if old
+                            .check
+                            .as_ref()
+                            .ok_or(Error::Invalid)?
+                            .allowance(old.phase == Phase::Aborted)
+                            != crate::modules::services::checks::Allowance::Released
+                        {
+                            used = used.checked_add(1).ok_or(Error::Limit)?;
+                        }
                     }
                 }
                 if used >= *maximum {
@@ -353,6 +362,9 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Cancelled);
         }
         info.received = Some(stamp);
+        if info.included() {
+            info.delivery = Some(crate::modules::services::checks::Delivery::Complete);
+        }
         self.retain_check(context, &mut state, op, evidence)
     }
 
@@ -395,6 +407,57 @@ impl<P: Persistence> Coordinator<P> {
         self.abort(context, key)
     }
 
+    /// Record a trusted provider-side included evidence delivery observation independently of local commitment.
+    /// # Errors
+    /// Paid checks, foreign roles, uncommitted evidence and contradictory observations fail; Unknown cannot be silently reset to incomplete.
+    pub fn check_delivery(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+        delivery: crate::modules::services::checks::Delivery,
+    ) -> Result<(), Error> {
+        use crate::modules::services::checks::Delivery;
+        tracing::trace!("Recording included evidence delivery without inventing payment receipts");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&key).cloned().ok_or(Error::Denied)?;
+        if op.terms.provider != self.config.local {
+            return Err(Error::Denied);
+        }
+        if op.phase != Phase::Committed || op.completion.is_none() {
+            return Err(Error::Conflict);
+        }
+        let info = op.check.as_mut().ok_or(Error::Unsupported)?;
+        if !info.included() {
+            return Err(Error::Unsupported);
+        }
+        match (info.delivery, delivery) {
+            (Some(old), new) if old == new => return Ok(()),
+            (Some(Delivery::Complete | Delivery::Incomplete), _) => return Err(Error::Conflict),
+            (Some(Delivery::Unknown), Delivery::Incomplete) => return Err(Error::Unknown),
+            _ => {}
+        }
+        info.delivery = Some(delivery);
+        self.save(context, &mut state, op)
+    }
+    /// Observe local allowance reservation/consumption separately from check outcome and payment.
+    /// # Errors
+    /// Requires Observe permission and an existing included-purpose operation.
+    pub fn check_allowance(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+    ) -> Result<crate::modules::services::checks::Allowance, Error> {
+        tracing::trace!("Observing local included allowance consumption");
+        let state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Observe, &state)?;
+        let op = state.records.get(&key).ok_or(Error::Denied)?;
+        let info = op.check.as_ref().ok_or(Error::Unsupported)?;
+        if !info.included() {
+            return Err(Error::Unsupported);
+        }
+        Ok(info.allowance(op.phase == Phase::Aborted))
+    }
     /// Return retained provider evidence only after the local check operation is durably completed.
     /// # Errors
     /// Wrong purpose, missing evidence, pending outcomes and caller failures remain explicit.

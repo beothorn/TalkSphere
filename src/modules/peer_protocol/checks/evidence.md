@@ -29,3 +29,11 @@ The existing paid-check response-loss ambiguity is tracked by
 [CR2SE issue10](https://github.com/beothorn/CR2SE/issues/10). A requester-local timeout
 does not reverse a provider's prior durable commitment or establish globally equal
 credit views. No receipt, refund or invented settlement protocol is implied.
+
+For included checks, delivery consumes the Sender after a trusted local wire-owner
+observation and records it through Services. Complete requires all records queued
+and drained plus the caller's normal terminal observation. Incomplete requires
+positive local knowledge that END was never sent; absence of a reply is insufficient.
+Unknown retains the guard. Consuming the sender prevents continuing an interrupted
+sequence after its slot was released. A committed evidence value alone is not proof
+that the complete response was delivered. No new peer acknowledgement is invented.
