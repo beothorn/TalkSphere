@@ -29,7 +29,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **21.** Deliver complete input only after its terminal markers.
 - [x] **22.** Transmit durably committed service results.
 - [x] **23.** Accept results only after normal stream completion.
-- [ ] **24.** Preserve failure codes and uncertain outcomes.
+- [x] **24.** Preserve failure codes and uncertain outcomes.
 - [ ] **25.** Implement wanted-offering role reversal.
 - [ ] **26.** Bind paid checks to challenge-only evidence.
 - [ ] **27.** Reconcile included allowances with complete evidence delivery.
@@ -299,3 +299,5 @@ Step21 completed: reserved input is gated on exact bodies, input.end and origina
 Step22 completed: a new public committed-invocation observation port supplies original terms and retained output; senders cannot emit uncommitted results. Output price/finalPrice must equal the independently validated envelope during Services retention and wire transmission. Metadata/body/result.end queues preserve progress and durable ownership on backpressure/loss. Required checks pass; production coverage14659/15589 =94.03%.
 
 Step23 completed: requester output stays inaccessible until exact bodies, result.end and normal original-stream completion, then passes independent Services content/schema/final-price validation. Actual two-sided commitment tests expose output only via the committed result port; wrong peers/content/prices, missing markers and abnormal completion retain accepted obligations. Required checks pass; production coverage14777/15712 =94.05%.
+
+Step24 completed: all specified failure codes remain distinct, unknown codes are generic, diagnostics are bounded and access can be concealed. Actual provider abort acknowledgement is required before claiming an accepted failure; requester holds release only after a complete normal failure exchange. Failures after result.end, committed response loss and interrupted END cannot manufacture rollback. Required checks pass; production coverage14895/15833 =94.08%.

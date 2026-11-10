@@ -22,6 +22,7 @@ enum Phase {
     Bodies(Receiver),
     Marked(Receiver),
     Failed,
+    Failure(super::failure::Failure),
 }
 /// No successful output accessor exists; completed data must pass the original coordinator's independent validation.
 pub struct ResultReceiver {
@@ -101,6 +102,10 @@ impl ResultReceiver {
                 self.price = Some(price);
                 Ok(())
             }
+            (Phase::Metadata | Phase::Bodies(_), Kind::Failure) => {
+                self.phase = Phase::Failure(super::failure::Failure::parse(message)?);
+                Ok(())
+            }
             (Phase::Bodies(receiver), Kind::ResultEnd) if receiver.complete() => {
                 self.phase = Phase::Marked(receiver);
                 Ok(())
@@ -144,6 +149,12 @@ impl ResultReceiver {
         if !normal {
             return Err(Error::Unknown);
         }
+        if let Phase::Failure(failure) = self.phase {
+            let peer = super::acceptance::peer(self.association);
+            runtime.decline(services_context, peer)?;
+            runtime.abort(services_context, peer.key)?;
+            return Err(failure.code.error());
+        }
         let Phase::Marked(receiver) = self.phase else {
             return Err(Error::Invalid);
         };
@@ -170,6 +181,15 @@ impl ResultReceiver {
             },
         )?;
         Ok(self.association)
+    }
+    /// Inspect only a provisional diagnostic failure; accounting waits for normal completion.
+    pub fn failure(&self) -> Option<&super::failure::Failure> {
+        tracing::trace!("Inspecting provisional remote failure diagnostics");
+        if let Phase::Failure(failure) = &self.phase {
+            Some(failure)
+        } else {
+            None
+        }
     }
     // Trusted composition must route only the authenticated original provider and captured local deadline to this gate.
     fn check(&self, context: &Context<'_>, observed: Association) -> Result<(), Error> {

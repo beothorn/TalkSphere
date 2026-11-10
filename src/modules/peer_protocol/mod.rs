@@ -134,6 +134,7 @@ mod metadata_client_tests;
 
 pub mod acceptance;
 pub mod admission;
+pub mod failure;
 pub mod input_transfer;
 pub mod proposal;
 pub mod result_receiver;
@@ -189,3 +190,7 @@ mod result_sender_tests;
 #[cfg(test)]
 #[path = "tests/result_receiver.rs"]
 mod result_receiver_tests;
+
+#[cfg(test)]
+#[path = "tests/failure.rs"]
+mod failure_tests;

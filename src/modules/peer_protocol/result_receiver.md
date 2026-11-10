@@ -25,3 +25,10 @@ Missing/extra bodies, invalid text, missing markers, changed original content,
 price errors, cancellation or storage uncertainty cannot publish success. Accepted
 holds remain available for original-key recovery; interrupted output is never an
 implicit uncharged failure or authorization to repeat work.
+
+A failure control before result.end discards provisional output and retains a
+bounded diagnostic. failure exposes that diagnostic only; it is not a settlement
+decision. finish applies it through the original coordinator only after normal
+completion, acknowledging abort before releasing uncommitted capacity. Abnormal
+completion preserves Unknown even if a failure control was received. A failure
+after result.end poisons the exchange and cannot overwrite committed work.

@@ -116,3 +116,7 @@ The requester computes Pass/Fail; provider assertions alone cannot establish it.
 Expectations are neither journaled nor transmitted and remain caller-owned.
 
 New paid admission refuses an operation key already present in Ledger without matching Services history; never initialize a missing coordinator journal as a repair for accounting history. Restore and recover the original complete records instead. Revoked authority stops calls without erasing durable decisions.
+
+local_identity exposes only the configured local coordinator owner. Composition
+can reject accidental cross-owner routing before attempting operation decisions;
+this observation grants no payload, recovery or accounting authority.

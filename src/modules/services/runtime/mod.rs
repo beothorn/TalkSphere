@@ -67,6 +67,12 @@ pub struct Coordinator<P: Persistence> {
     state: Mutex<State>,
 }
 impl<P: Persistence> Coordinator<P> {
+    /// Read the configured local owner without granting operation, payload or accounting access.
+    pub fn local_identity(&self) -> IdentityId {
+        tracing::trace!("Reading Services coordinator local owner");
+        self.config.local
+    }
+
     /// Initialize absent state explicitly or reopen only complete versioned records and retained implementations.
     /// # Errors
     /// Missing/corrupt/foreign state, unsupported recovery implementations, authority and storage failures gate startup.
