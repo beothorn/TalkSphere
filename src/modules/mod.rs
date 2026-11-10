@@ -7,3 +7,5 @@ pub mod services;
 pub mod transport;
 
 pub mod ledger;
+
+pub mod peer_protocol;

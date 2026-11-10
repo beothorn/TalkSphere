@@ -7,7 +7,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 ## Steps
 
 - [x] **1.** Reconcile Peer Protocol requirements with existing module contracts.
-- [ ] **2.** Define authenticated exchange contexts and finite limits.
+- [x] **2.** Define authenticated exchange contexts and finite limits.
 - [ ] **3.** Add deterministic stream and dependency helpers.
 - [ ] **4.** Import pinned independent wire fixtures.
 - [ ] **5.** Decode bounded records across Transport frames.
@@ -89,8 +89,7 @@ Run applicable integration tests and required AGENTS.md checks before checking i
 off; measure production coverage under [the documented procedure](../../docs/coverage.md)
 and keep it above80%. Commit focused verified changes with descriptive titles and
 bodies, then push under the standing workflow. Later acceptance work consolidates
-evidence rather than postponing tests. This planning-only change leaves every step
-unchecked and authorizes no implementation.
+evidence rather than postponing tests. The original planning change left every step unchecked; the subsequent user request authorizes implementation of all38 steps.
 
 ## Details
 
@@ -256,3 +255,5 @@ build and overview help pass. Coverage was not rerun because only planning and
 navigation documents changed; implementation must measure it as described above.
 
 Step1: reviewed unchanged upstream contracts and published the requirements/port audit in [REQUIREMENTS.md](../../src/modules/peer_protocol/REQUIREMENTS.md). Detached metadata, price-envelope equality, allowance consumption and exact acceptance ordering require explicit integration work.
+
+Step2: added independent Peer Protocol authority, scoped grants, exact operation identities, version/deadline/cancellation contexts and finite connection/exchange/body/quote/node/queue/control budgets with unit tests. Contract declarations do not advertise wire dispatch. Required checks pass; measured production coverage12046/12774 =94.30%.
