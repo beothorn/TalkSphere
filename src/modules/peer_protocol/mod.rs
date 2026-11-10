@@ -27,3 +27,6 @@ pub enum Error {
     /// Required dependency unavailable.
     Unavailable,
 }
+
+#[cfg(test)]
+mod test_support;
