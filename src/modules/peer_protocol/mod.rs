@@ -30,3 +30,8 @@ pub enum Error {
 
 #[cfg(test)]
 mod test_support;
+
+pub mod record;
+#[cfg(test)]
+#[path = "tests/record.rs"]
+mod record_tests;

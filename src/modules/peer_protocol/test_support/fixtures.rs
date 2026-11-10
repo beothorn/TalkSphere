@@ -1,6 +1,7 @@
 //! Pinned independent Peer Protocol examples; expected bytes do not use production encoders.
-pub(super) const CONTROL: &[u8] = b"\x01\x00\x00\x00\x14{\"type\":\"board.get\"}";
-pub(super) const BODY: &[u8] =
+pub(in crate::modules::peer_protocol) const CONTROL: &[u8] =
+    b"\x01\x00\x00\x00\x14{\"type\":\"board.get\"}";
+pub(in crate::modules::peer_protocol) const BODY: &[u8] =
     b"\x02\x00\x00\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00abc";
 // Literal control/binary lengths and exact quote-source hash remain independent of the implementation.
 #[test]
