@@ -25,7 +25,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **17.** Authorize provided invocation proposals.
 - [x] **18.** Construct exact stream-bound service quotes.
 - [x] **19.** Validate requester quotes and explicit spending consent.
-- [ ] **20.** Bind acceptance to quote bytes and one reservation.
+- [x] **20.** Bind acceptance to quote bytes and one reservation.
 - [ ] **21.** Deliver complete input only after its terminal markers.
 - [ ] **22.** Transmit durably committed service results.
 - [ ] **23.** Accept results only after normal stream completion.
@@ -291,3 +291,5 @@ Step17 completed: provided proposals bind original peer/stream, selected publish
 Step18 completed: exact current provider quotes retain random IDs, raw JSON/hash, permitted factors and original payment fields under finite expiry/capacity. Scoped quote generations prevent stale handles from accepting or releasing replacements; failed randomness or inconsistent family pricing leaves no hold/work. Required checks pass; production coverage13921/14822 =93.92%.
 
 Step19 completed: requester-only installed codecs validate original-stream quote attribution, exact retrieved contract, issuer/payment equality, specified factors and independently calculated prices. Supported term changes require separate exact-hash local consent under both spending ceilings. Raw whitespace is retained for hashing; invalid contracts, factors, fees, authority and streams cause no holds/execution. Required checks pass; production coverage14270/15188 =93.96%.
+
+Step20 completed: exact quote ID/hash and authenticated stream validation precede provider admission; requester consent reserves actual Ledger capacity and journals one dispatch before exposing accept bytes. Two independently owned stacks verify holds, unfunded/foreign acceptance, duplicate dispatch refusal and retained obligations after send/session loss. Rejected exchanges release only transient quotes. Required checks pass; production coverage14446/15373 =93.97%.

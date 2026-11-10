@@ -66,8 +66,16 @@ pub(in crate::modules::peer_protocol) fn ledger_context(
 impl World {
     // Configure a provider-issued one-hundred-credit fixture and an explicitly installed custom handler.
     pub(in crate::modules::peer_protocol) fn new(bytes: bool) -> Self {
-        let local = IdentityId([2; 32]);
-        let requester = IdentityId([1; 32]);
+        Self::with_role(bytes, false)
+    }
+    // A second real local owner has separately issued domains, journal and Ledger; it owns credits from the provider.
+    pub(in crate::modules::peer_protocol) fn requester(bytes: bool) -> Self {
+        Self::with_role(bytes, true)
+    }
+    // Build opposite endpoints without sharing financial maps, runtime state or authority issuers.
+    fn with_role(bytes: bool, requester_side: bool) -> Self {
+        let local = IdentityId([if requester_side { 1 } else { 2 }; 32]);
+        let requester = IdentityId([if requester_side { 2 } else { 1 }; 32]);
         let authority = Arc::new(Authority::new());
         let services = Arc::new(services::authority::Authority::new());
         let family = Arc::new(Echo::new(bytes));
@@ -150,6 +158,11 @@ impl World {
                 ledger::accounting::Trust::new(1).unwrap(),
             )
             .unwrap();
+        if requester_side {
+            ledger
+                .set_owned(&ledger_context(&admin), requester, 100)
+                .unwrap();
+        }
         let read = ledger_authority
             .grant(local, ledger::authority::Action::Read, 16_777_216)
             .unwrap();

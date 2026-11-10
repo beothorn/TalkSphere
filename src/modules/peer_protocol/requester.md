@@ -34,3 +34,9 @@ consent ceilings; wrong ownership, cancellation or expired lifetime fails. Its
 Consented result is approval for admission, not permission to send accept before
 reserving capacity. Later admission must retain the exact quote and original
 operation key, and a failed send after reservation remains potentially unknown.
+
+reserve consumes this Client's Consented token under separate local Coordinate
+and quote grants. It uses the acceptance contract to reserve, retain original
+input and mark one outgoing attempt before returning accept bytes. Repeated
+admission cannot double-dispatch; unknown local outcomes require original-key
+recovery rather than a fresh wire attempt.

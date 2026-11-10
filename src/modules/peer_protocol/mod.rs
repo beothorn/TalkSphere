@@ -132,6 +132,7 @@ impl From<crate::modules::board::Error> for Error {
 #[path = "tests/metadata_client.rs"]
 mod metadata_client_tests;
 
+pub mod acceptance;
 pub mod admission;
 pub mod proposal;
 impl From<crate::modules::ledger::Error> for Error {
@@ -168,3 +169,7 @@ mod quote_tests;
 #[cfg(test)]
 #[path = "tests/requester.rs"]
 mod requester_tests;
+
+#[cfg(test)]
+#[path = "tests/acceptance.rs"]
+mod acceptance_tests;

@@ -125,7 +125,7 @@ pub struct Client {
     pub(crate) services: Arc<services::authority::Authority>,
     registry: Arc<Registry>,
     limits: Limits,
-    service_limits: services::contract::Limits,
+    pub(crate) service_limits: services::contract::Limits,
     domain: Arc<()>,
 }
 impl Client {
@@ -362,6 +362,19 @@ impl Client {
             return Err(Error::Insufficient);
         }
         Ok(Consented { candidate })
+    }
+    /// Reserve this owner's explicitly consented candidate before any accept bytes can be sent.
+    /// # Errors
+    /// Foreign consent, changed terms, failed reservation and unknown persistence outcomes preserve original-key recovery obligations.
+    pub fn reserve<P: services::persistence::Persistence>(
+        &self,
+        context: &Context<'_>,
+        dependencies: super::acceptance::Admission<'_, P>,
+        consent: Consented,
+    ) -> Result<super::acceptance::Outgoing, Error> {
+        tracing::trace!("Admitting explicitly approved requester quote");
+        self.owns(&consent.candidate.domain)?;
+        super::acceptance::reserve(self, context, dependencies, consent)
     }
     // Each owner has an independent opaque domain; public quote fields cannot forge local input/consent.
     fn owns(&self, weak: &Weak<()>) -> Result<(), Error> {
