@@ -61,3 +61,29 @@ pub mod inline;
 #[cfg(test)]
 #[path = "tests/inline.rs"]
 mod inline_tests;
+
+pub mod value;
+
+#[cfg(test)]
+#[path = "tests/value.rs"]
+mod value_tests;
+
+impl From<crate::modules::services::Error> for Error {
+    // Preserve dependency failures exactly; Unknown must never become an explicit uncharged refusal.
+    fn from(error: crate::modules::services::Error) -> Self {
+        tracing::trace!("Mapping Services failure at the Peer Protocol boundary");
+        use crate::modules::services::Error as Source;
+        match error {
+            Source::Invalid => Self::Invalid,
+            Source::Unsupported => Self::Unsupported,
+            Source::Denied => Self::Denied,
+            Source::Limit => Self::Limit,
+            Source::Cancelled => Self::Cancelled,
+            Source::Conflict => Self::Conflict,
+            Source::Insufficient => Self::Insufficient,
+            Source::Storage => Self::Storage,
+            Source::Unknown => Self::Unknown,
+            Source::Unavailable => Self::Unavailable,
+        }
+    }
+}
