@@ -16,3 +16,5 @@ and coalescing preserve records. Malformed headers permanently poison the parser
 finish accepts only record boundaries and closes it. Partial terminal input is
 Invalid, and all subsequent input after finish/error is Conflict. Exchange markers
 and normal Transport END remain a separate state-machine responsibility.
+
+wire_len validates limits and returns total framing bytes without output allocation.

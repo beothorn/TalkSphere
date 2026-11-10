@@ -35,3 +35,8 @@ pub mod record;
 #[cfg(test)]
 #[path = "tests/record.rs"]
 mod record_tests;
+
+pub mod outbound;
+#[cfg(test)]
+#[path = "tests/outbound.rs"]
+mod outbound_tests;

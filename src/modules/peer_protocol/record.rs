@@ -20,6 +20,17 @@ pub enum Record {
     },
 }
 impl Record {
+    /// Calculate total framed bytes without allocating a serialized record.
+    /// # Errors
+    /// Invalid rejects empty or oversized record payloads.
+    pub fn wire_len(&self) -> Result<usize, Error> {
+        tracing::trace!("Checking exact peer record allocation length");
+        match self {
+            Self::Control(bytes) if (1..=CONTROL_MAX).contains(&bytes.len()) => Ok(5 + bytes.len()),
+            Self::Body { data, .. } if (1..=DATA_MAX).contains(&data.len()) => Ok(17 + data.len()),
+            _ => Err(Error::Invalid),
+        }
+    }
     /// Encode exact version-one framing after validating record-specific limits.
     /// # Errors
     /// Invalid rejects empty/oversized records before allocating the output.
