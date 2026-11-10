@@ -73,6 +73,11 @@ impl Outbound {
         self.offset = 0;
         self.bytes = 0;
     }
+    /// Read remaining framed-byte capacity before allocating a candidate body record.
+    pub fn available(&self) -> usize {
+        tracing::trace!("Reading remaining peer record queue capacity");
+        self.maximum - self.bytes
+    }
     /// Read aggregate pending bytes for admission and scheduling.
     pub fn pending(&self) -> usize {
         tracing::trace!("Reading queued peer record byte count");

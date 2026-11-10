@@ -18,7 +18,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **10.** Implement canonical inline byte values.
 - [x] **11.** Assign deterministic detached body descriptors.
 - [x] **12.** Receive ordered bodies through bounded ownership.
-- [ ] **13.** Stream outgoing bodies in descriptor order.
+- [x] **13.** Stream outgoing bodies in descriptor order.
 - [ ] **14.** Implement exchange ordering and terminal states.
 - [ ] **15.** Serve bounded Board and definition requests.
 - [ ] **16.** Consume metadata with authenticated publisher provenance.
@@ -277,3 +277,5 @@ Step10 completed: canonical inline bytes enforce the4096 decoded-byte threshold,
 Step11 completed: schema-directed provisional metadata validates deterministic UTF-8/index traversal, unique sequential IDs, exact descriptors and aggregate declared budgets before body allocation. Complete assembly preserves typed known values and consumes ignored extension bodies without application authority. Required checks pass; 12842/13606 = 94.38%.
 
 Step12 completed: ordered receivers use public Services Body buffers, validate exact ID/offset/chunk bounds and final UTF-8, poison malformed transfers and expose only a consumed complete Value. Split multibyte text, missing/extra data, wrong IDs/order and inline-only cases pass. Required checks pass; production coverage12924/13683 =94.45%.
+
+Step13 completed: immutable sources validate exact IDs/lengths/text and aggregate bounds; queue-aware chunks preserve offsets under backpressure and never exceed65536 data bytes. Tiny-queue and maximum-chunk tests pass. Required checks pass; production coverage12988/13751 =94.45%.

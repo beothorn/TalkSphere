@@ -92,3 +92,8 @@ pub mod receiver;
 #[cfg(test)]
 #[path = "tests/receiver.rs"]
 mod receiver_tests;
+
+pub mod sender;
+#[cfg(test)]
+#[path = "tests/sender.rs"]
+mod sender_tests;

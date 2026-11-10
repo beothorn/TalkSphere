@@ -11,3 +11,5 @@ counts are Invalid without mutation. Pending reports all remaining queued bytes.
 Cancel discards unsent bytes and resets queue capacity; it proves nothing about
 remote receipt, previous sends or committed effects. The owning exchange controls
 END/CANCEL and coordinates cancellation separately. No hidden network retry occurs.
+
+Available reports remaining framed-byte capacity for bounded chunk planning before allocation.
