@@ -63,21 +63,14 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Denied);
         }
         let rules = installed.requester().checks().ok_or(Error::Unsupported)?;
-        let mode = rules.mode(o, &agreement.challenge)?;
-        if mode == Mode::Local {
-            return Err(Error::Unsupported);
+        let quoted = crate::modules::services::checks::terms(rules, o, &agreement.challenge)?;
+        if quoted != agreement.terms {
+            return Err(Error::Conflict);
         }
-        let response = rules.response_milliseconds(o)?;
-        if response == 0 {
-            return Err(Error::Invalid);
-        }
+        let mode = quoted.mode;
+        let response = quoted.response_milliseconds;
+        let price = quoted.price;
         let included = matches!(mode, Mode::Included { .. });
-        let price = if included {
-            0
-        } else {
-            crate::modules::board::terms::positive(&o.source["checkPrice"])
-                .map_err(|_| Error::Invalid)?
-        };
         if included && (agreement.payment.transfer.is_some() || agreement.payment.fee.is_some()) {
             return Err(Error::Invalid);
         }
@@ -407,6 +400,20 @@ impl<P: Persistence> Coordinator<P> {
     /// Wrong purpose, missing evidence, pending outcomes and caller failures remain explicit.
     pub fn check_evidence(&self, context: &Context<'_>, key: OperationKey) -> Result<Value, Error> {
         tracing::trace!("Reading complete durably committed provider evidence");
+        self.completed_check(context, key)
+            .map(|(_, evidence)| evidence)
+    }
+    /// Observe original check invocation and complete evidence only after acknowledged local commitment.
+    /// # Errors
+    /// Wrong purpose/authority, missing evidence and pending outcomes cannot be transmitted as complete evidence.
+    pub fn completed_check(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+    ) -> Result<(CheckInvocation, Value), Error> {
+        tracing::trace!(
+            "Reading committed check context and evidence for original-stream transmission"
+        );
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Observe, &state)?;
         let op = state.records.get(&key).ok_or(Error::Denied)?;
@@ -416,7 +423,10 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
-        Ok(op.completion.as_ref().ok_or(Error::Invalid)?.output.clone())
+        Ok((
+            op.check_invocation(self.config.limits, context.deadline)?,
+            op.completion.as_ref().ok_or(Error::Invalid)?.output.clone(),
+        ))
     }
 
     /// Calculate requester-only outcomes with private expectations, without refunds or trust changes.

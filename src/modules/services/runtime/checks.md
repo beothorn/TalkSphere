@@ -36,3 +36,10 @@ is never reversed from response loss; the two local credit views may disagree.
 [Upstream issue #10](https://github.com/beothorn/CR2SE/issues/10) requests clarification.
 No cross-peer zero-charge guarantee, automatic refund or invented wire receipt
 protocol is implied. Paid-check network composition must revisit that finding.
+
+admit_check compares the exact immutable Agreement.Terms (price, response interval
+and mode/entitlement) against installed current rules before reservation. A mutable
+local callback cannot silently change the peer-approved snapshot. completed_check
+returns the original check Invocation and complete evidence only after the same
+acknowledged commitment required by check_evidence, allowing wire composition to
+bind roles/quote/price without accessing private coordinator records.

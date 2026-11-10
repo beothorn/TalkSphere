@@ -25,3 +25,12 @@ Comparable send/receive stamps yield Timing.Within; unavailable or different clo
 epochs yield Ambiguous. The response clock begins after the complete challenge is
 sent. Counter overflow fails explicitly. Included attempts and all replay bindings
 are journaled in the same operation namespace as ordinary work.
+
+Rules.evidence_schema explicitly describes provider evidence separately from the
+requester-computed check.output; its conservative default is Unsupported. Known
+standard Peer Protocol bindings use their specified evidence fields independently.
+Terms freezes mode/entitlement, price and response milliseconds. terms validates
+remote eligibility, positive paid checkPrice or valid included scope/limit and
+positive response interval. Agreement now includes these quoted Terms; admission
+recalculates them once and rejects any drift before a hold or execution. Original
+persisted mode, charge and response fields already retain this binding.

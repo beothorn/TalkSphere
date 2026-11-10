@@ -39,6 +39,17 @@ impl Pair {
     pub fn new(bytes: bool) -> Self {
         let provider = World::new(bytes);
         let requester = World::requester(bytes);
+        Self::from_worlds(provider, requester)
+    }
+    // Existing custom resources expose explicit paid/included evidence while retaining real independent participant owners.
+    pub fn checks(included: bool) -> Self {
+        Self::from_worlds(
+            World::checks(false, included),
+            World::checks(true, included),
+        )
+    }
+    // Shared trusted setup is independent of whether remote checks were explicitly installed.
+    fn from_worlds(provider: World, requester: World) -> Self {
         let issuer = Issuer::new(
             provider.local,
             provider.authority.clone(),

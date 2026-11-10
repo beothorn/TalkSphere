@@ -134,6 +134,7 @@ mod metadata_client_tests;
 
 pub mod acceptance;
 pub mod admission;
+pub mod checks;
 pub mod failure;
 pub mod input_transfer;
 pub mod proposal;
@@ -199,3 +200,7 @@ mod failure_tests;
 #[cfg(test)]
 #[path = "tests/wanted.rs"]
 mod wanted_tests;
+
+#[cfg(test)]
+#[path = "tests/checks.rs"]
+mod check_tests;

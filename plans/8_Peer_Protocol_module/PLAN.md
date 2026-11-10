@@ -31,7 +31,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **23.** Accept results only after normal stream completion.
 - [x] **24.** Preserve failure codes and uncertain outcomes.
 - [x] **25.** Implement wanted-offering role reversal.
-- [ ] **26.** Bind paid checks to challenge-only evidence.
+- [x] **26.** Bind paid checks to challenge-only evidence.
 - [ ] **27.** Reconcile included allowances with complete evidence delivery.
 - [ ] **28.** Add explicit family-authorized cached retry handling.
 - [ ] **29.** Bind authenticated balance and transfer-query controls.
@@ -303,3 +303,5 @@ Step23 completed: requester output stays inaccessible until exact bodies, result
 Step24 completed: all specified failure codes remain distinct, unknown codes are generic, diagnostics are bounded and access can be concealed. Actual provider abort acknowledgement is required before claiming an accepted failure; requester holds release only after a complete normal failure exchange. Failures after result.end, committed response loss and interrupted END cannot manufacture rollback. Required checks pass; production coverage14895/15833 =94.08%.
 
 Step25 completed: installed prospective providers create owner-scoped wanted invitations, and publisher-side local policy alone supplies input/spending after exact invitation/current-term checks. Real Registry/Board/Services/Ledger tests complete reversed-role work and settlement, reject absent providers and refused/malformed invitations, and keep untrusted input/installation suggestions inert. Required checks pass; production coverage15040/15988 =94.07%.
+
+Step26 completed: challenge-only paid checks bind exact quotes, immutable mode/price/response terms, two-sided reservations, terminal gates and trusted timing beginning at input.end. Evidence schemas exclude provider outcomes; exact standard identifier/sample widths and actual custom-resource checks verify paid wrong evidence, private expectations, malformed/late/missing evidence, local-only refusal and entropy failure. Unresolved pre-quote ownership keys are explicitly unsupported; included consumption remains step27. Issue10 still limits global response-loss charging claims. Required checks pass; production coverage15876/16920 =93.83%.

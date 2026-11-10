@@ -81,6 +81,13 @@ pub trait Rules: Send + Sync {
     /// # Errors
     /// Invalid or unauthorized challenges fail without charge.
     fn challenge(&self, invocation: &Invocation, challenge: &Value) -> Result<(), Error>;
+    /// Describe provider evidence separately from the requester-computed logical outcome.
+    /// # Errors
+    /// Absent explicit evidence binding is Unsupported; descriptions alone cannot enable a wire check.
+    fn evidence_schema(&self) -> Result<serde_json::Value, Error> {
+        tracing::trace!("Refusing an absent installed evidence schema binding");
+        Err(Error::Unsupported)
+    }
     /// Validate complete well-formed provider evidence and exact challenge association, never its correctness claim.
     /// # Errors
     /// Malformed/incomplete evidence cannot authorize settlement.
@@ -94,8 +101,44 @@ pub trait Rules: Send + Sync {
         timing: Timing,
     ) -> super::handler::Check;
 }
+/// Immutable quoted remote-check economics, entitlement and response budget.
+#[derive(Clone, PartialEq, Eq)]
+pub struct Terms {
+    /// Exact installed remote mode, including original included entitlement scope/limit.
+    pub mode: Mode,
+    /// Positive paid check charge or zero for an included entitlement.
+    pub price: u64,
+    /// Positive locally understood response interval in milliseconds.
+    pub response_milliseconds: u64,
+}
+/// Calculate remote check terms before consent without executing evidence or reserving credits.
+/// # Errors
+/// Local-only, absent/malformed entitlement, bad checkPrice or invalid timing fails before quoting.
+pub fn terms(rules: &dyn Rules, offering: &Offering, challenge: &Value) -> Result<Terms, Error> {
+    tracing::trace!("Calculating immutable remote check terms before consent");
+    rules.shape(challenge)?;
+    let mode = rules.mode(offering, challenge)?;
+    let price = match &mode {
+        Mode::Local => return Err(Error::Unsupported),
+        Mode::Paid => crate::modules::board::terms::positive(&offering.source["checkPrice"])
+            .map_err(|_| Error::Invalid)?,
+        Mode::Included { scope, maximum } if !scope.bytes().is_empty() && *maximum > 0 => 0,
+        _ => return Err(Error::Invalid),
+    };
+    let response_milliseconds = rules.response_milliseconds(offering)?;
+    if response_milliseconds == 0 {
+        return Err(Error::Invalid);
+    }
+    Ok(Terms {
+        mode,
+        price,
+        response_milliseconds,
+    })
+}
 /// Explicit check consent assembled by trusted peer/local composition after role authorization.
 pub struct Agreement {
+    /// Exact previously quoted immutable economics and allowance; local callbacks must still agree at acceptance.
+    pub terms: Terms,
     /// Owner-authorized requester/provider roles and exact installed implementation.
     pub authorized: Authorized,
     /// Defined challenge only; expected bytes must never be included.

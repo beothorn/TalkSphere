@@ -198,6 +198,24 @@ fn consent(f: &Fixture, stream: u32) -> (Agreement, Peer) {
     let hash = Sha256::digest(bytes.bytes()).into();
     (
         Agreement {
+            terms: {
+                let mode = super::checks::Rules::mode(
+                    f.family.as_ref(),
+                    f.selection.offering(),
+                    &challenge,
+                )
+                .unwrap();
+                let price = if matches!(mode, super::checks::Mode::Paid) {
+                    3
+                } else {
+                    0
+                };
+                super::checks::Terms {
+                    mode,
+                    price,
+                    response_milliseconds: 1000,
+                }
+            },
             authorized: auth,
             challenge,
             bytes,
@@ -512,6 +530,7 @@ fn timeout_and_provider_commit_have_distinct_local_credit_views() {
         context: &sc,
     };
     let (server_agreement, server_peer) = consent(&server, 1);
+    let terms = server_agreement.terms.clone();
     let quote = server_agreement.bytes.clone();
     let hash = server_agreement.hash;
     let request = authority.grant(owner, Action::Request, 1_000_000).unwrap();
@@ -538,6 +557,7 @@ fn timeout_and_provider_commit_have_distinct_local_credit_views() {
         .admit_check(
             &c,
             Agreement {
+                terms,
                 authorized,
                 challenge: Value::Uint64(0),
                 bytes: quote,
@@ -749,4 +769,42 @@ fn local_only_and_reopened_entitlement() {
         ),
         Err(Error::Limit)
     );
+}
+// Accepted wire check terms cannot drift into another price, interval or entitlement during local admission callbacks.
+#[test]
+fn frozen_check_agreement_rejects_changed_terms() {
+    for case in 0..3 {
+        let f = fixture(false, false);
+        let local = IdentityId([2; 32]);
+        let cg = f.a.grant(local, Action::Coordinate, 1_000_000).unwrap();
+        let c = context(&cg);
+        let bg =
+            f.ba.grant(local, board::authority::Action::Select, 1_000_000)
+                .unwrap();
+        let bc = board::contract::Context {
+            grant: &bg,
+            deadline: c.deadline,
+            cancelled: false,
+        };
+        let current = BoardCurrent {
+            owner: &f.owner,
+            context: &bc,
+        };
+        let (mut agreement, _) = consent(&f, 1);
+        match case {
+            0 => agreement.terms.price = 4,
+            1 => agreement.terms.response_milliseconds = 2000,
+            _ => {
+                agreement.terms.mode = super::checks::Mode::Included {
+                    scope: Blob::new(vec![42; 32], 32).unwrap(),
+                    maximum: 1,
+                }
+            }
+        }
+        assert!(matches!(
+            f.runtime.admit_check(&c, agreement, &current),
+            Err(Error::Conflict)
+        ));
+        assert_eq!(f.family.calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
 }

@@ -25,6 +25,10 @@ use std::{
 pub(in crate::modules::peer_protocol) struct Echo {
     definition: Definition,
     bytes: bool,
+    check_mode: Option<crate::modules::services::checks::Mode>,
+    pub(in crate::modules::peer_protocol) evidence_calls: AtomicUsize,
+    pub(in crate::modules::peer_protocol) seen: Mutex<Vec<Value>>,
+    pub(in crate::modules::peer_protocol) evidence_override: Mutex<Option<Value>>,
     prices: Mutex<std::collections::VecDeque<u64>>,
     state: Mutex<BTreeMap<OperationKey, (Completion, Status)>>,
     pub(in crate::modules::peer_protocol) assessments: AtomicUsize,
@@ -50,11 +54,33 @@ impl Echo {
             definition: Definition::parse(raw.to_string().as_bytes(), &o, Default::default())
                 .unwrap(),
             bytes,
+            check_mode: None,
+            evidence_calls: AtomicUsize::new(0),
+            seen: Mutex::new(Vec::new()),
+            evidence_override: Mutex::new(None),
             prices: Mutex::new(std::collections::VecDeque::new()),
             state: Mutex::new(BTreeMap::new()),
             assessments: AtomicUsize::new(0),
             executions: AtomicUsize::new(0),
         }
+    }
+    // Explicit custom evidence support uses a pre-existing resource, not a production Storage or Messaging implementation.
+    pub(in crate::modules::peer_protocol) fn with_checks(included: bool) -> Self {
+        let mut family = Self::new(false);
+        let mut definition = family.definition.document.value().clone();
+        definition["check"] = serde_json::json!({"description":"Challenge a pre-existing five-byte resource at an offset; compare returned byte with a private local expectation.","input":{"type":"uint64"},"output":{"type":"object","fields":{"outcome":{"type":"string","description":"Requester-computed pass, fail or inconclusive."},"value":{"type":"bytes","description":"Complete one-byte provider evidence.","optional":true}}}});
+        family.definition.document =
+            board::document::Document::parse(definition.to_string().as_bytes(), Default::default())
+                .unwrap();
+        family.check_mode = Some(if included {
+            crate::modules::services::checks::Mode::Included {
+                scope: Blob::new(vec![42; 32], 32).unwrap(),
+                maximum: 1,
+            }
+        } else {
+            crate::modules::services::checks::Mode::Paid
+        });
+        family
     }
     // Deliberately inconsistent local price callbacks exercise the quote owner's independent snapshot checks.
     pub(in crate::modules::peer_protocol) fn script_prices(&self, prices: &[u64]) {
@@ -81,7 +107,12 @@ impl Echo {
     }
     // Each world chooses its actual configured issuer without redefining this custom logical contract.
     pub(in crate::modules::peer_protocol) fn offering(&self, issuer: IdentityId) -> Offering {
-        Self::make_offering(self.bytes, issuer)
+        let mut offering = Self::make_offering(self.bytes, issuer);
+        if self.check_mode.is_some() {
+            offering.source["checkPrice"] = serde_json::json!(3);
+            offering.source["checkResponseSeconds"] = serde_json::json!(1);
+        }
+        offering
     }
 }
 // Exact effect tokens bind fixture owner/key and effect; no raw process pointers or filesystem paths escape.
@@ -176,6 +207,12 @@ impl Requester for Echo {
         } else {
             Err(Error::Invalid)
         }
+    }
+    // Remote evidence is available only on the explicitly configured custom resource fixture.
+    fn checks(&self) -> Option<&dyn crate::modules::services::checks::Rules> {
+        self.check_mode
+            .as_ref()
+            .map(|_| self as &dyn crate::modules::services::checks::Rules)
     }
     // Property results are computed locally and cannot alter credits or trust.
     fn verify(
@@ -311,12 +348,80 @@ impl Provider for Echo {
             .map(|(_, s)| s.clone())
             .unwrap_or(Status::Absent))
     }
-    // The fixture verifier is local-only, so remote evidence is unsupported.
+    // Only the challenge offset enters this provider port; expected bytes and correctness outcomes are absent.
     fn evidence(
         &self,
-        _: &crate::modules::services::checks::Invocation,
-        _: &Value,
+        i: &crate::modules::services::checks::Invocation,
+        challenge: &Value,
     ) -> Result<Value, Error> {
-        Err(Error::Unsupported)
+        crate::modules::services::checks::Rules::challenge(self, i, challenge)?;
+        self.evidence_calls.fetch_add(1, Ordering::SeqCst);
+        self.seen.lock().unwrap().push(challenge.clone());
+        Ok(self
+            .evidence_override
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap_or(Value::Bytes(vec![b'i'])))
+    }
+}
+impl crate::modules::services::checks::Rules for Echo {
+    // This immutable fixture grants one stable entitlement only when explicitly configured as included.
+    fn mode(
+        &self,
+        _: &Offering,
+        _: &Value,
+    ) -> Result<crate::modules::services::checks::Mode, Error> {
+        self.check_mode.clone().ok_or(Error::Unsupported)
+    }
+    // A literal one-second response budget is independently understood by both endpoint installations.
+    fn response_milliseconds(&self, _: &Offering) -> Result<u64, Error> {
+        Ok(1000)
+    }
+    // Only a uint64 offset is defined; extra expected-byte fields or out-of-range values cannot be transmitted as challenges.
+    fn shape(&self, challenge: &Value) -> Result<(), Error> {
+        if matches!(challenge,Value::Uint64(n) if *n<5) {
+            Ok(())
+        } else {
+            Err(Error::Invalid)
+        }
+    }
+    // Only an explicit requester may challenge this fixture's active pre-existing resource.
+    fn challenge(
+        &self,
+        _: &crate::modules::services::checks::Invocation,
+        challenge: &Value,
+    ) -> Result<(), Error> {
+        self.check_mode.as_ref().ok_or(Error::Unsupported)?;
+        crate::modules::services::checks::Rules::shape(self, challenge)
+    }
+    // Complete provider evidence is one raw byte, separate from the logical requester outcome schema.
+    fn evidence_schema(&self) -> Result<serde_json::Value, Error> {
+        Ok(serde_json::json!({"type":"bytes"}))
+    }
+    // Wrong but complete evidence is billable; malformed evidence is rejected before charge.
+    fn evidence(&self, challenge: &Value, evidence: &Value) -> Result<(), Error> {
+        crate::modules::services::checks::Rules::shape(self, challenge)?;
+        if matches!(evidence,Value::Bytes(b) if b.len()==1) {
+            Ok(())
+        } else {
+            Err(Error::Invalid)
+        }
+    }
+    // Only locally held expected bytes and comparable timing can produce pass or fail.
+    fn outcome(
+        &self,
+        _: &Value,
+        evidence: Option<&Value>,
+        expected: Option<&Value>,
+        timing: crate::modules::services::checks::Timing,
+    ) -> Check {
+        match (evidence, expected, timing) {
+            (Some(a), Some(b), crate::modules::services::checks::Timing::Within(_)) if a == b => {
+                Check::Pass
+            }
+            (Some(_), Some(_), crate::modules::services::checks::Timing::Within(_)) => Check::Fail,
+            _ => Check::Inconclusive,
+        }
     }
 }

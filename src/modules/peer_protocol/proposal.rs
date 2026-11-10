@@ -149,7 +149,11 @@ impl Authorizer {
         if mode == Mode::Invoke && maximum == 0 {
             return Err(Error::Insufficient);
         }
-        let payment = if issuer != requester && issuer != provider {
+        let included_candidate = mode == Mode::Check
+            && maximum == 0
+            && v.get("transferId").is_none()
+            && v.get("transferFee").is_none();
+        let payment = if issuer != requester && issuer != provider && !included_candidate {
             let transfer = base64::decode(v["transferId"].as_str().ok_or(Error::Invalid)?, 16)?
                 .try_into()
                 .map_err(|_| Error::Invalid)?;

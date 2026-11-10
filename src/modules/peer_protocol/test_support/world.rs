@@ -72,13 +72,20 @@ impl World {
     pub(in crate::modules::peer_protocol) fn requester(bytes: bool) -> Self {
         Self::with_role(bytes, true)
     }
+    // Remote checks are explicitly installed on independent local owners; ordinary worlds remain local-check only.
+    pub(in crate::modules::peer_protocol) fn checks(requester_side: bool, included: bool) -> Self {
+        Self::build(requester_side, Arc::new(Echo::with_checks(included)))
+    }
     // Build opposite endpoints without sharing financial maps, runtime state or authority issuers.
     fn with_role(bytes: bool, requester_side: bool) -> Self {
+        Self::build(requester_side, Arc::new(Echo::new(bytes)))
+    }
+    // All fixture module owners use public grants and retain independent financial/journal state.
+    fn build(requester_side: bool, family: Arc<Echo>) -> Self {
         let local = IdentityId([if requester_side { 1 } else { 2 }; 32]);
         let requester = IdentityId([if requester_side { 2 } else { 1 }; 32]);
         let authority = Arc::new(Authority::new());
         let services = Arc::new(services::authority::Authority::new());
-        let family = Arc::new(Echo::new(bytes));
         let registry = Arc::new(
             services::registry::Registry::new(
                 local,

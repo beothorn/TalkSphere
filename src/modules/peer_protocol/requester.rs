@@ -408,7 +408,7 @@ fn peer(a: Association) -> Peer {
     }
 }
 // Require the complete third-party tuple and forbid unsolicited participating-issuer payment fields.
-fn check_payment(
+pub(crate) fn check_payment(
     payment: Payment,
     requester: IdentityId,
     provider: IdentityId,
@@ -424,7 +424,7 @@ fn check_payment(
     Ok(())
 }
 // Decode only the original optional paired transfer values already validated as canonical control fields.
-fn payment(v: &serde_json::Value) -> Result<Payment, Error> {
+pub(crate) fn payment(v: &serde_json::Value) -> Result<Payment, Error> {
     tracing::trace!("Decoding quote transfer and exact fee binding");
     match (v.get("transferId"), v.get("transferFee")) {
         (None, None) => Ok(Payment::default()),

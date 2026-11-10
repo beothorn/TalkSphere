@@ -5,7 +5,7 @@ Board metadata, Services coordination and Ledger controls. Current status includ
 canonical scalar/byte binding and provisional detached body reception/transmission;
 provided-proposal authorization, immutable provider quotes, independent requester
 validation, explicit spending consent and [durable two-sided acceptance](acceptance.md)
-are also available.
+and [challenge-only remote check binding](checks/README.md) are also available.
 Exchange orchestration and real module/network composition are still in progress.
 No peer application protocol is registered yet. Application composition supplies grants
 and verified peer context; protocol internals do not own sockets or balances.
