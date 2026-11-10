@@ -40,3 +40,8 @@ pub mod outbound;
 #[cfg(test)]
 #[path = "tests/outbound.rs"]
 mod outbound_tests;
+
+pub mod control;
+#[cfg(test)]
+#[path = "tests/control.rs"]
+mod control_tests;

@@ -12,7 +12,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **4.** Import pinned independent wire fixtures.
 - [x] **5.** Decode bounded records across Transport frames.
 - [x] **6.** Encode records with bounded outbound buffering.
-- [ ] **7.** Parse lossless bounded control objects.
+- [x] **7.** Parse lossless bounded control objects.
 - [ ] **8.** Validate control fields and fixed identifiers.
 - [ ] **9.** Bind exact integer and floating-point service values.
 - [ ] **10.** Implement canonical inline byte values.
@@ -265,3 +265,5 @@ Step4 completed: pinned literal control/binary and canonical typed-value fixture
 Step5 completed: bounded incremental framing validates headers before allocation, preserves exact control bytes and rejects truncation/invalid kinds/lengths. Independent vectors, all split positions, bytewise/coalesced delivery and maximum-sized records pass. Required checks pass; production coverage12121/12850 =94.33%.
 
 Step6 completed: aggregate outbound admission checks encoded size before allocation, borrowed fragments persist under backpressure, and explicit partial acknowledgements preserve record order. Cancellation drops only unsent local bytes. Required checks pass; 12184/12914 = 94.35%.
+
+Step7 completed: wire-specific lossless control parsing preserves exact source/large integers and rejects duplicate decoded keys, malformed/trailing JSON, bad type/UTF-8 and depth33. Full1048576-byte controls and depth32 pass. Required checks pass; production coverage12296/13032 =94.35%.
