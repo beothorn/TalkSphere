@@ -101,3 +101,8 @@ Discovery index or feed provider is installed by this module. The custom example
 and test-only family contracts do not imply full standard-family support or
 minimum-node conformance. Ordinary unknown outcomes must retain obligations;
 network disconnect must never trigger automatic execution retry.
+
+Peer Protocol integration now uses [explicit unresolved input metadata](input.md)
+for pre-body assessment. Default providers refuse body references; installed
+body-bearing families must define real length/hash metadata projections and still
+validate complete input before work. This adds no peer wire message or family provider.

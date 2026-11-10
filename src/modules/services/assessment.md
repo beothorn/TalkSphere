@@ -20,3 +20,12 @@ data, bounds metadata/factors/input length, checks Request authority and calls t
 installed requester to validate factors against its own authorized input. The
 default permits matching complete metadata and no provider-dependent factors;
 body-bearing or calculated families must supply their normative validation.
+
+Assess_metadata takes the same owner authority/context and Authorized binding,
+plus an Input description and finite Limits. It independently checks declared
+logical bytes, nodes, depth and body count before calling Provider.assess_metadata.
+The default provider accepts only complete values; body-bearing handlers must
+implement their actual metadata rules without invented bytes. Returned metadata,
+factors and optional provisional pin are bounded and authority is rechecked before
+retention. Existing assess still handles complete Value input. Neither operation
+reserves Ledger funds or executes work.

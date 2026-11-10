@@ -13,3 +13,7 @@ Board error conversion preserves failure categories; stale selections become
 Conflict and missing metadata Unavailable. Metadata responders retain Board
 errors directly where the wire distinction between not_available and local
 configuration failure matters; uncertainty never becomes a safe rollback.
+
+Ledger errors map one-for-one to local peer failure categories, preserving Unknown
+versus known refusal. Economic preflight reads only public Ledger views/budgets;
+actual reservations and durable accounting remain Services/Ledger responsibilities.

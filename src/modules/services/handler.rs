@@ -136,6 +136,19 @@ pub trait Requester: super::validation::Semantics {
             .ok_or(Error::Unsupported)?;
         Ok(super::pricing::Price::Fixed(price))
     }
+    /// Derive independently understood local assessment metadata from authorized complete requester input.
+    /// Body-bearing families override this with their defined length/hash projection, never placeholder payloads.
+    /// # Errors
+    /// Malformed or oversized input fails before returning retained metadata.
+    fn assessment_metadata(
+        &self,
+        input: &Value,
+        budget: super::value::Budget,
+    ) -> Result<Value, Error> {
+        tracing::trace!("Deriving complete default requester assessment metadata");
+        input.bounded(budget)?;
+        Ok(input.clone())
+    }
     /// Independently validate remote metadata/factors against the authorized local source of input.
     /// The conservative default permits complete matching input and no provider-dependent factors.
     /// # Errors
@@ -224,6 +237,21 @@ pub trait Provider: Send + Sync {
         offering: &Offering,
         metadata: &Value,
     ) -> Result<Assessment, Error>;
+    /// Assess known logical metadata and unresolved body lengths without receiving the bodies.
+    /// The default supports only complete values; body-bearing families must implement their actual metadata rules.
+    /// # Errors
+    /// Unsupported unresolved content and exhausted structural/body budgets fail without execution or spending.
+    fn assess_metadata(
+        &self,
+        peer: Peer,
+        offering: &Offering,
+        metadata: &super::input::Input,
+        budget: super::value::Budget,
+    ) -> Result<Assessment, Error> {
+        tracing::trace!("Assessing explicitly represented service input metadata");
+        let value = metadata.complete(budget)?;
+        self.assess(peer, offering, &value)
+    }
     /// Execute once after reservation and complete input validation; stage recoverable effects.
     /// # Errors
     /// Explicit uncommitted refusal differs from Unknown after possible external effects.

@@ -113,3 +113,5 @@ mod lifecycle_tests;
 #[cfg(test)]
 #[path = "tests/privacy.rs"]
 mod privacy_tests;
+
+pub mod input;

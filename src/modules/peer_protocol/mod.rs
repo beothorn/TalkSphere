@@ -131,3 +131,29 @@ impl From<crate::modules::board::Error> for Error {
 #[cfg(test)]
 #[path = "tests/metadata_client.rs"]
 mod metadata_client_tests;
+
+pub mod admission;
+pub mod proposal;
+impl From<crate::modules::ledger::Error> for Error {
+    // Preserve financial refusal versus uncertainty without reading Ledger-owned state.
+    fn from(error: crate::modules::ledger::Error) -> Self {
+        tracing::trace!("Mapping Ledger failure at the Peer Protocol boundary");
+        use crate::modules::ledger::Error as Source;
+        match error {
+            Source::Invalid => Self::Invalid,
+            Source::Unsupported => Self::Unsupported,
+            Source::Denied => Self::Denied,
+            Source::Limit => Self::Limit,
+            Source::Cancelled => Self::Cancelled,
+            Source::Conflict => Self::Conflict,
+            Source::Insufficient => Self::Insufficient,
+            Source::Storage => Self::Storage,
+            Source::Unknown => Self::Unknown,
+            Source::Unavailable => Self::Unavailable,
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "tests/proposal.rs"]
+mod proposal_tests;

@@ -20,3 +20,7 @@ recover loads/validates the possibly committed image without repeating a mutatio
 Corrupt/missing recovery state keeps the gate. No method changes another peer's
 ledger, executes services or opens sockets. Reservations constrain
 administration to preserve accepted holds and incoming balance headroom.
+
+Local_identity returns the configured owner identity as a read-only public
+observation, granting no balance/admin authority. Composition uses it to reject a
+preflight adapter bound to a different Ledger owner before any operation.

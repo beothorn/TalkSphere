@@ -75,6 +75,13 @@ impl Pending {
         tracing::trace!("Reading bounded peer body declarations");
         &self.descriptors
     }
+    /// Describe known input values and unresolved lengths through the language-independent Services metadata contract.
+    /// # Errors
+    /// Broken internal descriptor association fails without fabricating complete content.
+    pub fn describe(&self) -> Result<crate::modules::services::input::Input, Error> {
+        tracing::trace!("Describing provisional peer input through Services metadata contracts");
+        self.root.describe(&self.descriptors)
+    }
     /// Assemble only complete exact bodies; ignored extension bodies are consumed without application semantics.
     /// # Errors
     /// Missing/extra IDs, length mismatch, invalid final UTF-8 and exhausted complete-value budgets fail.
@@ -98,6 +105,36 @@ impl Pending {
     }
 }
 impl Node {
+    // Preserve only known logical metadata and declared lengths; transport body IDs grant no family authority.
+    fn describe(
+        &self,
+        descriptors: &[Descriptor],
+    ) -> Result<crate::modules::services::input::Input, Error> {
+        use crate::modules::services::input::Input;
+        match self {
+            Self::Scalar(value) => Ok(Input::Complete(value.clone())),
+            Self::Object(fields) => Ok(Input::Object(
+                fields
+                    .iter()
+                    .map(|(n, v)| Ok((n.clone(), v.describe(descriptors)?)))
+                    .collect::<Result<_, Error>>()?,
+            )),
+            Self::Array(values) => Ok(Input::Array(
+                values
+                    .iter()
+                    .map(|v| v.describe(descriptors))
+                    .collect::<Result<_, _>>()?,
+            )),
+            Self::Body(id, _) => {
+                let d = descriptors.get(*id as usize).ok_or(Error::Invalid)?;
+                Ok(Input::Body {
+                    length: d.length,
+                    text: d.text,
+                })
+            }
+        }
+    }
+
     // Materialize the known logical tree only after every body and UTF-8 requirement has passed.
     fn assemble(&self, bodies: &BTreeMap<u32, Blob>) -> Result<Value, Error> {
         match self {

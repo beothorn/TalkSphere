@@ -26,3 +26,8 @@ schemas fail explicitly; exhausted capacities are Limit. Container tree walks
 emit no per-node payload logs; public operations mark bounded control flow.
 Actual record order, input/result terminal markers, normal END and deadline/
 authority are additional exchange responsibilities, not proven by assembly.
+
+Describe projects known provisional nodes into Services Input descriptions: complete
+scalar content or structured fields/arrays and unresolved length/text references.
+Transport body IDs stay private to Peer Protocol. This provides metadata assessment
+without fabricated Value::Bytes contents or allocating declared body length.

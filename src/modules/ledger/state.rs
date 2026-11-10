@@ -35,6 +35,12 @@ pub struct Ledger<P: Persistence> {
     pub(super) inner: Mutex<Inner<P>>,
 }
 impl<P: Persistence> Ledger<P> {
+    /// Observe the configured local accounting owner without exposing balances or granting authority.
+    pub fn local_identity(&self) -> IdentityId {
+        tracing::trace!("Reading configured Ledger owner identity");
+        self.local
+    }
+
     /// Explicitly initialize an absent store with zero balances and finite operator budgets.
     /// # Errors
     /// Denied authority, existing state, invalid limits or persistence failure prevents success.

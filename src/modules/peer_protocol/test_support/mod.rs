@@ -92,4 +92,6 @@ fn deterministic_boundaries() {
 }
 
 pub(super) mod board;
+pub(super) mod family;
 pub(super) mod fixtures;
+pub(super) mod world;

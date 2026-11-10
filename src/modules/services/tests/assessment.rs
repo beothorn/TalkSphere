@@ -51,6 +51,29 @@ fn metadata_before_body() {
         ),
         Err(Error::Limit)
     ));
+    // Conservative defaults cannot turn a declared body into placeholder completed content.
+    let unresolved = super::input::Input::Body {
+        length: 3,
+        text: true,
+    };
+    assert!(matches!(
+        super::assessment::assess_metadata(&c, &a, auth(), &unresolved, Limits::default()),
+        Err(Error::Unsupported)
+    ));
+    let references = super::input::Input::Array(vec![unresolved.clone(), unresolved]);
+    assert!(matches!(
+        super::assessment::assess_metadata(
+            &c,
+            &a,
+            auth(),
+            &references,
+            Limits {
+                bodies: 1,
+                ..Limits::default()
+            }
+        ),
+        Err(Error::Limit)
+    ));
     let assessed = assess(
         &c,
         &a,

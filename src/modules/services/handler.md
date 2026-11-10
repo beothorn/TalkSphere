@@ -63,3 +63,13 @@ explicit charge/timing and original public contracts but no expected values.
 Evidence is read-only family output; the coordinator durably retains it before
 charging, rather than inventing an ordinary service execution or a correctness
 assertion from the provider.
+
+Requester.assessment_metadata derives independently known assessment metadata from
+authorized complete input under Budget. The default returns the bounded original
+value; body-bearing families override the defined length/hash projection and
+validate_assessment/validate_input consistently. Provider.assess_metadata receives
+Peer, Offering, Input description and Budget. The default resolves only complete
+content and delegates to assess; unresolved references return Unsupported. Explicit
+family overrides may price/validate declared properties before bodies, but cannot
+execute, charge or fabricate completed content. Existing implementations remain
+valid through these conservative defaults.
