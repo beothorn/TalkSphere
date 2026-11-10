@@ -69,7 +69,7 @@ pub struct Issue {
     pub assessed: Assessed,
     /// Exact complete quote JSON bytes from the trusted wire adapter, never a re-encoding on receipt.
     pub bytes: Blob,
-    /// Explicit requester maximum, before any separately agreed issuer fee.
+    /// Explicit total requester maximum, including any separately agreed issuer fee.
     pub maximum: u64,
     /// Local monotonic expiry for unaccepted quote resources.
     pub expires: Instant,

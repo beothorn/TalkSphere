@@ -132,6 +132,10 @@ impl<P: Persistence> Coordinator<P> {
             op.input.as_ref().ok_or(Error::Invalid)?,
             &completion.output,
         )?;
+        crate::modules::services::pricing::validate_output_price(
+            &completion.output,
+            completion.price,
+        )?;
         if completion.effect.bytes().is_empty() {
             return Err(Error::Invalid);
         }

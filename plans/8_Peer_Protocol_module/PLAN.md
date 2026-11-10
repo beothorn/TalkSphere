@@ -27,7 +27,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **19.** Validate requester quotes and explicit spending consent.
 - [x] **20.** Bind acceptance to quote bytes and one reservation.
 - [x] **21.** Deliver complete input only after its terminal markers.
-- [ ] **22.** Transmit durably committed service results.
+- [x] **22.** Transmit durably committed service results.
 - [ ] **23.** Accept results only after normal stream completion.
 - [ ] **24.** Preserve failure codes and uncertain outcomes.
 - [ ] **25.** Implement wanted-offering role reversal.
@@ -295,3 +295,5 @@ Step19 completed: requester-only installed codecs validate original-stream quote
 Step20 completed: exact quote ID/hash and authenticated stream validation precede provider admission; requester consent reserves actual Ledger capacity and journals one dispatch before exposing accept bytes. Two independently owned stacks verify holds, unfunded/foreign acceptance, duplicate dispatch refusal and retained obligations after send/session loss. Rejected exchanges release only transient quotes. Required checks pass; production coverage14446/15373 =93.97%.
 
 Step21 completed: reserved input is gated on exact bodies, input.end and original requester END before complete family validation and once-only effectful dispatch. Ordered senders retain original sources under bounded queue backpressure; malformed/early/duplicate controls and incomplete transfers cannot dispatch. Required checks pass; production coverage14559/15492 =93.98%.
+
+Step22 completed: a new public committed-invocation observation port supplies original terms and retained output; senders cannot emit uncommitted results. Output price/finalPrice must equal the independently validated envelope during Services retention and wire transmission. Metadata/body/result.end queues preserve progress and durable ownership on backpressure/loss. Required checks pass; production coverage14659/15589 =94.03%.

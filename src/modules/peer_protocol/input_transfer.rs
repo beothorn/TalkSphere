@@ -9,6 +9,7 @@ use super::{
     receiver::Receiver,
     record::Record,
     sender::Sender,
+    sequence::Sequence,
     value,
 };
 use crate::modules::services::{
@@ -137,8 +138,7 @@ impl CompleteInput {
 /// Requester outbound order includes accept before any detached bytes and input.end only after every body is queued.
 pub struct InputSender {
     outgoing: Outgoing,
-    bodies: Sender,
-    stage: u8,
+    sequence: Sequence,
 }
 impl InputSender {
     /// Retain reserved original input and immutable sources; failure cannot silently release its journal/hold.
@@ -154,36 +154,24 @@ impl InputSender {
             true,
         )?;
         let bodies = Sender::new(encoded.bodies, pending.descriptors(), limits)?;
-        Ok(Self {
-            outgoing,
+        let sequence = Sequence::new(
+            outgoing.accept().to_vec(),
             bodies,
-            stage: 0,
-        })
+            b"{\"type\":\"input.end\"}",
+        );
+        Ok(Self { outgoing, sequence })
     }
     /// Enqueue one accept/body/marker in protocol order under the caller's bounded queue.
     /// # Errors
     /// Backpressure leaves progress unchanged; invalid chunk/queue errors never imply remote receipt.
     pub fn enqueue_next(&mut self, queue: &mut Outbound, chunk: usize) -> Result<bool, Error> {
         tracing::trace!("Queueing the next ordered accepted input record");
-        if self.stage == 0 {
-            queue.enqueue(&Record::Control(self.outgoing.accept().to_vec()))?;
-            self.stage = 1;
-            return Ok(true);
-        }
-        if self.stage == 1 {
-            if self.bodies.enqueue_next(queue, chunk)? {
-                return Ok(true);
-            }
-            queue.enqueue(&Record::Control(b"{\"type\":\"input.end\"}".to_vec()))?;
-            self.stage = 2;
-            return Ok(true);
-        }
-        Ok(false)
+        self.sequence.enqueue_next(queue, chunk)
     }
     /// Confirm that all records are locally queued; send END only after the queue has fully drained.
     pub fn queued(&self) -> bool {
         tracing::trace!("Checking whether input terminal marker is queued");
-        self.stage == 2
+        self.sequence.queued()
     }
     /// Borrow original accepted invocation for later authenticated result handling independent of sender buffering.
     pub fn outgoing(&self) -> &Outgoing {

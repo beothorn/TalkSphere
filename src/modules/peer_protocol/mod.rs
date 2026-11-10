@@ -136,6 +136,8 @@ pub mod acceptance;
 pub mod admission;
 pub mod input_transfer;
 pub mod proposal;
+pub mod result_sender;
+mod sequence;
 impl From<crate::modules::ledger::Error> for Error {
     // Preserve financial refusal versus uncertainty without reading Ledger-owned state.
     fn from(error: crate::modules::ledger::Error) -> Self {
@@ -178,3 +180,7 @@ mod acceptance_tests;
 #[cfg(test)]
 #[path = "tests/input_transfer.rs"]
 mod input_transfer_tests;
+
+#[cfg(test)]
+#[path = "tests/result_sender.rs"]
+mod result_sender_tests;

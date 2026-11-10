@@ -74,6 +74,22 @@ impl Price {
         }
     }
 }
+/// Require any root output price/finalPrice fields to equal the independently validated envelope charge.
+/// # Errors
+/// A present field with a different value or non-uint64 type is Invalid; outputs without these fields are permitted.
+pub fn validate_output_price(output: &super::value::Value, price: u64) -> Result<(), Error> {
+    tracing::trace!("Checking output price fields against the exact result envelope");
+    if let super::value::Value::Object(fields) = output {
+        for (name, value) in fields {
+            if matches!(name.as_str(), "price" | "finalPrice")
+                && value != &super::value::Value::Uint64(price)
+            {
+                return Err(Error::Invalid);
+            }
+        }
+    }
+    Ok(())
+}
 // u128 holds every product of two uint64 values; quotient/remainder avoids ceiling-add overflow.
 fn calculate(
     minimum: u64,
@@ -146,5 +162,45 @@ mod tests {
                 Err(Error::Invalid)
             );
         }
+    }
+}
+#[cfg(test)]
+mod output_price_tests {
+    use super::*;
+    use crate::modules::services::value::Value;
+    // Both price spellings must agree with the envelope, while scalar and unpriced outputs remain permitted.
+    #[test]
+    fn explicit_output_price_matches_envelope() {
+        assert_eq!(
+            validate_output_price(&Value::String("unpriced".into()), 7),
+            Ok(())
+        );
+        for name in ["price", "finalPrice"] {
+            assert_eq!(
+                validate_output_price(&Value::Object(vec![(name.into(), Value::Uint64(7))]), 7),
+                Ok(())
+            );
+            for invalid in [
+                Value::Uint64(8),
+                Value::String("7".into()),
+                Value::Int64(7),
+                Value::Uint32(7),
+            ] {
+                assert_eq!(
+                    validate_output_price(&Value::Object(vec![(name.into(), invalid)]), 7),
+                    Err(Error::Invalid)
+                );
+            }
+        }
+        assert_eq!(
+            validate_output_price(
+                &Value::Object(vec![
+                    ("price".into(), Value::Uint64(7)),
+                    ("finalPrice".into(), Value::Uint64(8))
+                ]),
+                7
+            ),
+            Err(Error::Invalid)
+        );
     }
 }

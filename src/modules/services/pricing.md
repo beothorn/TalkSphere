@@ -25,3 +25,9 @@ Price.Included represents no additional charge for a proven existing check
 entitlement. Ordinary work quoting/admission rejects it. It is accepted only by
 the explicit evidence-check path with installed rules, stable scope and finite
 allowance. No zero-valued Ledger operation or hidden transfer fee is created.
+
+validate_output_price checks root logical output fields named price or finalPrice.
+Every present field must be a uint64 equal to the independently validated result
+envelope. Outputs without such fields remain permitted. This shared check is
+performed during durable result retention and before peer result transmission;
+family-specific formula and content validation remain independently required.

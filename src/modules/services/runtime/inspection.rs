@@ -12,6 +12,24 @@ impl<P: Persistence> Coordinator<P> {
         key: OperationKey,
     ) -> Result<crate::modules::services::handler::Completion, Error> {
         tracing::trace!("Reading locally committed retained Services result");
+        self.completed(context, key)
+            .map(|(_, completion)| completion)
+    }
+    /// Return immutable original invocation and complete output only after all local commitments are acknowledged.
+    /// # Errors
+    /// Pending/uncertain work returns Unknown; checks, aborted work, malformed retained state and foreign authority fail explicitly.
+    pub fn completed(
+        &self,
+        context: &Context<'_>,
+        key: OperationKey,
+    ) -> Result<
+        (
+            crate::modules::services::handler::Invocation,
+            crate::modules::services::handler::Completion,
+        ),
+        Error,
+    > {
+        tracing::trace!("Reading committed invocation and output for original-stream transmission");
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
         self.check(context, Action::Observe, &state)?;
         let op = state.records.get(&key).ok_or(Error::Denied)?;
@@ -24,7 +42,8 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
-        op.completion.clone().ok_or(Error::Invalid)
+        let completion = op.completion.clone().ok_or(Error::Invalid)?;
+        Ok((op.invocation(self.config.limits)?, completion))
     }
     /// Run the installed requester-local verifier on original retained evidence without spending or refunds.
     /// Private expectations are borrowed for this call and never persisted or sent to a provider.
