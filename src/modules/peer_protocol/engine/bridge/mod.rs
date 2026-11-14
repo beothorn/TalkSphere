@@ -296,3 +296,6 @@ impl Stop {
 }
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(in crate::modules::peer_protocol) mod test_support;

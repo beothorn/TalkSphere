@@ -77,8 +77,25 @@ pub trait Factory: Send + Sync + 'static {
 pub struct Output {
     pub(super) queue: Outbound,
     pub(super) end: bool,
+    pub(super) received_at: std::time::Instant,
+    pub(super) drained_at: Option<std::time::Instant>,
 }
 impl Output {
+    /// Observe when Transport supplied the bytes completing the current received record, before worker queue delay.
+    pub fn received_at(&self) -> std::time::Instant {
+        tracing::trace!("Reading the original authenticated record receipt time");
+        self.received_at
+    }
+    /// Observe the latest complete local output drain into Transport, rather than a later worker callback time.
+    pub fn drained_at(&self) -> Option<std::time::Instant> {
+        tracing::trace!("Reading the original local Transport admission observation");
+        self.drained_at
+    }
+    /// Borrow immutable queue state for producer timing and progress; this grants no acknowledgement mutation.
+    pub fn queue(&self) -> &Outbound {
+        tracing::trace!("Borrowing immutable peer output admission state");
+        &self.queue
+    }
     /// Retain a complete valid record before END, without exceeding the stream byte budget.
     /// # Errors
     /// Invalid, Conflict or Limit leaves previously admitted records unchanged.

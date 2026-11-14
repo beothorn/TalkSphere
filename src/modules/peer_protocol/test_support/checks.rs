@@ -182,6 +182,19 @@ impl Checks {
         issued: &checks::Issued,
         request: checks::Request,
     ) -> Result<checks::Outgoing, Error> {
+        self.reserve_message(
+            issued.association(),
+            request,
+            &Message::parse(issued.bytes(), 65536)?,
+        )
+    }
+    // Bind actual composed endpoint quote bytes without borrowing its private provider state.
+    pub fn reserve_message(
+        &self,
+        association: Association,
+        request: checks::Request,
+        message: &Message,
+    ) -> Result<checks::Outgoing, Error> {
         let p = &self.pair.provider;
         let r = &self.pair.requester;
         let rg = r
@@ -206,15 +219,11 @@ impl Checks {
         let a = Association {
             local: r.local,
             peer: p.local,
-            ..issued.association()
+            ..association
         };
-        let candidate = self.requester.validate(
-            &context(&ig),
-            &sc,
-            request,
-            a,
-            &Message::parse(issued.bytes(), 65536)?,
-        )?;
+        let candidate = self
+            .requester
+            .validate(&context(&ig), &sc, request, a, message)?;
         let hash = candidate.hash();
         let consent = self.requester.consent(&c, candidate, hash, 100)?;
         let bg = p

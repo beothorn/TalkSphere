@@ -701,3 +701,49 @@ fn included_allowance_tracks_complete_and_uncertain_responses() {
         }
     }
 }
+
+// Original Transport receipt time must survive worker queue delay, without consulting a fresh clock at dispatch.
+#[test]
+fn original_marker_receipt_deadline_cannot_restart_on_a_worker() {
+    use std::time::{Duration, Instant};
+    let f = Checks::new(false);
+    let (issued, request) = f.quote(1, Value::Uint64(0), 3).unwrap();
+    let outgoing = f.reserve(&issued, request).unwrap();
+    let incoming = f.accept(issued, outgoing.accept()).unwrap();
+    let a = incoming.association();
+    let p = &f.pair.provider;
+    let invoke = p
+        .authority
+        .grant(p.local, Action::Invoke, 16_777_216)
+        .unwrap();
+    let request = p
+        .authority
+        .grant(p.local, Action::Request, 16_777_216)
+        .unwrap();
+    let coordinate = p
+        .services
+        .grant(p.local, services::authority::Action::Coordinate, 16_777_216)
+        .unwrap();
+    let pc = context(&invoke);
+    let cc = service_context(&coordinate);
+    let mut input = checks::input::Receiver::new(
+        &pc,
+        p.authority.clone(),
+        incoming,
+        Arc::new(ScriptClock::new(&[])),
+    )
+    .unwrap();
+    let marker = Message::parse(br#"{"type":"input.end"}"#, 65536).unwrap();
+    assert_eq!(
+        input.marker(&context(&request), a, &marker),
+        Err(Error::Denied)
+    );
+    input
+        .marker_at(&pc, a, &marker, Instant::now() - Duration::from_secs(60))
+        .unwrap();
+    assert!(matches!(
+        input.end(&pc, a, &cc, p.runtime.as_ref()),
+        Err(Error::Cancelled)
+    ));
+    assert_eq!(p.family.evidence_calls.load(Ordering::SeqCst), 0);
+}

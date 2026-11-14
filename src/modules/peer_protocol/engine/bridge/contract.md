@@ -51,3 +51,11 @@ count. Pending input remains charged while a worker owns it. At most64 queued
 observations are retained per stream. Control rate is a per-stream, one-second
 monotonic processing window; aggregate/global policy is a separate composition
 obligation. These are conservative logical byte reservations, not an RSS bound.
+
+`Output.received_at` reports the original Transport observation whose bytes
+completed the currently delivered record. It survives worker queue delay and is
+shared by complete records coalesced in that observation. `drained_at` reports the
+latest instant when the local output queue drained into Transport; it is not a
+remote receipt or physical-write proof. `queue` borrows immutable queue state for
+producer progress/timing checks and grants no acknowledgement mutation. These
+local observations cannot be set through peer JSON.

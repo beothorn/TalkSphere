@@ -163,6 +163,16 @@ impl<F: super::world::Family + 'static> Pair<F> {
     }
     // Reserve the real requester journal/Ledger and mark one dispatch before exposing accept bytes.
     pub fn reserve(&self, issued: &Issued, request: Request) -> Result<Outgoing, Error> {
+        let message = Message::parse(issued.bytes(), 65536)?;
+        self.reserve_message(issued.association(), request, &message)
+    }
+    // Consume actual wire quote bytes so composed endpoint tests do not depend on a private provider quote handle.
+    pub fn reserve_message(
+        &self,
+        association: Association,
+        request: Request,
+        message: &Message,
+    ) -> Result<Outgoing, Error> {
         let p = &self.provider;
         let r = &self.requester;
         let rg = r
@@ -184,15 +194,14 @@ impl<F: super::world::Family + 'static> Pair<F> {
         let c = context(&rg);
         let sc = service_context(&sg);
         let cc = service_context(&cg);
-        let message = Message::parse(issued.bytes(), 65536).unwrap();
         let a = Association {
             local: r.local,
             peer: p.local,
-            ..issued.association()
+            ..association
         };
         let candidate = self
             .client
-            .validate(&context(&ig), &sc, request, a, &message)?;
+            .validate(&context(&ig), &sc, request, a, message)?;
         let hash = candidate.hash();
         let consent = self.client.consent(&c, candidate, hash, 100)?;
         let bg = p

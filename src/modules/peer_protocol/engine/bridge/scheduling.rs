@@ -124,7 +124,7 @@ impl Bridge {
                 entry.state = Some(state);
                 continue;
             };
-            if let Input::Data(bytes) = &input {
+            if let Input::Data(bytes, _) = &input {
                 entry.flight_bytes = bytes.len();
             }
             let id = entry.id;
@@ -164,6 +164,9 @@ fn flush(
         }) {
             Ok(Accepted::Queued) => {
                 state.output.queue.advance(count)?;
+                if state.output.queue.pending() == 0 {
+                    state.output.drained_at = Some(Instant::now());
+                }
                 progressed = true;
             }
             Err(TransportError::Backpressure) => return Ok(()),

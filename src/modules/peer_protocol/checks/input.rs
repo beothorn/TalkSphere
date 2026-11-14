@@ -50,18 +50,50 @@ impl Receiver {
         observed: Association,
         message: &Message,
     ) -> Result<(), Error> {
-        tracing::trace!("Starting check response timing at input.end");
+        tracing::trace!("Capturing a trusted direct-call check marker instant");
+        self.validate_marker(context, observed, message)?;
+        let (received_at, _) = self.clock.mark()?;
+        self.set_marker(received_at)
+    }
+    /// Start response timing at the original authenticated record receipt, preserving asynchronous queue delay.
+    /// `received_at` must come from trusted Transport composition, never peer JSON or a worker's later clock.
+    /// # Errors
+    /// Foreign authority, wrong/duplicate markers and deadline overflow fail without dispatch.
+    pub fn marker_at(
+        &mut self,
+        context: &Context<'_>,
+        observed: Association,
+        message: &Message,
+        received_at: Instant,
+    ) -> Result<(), Error> {
+        tracing::trace!("Starting check timing at the authenticated record receipt instant");
+        self.validate_marker(context, observed, message)?;
+        self.set_marker(received_at)
+    }
+    // Validate authority and marker order before consulting a clock or changing response timing.
+    fn validate_marker(
+        &mut self,
+        context: &Context<'_>,
+        observed: Association,
+        message: &Message,
+    ) -> Result<(), Error> {
+        tracing::trace!("Validating an original check marker before timing effects");
         self.check(context, observed)?;
         if self.failed || self.marked.is_some() || message.kind() != Kind::InputEnd {
             self.failed = true;
             return Err(Error::Invalid);
         }
-        let (now, _) = self.clock.mark()?;
+        Ok(())
+    }
+    // Preserve the original receive instant even when execution is delayed on a worker queue.
+    fn set_marker(&mut self, received_at: Instant) -> Result<(), Error> {
+        tracing::trace!("Retaining an original check response deadline");
         self.marked = Some(
-            now.checked_add(Duration::from_millis(
-                self.incoming.invocation.response_milliseconds,
-            ))
-            .ok_or(Error::Limit)?,
+            received_at
+                .checked_add(Duration::from_millis(
+                    self.incoming.invocation.response_milliseconds,
+                ))
+                .ok_or(Error::Limit)?,
         );
         Ok(())
     }

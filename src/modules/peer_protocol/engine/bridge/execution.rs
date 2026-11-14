@@ -4,7 +4,7 @@ use crate::modules::peer_protocol::record::Decoder;
 /// Owned observations transferred once; input bytes remain charged until worker completion.
 pub(super) enum Input {
     Open,
-    Data(Vec<u8>),
+    Data(Vec<u8>, Instant),
     End,
     Writable,
     Closed(StreamOutcome),
@@ -44,6 +44,8 @@ impl State {
             output: Output {
                 queue: Outbound::new(config.output_bytes)?,
                 end: false,
+                received_at: Instant::now(),
+                drained_at: None,
             },
             controls: 0,
             window: Instant::now(),
@@ -87,7 +89,8 @@ impl State {
         }
         let handler = self.handler.as_mut().ok_or(Error::Conflict)?;
         match input {
-            Input::Data(bytes) => {
+            Input::Data(bytes, received_at) => {
+                self.output.received_at = received_at;
                 let mut offset = 0;
                 while offset < bytes.len() {
                     let (consumed, record) = self.decoder.push(&bytes[offset..])?;

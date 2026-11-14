@@ -91,7 +91,7 @@ impl Bridge {
                         );
                     } else {
                         entry.input_bytes += bytes.len();
-                        entry.pending.push_back(Input::Data(bytes));
+                        entry.pending.push_back(Input::Data(bytes, Instant::now()));
                     }
                 }
                 Ok(None)

@@ -12,6 +12,7 @@ use std::{
 struct Seen {
     opens: Vec<Association>,
     records: Vec<(u32, Record)>,
+    record_times: Vec<(u32, Instant)>,
     ends: Vec<u32>,
     closed: Vec<(u32, StreamOutcome)>,
     threads: Vec<ThreadId>,
@@ -77,6 +78,11 @@ impl Handler for ProbeHandler {
             .unwrap()
             .records
             .push((self.stream, record.clone()));
+        self.seen
+            .lock()
+            .unwrap()
+            .record_times
+            .push((self.stream, output.received_at()));
         if !self.local {
             output.enqueue(&record)?;
         }
@@ -341,6 +347,15 @@ fn backpressure_does_not_lose_bytes_or_wait_for_an_application_event() {
         notified.try_recv().is_ok(),
         "new Transport writes need another reactor turn"
     );
+    assert!(
+        bridge.entries[0]
+            .state
+            .as_ref()
+            .unwrap()
+            .output
+            .drained_at()
+            .is_some()
+    );
     assert!(matches!(
         control.sent.as_slice(),
         [(1, Sent::Data(_)), (1, Sent::End)]
@@ -410,6 +425,7 @@ fn blocked_work_preserves_bounds_and_late_closure_without_stalling_siblings() {
         b.entries[0].flight_bytes == wire.len()
     });
     entry.recv_timeout(Duration::from_secs(5)).unwrap();
+    let blocked_at = Instant::now();
     bridge
         .event(
             &mut control,
@@ -455,6 +471,13 @@ fn blocked_work_preserves_bounds_and_late_closure_without_stalling_siblings() {
     release.send(()).unwrap();
     drive(&mut bridge, &mut control, |b, _| b.active() == 1);
     assert!(seen.lock().unwrap().closed.contains(&(1, outcome)));
+    assert!(
+        seen.lock()
+            .unwrap()
+            .record_times
+            .iter()
+            .any(|(id, at)| *id == 1 && *at <= blocked_at)
+    );
     assert!(
         !control
             .sent
@@ -682,8 +705,13 @@ fn invalid_configuration_and_terminal_output_are_explicit() {
     let mut output = Output {
         queue: Outbound::new(16).unwrap(),
         end: false,
+        received_at: Instant::now(),
+        drained_at: None,
     };
     assert_eq!(output.available(), 16);
+    assert_eq!(output.queue().pending(), 0);
+    assert!(output.received_at() <= Instant::now());
+    assert!(output.drained_at().is_none());
     let record = Record::Control(vec![b'x']);
     output.enqueue(&record).unwrap();
     assert_eq!(output.available(), 10);

@@ -18,3 +18,11 @@ context. mark_sent requires all records queued and the local queue drained befor
 capturing one trusted send stamp and recording it with Services. Duplicate or
 premature observations fail. Composition must order the actual input.end send and
 END actions, and never synthesize timing from peer timestamps or IPC disconnects.
+
+For asynchronous composition, marker_at accepts the original authenticated record
+receipt Instant and performs the same authority/order checks before capturing its
+deadline. A later worker invocation cannot restart the response window. This
+instant is a trusted local observation, never a peer-supplied timestamp. The
+legacy direct-call marker validates permission/order before consulting its Clock.
+Expired original receipt windows cannot dispatch evidence, even when the worker's
+current call deadline remains valid.

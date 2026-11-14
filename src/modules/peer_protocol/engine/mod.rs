@@ -4,3 +4,5 @@
 pub mod worker;
 
 pub mod bridge;
+
+pub mod endpoint;
