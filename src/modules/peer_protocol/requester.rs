@@ -466,3 +466,7 @@ fn factors(
     quote::factors(service, operation, &factors)?;
     Ok(factors)
 }
+
+#[cfg(test)]
+#[path = "tests/pricing_inputs.rs"]
+mod pricing_input_tests;

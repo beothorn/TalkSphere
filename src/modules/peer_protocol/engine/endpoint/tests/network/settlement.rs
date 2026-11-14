@@ -167,6 +167,41 @@ fn real_nodes_settle_third_party_work_and_preserve_interrupted_control_uncertain
     }
     let o = bw.family.offering(c_id);
     let selection = cache.selection(b_id, &o.id, &o.service, o.version).unwrap();
+    // PP-07 requires the exact fee inside the original spending bound before any acceptance or provider execution.
+    let refused = a.request(
+        &ae,
+        &ab,
+        requests::Plan::Invoke(Box::new(requests::Invocation {
+            selection: selection.clone(),
+            cache: cache.clone(),
+            input: Value::String("committed third-party work".into()),
+            spending: peer::requester::Spending {
+                maximum: 8,
+                payment: services::runtime::Payment {
+                    transfer: Some([83; 16]),
+                    fee: Some(2),
+                },
+            },
+            consent: Arc::new(requests::Ceiling(9)),
+        })),
+    );
+    let refused = complete(&mut [&mut a, &mut b, &mut c], &refused);
+    assert!(refused.result.is_err());
+    assert_eq!(bw.family.executions.load(Ordering::SeqCst), 0);
+    let read = aw
+        .ledger_authority
+        .grant(a_id, ledger::authority::Action::Read, 16_777_216)
+        .unwrap();
+    assert_eq!(
+        aw.ledger
+            .available(
+                &peer::test_support::world::ledger_context(&read),
+                c_id,
+                true
+            )
+            .unwrap(),
+        100
+    );
     let result = a.request(
         &ae,
         &ab,
