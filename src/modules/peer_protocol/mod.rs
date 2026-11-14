@@ -211,3 +211,10 @@ pub mod replay;
 #[cfg(test)]
 #[path = "tests/replay.rs"]
 mod replay_tests;
+
+/// Independent authenticated Ledger control exchanges.
+pub mod ledger_control;
+
+#[cfg(test)]
+#[path = "tests/ledger_read.rs"]
+mod ledger_read_tests;

@@ -34,7 +34,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **26.** Bind paid checks to challenge-only evidence.
 - [x] **27.** Reconcile included allowances with complete evidence delivery.
 - [x] **28.** Add explicit family-authorized cached retry handling.
-- [ ] **29.** Bind authenticated balance and transfer-query controls.
+- [x] **29.** Bind authenticated balance and transfer-query controls.
 - [ ] **30.** Implement transfer quote and acceptance exchanges.
 - [ ] **31.** Implement bounded claim-redemption exchanges.
 - [ ] **32.** Verify third-party settlement on independent issuer streams.
@@ -309,3 +309,5 @@ Step26 completed: challenge-only paid checks bind exact quotes, immutable mode/p
 Step27 completed: included allowances now distinguish in-flight reservation, complete consumption, definitive incomplete/acknowledged-abort release and uncertain guards. Complete requester evidence consumes only after normal terminal reception; provider commitment alone does not. Wire-owner delivery observations consume sender capabilities, and concurrency/restart/lost-write tests retain original scope limits and conservative legacy guards without new receipts. Paid issue10 remains separate. Required checks pass; production coverage16005/17044 =93.90%.
 
 Step28 completed: explicit family-approved Messaging recovery/removal retries match original caller, placement/ID and every defined request/control field before current publication, prices or balances. Opaque cached/explicit-retry capabilities permit the narrow early-result ordering exception and original-key result application without new work, holds or charges. Pinned full-schema narrow fixtures verify detached cached output, drain/removal, depleted funds, conflicting fields, unrelated callers and unknown outcomes; they do not implement Messaging signatures/resources. Upstream recheck on2026-11-14 found no protocol changes. Required checks pass; production coverage16443/17477 =94.08%.
+
+Step29 completed: caller-scoped balance and protected original/new-owner transfer queries use real Ledger Control ports without Services work or book mutations. Complete requester observations bind original issuer/connection/stream, tuple and exact gross/fee/net under normal termination; unrelated existing/missing queries are concealed. Strict real Ed25519 transfer fixtures exercise the protected records. Required checks pass; production coverage16633/17678 =94.09%.

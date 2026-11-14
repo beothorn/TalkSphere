@@ -24,3 +24,9 @@ administration to preserve accepted holds and incoming balance headroom.
 Local_identity returns the configured owner identity as a read-only public
 observation, granting no balance/admin authority. Composition uses it to reject a
 preflight adapter bound to a different Ledger owner before any operation.
+
+check_control validates the exact configured local Control context and byte budget
+without disclosing accounts, acquiring administrator authority or changing state.
+Wire composition uses it to preserve local authorization errors while concealing
+protected resource absence. It does not assert that subsequent reads are ready;
+actual operations still recheck authority and uncertain-state gating.

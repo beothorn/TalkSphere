@@ -35,6 +35,13 @@ pub struct Ledger<P: Persistence> {
     pub(super) inner: Mutex<Inner<P>>,
 }
 impl<P: Persistence> Ledger<P> {
+    /// Validate exact local Control permission without disclosing accounts or changing readiness/state.
+    /// # Errors
+    /// Foreign/revoked/wrong-purpose grants, deadline/cancellation and byte-budget failures remain typed errors.
+    pub fn check_control(&self, context: &Context<'_>, bytes: usize) -> Result<(), Error> {
+        tracing::trace!("Checking Ledger control authority before scoped wire dispatch");
+        context.check(&self.authority, self.local, Action::Control, bytes)
+    }
     /// Observe the configured local accounting owner without exposing balances or granting authority.
     pub fn local_identity(&self) -> IdentityId {
         tracing::trace!("Reading configured Ledger owner identity");

@@ -101,3 +101,5 @@ pub(in crate::modules::peer_protocol) mod invocation;
 pub(in crate::modules::peer_protocol) mod checks;
 
 pub(in crate::modules::peer_protocol) mod messaging;
+
+pub(in crate::modules::peer_protocol) mod ledger;
