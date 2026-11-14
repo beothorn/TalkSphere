@@ -8,8 +8,9 @@ owns wire orchestration, while module owners retain metadata, accepted work,
 participant decisions, accounting and recovery. It owns no sockets or keys.
 
 The provided-work/check and independent-control responder is implemented and
-unit-tested over real module owners. Complete outgoing/wanted factories and full
-service-node composition remain in progress; default `serve` stays Transport-only.
+unit-tested over real module owners. Explicit outgoing metadata, provided work and independent control factories are
+also implemented over a direct metadata cache. Wanted/check requester factories
+and full service-node composition remain in progress; default `serve` stays Transport-only.
 A missing claim decryptor, family or check rule is explicitly unsupported.
 
 From the repository root:

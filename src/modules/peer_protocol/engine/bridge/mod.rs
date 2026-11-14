@@ -120,6 +120,19 @@ impl Bridge {
         connection: &ConnectionHandle,
     ) -> Result<StreamHandle, Error> {
         tracing::trace!("Opening a peer exchange on a verified connection instance");
+        self.open_with(driver, connection, self.factory.clone())
+    }
+    /// Open one locally requested exchange using an explicit trusted per-call factory.
+    /// The override receives the same verified scope and budgets; peer data cannot install it.
+    /// # Errors
+    /// Authentication, admission or Transport refusal queues no application success.
+    pub fn open_with(
+        &mut self,
+        driver: &mut impl TransportControl,
+        connection: &ConnectionHandle,
+        factory: Arc<dyn Factory>,
+    ) -> Result<StreamHandle, Error> {
+        tracing::trace!("Opening one explicit locally authorized peer request");
         self.capacity()?;
         let context = self
             .connections
@@ -137,7 +150,7 @@ impl Bridge {
         else {
             return Err(Error::Unavailable);
         };
-        if let Err(error) = self.admit(context, stream.clone(), Direction::Local) {
+        if let Err(error) = self.admit(context, stream.clone(), Direction::Local, factory) {
             cancel(
                 driver,
                 &self.owner,
@@ -179,6 +192,7 @@ impl Bridge {
         context: PeerContext,
         stream: StreamHandle,
         opener: Direction,
+        factory: Arc<dyn Factory>,
     ) -> Result<(), Error> {
         tracing::trace!("Admitting one authenticated original peer stream");
         self.capacity()?;
@@ -205,7 +219,7 @@ impl Bridge {
             stream: stream.wire_id().get(),
             deadline,
         };
-        let state = State::new(self.factory.clone(), scope, opener, self.config)?;
+        let state = State::new(factory, scope, opener, self.config)?;
         self.entries.push(Entry {
             id: self.stream_sequence,
             stream,

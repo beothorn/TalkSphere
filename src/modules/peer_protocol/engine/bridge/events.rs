@@ -61,7 +61,12 @@ impl Bridge {
                     return Ok(None);
                 }
                 if self
-                    .admit(context, stream.clone(), Direction::Remote)
+                    .admit(
+                        context,
+                        stream.clone(),
+                        Direction::Remote,
+                        self.factory.clone(),
+                    )
                     .is_err()
                 {
                     cancel(

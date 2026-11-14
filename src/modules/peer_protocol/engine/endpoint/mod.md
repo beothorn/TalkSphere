@@ -17,13 +17,14 @@ bounds Peer Protocol values/records and `service_limits` bounds Services quotes
 and state. Receiving modules check every grant against their own authority.
 
 The factory accepts original authenticated incoming scopes for its local identity;
-it refuses local opener use. Explicit outgoing request factories are separate.
+it refuses local opener use. Explicit outgoing [request factories](requests/mod.md) are separate and created
+through Endpoint.request without opening a stream or causing effects.
 It serves Board/definition reads, provided work/check proposals, exact acceptance,
 input bodies and markers, committed output, explicit family-authorized cached
 retries, balance/transfer reads, fee quotes/acceptance and configured claim calls.
 Unsupported families/rules and missing protected capabilities return explicit
-refusals, never installed code or fabricated success. Wanted publisher policy and
-complete outgoing factory wiring remain under development.
+refusals, never installed code or fabricated success. Provided outgoing work and independent controls are available; wanted policy,
+outgoing checks and complete real-node composition remain under development.
 
 Service selection uses the installed definition's contract description and the
 current Board, not peer descriptions. Cached Messaging retries consult the actual

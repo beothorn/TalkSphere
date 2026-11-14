@@ -12,7 +12,9 @@ An opt-in [authenticated stream adapter](engine/bridge/mod.md) now connects
 framing, worker ownership and bounded output through the real Transport API.
 An [incoming endpoint factory](engine/endpoint/README.md) now composes provided
 work/checks, metadata and independent Ledger controls over actual owners.
-Outgoing/wanted orchestration and complete real node composition remain in progress.
+Explicit outgoing metadata, provided work and independent controls now use
+one-shot request factories and direct-publisher cache checks. Outgoing checks,
+wanted orchestration and complete real node composition remain in progress.
 The default server does not register a peer application protocol yet. Application composition supplies grants
 and verified peer context; protocol internals do not own sockets or balances.
 

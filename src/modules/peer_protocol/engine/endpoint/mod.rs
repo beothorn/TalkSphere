@@ -14,8 +14,10 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+pub mod cache;
 mod emission;
 mod lifecycle;
+pub mod requests;
 mod serving;
 
 /// Optional protected claim boundary installed by trusted composition, never peer metadata.
@@ -64,6 +66,7 @@ pub struct Config<P: services::persistence::Persistence, L: ledger::persistence:
 struct Owner<P: services::persistence::Persistence, L: ledger::persistence::Persistence> {
     config: Config<P, L>,
     issuer: peer::quote::Issuer,
+    client: peer::requester::Client,
     authorizer: peer::proposal::Authorizer,
     checks: peer::checks::Owner,
     transfers: peer::ledger_control::transfer::Issuer<L>,
@@ -133,10 +136,19 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                 limits: config.limits,
                 policy: config.transfer_policy.clone(),
             })?;
+        let client = peer::requester::Client::new(
+            config.local,
+            config.authority.clone(),
+            config.services.clone(),
+            config.registry.clone(),
+            config.limits,
+            config.service_limits,
+        )?;
         let clock = Arc::new(peer::checks::clock::SystemClock::new()?);
         Ok(Self(Arc::new(Owner {
             config,
             issuer,
+            client,
             authorizer,
             checks,
             transfers,

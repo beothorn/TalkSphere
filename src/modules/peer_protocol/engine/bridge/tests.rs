@@ -803,3 +803,33 @@ fn expired_worker_input_never_starts_a_fresh_handler() {
     assert!(returned.state.is_none());
     assert_eq!(returned.result, Ok(()));
 }
+
+// A local request chooses its explicit factory without replacing the incoming factory or weakening verified scope.
+#[test]
+fn explicit_local_request_factory_keeps_default_incoming_routing() {
+    let (mut bridge, mut control, seen, connection, context) = setup(None);
+    let local = Arc::new(Mutex::new(Seen::default()));
+    let factory = Arc::new(Probe {
+        seen: local.clone(),
+        block: None,
+    });
+    bridge
+        .open_with(&mut control, &connection, factory)
+        .unwrap();
+    incoming(&mut bridge, &mut control, &connection, &context, 3);
+    drive(&mut bridge, &mut control, |_, _| {
+        local.lock().unwrap().opens.len() == 1 && seen.lock().unwrap().opens.len() == 1
+    });
+    assert_eq!(
+        local.lock().unwrap().opens[0].local,
+        IdentityId(context.local_identity.0)
+    );
+    assert_eq!(
+        local.lock().unwrap().opens[0].operation.requester,
+        IdentityId(context.local_identity.0)
+    );
+    assert_eq!(
+        seen.lock().unwrap().opens[0].operation.requester,
+        IdentityId(context.peer_identity.0)
+    );
+}

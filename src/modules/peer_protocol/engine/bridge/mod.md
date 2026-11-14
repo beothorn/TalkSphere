@@ -32,3 +32,9 @@ contracts with `cargo test --locked modules::peer_protocol::engine`. On Linux,
 `cargo test --locked --test peer_protocol_streams` adds real authenticated TCP and
 Board metadata evidence using an explicitly installed metadata-only test factory;
 it does not demonstrate complete service-node composition or interoperability.
+
+`open_with` accepts one explicit trusted local request factory while preserving the
+bridge's default incoming factory. It supplies the same actual authenticated scope,
+resource/deadline checks and opaque owner capability; peer bytes cannot choose the
+override. Local StreamOpened acknowledgement confirms the existing entry rather
+than admitting another stream or changing requester/opener roles.
