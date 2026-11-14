@@ -131,3 +131,70 @@ fn duplicate_requester_admission_does_not_dispatch_twice() {
     assert_eq!(pair.owned_available(), 93);
     assert!(!outgoing.accept().is_empty());
 }
+
+// Simultaneous acceptance of equal local intents grants at most one dispatch and one original requester hold.
+#[test]
+fn concurrent_requester_acceptance_cannot_duplicate_financial_dispatch() {
+    use super::{
+        authority::Action,
+        contract::Association,
+        requester::Spending,
+        test_support::world::{context, service_context},
+    };
+    let pair = Pair::new(false);
+    let input = Value::String("racing original input".into());
+    let (issued, first) = pair.propose(1, input.clone(), 7);
+    let r = &pair.requester;
+    let (a, selection, _) = pair.provider.proposal(1, &input);
+    let pg = r
+        .authority
+        .grant(r.local, Action::Request, 16_777_216)
+        .unwrap();
+    let sg = r
+        .services
+        .grant(r.local, services::authority::Action::Request, 16_777_216)
+        .unwrap();
+    let second = pair
+        .client
+        .request(
+            &context(&pg),
+            &service_context(&sg),
+            Association {
+                local: r.local,
+                peer: pair.provider.local,
+                ..a
+            },
+            selection,
+            input,
+            Spending {
+                maximum: 7,
+                payment: Default::default(),
+            },
+        )
+        .unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    std::thread::scope(|threads| {
+        let pair = &pair;
+        let issued = &issued;
+        let barrier = &barrier;
+        let handles: Vec<_> = [first, second]
+            .into_iter()
+            .map(|request| {
+                threads.spawn(move || {
+                    barrier.wait();
+                    pair.reserve(issued, request)
+                })
+            })
+            .collect();
+        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+        assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+        assert!(
+            results
+                .iter()
+                .filter_map(|r| r.as_ref().err())
+                .all(|e| matches!(e, Error::Conflict | Error::Unknown))
+        );
+    });
+    assert_eq!(pair.owned_available(), 93);
+    assert_eq!(pair.provider.family.executions.load(Ordering::SeqCst), 0);
+}

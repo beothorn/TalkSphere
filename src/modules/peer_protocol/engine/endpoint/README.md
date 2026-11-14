@@ -35,3 +35,5 @@ not yet demonstrate service-node process conformance. See the
 [endpoint contract](mod.md), [bridge contract](../bridge/mod.md),
 [module guide](../../README.md) and the pinned
 [upstream protocol](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md).
+
+[Aggregate admission](resources.md) reserves transient value/body capacity before effects and bounds each authenticated peer across endpoint clones and connections. Transport framing and durable owner journals have independent quotas.

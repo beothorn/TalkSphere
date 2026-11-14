@@ -143,7 +143,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             if scope.local != self.owner.config.local || opener != Direction::Local {
                 return Err(Error::Denied);
             }
-            match plan {
+            self.owner.resources.open(scope.peer, || match plan {
                 Plan::Offer(plan) => super::wanted::provider(
                     self.owner.clone(),
                     scope,
@@ -158,7 +158,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                     output,
                     self.completed.clone(),
                 )?)),
-            }
+            })
         };
         match create() {
             Ok(handler) => Ok(handler),

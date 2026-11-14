@@ -241,21 +241,32 @@ fn independent_issuer_settlement_applies_exact_payment_once() {
             );
         }
         let proof = observation(&f, local, f.local, false);
-        for _ in 0..2 {
-            settlement::confirm(
-                &pc,
-                authority.as_ref(),
-                original,
-                &proof,
-                Ports {
-                    owner,
-                    authority: auth.clone(),
-                    evidence: &ec,
-                    coordinate: &cc,
-                },
-            )
-            .unwrap();
-        }
+        // Concurrent independent confirmations converge on one original payment without double application.
+        let barrier = std::sync::Barrier::new(2);
+        std::thread::scope(|threads| {
+            let handles: Vec<_> = (0..2)
+                .map(|_| {
+                    threads.spawn(|| {
+                        barrier.wait();
+                        settlement::confirm(
+                            &pc,
+                            authority.as_ref(),
+                            original,
+                            &proof,
+                            Ports {
+                                owner,
+                                authority: auth.clone(),
+                                evidence: &ec,
+                                coordinate: &cc,
+                            },
+                        )
+                    })
+                })
+                .collect();
+            for handle in handles {
+                handle.join().unwrap().unwrap();
+            }
+        });
         let key = ledger::contract::OperationKey {
             requester: f.owner,
             connection: [8; 32],

@@ -40,6 +40,7 @@ fn endpoint_config<F>(
         transfer_policy: Arc::new(peer::ledger_control::transfer::Fixed(0)),
         claims: None,
         wanted: None,
+        resources: Default::default(),
         limits: Limits::default(),
         service_limits: Default::default(),
     }
@@ -139,3 +140,6 @@ mod incoming;
 mod invitations;
 mod outgoing;
 mod retries;
+
+#[path = "resources.rs"]
+mod resource_tests;

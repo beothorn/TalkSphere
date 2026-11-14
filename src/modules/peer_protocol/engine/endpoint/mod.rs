@@ -18,6 +18,7 @@ pub mod cache;
 mod emission;
 mod lifecycle;
 pub mod requests;
+pub mod resources;
 mod serving;
 pub mod wanted;
 
@@ -61,6 +62,8 @@ pub struct Config<P: services::persistence::Persistence, L: ledger::persistence:
     pub claims: Option<Arc<dyn Claims>>,
     /// Explicit local publisher work/consent policy and bounded completion observer; absence rejects wanted invitations.
     pub wanted: Option<wanted::Publisher>,
+    /// Aggregate transient value/body and authenticated-peer admission budgets.
+    pub resources: resources::Budgets,
     /// Finite wire/value bounds.
     pub limits: Limits,
     /// Finite durable service owner bounds.
@@ -76,6 +79,7 @@ struct Owner<P: services::persistence::Persistence, L: ledger::persistence::Pers
     transfers: peer::ledger_control::transfer::Issuer<L>,
     clock: Arc<peer::checks::clock::SystemClock>,
     epoch: Instant,
+    resources: Arc<resources::Pool>,
 }
 /// Cloneable trusted incoming endpoint factory; accepted work remains in its original durable owners.
 pub struct Endpoint<P: services::persistence::Persistence, L: ledger::persistence::Persistence>(
@@ -100,6 +104,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
         tracing::trace!("Binding trusted peer endpoint dependencies");
         config.limits.validate()?;
         config.service_limits.validate()?;
+        let resources = resources::Pool::new(config.limits, config.resources)?;
         if config.registry.local_identity() != config.local
             || config.runtime.local_identity() != config.local
             || config.ledger.local_identity() != config.local
@@ -167,6 +172,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             transfers,
             clock,
             epoch: Instant::now(),
+            resources,
         })))
     }
 }
@@ -184,20 +190,22 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
         if scope.local != self.0.config.local || opener != Direction::Remote {
             return Err(Error::Denied);
         }
-        Ok(Box::new(Stream {
-            owner: self.0.clone(),
-            scope,
-            association: scope.association(scope.peer)?,
-            exchange: Exchange::new(opener),
-            phase: Phase::Fresh,
-            accepted: false,
-            dispatched: false,
-            end_requested: false,
-            remote_current: None,
-            completed: None,
-            failure: None,
-            cause: None,
-        }))
+        self.0.resources.open(scope.peer, || {
+            Ok(Box::new(Stream {
+                owner: self.0.clone(),
+                scope,
+                association: scope.association(scope.peer)?,
+                exchange: Exchange::new(opener),
+                phase: Phase::Fresh,
+                accepted: false,
+                dispatched: false,
+                end_requested: false,
+                remote_current: None,
+                completed: None,
+                failure: None,
+                cause: None,
+            }))
+        })
     }
 }
 enum Quote {

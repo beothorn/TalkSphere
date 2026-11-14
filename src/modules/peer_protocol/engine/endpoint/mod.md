@@ -54,3 +54,5 @@ call the original Ledger claim adapter and Identity decryption authority, preser
 binding/storage failures and return only a bounded public claim result. No grant
 or key comes from the peer. Absence is Unsupported; this trait is not an implicit
 production decryptor or a bypass for Ledger validation.
+
+Config.resources supplies shared [aggregate transient and per-peer budgets](resources.md); admission occurs before incoming or outgoing handler construction and persists until worker cleanup.
