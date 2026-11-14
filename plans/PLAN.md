@@ -65,17 +65,24 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   finite grants, bounded reservations, settlement, transfer/claim controls,
   durable state and replay protection. Direct-call implementation, protected Linux
   persistence, inspection and [Ledger evidence](../src/modules/ledger/ACCEPTANCE.md)
-  cover concurrent spending and restart; Services now verifies actual local coordination, while network integration remains later.
+  cover concurrent spending and restart; Services verifies local coordination and
+  Peer Protocol now exercises independent authenticated network controls/settlement.
 - [x] **8. [Services module](7_Services_module/PLAN.md).** Implement typed schemas, handler registration,
   authority, quotes/pricing, provided/wanted roles and durable coordination
   with Board/Ledger through contracts. Local direct/serialized coordination, protected
   recovery and [acceptance evidence](../src/modules/services/ACCEPTANCE.md) are complete;
   the paid-check timeout ambiguity in upstream issue #10 remains explicit. Network
-  application binding and standard-family providers remain later milestones.
-- [ ] **9. [Peer Control / Peer Protocol module](8_Peer_Protocol_module/PLAN.md).** Bind metadata, quotes, service
+  application binding is now verified by Peer Protocol; standard-family providers
+  remain later milestones.
+- [x] **9. [Peer Control / Peer Protocol module](8_Peer_Protocol_module/PLAN.md).** Bind metadata, quotes, service
   invocation and ledger control to Transport streams. Implement canonical
   records, detached bodies and exact value codecs; match encoding vectors and
-  reject malformed data without silently retrying accepted operations.
+  reject malformed data without silently retrying accepted operations. All38 detailed
+  steps are complete; the [acceptance matrix](../src/modules/peer_protocol/ACCEPTANCE.md)
+  covers real custom-node/process work, checks, wanted roles, independent issuer
+  settlement and persistent issuer replay. Standard families, global paid-check
+  timeout ambiguity and the persistent minimum node retain their documented scope.
+  See the [Storage handoff](../src/modules/peer_protocol/HANDOFF.md).
 - [ ] **10. Storage module.** Implement requester/provider store, ranged
   retrieval, renewal guards, removal, expiration and paid byte checks, with
   authorization, durable leases and hash verification. Keep local persistence

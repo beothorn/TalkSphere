@@ -83,3 +83,11 @@ The module's generic responsibilities are implemented and verified with these
 scope labels. Full paid Storage is the next module; optional family conformance
 and the minimum useful node milestone remain distinct roadmap work. Upstream
 issue10 limits global paid-check timeout settlement claims until clarified.
+
+## Final verification
+
+All38 detailed plan steps are complete under the scope above. Formatting, strict
+all-target Clippy, locked tests/build, all examples, documented overview/detailed
+help and exit statuses, actual custom-node run, warning-free API docs and local
+Markdown/companion-contract checks pass. The documented production-only coverage
+procedure measured20026/21376 executable lines =93.68% on2026-11-14.

@@ -20,12 +20,14 @@ transfers and encrypted claims with protected Linux persistence and local inspec
 The [Services library](src/modules/services/README.md) now supports typed handler
 registration, exact quotes and durable local coordination, with
 [acceptance evidence](src/modules/services/ACCEPTANCE.md) over real Board/Ledger
-contracts. Peer Protocol implementation is in progress, including bounded wire
-handlers, dependency workers and an opt-in authenticated stream adapter.
-`cargo test --locked --test peer_protocol_streams` exercises real TCP, protected
-identities, Cryptography and Board metadata through that adapter on Linux; its
-test-only metadata factory is not installed by `serve`. Full service-node wiring
-and paid Storage remain later work.
+contracts. The [Peer Protocol module](src/modules/peer_protocol/README.md) now binds
+complete provided/wanted work, checks, detached values and Ledger controls to real
+authenticated Transport, with explicit consent and bounded dependency workers.
+Its [acceptance matrix](src/modules/peer_protocol/ACCEPTANCE.md) includes independent
+wire vectors, real-node/process exchanges, third-party settlement and protected
+issuer restart, with clear standard-family and timeout limits. A runnable custom
+two-node example uses real module owners with explicitly volatile service resources.
+Paid Storage and persistent minimum-node composition remain later milestones.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md) and [module guide](src/modules/peer_protocol/README.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
@@ -172,7 +174,8 @@ Individual protocol findings and confirmed upstream issue URLs are retained in
 The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
-module is Peer Protocol; paid Storage, minimum-profile services and paid recovery remain later work.
+module is paid Storage; see the [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md).
+Persistent minimum-node composition and optional standard families remain later work.
 
 ## Board document tools
 
@@ -193,7 +196,9 @@ separate and shows exact available amounts and participant/payment status counts
 Inspection acquires the exclusive writer lock and never initializes or repairs
 accounting. Use `cargo run --locked -- help ledger-show` or help with any option
 spelling for defaults and errors. Ledger mutations currently use its authorized
-library contracts; network controls await Peer Protocol composition.
+library contracts. Authenticated balance/transfer/claim controls are implemented
+by the opt-in Peer Protocol endpoint; default serve exposes no administrative
+Ledger operation or application protocol.
 
 Run `cargo run --locked --example ledger` for the bounded volatile accounting
 walkthrough, and see the [Ledger evidence](src/modules/ledger/ACCEPTANCE.md) for

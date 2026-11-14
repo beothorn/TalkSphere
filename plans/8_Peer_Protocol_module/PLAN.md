@@ -1,6 +1,6 @@
 # Peer Protocol module plan
 
-Status: implementation in progress; checked steps record verified work.
+Status: all38 steps complete; verified generic-module scope and remaining family/upstream limits are recorded in the acceptance matrix.
 
 This is roadmap milestone9 and planning folder8, following Services.
 
@@ -43,7 +43,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **35.** Exercise complete exchanges between real local nodes.
 - [x] **36.** Add discoverable runtime configuration and exercise instructions.
 - [x] **37.** Complete the Peer Protocol acceptance matrix.
-- [ ] **38.** Publish the completed module and Storage handoff.
+- [x] **38.** Publish the completed module and Storage handoff.
 
 ## Baseline, scope and review
 
@@ -345,3 +345,5 @@ Step36 completed: `cargo run --locked --example peer -- run` now composes two ac
 Step37 completed: the [acceptance matrix](../../src/modules/peer_protocol/ACCEPTANCE.md) maps PP-01–PP-13, shared cases and BD-09/LG-13/Services boundaries to concrete tests, pinned independent vectors and actual node/process evidence. Audit additions verify every specified provider-size wire field at exact uint64 extrema and removal release-field separation, and prove7+2 is rejected under bound8 before any hold/execution while9 succeeds. Standard family formula/resource/signature implementations remain explicitly downstream; narrow Messaging/Discovery-style substitutes do not claim those providers. Upstream main remains six non-protocol commits ahead of d40b6278; issue10 remains open with no comments, and no new protocol defect was confirmed. Required checks, warning-free API docs and local Markdown targets pass; production coverage20025/21375 =93.68%.
 
 Final resource audit correction: legal nonempty detached bodies can be one byte, so the sender's4096-byte inline threshold cannot bound incoming reference counts. Aggregate reservation now uses the minimum of per-value body/node/byte limits in both directions, with default524288 references preserving four full default exchanges. A wire-valid eight-body/one-byte regression proves another stream is refused at the shared reference bound until cleanup. Updated contract/runtime help and all required checks, examples, actual node runs and warning-free API docs pass; production coverage20026/21376 =93.68%. This was a local accounting fix, not a CR2SE protocol defect.
+
+Step38 completed: published current module/engine/endpoint/check contracts and guides, marked the Peer Protocol roadmap milestone complete, and added the [Storage/minimum-node handoff](../../src/modules/peer_protocol/HANDOFF.md). The next module remains unimplemented; standard family resources/formulas, persistent minimum-node composition and issue10 retain their explicit scope. Final formatting, strict all-target Clippy, locked tests/build, all examples, overview and detailed help/aliases/statuses, actual two-node run, warning-free API docs, public-companion audit and local Markdown targets pass. Production coverage is20026/21376 =93.68% using the documented test-only exclusions. Full upstream recheck found no protocol changes or new confirmed defect; the existing paid-check report remains open. All38 steps now have implementation/evidence and this final reviewed handoff.

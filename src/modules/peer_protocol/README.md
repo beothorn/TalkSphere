@@ -1,52 +1,72 @@
 # Peer Protocol
 
-Peer Control will bind cr2se.peer version1 to authenticated Transport streams,
-Board metadata, Services coordination and Ledger controls. Current status includes local authority, bounded record/control/value codecs,
-canonical scalar/byte binding and provisional detached body reception/transmission;
-provided-proposal authorization, immutable provider quotes, independent requester
-validation, explicit spending consent and [durable two-sided acceptance](acceptance.md)
-and [challenge-only remote check binding](checks/README.md) are also available.
-A [bounded dependency worker pool](engine/worker.md) keeps synchronous module calls
-outside the Transport reactor, retaining correlated late results without retry.
-An opt-in [authenticated stream adapter](engine/bridge/mod.md) now connects
-framing, worker ownership and bounded output through the real Transport API.
-An [incoming endpoint factory](engine/endpoint/README.md) now composes provided
-work/checks, metadata and independent Ledger controls over actual owners.
-Explicit outgoing metadata, provided work/checks, wanted invitations, cached
-retries and independent controls use one-shot request factories and direct-publisher
-cache checks. [Real local node exercises](../../../docs/peer-protocol/NODES.md)
-cover complete work, evidence, wanted roles and independent third-party settlement,
-including three processes and protected issuer-record restart.
-The default server does not register a peer application protocol yet. Application composition supplies grants
-and verified peer context; protocol internals do not own sockets or balances.
+Peer Protocol binds `cr2se.peer` version1 to authenticated Transport streams,
+Board metadata, Services coordination and Ledger controls. Its38-step plan is
+implemented; the [acceptance matrix](ACCEPTANCE.md) records executable evidence,
+independent vectors, family substitution scopes and the unresolved upstream
+paid-check timeout question. Paid Storage is the [next module](HANDOFF.md).
+
+The module owns bounded record/control/value codecs, exact source quote hashes,
+canonical numbers/bytes and ordered detached bodies. It composes provided/wanted
+work, independent quote validation and explicit spending consent, original-key
+family-authorized cached retries, challenge-only paid/included evidence and
+Ledger balance/transfer/claim controls. Received results stay provisional until
+complete bodies/markers, normal Transport completion and local commitment.
+
+A [bounded worker pool](engine/worker.md) runs synchronous public dependency calls
+outside the Transport reactor. The opt-in [stream bridge](engine/bridge/mod.md)
+retains original authenticated scopes, deadlines/timing, bounded framing and late
+cleanup. [Endpoint factories](engine/endpoint/README.md) join actual Board,
+Registry, Services and Ledger owners under separate local authority. Shared
+[admission budgets](engine/endpoint/resources.md) bound transient logical values,
+body references and each authenticated peer across connections and clones.
+
+Transport owns authentication, sockets and framed stream outcomes; Board owns
+publication/provenance; Services owns accepted work and participant coordination;
+Ledger owns balances, holds and permanent replay. Families own operation-specific
+schemas, formulas, authorization, durable resources and evidence. Peer Protocol
+never reads another owner's private maps, installs code from remote metadata or
+infers rollback from lost delivery. Work and third-party payment remain separate.
+Trusted composition supplies protected key ports and application consent; absent
+capabilities refuse explicitly. Default `serve` retains its Transport-only profile.
 
 From the repository root:
 
 ```sh
 cargo build --locked
-cargo test --locked modules::peer_protocol
-cargo test --locked --test peer_protocol_streams
 cargo run --locked -- --help
+cargo run --locked -- help peer-protocol
+cargo run --locked --example peer -- --help
+cargo run --locked --example peer -- help run
+cargo run --locked --example peer -- run
+cargo test --locked modules::peer_protocol
+cargo test --locked --example peer
+cargo test --locked --test peer_protocol_streams
 ```
 
-See the [plan](../../../plans/8_Peer_Protocol_module/PLAN.md),
-[requirements](REQUIREMENTS.md), [local contracts](contract.md) and
-[upstream specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md).
-Run the explicit custom-handler node exercises with:
+The example runs two actual authenticated nodes with an explicitly installed
+volatile custom text service, spending seven of100 credits on each independent
+book. It is not a standard family or a persistent minimum useful node. Its help
+and the [runtime guide](../../../docs/peer-protocol/RUNTIME.md) explain exact
+configuration, local authority, protected initialization and recovery boundaries.
+
+[Real-node exercises](../../../docs/peer-protocol/NODES.md) additionally cover
+detached multibyte values, wanted roles, paid/included evidence, full independent
+third-party settlement, three actual processes and protected issuer-record restart:
 
 ```sh
 cargo test --locked --lib modules::peer_protocol::engine::endpoint::tests::network -- --nocapture
 ```
 
-These fixtures use real public module owners and protected credentials; their
-custom service resources remain explicitly volatile. The default server still
-requires opt-in application composition to register this protocol.
+The separate TCP integration test checks metadata and malformed-sibling isolation.
+These are same-implementation instances, not independent interoperability evidence.
+Custom network-test service resources/journals are explicitly volatile; the issuer
+restart test uses its actual protected durable Ledger. Services and Ledger retain
+their separate complete durable participant recovery suites.
 
-The Linux `peer_protocol_streams` test runs two real TCP endpoints with protected
-Identity stores, actual Cryptography and Board metadata. It requires normal
-completion before publishing observations and verifies malformed-stream isolation.
-Its explicitly installed metadata-only test factory is not a full service node;
-these are same-implementation instances in one process, not interoperability or
-complete-services process evidence.
-
-Use `cargo run --locked --example peer -- run` for the finite real two-node custom-service example; `--help` and `help run` explain its explicit volatile scope. See [runtime configuration](../../../docs/peer-protocol/RUNTIME.md) for owner initialization, quotas and recovery.
+See the [plan](../../../plans/8_Peer_Protocol_module/PLAN.md),
+[requirements](REQUIREMENTS.md), [contracts](mod.md), [Storage handoff](HANDOFF.md)
+and [pinned upstream specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md).
+The open [paid-check timeout issue10](https://github.com/beothorn/CR2SE/issues/10)
+limits global no-charge claims after provider commitment/response loss; it does
+not authorize refunds, automatic retries or an invented wire acknowledgement.

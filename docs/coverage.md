@@ -97,3 +97,13 @@ integration and documentation tests pass separately. Formatting, Clippy with
 warnings denied, build, generated API docs and overview/detailed help checks also
 pass. See [Cryptography acceptance evidence](../src/modules/cryptography/ACCEPTANCE.md)
 for fixed vectors, limits, lifecycle coverage and the Identity integration handoff.
+
+Peer Protocol completion (step38,2026-11-14) measured
+**20026/21376 executable production lines (93.68%)**, with the documented
+test-only source/inline exclusions. Final verification includes the required
+formatting, strict all-target Clippy, locked test/build/help commands, all examples,
+actual authenticated custom-node runs, bounded process/issuer restart scenarios
+and warning-free API documentation. See the
+[Peer Protocol acceptance matrix](../src/modules/peer_protocol/ACCEPTANCE.md) for
+independent vector provenance, standard-family substitution scope and the open
+paid-check timeout question; coverage percentage alone is not conformance.

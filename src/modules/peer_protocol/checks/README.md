@@ -17,6 +17,8 @@ cargo run --locked -- --help
 See [contracts](mod.md), [the module plan](../../../../plans/8_Peer_Protocol_module/PLAN.md)
 and [the pinned wire specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md#check-binding-and-retries).
 The test resource is an explicit custom fixture, not a Storage/Discovery/Messaging
-provider. Real Transport composition remains a later step. Included allowances distinguish in-flight reservations, complete consumption,
+provider. [Real-node exercises](../../../../docs/peer-protocol/NODES.md) now cover
+paid/included evidence over authenticated Transport. Included allowances distinguish
+in-flight reservations, complete consumption,
 known incomplete release and uncertain guards; paid response-loss ambiguity
 remains recorded in [issue10](https://github.com/beothorn/CR2SE/issues/10).

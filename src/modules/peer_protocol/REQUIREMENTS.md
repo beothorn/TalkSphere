@@ -1,6 +1,6 @@
 # Peer Protocol requirements
 
-Baseline: [d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f), rechecked 2026-11-10. Main remains six non-protocol commits ahead. Specification, input/output contracts, pseudocode, vectors and common ownership rules were reviewed.
+Baseline: [d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f), rechecked 2026-11-14. Main remains six non-protocol commits ahead. Specification, input/output contracts, pseudocode, vectors and common ownership rules were reviewed.
 
 | Case | Required observable behavior | Plan steps |
 |---|---|---|
@@ -24,15 +24,16 @@ Transport owns sockets/authentication and supplies verified ordered bytes and
 normal/abnormal termination through public events. Peer Protocol must associate
 opaque stream handles with a unique connection instance, never trust payload IDs,
 and preserve stream isolation. Its local authority must be independent of Services
-and Ledger authority. Protocol dispatch remains unregistered until usable.
+and Ledger authority. Explicit Bridge registration now installs complete endpoint factories; default
+serve retains its Transport-only profile.
 
 Board Document preserves exact source and duplicate rejection, but its format
 limits must not silently substitute for wire depth32 or wrapped response sizing.
 Publication and metadata response must fit one1048576-byte control record.
-Services Value and local binary codec are not peer representations. Detached
-metadata requires a bounded unresolved representation before complete Value input;
-existing assessment currently expects complete Value metadata, so integration
-needs an explicit public metadata/body contract rather than placeholder bytes.
+Services Value and its local binary codec are not peer representations. The
+completed integration uses bounded Services Input metadata with explicit unresolved
+body references; complete content is delivered only after the terminal gate,
+without placeholder bytes.
 
 Services Quoter retains exact quote bytes, but peer quote IDs/encoding and
 requester reservation-before-accept ordering belong to this module's adapter.
@@ -42,10 +43,10 @@ custom Requester adds no contextual validation. Never send failure as rollback
 proof after local commitment. Recovery retains local journals; there is no generic
 remote invocation-resume/status message.
 
-Included checks currently count accepted attempts; pinned Peer Protocol consumes
-the allowance only on complete evidence. Step27 must distinguish reservations
-from consumption and preserve crash/replay guards. This is an implementation
-integration defect, not evidence of a new protocol defect. Existing
+Included checks now distinguish in-flight reservation, complete evidence
+consumption, definitive incomplete release and uncertain retained guards, including
+recovery. This corrected the initial local integration mismatch without inventing
+a protocol extension. Existing
 [issue10](https://github.com/beothorn/CR2SE/issues/10) still limits cross-peer timeout
 charging claims. Cached Messaging retries need explicit family authorization;
 ordinary early results are illegal and no absent family may be synthesized.
@@ -57,4 +58,6 @@ controls cannot grant credits, create claims, change trust or acquire admin keys
 Shared AT-C01–04 evidence must cover version/authority isolation, finite admission,
 exact values, dependency uncertainty, result lifetime and payload-free diagnostics.
 BD-09 and LG-13 require actual module integration, not substitute-only assertions.
-No runtime acceptance is claimed by this requirements map.
+This requirements map is not itself runtime evidence; the linked acceptance matrix supplies the verified cases.
+
+Implementation evidence is consolidated in [ACCEPTANCE.md](ACCEPTANCE.md), with the next module boundaries in [HANDOFF.md](HANDOFF.md).

@@ -26,7 +26,8 @@ input bodies and markers, committed output, explicit family-authorized cached
 retries, balance/transfer reads, fee quotes/acceptance and configured claim calls.
 Unsupported families/rules and missing protected capabilities return explicit
 refusals, never installed code or fabricated success. Provided outgoing work and independent controls are available; paid/included checks and [wanted role reversal](wanted.md) are also composed.
-Explicit cached retry and complete real-node exercises remain under development.
+Explicit original-key cached retries and complete real-node exercises are available;
+the [acceptance matrix](../../ACCEPTANCE.md) records their exact scope.
 
 Service selection uses the installed definition's contract description and the
 current Board, not peer descriptions. Cached Messaging retries consult the actual
