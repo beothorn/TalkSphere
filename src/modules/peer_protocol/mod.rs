@@ -1,5 +1,6 @@
 //! Peer Control wire exchange ownership over authenticated Transport and public module contracts.
-//! Composition supplies local authority; codecs and dispatch are implemented in subsequent steps.
+//! Composition supplies local authority; codecs and handler contracts are available.
+//! Complete production handler wiring and node exercises remain in progress.
 pub mod authority;
 pub mod contract;
 

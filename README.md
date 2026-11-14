@@ -12,7 +12,7 @@ keys, listens, authenticates configured peers and handles controlled shutdown.
 Frame integrity protects against modification and connection-local replay;
 **frame payloads remain visible**. Application encryption is a separate capability.
 
-Production registers no application protocol yet, so unsupported OPENs are refused.
+The default `serve` command registers no application protocol yet, so unsupported OPENs are refused.
 The [Board module](src/modules/board/README.md) now implements direct-call
 publication, protected persistence, attributed caches, selection and document tools.
 The Ledger direct-call module now supports durable finite accounting, settlement,
@@ -20,7 +20,12 @@ transfers and encrypted claims with protected Linux persistence and local inspec
 The [Services library](src/modules/services/README.md) now supports typed handler
 registration, exact quotes and durable local coordination, with
 [acceptance evidence](src/modules/services/ACCEPTANCE.md) over real Board/Ledger
-contracts. Peer Protocol and paid Storage remain later milestones.
+contracts. Peer Protocol implementation is in progress, including bounded wire
+handlers, dependency workers and an opt-in authenticated stream adapter.
+`cargo test --locked --test peer_protocol_streams` exercises real TCP, protected
+identities, Cryptography and Board metadata through that adapter on Linux; its
+test-only metadata factory is not installed by `serve`. Full service-node wiring
+and paid Storage remain later work.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md) and [module guide](src/modules/peer_protocol/README.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),

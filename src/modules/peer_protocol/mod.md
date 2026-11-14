@@ -4,8 +4,10 @@ Peer Control owns framing, exchange/quote ordering and detached body transfer.
 Board owns metadata, Services owns accepted work and Ledger owns accounting.
 Error distinguishes invalid, unsupported, denied, limit, cancelled, conflict,
 insufficient, known storage refusal, unknown effects and unavailable dependency.
-Only the scoped local contracts are implemented so far; production dispatch is
-not registered and no wire support is advertised.
+Scoped local handlers and wire codecs are available, together with the bounded
+[engine worker pool and opt-in stream adapter](engine/mod.md). The default server
+does not install a factory or advertise Peer Protocol dispatch; complete
+production handler composition remains in progress.
 
 Services error conversion preserves every typed category one-for-one, especially Unknown versus known refusal; wire failure-code mapping belongs to the exchange handler.
 
