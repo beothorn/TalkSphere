@@ -12,7 +12,9 @@ the original quote domains, policies and durable owners.
 messages never supply them. `board` provides current publication/definitions;
 `registry` provides installed independent semantics and handlers; `runtime` owns
 accepted invocation state; `ledger` owns accounting. `gate` performs read-only
-trust/economic admission. `transfer_policy` selects an exact issuer fee. `limits`
+trust/economic admission. `transfer_policy` selects an exact issuer fee. Optional `wanted` installs explicit
+local publisher work/consent policy and a bounded completion observer; absence
+refuses wanted invitations without fabricating input or spending. `limits`
 bounds Peer Protocol values/records and `service_limits` bounds Services quotes
 and state. Receiving modules check every grant against their own authority.
 
@@ -23,8 +25,8 @@ It serves Board/definition reads, provided work/check proposals, exact acceptanc
 input bodies and markers, committed output, explicit family-authorized cached
 retries, balance/transfer reads, fee quotes/acceptance and configured claim calls.
 Unsupported families/rules and missing protected capabilities return explicit
-refusals, never installed code or fabricated success. Provided outgoing work and independent controls are available; wanted policy,
-outgoing checks and complete real-node composition remain under development.
+refusals, never installed code or fabricated success. Provided outgoing work and independent controls are available; paid/included checks and [wanted role reversal](wanted.md) are also composed.
+Explicit cached retry and complete real-node exercises remain under development.
 
 Service selection uses the installed definition's contract description and the
 current Board, not peer descriptions. Cached Messaging retries consult the actual

@@ -32,12 +32,12 @@ pub struct Invocation {
     /// Separate local approval of the immutable independently validated quote.
     pub consent: Arc<dyn Consent>,
 }
-pub(super) struct State {
+pub(in crate::modules::peer_protocol::engine::endpoint) struct State {
     scope: Scope,
     association: Association,
     nodes: usize,
     request: Option<peer::requester::Request>,
-    cache: Arc<PeerCache>,
+    cache: Option<Arc<PeerCache>>,
     consent: Arc<dyn Consent>,
     sender: Option<peer::input_transfer::InputSender>,
     receiver: Option<peer::result_receiver::ResultReceiver>,
@@ -46,7 +46,7 @@ pub(super) struct State {
 }
 impl State {
     // Authorize only locally chosen input/terms on the actual authenticated provider stream.
-    pub(super) fn new<
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn new<
         P: services::persistence::Persistence,
         L: ledger::persistence::Persistence,
     >(
@@ -84,7 +84,7 @@ impl State {
                 association: scope.association(scope.local)?,
                 nodes: c.limits.nodes,
                 request: Some(request),
-                cache: plan.cache,
+                cache: Some(plan.cache),
                 consent: plan.consent,
                 sender: None,
                 receiver: None,
@@ -94,8 +94,77 @@ impl State {
             wire,
         ))
     }
+    // Become a wanted publisher's requester only after local policy supplies input/spending and current owner terms agree.
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn wanted<
+        P: services::persistence::Persistence,
+        L: ledger::persistence::Persistence,
+    >(
+        owner: &Owner<P, L>,
+        scope: Scope,
+        selection: board::selection::Selection,
+        message: &Message,
+        policy: &dyn peer::wanted::Policy,
+        consent: Arc<dyn Consent>,
+    ) -> Result<(Self, Vec<u8>), Error> {
+        tracing::trace!("Authorizing locally chosen work for an authenticated wanted invitation");
+        let c = &owner.config;
+        let invoke = c
+            .authority
+            .grant(c.local, Action::Invoke, c.limits.state_bytes)?;
+        let request = c
+            .authority
+            .grant(c.local, Action::Request, c.limits.state_bytes)?;
+        let service = c.services.grant(
+            c.local,
+            services::authority::Action::Request,
+            c.limits.state_bytes,
+        )?;
+        let select = c.board_authority.grant(
+            c.local,
+            board::authority::Action::Select,
+            c.limits.state_bytes,
+        )?;
+        let ic = context(&invoke, scope.deadline);
+        let rc = context(&request, scope.deadline);
+        let sc = services_context(&service, scope.deadline);
+        let bc = board_context(&select, scope.deadline);
+        let current = services::quote::BoardCurrent {
+            owner: &c.board,
+            context: &bc,
+        };
+        let association = scope.association(scope.local)?;
+        let request = peer::wanted::request(
+            &owner.client,
+            peer::wanted::PublisherContexts {
+                incoming: &ic,
+                request: &rc,
+                services: &sc,
+                current: &current,
+            },
+            association,
+            selection,
+            message,
+            policy,
+        )?;
+        let wire = request.bytes().to_vec();
+        Ok((
+            Self {
+                scope,
+                association,
+                nodes: c.limits.nodes,
+                request: Some(request),
+                cache: None,
+                consent,
+                sender: None,
+                receiver: None,
+                failure: None,
+                key: None,
+            },
+            wire,
+        ))
+    }
     // Independent quote checks and local consent precede one durable requester reservation and the first accept byte.
-    pub(super) fn control<
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn control<
         P: services::persistence::Persistence,
         L: ledger::persistence::Persistence,
     >(
@@ -138,13 +207,30 @@ impl State {
             let approved = self.consent.approve(&candidate)?;
             let hash = candidate.hash();
             let consent = owner.client.consent(&rc, candidate, hash, approved)?;
-            let current = self.cache.current(scope.deadline);
+            let remote = self
+                .cache
+                .as_ref()
+                .map(|cache| cache.current(scope.deadline));
+            let select = c.board_authority.grant(
+                c.local,
+                board::authority::Action::Select,
+                c.limits.state_bytes,
+            )?;
+            let bc = board_context(&select, scope.deadline);
+            let local = services::quote::BoardCurrent {
+                owner: &c.board,
+                context: &bc,
+            };
+            let current: &dyn services::quote::Current = match &remote {
+                Some(remote) => remote,
+                None => &local,
+            };
             let outgoing = owner.client.reserve(
                 &rc,
                 peer::acceptance::Admission {
                     quote_context: &sc,
                     coordinate_context: &cc,
-                    current: &current,
+                    current,
                     runtime: c.runtime.as_ref(),
                 },
                 consent,
@@ -174,7 +260,7 @@ impl State {
         Ok(())
     }
     // Detached output stays provisional under the original accepted receiver and cannot select a new financial operation.
-    pub(super) fn body<
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn body<
         P: services::persistence::Persistence,
         L: ledger::persistence::Persistence,
     >(
@@ -195,7 +281,7 @@ impl State {
         )
     }
     // Emit one bounded accept/body/marker record without advancing the source on backpressure.
-    pub(super) fn pump(
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn pump(
         &mut self,
         exchange: &mut Exchange,
         output: &mut Output,
@@ -237,7 +323,7 @@ impl State {
         Ok(())
     }
     // Actual normal closure gates result validation and local participant commitment; interruption is handled before this call.
-    pub(super) fn finish<
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn finish<
         P: services::persistence::Persistence,
         L: ledger::persistence::Persistence,
     >(

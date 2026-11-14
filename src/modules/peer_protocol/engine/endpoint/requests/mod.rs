@@ -5,6 +5,7 @@ use std::sync::{Mutex, mpsc};
 mod check;
 mod invocation;
 pub use check::{Challenge, CheckConsent};
+pub(super) use invocation::State as InvocationState;
 pub use invocation::{Ceiling, Consent, Invocation};
 /// Explicit local approval of an independently validated issuer fee; signing is not approval.
 pub trait FeeConsent: Send + Sync {
@@ -30,6 +31,8 @@ impl FeeConsent for ExactFee {
 }
 /// Trusted local intent; this type is never deserialized from peer control messages.
 pub enum Plan {
+    /// Offer installed provider capability for a directly retrieved wanted contract, without inventing input or payer permission.
+    Offer(Box<super::wanted::Invitation>),
     /// Request evidence under the installed check contract, without private expected values.
     Check(Box<Challenge>),
     /// Invoke selected provided work with independently validated quotes and explicit local spending consent.
@@ -134,20 +137,29 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             .map_err(|_| Error::Unavailable)?
             .take()
             .ok_or(Error::Conflict)?;
-        let create = || -> Result<Session<P, L>, Error> {
+        let create = || -> Result<Box<dyn Handler>, Error> {
             if scope.local != self.owner.config.local || opener != Direction::Local {
                 return Err(Error::Denied);
             }
-            Session::new(
-                self.owner.clone(),
-                scope,
-                plan,
-                output,
-                self.completed.clone(),
-            )
+            match plan {
+                Plan::Offer(plan) => super::wanted::provider(
+                    self.owner.clone(),
+                    scope,
+                    *plan,
+                    output,
+                    self.completed.clone(),
+                ),
+                plan => Ok(Box::new(Session::new(
+                    self.owner.clone(),
+                    scope,
+                    plan,
+                    output,
+                    self.completed.clone(),
+                )?)),
+            }
         };
         match create() {
-            Ok(handler) => Ok(Box::new(handler)),
+            Ok(handler) => Ok(handler),
             Err(error) => {
                 let _ = self.completed.try_send(Completion {
                     scope,
@@ -204,6 +216,7 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
         let context = context(&grant, scope.deadline);
         let a = scope.association(scope.local)?;
         let (state, wire, half_close) = match plan {
+            Plan::Offer(_) => return Err(Error::Invalid),
             Plan::Check(plan) => {
                 let (state, wire) = check::State::new(owner.as_ref(), scope, *plan)?;
                 (State::Check(Box::new(state)), wire, false)

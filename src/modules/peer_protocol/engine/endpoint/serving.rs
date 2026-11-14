@@ -112,24 +112,59 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             owner
                 .authorizer
                 .authorize(&pc, &sc, self.association, selection, message)?;
+        self.issue_proposal(proposal, output)
+    }
+    // Both provided and wanted invitations issue through one exact quote owner and role-appropriate current view.
+    fn issue_proposal(
+        &mut self,
+        proposal: peer::proposal::Proposal,
+        output: &mut Output,
+    ) -> Result<(), Error> {
+        tracing::trace!("Issuing exact terms for authorized provided or wanted work");
+        let owner = self.owner.clone();
+        let config = &owner.config;
+        let invoke =
+            config
+                .authority
+                .grant(config.local, Action::Invoke, config.limits.state_bytes)?;
+        let service = config.services.grant(
+            config.local,
+            services::authority::Action::Invoke,
+            config.limits.state_bytes,
+        )?;
+        let pc = context(&invoke, self.scope.deadline);
+        let sc = services_context(&service, self.scope.deadline);
+        let select = config.board_authority.grant(
+            config.local,
+            board::authority::Action::Select,
+            config.limits.state_bytes,
+        )?;
         let bc = board_context(&select, self.scope.deadline);
-        let current = services::quote::BoardCurrent {
+        let local = services::quote::BoardCurrent {
             owner: &config.board,
             context: &bc,
+        };
+        let remote = self
+            .remote_current
+            .as_ref()
+            .map(|cache| cache.current(self.scope.deadline));
+        let current: &dyn services::quote::Current = match &remote {
+            Some(current) => current,
+            None => &local,
         };
         let quote = match proposal.mode() {
             peer::proposal::Mode::Invoke => Quote::Work(Box::new(owner.issuer.issue(
                 &pc,
                 &sc,
                 proposal,
-                &current,
+                current,
                 self.scope.deadline,
             )?)),
             peer::proposal::Mode::Check => Quote::Check(Box::new(owner.checks.issue(
                 &pc,
                 &sc,
                 proposal,
-                &current,
+                current,
                 self.scope.deadline,
             )?)),
         };
@@ -139,6 +174,31 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
         });
         self.phase = Phase::Quoted(quote);
         self.emit(output, &record)
+    }
+    // Validate only a proposal replying to this exact original provider invitation before quoting.
+    fn wanted_proposal(&mut self, message: &Message, output: &mut Output) -> Result<(), Error> {
+        tracing::trace!("Validating an original wanted publisher proposal");
+        let Phase::Offered(offered) = std::mem::replace(&mut self.phase, Phase::Poisoned) else {
+            return Err(Error::Invalid);
+        };
+        let owner = self.owner.clone();
+        let c = &owner.config;
+        let invoke = c
+            .authority
+            .grant(c.local, Action::Invoke, c.limits.state_bytes)?;
+        let service = c.services.grant(
+            c.local,
+            services::authority::Action::Invoke,
+            c.limits.state_bytes,
+        )?;
+        let proposal = owner.offerer.proposal(
+            &context(&invoke, self.scope.deadline),
+            &services_context(&service, self.scope.deadline),
+            *offered,
+            self.association,
+            message,
+        )?;
+        self.issue_proposal(proposal, output)
     }
     // Consume only one exact issued quote and reserve through the original coordinator before receiving input.
     fn accept(&mut self, message: &Message) -> Result<(), Error> {
@@ -170,14 +230,22 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
         let sc = services_context(&invoke, self.scope.deadline);
         let cc = services_context(&coordinate, self.scope.deadline);
         let bc = board_context(&select, self.scope.deadline);
-        let current = services::quote::BoardCurrent {
+        let local = services::quote::BoardCurrent {
             owner: &c.board,
             context: &bc,
+        };
+        let remote = self
+            .remote_current
+            .as_ref()
+            .map(|cache| cache.current(self.scope.deadline));
+        let current: &dyn services::quote::Current = match &remote {
+            Some(current) => current,
+            None => &local,
         };
         let admission = peer::acceptance::Admission {
             quote_context: &sc,
             coordinate_context: &cc,
-            current: &current,
+            current,
             runtime: c.runtime.as_ref(),
         };
         self.phase = match quote {
@@ -212,6 +280,18 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     // Serve exact independent metadata/accounting controls, retaining transfer quotes until explicit acceptance.
     pub(super) fn control(&mut self, message: &Message, output: &mut Output) -> Result<(), Error> {
         tracing::trace!("Routing a validated endpoint control to its owning module");
+        if let Phase::Requester(state) = &mut self.phase {
+            if message.kind() == Kind::Failure {
+                self.failure = Some(peer::failure::Failure::parse(message)?);
+            }
+            return state.control(
+                self.owner.as_ref(),
+                message,
+                &mut self.exchange,
+                output,
+                &mut self.end_requested,
+            );
+        }
         let owner = self.owner.clone();
         let c = &owner.config;
         let grant = c
@@ -219,6 +299,17 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             .grant(c.local, Action::Invoke, c.limits.state_bytes)?;
         let pc = context(&grant, self.scope.deadline);
         let record = match message.kind() {
+            Kind::Propose if matches!(self.phase, Phase::Offered(_)) => {
+                return self.wanted_proposal(message, output);
+            }
+            Kind::Failure if matches!(self.phase, Phase::Offered(_)) => {
+                self.failure = Some(peer::failure::Failure::parse(message)?);
+                self.phase = Phase::Terminal;
+                self.exchange.end(Direction::Local)?;
+                output.end();
+                self.end_requested = true;
+                return Ok(());
+            }
             Kind::Propose if matches!(self.phase, Phase::Fresh) => {
                 return self.proposal(message, output);
             }
@@ -317,7 +408,9 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                 .as_ref()
                 .ok_or(Error::Unsupported)?
                 .redeem(self.association, self.scope.deadline, message)?,
-            Kind::Offer if matches!(self.phase, Phase::Fresh) => return Err(Error::Unsupported),
+            Kind::Offer if matches!(self.phase, Phase::Fresh) => {
+                return self.wanted(message, output);
+            }
             _ => return Err(Error::Invalid),
         };
         self.phase = Phase::Terminal;
@@ -326,6 +419,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     // A semantic refusal can claim no accepted effects only after the durable owner acknowledges an abort.
     pub(super) fn refuse(&mut self, output: &mut Output, error: Error) -> Result<(), Error> {
         tracing::trace!("Reconciling a known endpoint refusal before emitting a failure");
+        self.cause = Some(error);
         self.refuse_code(output, peer::failure::Code::classify(error, false)?)
     }
     // Preserve a known protocol refusal category while independently proving abort for accepted work.

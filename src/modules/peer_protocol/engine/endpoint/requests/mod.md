@@ -13,6 +13,7 @@ Plans are trusted local objects, never peer-deserialized commands:
 - `Definition` supplies that cache and an exact offering ID after retrieving Board.
 - `Invoke` supplies a sealed selection, local input, spending and separate consent.
 - `Check` supplies only an installed public challenge and separate local check consent.
+- `Offer` invites a wanted publisher using only its exact retrieved contract and installed local provider capability.
 - `Balance` queries the authenticated caller's original-issuer balance.
 - `TransferGet` supplies original owner and16-byte lifetime transfer ID.
 - `Transfer` supplies the canonical signed order/public proof and separate fee policy.
@@ -44,3 +45,6 @@ See [ordinary invocation consent](invocation.md) and [direct cache](../cache.md)
 
 [Check requests](check.md) preserve original send and complete-response timestamps
 across worker queues and keep private correctness expectations local.
+
+[Wanted invitations](../wanted.md) reverse requester/provider roles while keeping
+publisher input/spending under explicit local application authority.

@@ -19,6 +19,7 @@ mod emission;
 mod lifecycle;
 pub mod requests;
 mod serving;
+pub mod wanted;
 
 /// Optional protected claim boundary installed by trusted composition, never peer metadata.
 pub trait Claims: Send + Sync {
@@ -58,6 +59,8 @@ pub struct Config<P: services::persistence::Persistence, L: ledger::persistence:
     pub transfer_policy: Arc<dyn peer::ledger_control::transfer::Policy>,
     /// Optional protected claim redemption; absence returns Unsupported.
     pub claims: Option<Arc<dyn Claims>>,
+    /// Explicit local publisher work/consent policy and bounded completion observer; absence rejects wanted invitations.
+    pub wanted: Option<wanted::Publisher>,
     /// Finite wire/value bounds.
     pub limits: Limits,
     /// Finite durable service owner bounds.
@@ -67,6 +70,7 @@ struct Owner<P: services::persistence::Persistence, L: ledger::persistence::Pers
     config: Config<P, L>,
     issuer: peer::quote::Issuer,
     client: peer::requester::Client,
+    offerer: peer::wanted::Offerer,
     authorizer: peer::proposal::Authorizer,
     checks: peer::checks::Owner,
     transfers: peer::ledger_control::transfer::Issuer<L>,
@@ -136,6 +140,14 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                 limits: config.limits,
                 policy: config.transfer_policy.clone(),
             })?;
+        let offerer = peer::wanted::Offerer::new(
+            config.local,
+            config.authority.clone(),
+            config.services.clone(),
+            config.registry.clone(),
+            config.limits,
+            config.gate.clone(),
+        )?;
         let client = peer::requester::Client::new(
             config.local,
             config.authority.clone(),
@@ -149,6 +161,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             config,
             issuer,
             client,
+            offerer,
             authorizer,
             checks,
             transfers,
@@ -180,6 +193,10 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             accepted: false,
             dispatched: false,
             end_requested: false,
+            remote_current: None,
+            completed: None,
+            failure: None,
+            cause: None,
         }))
     }
 }
@@ -194,6 +211,8 @@ enum Source {
 }
 enum Phase {
     Fresh,
+    Offered(Box<peer::wanted::Offered>),
+    Requester(Box<requests::InvocationState>),
     Quoted(Quote),
     Input(Box<peer::input_transfer::InputTransfer>),
     Challenge(Box<peer::checks::input::Receiver>),
@@ -211,6 +230,10 @@ struct Stream<P: services::persistence::Persistence, L: ledger::persistence::Per
     accepted: bool,
     dispatched: bool,
     end_requested: bool,
+    remote_current: Option<Arc<cache::PeerCache>>,
+    completed: Option<std::sync::mpsc::SyncSender<requests::Completion>>,
+    failure: Option<peer::failure::Failure>,
+    cause: Option<Error>,
 }
 // Construct per-call contexts with the original admission deadline, never a renewed queue-delay timeout.
 fn context(grant: &peer::authority::Grant, deadline: Instant) -> Context<'_> {

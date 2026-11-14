@@ -17,6 +17,10 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                 let message = Message::parse(&bytes, c.limits.nodes)?;
                 self.exchange.control(Direction::Remote, message.kind())?;
                 if let Err(error) = self.control(&message, output) {
+                    self.cause = Some(error);
+                    if matches!(self.phase, Phase::Requester(_)) {
+                        return Err(error);
+                    }
                     let code = match (message.kind(), error) {
                         (Kind::Accept, Error::Conflict) => peer::failure::Code::TermsChanged,
                         (Kind::Accept | Kind::LedgerTransferAccept, Error::Cancelled) => {
@@ -51,6 +55,9 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     fn remote_end(&mut self, output: &mut Output) -> Result<(), Error> {
         tracing::trace!("Completing provider input and coordinating durable execution");
         self.exchange.end(Direction::Remote)?;
+        if matches!(self.phase, Phase::Requester(_)) {
+            return Ok(());
+        }
         match self.dispatch_input(output) {
             Ok(()) => Ok(()),
             Err(error) => {
@@ -65,12 +72,99 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     // Refill only from immutable committed sources; backpressure does not rerun family work.
     fn writable(&mut self, output: &mut Output) -> Result<(), Error> {
         tracing::trace!("Refilling a committed endpoint result");
+        if let Phase::Requester(state) = &mut self.phase {
+            return state.pump(&mut self.exchange, output, &mut self.end_requested);
+        }
         self.pump(output)
     }
     // Release unaccepted quotes and reconcile included delivery without guessing that accepted work was rolled back.
     fn closed(
         &mut self,
         outcome: crate::modules::transport::api::StreamOutcome,
+    ) -> Result<(), Error> {
+        self.reconcile(outcome, None)
+    }
+    // Preserve original closure facts for check delivery and wanted completion before deferred cleanup.
+    fn closed_observed(&mut self, closure: peer::engine::bridge::Closure) -> Result<(), Error> {
+        tracing::trace!("Reconciling original endpoint closure observations");
+        self.reconcile(closure.outcome, Some(closure.local_end_submitted))
+    }
+}
+
+impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Persistence + 'static>
+    Stream<P, L>
+{
+    // Complete requester or provider roles under the same original financial owner, never from opener direction.
+    fn reconcile(
+        &mut self,
+        outcome: crate::modules::transport::api::StreamOutcome,
+        local_end_submitted: Option<bool>,
+    ) -> Result<(), Error> {
+        tracing::trace!("Reconciling endpoint role and actual terminal observations");
+        let normal = matches!(
+            outcome,
+            crate::modules::transport::api::StreamOutcome::Completed
+        );
+        let order = self.exchange.close(normal);
+        if matches!(self.phase, Phase::Requester(_)) {
+            let Phase::Requester(state) = std::mem::replace(&mut self.phase, Phase::Poisoned)
+            else {
+                return Err(Error::Conflict);
+            };
+            let result = if normal {
+                order
+                    .and_then(|_| state.finish(self.owner.as_ref()))
+                    .map(requests::Reply::Work)
+            } else {
+                Err(Error::Unknown)
+            };
+            if let Some(completed) = self.completed.take() {
+                let _ = completed.try_send(requests::Completion {
+                    scope: self.scope,
+                    result,
+                    failure: self.failure.take(),
+                    cause: self.cause,
+                });
+            }
+            return Ok(());
+        }
+        let result = self.reconcile_provider(outcome, local_end_submitted);
+        if let Some(completed) = self.completed.take() {
+            let reply = if !normal {
+                Err(Error::Unknown)
+            } else if let Some(failure) = &self.failure {
+                Err(failure.code.error())
+            } else if let Some(error) = self.cause {
+                Err(error)
+            } else {
+                order.and_then(|_| match &self.phase {
+                    Phase::Sending(Source::Cached(sender)) => {
+                        Ok(requests::Reply::Work(sender.proof().invocation().key))
+                    }
+                    Phase::Sending(Source::Check(_)) => Ok(requests::Reply::Check(
+                        peer::acceptance::peer(self.association).key,
+                    )),
+                    Phase::Sending(Source::Work(_)) => Ok(requests::Reply::Work(
+                        peer::acceptance::peer(self.association).key,
+                    )),
+                    _ => Err(Error::Unknown),
+                })
+            };
+            let reply = result.as_ref().map_err(|error| *error).and(reply);
+            let _ = completed.try_send(requests::Completion {
+                scope: self.scope,
+                result: reply,
+                failure: self.failure.take(),
+                cause: self.cause,
+            });
+        }
+        result
+    }
+    // Provider cleanup retains dispatched effects and distinguishes known-unsent END from ambiguous delivery.
+    fn reconcile_provider(
+        &mut self,
+        outcome: crate::modules::transport::api::StreamOutcome,
+        local_end_submitted: Option<bool>,
     ) -> Result<(), Error> {
         tracing::trace!("Reconciling endpoint closure with original durable owners");
         let owner = self.owner.clone();
@@ -91,7 +185,9 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
                 crate::modules::transport::api::StreamOutcome::Completed
             ) {
                 services::checks::Delivery::Complete
-            } else if !self.end_requested {
+            } else if local_end_submitted == Some(false)
+                || (!self.end_requested && local_end_submitted.is_none())
+            {
                 services::checks::Delivery::Incomplete
             } else {
                 services::checks::Delivery::Unknown
@@ -113,17 +209,8 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             c.runtime.abort(&cc, key)?;
         }
         // Exchange failure may already be poisoned; that cannot erase accounting or create a successful result.
-        let _ = self.exchange.close(matches!(
-            outcome,
-            crate::modules::transport::api::StreamOutcome::Completed
-        ));
         Ok(())
     }
-}
-
-impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Persistence + 'static>
-    Stream<P, L>
-{
     // Run complete input through its original owner; caller emits failure only after an acknowledged uncommitted abort.
     fn dispatch_input(&mut self, output: &mut Output) -> Result<(), Error> {
         tracing::trace!("Dispatching complete endpoint input and retaining committed output");
@@ -190,9 +277,11 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             }
             Phase::Terminal => {
                 self.phase = Phase::Terminal;
-                self.exchange.end(Direction::Local)?;
-                output.end();
-                self.end_requested = true;
+                if !self.end_requested {
+                    self.exchange.end(Direction::Local)?;
+                    output.end();
+                    self.end_requested = true;
+                }
                 return Ok(());
             }
             _ => return Err(Error::Invalid),
