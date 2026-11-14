@@ -662,3 +662,77 @@ fn explicit_claim_request_preserves_unsupported_remote_failure() {
     );
     assert_eq!(pair.owned_available(), 100);
 }
+
+// Complete explicit check calls preserve challenge-only wire semantics and commit paid/included requester outcomes once.
+#[test]
+fn explicit_check_factory_completes_paid_and_included_evidence() {
+    use requests::{Ceiling, Challenge, Plan, Reply};
+    for included in [false, true] {
+        let pair = Pair::checks(included);
+        let provider = endpoint(&pair);
+        let requester = endpoint_world(&pair.requester);
+        let cache = Arc::new(
+            cache::PeerCache::new(pair.requester.registry.clone(), Default::default()).unwrap(),
+        );
+        call(&requester, &provider, 1, Plan::Board(cache.clone()))
+            .result
+            .unwrap();
+        let o = pair.provider.family.offering(pair.provider.local);
+        call(
+            &requester,
+            &provider,
+            3,
+            Plan::Definition {
+                cache: cache.clone(),
+                offering: o.id.clone(),
+            },
+        )
+        .result
+        .unwrap();
+        let selection = cache
+            .selection(pair.provider.local, &o.id, &o.service, o.version)
+            .unwrap();
+        let maximum = if included { 0 } else { 3 };
+        let reply = call(
+            &requester,
+            &provider,
+            5,
+            Plan::Check(Box::new(Challenge {
+                selection,
+                cache,
+                challenge: Value::Uint64(0),
+                spending: peer::requester::Spending {
+                    maximum,
+                    payment: Default::default(),
+                },
+                consent: Arc::new(Ceiling(maximum)),
+            })),
+        );
+        let Ok(Reply::Check(key)) = reply.result else {
+            panic!("committed original check")
+        };
+        let r = &pair.requester;
+        let grant = r
+            .services
+            .grant(r.local, services::authority::Action::Observe, 16_777_216)
+            .unwrap();
+        let rc = service_context(&grant);
+        assert_eq!(
+            r.runtime
+                .check_outcome(&rc, key, Some(&Value::Bytes(vec![b'i']))),
+            Ok(services::handler::Check::Pass)
+        );
+        assert_eq!(
+            pair.provider.family.evidence_calls.load(Ordering::SeqCst),
+            1
+        );
+        assert_eq!(pair.provider.family.executions.load(Ordering::SeqCst), 0);
+        assert_eq!(pair.owned_available(), if included { 100 } else { 97 });
+        if included {
+            assert_eq!(
+                r.runtime.check_allowance(&rc, key),
+                Ok(services::checks::Allowance::Consumed)
+            );
+        }
+    }
+}

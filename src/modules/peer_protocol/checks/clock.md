@@ -10,3 +10,9 @@ milliseconds from one local instant with checked conversion. Restarted instances
 have different epochs, so incomparable timing remains ambiguous. Provider response
 deadlines start at observed input.end; requester send/receive stamps delimit the
 whole challenge response interval. Wall clocks do not control these deadlines.
+
+SystemClock.stamp_at maps an original trusted local Instant into this same stable
+epoch instead of sampling a later callback time. Before-epoch/future observations
+are invalid and unrepresentable elapsed milliseconds are limited. This input is
+local composition evidence, never a peer timestamp. Repeated conversion preserves
+the original stamp rather than restarting an interval.

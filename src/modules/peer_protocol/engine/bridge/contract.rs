@@ -38,6 +38,16 @@ impl Scope {
         })
     }
 }
+/// Actual Transport closure observations captured before asynchronous cleanup is scheduled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Closure {
+    /// Actual transport outcome; normal completion alone does not validate application content.
+    pub outcome: StreamOutcome,
+    /// Original monotonic event receipt, not the later worker callback time.
+    pub received_at: std::time::Instant,
+    /// Whether local END was admitted by Transport; false proves that this adapter never submitted it.
+    pub local_end_submitted: bool,
+}
 /// Trusted per-stream application owner, called only on dependency worker threads.
 /// Implementations must validate wire ordering, semantic authority and durable effects
 /// through the public module contracts; framing alone is not an authorized invocation.
@@ -54,6 +64,13 @@ pub trait Handler: Send {
     /// # Errors
     /// Dependency failure terminates this stream without automatic retry.
     fn writable(&mut self, output: &mut Output) -> Result<(), Error>;
+    /// Observe closure with original timing and local END admission state; legacy handlers may use outcome only.
+    /// # Errors
+    /// Delegates to closed by default; specialized reconciliation must preserve uncertain accepted effects.
+    fn closed_observed(&mut self, closure: Closure) -> Result<(), Error> {
+        tracing::trace!("Delivering original Transport closure observations");
+        self.closed(closure.outcome)
+    }
     /// Observe actual Transport closure, including late closure after a dependency call.
     /// # Errors
     /// Preserve unknown accepted effects and owner recovery obligations on failure.

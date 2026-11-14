@@ -7,7 +7,7 @@ pub(super) enum Input {
     Data(Vec<u8>, Instant),
     End,
     Writable,
-    Closed(StreamOutcome),
+    Closed(Closure),
 }
 pub(super) struct State {
     factory: Arc<dyn Factory>,
@@ -83,7 +83,7 @@ impl State {
         }
         if let Input::Closed(outcome) = input {
             return match &mut self.handler {
-                Some(handler) => handler.closed(outcome),
+                Some(handler) => handler.closed_observed(outcome),
                 None => Ok(()),
             };
         }

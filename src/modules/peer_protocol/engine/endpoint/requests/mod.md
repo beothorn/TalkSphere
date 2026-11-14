@@ -12,6 +12,7 @@ Plans are trusted local objects, never peer-deserialized commands:
 - `Board` retrieves metadata into an explicit direct-publisher cache.
 - `Definition` supplies that cache and an exact offering ID after retrieving Board.
 - `Invoke` supplies a sealed selection, local input, spending and separate consent.
+- `Check` supplies only an installed public challenge and separate local check consent.
 - `Balance` queries the authenticated caller's original-issuer balance.
 - `TransferGet` supplies original owner and16-byte lifetime transfer ID.
 - `Transfer` supplies the canonical signed order/public proof and separate fee policy.
@@ -25,7 +26,7 @@ No private signer or clear bearer secret enters a request plan or diagnostic.
 
 `Reply` contains a direct metadata receipt, a Ledger query observation, an opaque
 original-issuer transfer completion, a public redeemed claim or the original local
-Services key for committed ordinary work. Work commitment is distinct from any
+Services key for committed ordinary work or remote check. Work commitment is distinct from any
 outstanding third-party payment. Controls do not blindly overwrite owned credits.
 
 `Completion.scope` identifies the actual original authenticated wire exchange.
@@ -40,3 +41,6 @@ never retries work, changes accounting or removes original durable records.
 Constructor failure returns a local error without an opening control; failures
 after accepted dispatch remain attached to their original operation owners.
 See [ordinary invocation consent](invocation.md) and [direct cache](../cache.md).
+
+[Check requests](check.md) preserve original send and complete-response timestamps
+across worker queues and keep private correctness expectations local.

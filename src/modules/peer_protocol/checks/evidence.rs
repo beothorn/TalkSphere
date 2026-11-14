@@ -288,6 +288,41 @@ impl Receiver {
         services_context: &services::contract::Context<'_>,
         runtime: &Coordinator<P>,
     ) -> Result<Association, Error> {
+        self.finish_observed(context, observed, normal, services_context, runtime, None)
+    }
+    /// Submit evidence using its original trusted complete-response stamp, preserving asynchronous callback delay.
+    /// The stamp must share the local check-send epoch and come from actual Transport completion, never provider JSON.
+    /// # Errors
+    /// The same authority, normal-completion, schema, timing and durable owner failures as finish remain enforced.
+    pub fn finish_at<P: Persistence>(
+        self,
+        context: &Context<'_>,
+        observed: Association,
+        normal: bool,
+        services_context: &services::contract::Context<'_>,
+        runtime: &Coordinator<P>,
+        stamp: services::checks::Stamp,
+    ) -> Result<Association, Error> {
+        tracing::trace!("Completing evidence at the original authenticated response observation");
+        self.finish_observed(
+            context,
+            observed,
+            normal,
+            services_context,
+            runtime,
+            Some(stamp),
+        )
+    }
+    // Keep one validation path for direct-clock callers and timestamp-preserving asynchronous composition.
+    fn finish_observed<P: Persistence>(
+        self,
+        context: &Context<'_>,
+        observed: Association,
+        normal: bool,
+        services_context: &services::contract::Context<'_>,
+        runtime: &Coordinator<P>,
+        stamp: Option<services::checks::Stamp>,
+    ) -> Result<Association, Error> {
         tracing::trace!("Submitting complete normally ended evidence with trusted local timing");
         self.check(context, observed)?;
         if !normal {
@@ -298,7 +333,10 @@ impl Receiver {
             Phase::Marked(receiver) => {
                 let evidence = receiver.finish()?;
                 fixed(&self.invocation.offering.service, &evidence)?;
-                let (_, stamp) = self.clock.mark()?;
+                let stamp = match stamp {
+                    Some(stamp) => stamp,
+                    None => self.clock.mark()?.1,
+                };
                 runtime.receive_check(services_context, peer, evidence, stamp)?;
                 Ok(observed)
             }

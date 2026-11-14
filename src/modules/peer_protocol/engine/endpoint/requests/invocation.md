@@ -24,3 +24,7 @@ reply identifies that original committed key; it does not assert third-party
 payment settlement. Normal explicit accepted failures use the original owner
 abort path; interrupted results preserve holds and uncertainty. No automatic
 retry, input coalescing or fresh financial attempt is introduced.
+
+The explicit Ceiling value also implements the separate CheckConsent contract;
+check schema, entitlement and timing validation remain independent of ordinary
+work, as described in the [check request contract](check.md).

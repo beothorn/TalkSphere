@@ -26,3 +26,9 @@ instant is a trusted local observation, never a peer-supplied timestamp. The
 legacy direct-call marker validates permission/order before consulting its Clock.
 Expired original receipt windows cannot dispatch evidence, even when the worker's
 current call deadline remains valid.
+
+Sender.mark_sent_at records a trusted original local send/drain Stamp after the
+same queue-complete and once-only checks as mark_sent. A worker can therefore
+record the original observation after delay without sampling a new start time.
+The stamp must use the same local epoch as the receive observation. Transport
+queue admission is not remote delivery; composition preserves that distinction.

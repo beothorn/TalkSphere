@@ -37,3 +37,9 @@ positive local knowledge that END was never sent; absence of a reply is insuffic
 Unknown retains the guard. Consuming the sender prevents continuing an interrupted
 sequence after its slot was released. A committed evidence value alone is not proof
 that the complete response was delivered. No new peer acknowledgement is invented.
+
+Receiver.finish_at takes the original trusted complete-response Stamp instead of
+sampling its stored Clock during a later worker callback. It uses the same normal
+completion, authority, original-association, schema, evidence, timing and owner
+commit gates as finish. A peer field never supplies this stamp. Direct-clock
+callers retain finish; both paths share one validation implementation.

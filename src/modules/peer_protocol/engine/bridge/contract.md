@@ -59,3 +59,11 @@ latest instant when the local output queue drained into Transport; it is not a
 remote receipt or physical-write proof. `queue` borrows immutable queue state for
 producer progress/timing checks and grants no acknowledgement mutation. These
 local observations cannot be set through peer JSON.
+
+`Closure` records the actual Transport outcome, original event receipt instant and
+whether this adapter submitted local END into Transport. It is captured before
+worker cleanup, so queue delay does not change check timing. A false submission
+flag proves this adapter never queued END; a true flag alone does not prove a
+physical write or remote receipt. `Handler.closed_observed` receives this richer
+observation and defaults to the existing outcome-only closed callback. Neither
+callback validates application content by itself.

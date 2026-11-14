@@ -15,6 +15,7 @@ struct Seen {
     record_times: Vec<(u32, Instant)>,
     ends: Vec<u32>,
     closed: Vec<(u32, StreamOutcome)>,
+    closed_observations: Vec<(u32, Closure)>,
     threads: Vec<ThreadId>,
 }
 type BlockGate = (mpsc::Sender<()>, Mutex<Option<mpsc::Receiver<()>>>);
@@ -99,6 +100,15 @@ impl Handler for ProbeHandler {
     // This fixed echo has no incremental producer; the adapter still supports drain notifications.
     fn writable(&mut self, _: &mut Output) -> Result<(), Error> {
         Ok(())
+    }
+    // Preserve event timing before delayed worker cleanup, independently of the callback's current clock.
+    fn closed_observed(&mut self, closure: Closure) -> Result<(), Error> {
+        self.seen
+            .lock()
+            .unwrap()
+            .closed_observations
+            .push((self.stream, closure));
+        self.closed(closure.outcome)
     }
     // Retain actual closure observations so tests can distinguish normal completion from uncertainty.
     fn closed(&mut self, outcome: StreamOutcome) -> Result<(), Error> {
@@ -468,9 +478,17 @@ fn blocked_work_preserves_bounds_and_late_closure_without_stalling_siblings() {
             },
         )
         .unwrap();
+    let closed_before = Instant::now();
     release.send(()).unwrap();
     drive(&mut bridge, &mut control, |b, _| b.active() == 1);
     assert!(seen.lock().unwrap().closed.contains(&(1, outcome)));
+    assert!(
+        seen.lock()
+            .unwrap()
+            .closed_observations
+            .iter()
+            .any(|(id, c)| *id == 1 && c.received_at <= closed_before && !c.local_end_submitted)
+    );
     assert!(
         seen.lock()
             .unwrap()
@@ -794,9 +812,13 @@ fn expired_worker_input_never_starts_a_fresh_handler() {
     let state = returned.state.unwrap();
     let returned = state.run(
         1,
-        Input::Closed(StreamOutcome::Cancelled {
-            origin: crate::modules::transport::api::FailureOrigin::Local,
-            reason: CancellationReason::Cancelled,
+        Input::Closed(Closure {
+            outcome: StreamOutcome::Cancelled {
+                origin: crate::modules::transport::api::FailureOrigin::Local,
+                reason: CancellationReason::Cancelled,
+            },
+            received_at: Instant::now(),
+            local_end_submitted: false,
         }),
     );
     assert!(returned.cleanup);

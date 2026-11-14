@@ -31,7 +31,7 @@ mod contract;
 mod events;
 mod execution;
 mod scheduling;
-pub use contract::{Config, Factory, Handler, Output, Scope};
+pub use contract::{Closure, Config, Factory, Handler, Output, Scope};
 use execution::{Input, Returned, State};
 struct Connection {
     context: PeerContext,
@@ -45,7 +45,7 @@ struct Entry {
     flight: Option<Ticket>,
     pending: VecDeque<Input>,
     input_bytes: usize,
-    closed: Option<StreamOutcome>,
+    closed: Option<Closure>,
     closing: bool,
     flight_bytes: usize,
     termination: Option<Stop>,
@@ -282,7 +282,11 @@ fn close(entry: &mut Entry, outcome: StreamOutcome) {
     if entry.closed.is_some() {
         return;
     }
-    entry.closed = Some(outcome);
+    entry.closed = Some(Closure {
+        outcome,
+        received_at: Instant::now(),
+        local_end_submitted: entry.end_sent,
+    });
     if !matches!(outcome, StreamOutcome::Completed) {
         entry.pending.clear();
         entry.input_bytes = entry.flight_bytes;

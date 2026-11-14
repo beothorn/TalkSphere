@@ -2,7 +2,9 @@
 use super::cache::PeerCache;
 use super::*;
 use std::sync::{Mutex, mpsc};
+mod check;
 mod invocation;
+pub use check::{Challenge, CheckConsent};
 pub use invocation::{Ceiling, Consent, Invocation};
 /// Explicit local approval of an independently validated issuer fee; signing is not approval.
 pub trait FeeConsent: Send + Sync {
@@ -28,6 +30,8 @@ impl FeeConsent for ExactFee {
 }
 /// Trusted local intent; this type is never deserialized from peer control messages.
 pub enum Plan {
+    /// Request evidence under the installed check contract, without private expected values.
+    Check(Box<Challenge>),
     /// Invoke selected provided work with independently validated quotes and explicit local spending consent.
     Invoke(Box<Invocation>),
     /// Fetch this peer's Board into a bounded direct-publisher cache.
@@ -65,6 +69,8 @@ pub enum Plan {
 }
 /// Normally ended typed observation; controls never implicitly overwrite owned credit balances.
 pub enum Reply {
+    /// Original locally committed check; private requester outcome is read separately through Services Observe authority.
+    Check(services::contract::OperationKey),
     /// Original requester operation committed locally; read its complete result through Services Observe authority.
     Work(services::contract::OperationKey),
     /// Directly attributed immutable metadata receipt retained by the actual cache.
@@ -155,6 +161,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     }
 }
 enum State {
+    Check(Box<check::State>),
     Invoke(Box<invocation::State>),
     Metadata {
         request: peer::metadata_client::Request,
@@ -178,6 +185,7 @@ struct Session<P: services::persistence::Persistence, L: ledger::persistence::Pe
     completed: mpsc::SyncSender<Completion>,
     failure: Option<peer::failure::Failure>,
     cause: Option<Error>,
+    closed_at: Option<Instant>,
 }
 impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence> Session<P, L> {
     // Construct a purpose-specific request under independent Request authority and original monotonic deadline.
@@ -196,6 +204,10 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
         let context = context(&grant, scope.deadline);
         let a = scope.association(scope.local)?;
         let (state, wire, half_close) = match plan {
+            Plan::Check(plan) => {
+                let (state, wire) = check::State::new(owner.as_ref(), scope, *plan)?;
+                (State::Check(Box::new(state)), wire, false)
+            }
             Plan::Invoke(plan) => {
                 let (state, wire) = invocation::State::new(owner.as_ref(), scope, *plan)?;
                 (State::Invoke(Box::new(state)), wire, false)
@@ -288,6 +300,7 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
             completed,
             failure: None,
             cause: None,
+            closed_at: None,
         })
     }
     // Validate issuer controls before separate local fee consent; never let peer payloads choose local authority.
@@ -295,16 +308,26 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
         tracing::trace!("Validating one original peer control response");
         let Record::Control(bytes) = record else {
             self.exchange.body(Direction::Remote)?;
-            let Some(State::Invoke(state)) = &mut self.state else {
-                return Err(Error::Invalid);
+            return match &mut self.state {
+                Some(State::Invoke(state)) => state.body(self.owner.as_ref(), &record),
+                Some(State::Check(state)) => state.body(self.owner.as_ref(), &record),
+                _ => Err(Error::Invalid),
             };
-            return state.body(self.owner.as_ref(), &record);
         };
         let c = &self.owner.config;
         let message = Message::parse(&bytes, c.limits.nodes)?;
         self.exchange.control(Direction::Remote, message.kind())?;
         if message.kind() == Kind::Failure {
             self.failure = Some(peer::failure::Failure::parse(&message)?);
+        }
+        if let Some(State::Check(state)) = &mut self.state {
+            return state.control(
+                self.owner.as_ref(),
+                &message,
+                &mut self.exchange,
+                output,
+                &mut self.end_requested,
+            );
         }
         if let Some(State::Invoke(state)) = &mut self.state {
             return state.control(
@@ -370,12 +393,23 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
             };
             return state.finish(self.owner.as_ref()).map(Reply::Work);
         }
+        if matches!(self.state, Some(State::Check(_))) {
+            let Some(State::Check(state)) = self.state.take() else {
+                return Err(Error::Conflict);
+            };
+            return state
+                .finish(
+                    self.owner.as_ref(),
+                    self.closed_at.unwrap_or_else(Instant::now),
+                )
+                .map(Reply::Check);
+        }
         let message = self.response.take().ok_or(Error::Invalid)?;
         if message.kind() == Kind::Failure {
             return Err(peer::failure::Failure::parse(&message)?.code.error());
         }
         match self.state.take().ok_or(Error::Conflict)? {
-            State::Invoke(_) => Err(Error::Conflict),
+            State::Invoke(_) | State::Check(_) => Err(Error::Conflict),
             State::Metadata { request, cache } => Ok(Reply::Metadata(cache.apply(
                 request,
                 &context,
@@ -423,10 +457,24 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
     // Independent controls have no streaming producer after their bounded opening/acceptance controls.
     fn writable(&mut self, output: &mut Output) -> Result<(), Error> {
         tracing::trace!("Observing explicit request output admission");
+        if let Some(State::Check(state)) = &mut self.state {
+            state.pump(
+                self.owner.as_ref(),
+                &mut self.exchange,
+                output,
+                &mut self.end_requested,
+            )?;
+        }
         if let Some(State::Invoke(state)) = &mut self.state {
             state.pump(&mut self.exchange, output, &mut self.end_requested)?;
         }
         Ok(())
+    }
+    // Capture the original Transport completion time before any worker cleanup delay can change evidence timing.
+    fn closed_observed(&mut self, closure: peer::engine::bridge::Closure) -> Result<(), Error> {
+        tracing::trace!("Retaining the original complete response observation");
+        self.closed_at = Some(closure.received_at);
+        self.closed(closure.outcome)
     }
     // A dropped caller never triggers retry or accounting changes; successful observations require actual normal closure.
     fn closed(

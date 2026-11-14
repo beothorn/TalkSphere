@@ -19,6 +19,9 @@ pub(in crate::modules::peer_protocol) fn drain(output: &mut Output) -> Vec<Recor
         assert_eq!(consumed, count);
         records.push(record.unwrap());
         output.queue.advance(count).unwrap();
+        if output.queue.pending() == 0 {
+            output.drained_at = Some(Instant::now());
+        }
     }
     records
 }

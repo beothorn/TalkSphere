@@ -189,6 +189,23 @@ impl Sender {
             return Err(Error::Conflict);
         }
         let (_, stamp) = clock.mark()?;
+        self.mark_sent_at(queue, context, runtime, stamp)
+    }
+    /// Record the original local output-drain stamp after all check input records were admitted by Transport.
+    /// The stamp comes from trusted composition in the same stable local clock epoch, never a peer timestamp.
+    /// # Errors
+    /// Premature/duplicate observation, wrong authority or owner persistence failure cannot record a fresh send.
+    pub fn mark_sent_at<P: Persistence>(
+        &mut self,
+        queue: &Outbound,
+        context: &services::contract::Context<'_>,
+        runtime: &Coordinator<P>,
+        stamp: services::checks::Stamp,
+    ) -> Result<(), Error> {
+        tracing::trace!("Retaining original complete challenge send timing across worker delay");
+        if !self.sequence.queued() || queue.pending() != 0 || self.sent {
+            return Err(Error::Conflict);
+        }
         runtime.check_sent(context, self.outgoing.invocation.key, stamp)?;
         self.sent = true;
         Ok(())

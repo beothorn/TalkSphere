@@ -70,7 +70,7 @@ struct Owner<P: services::persistence::Persistence, L: ledger::persistence::Pers
     authorizer: peer::proposal::Authorizer,
     checks: peer::checks::Owner,
     transfers: peer::ledger_control::transfer::Issuer<L>,
-    clock: Arc<dyn peer::checks::clock::Clock>,
+    clock: Arc<peer::checks::clock::SystemClock>,
     epoch: Instant,
 }
 /// Cloneable trusted incoming endpoint factory; accepted work remains in its original durable owners.
