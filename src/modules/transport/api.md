@@ -37,3 +37,10 @@ dependencies and internal errors. `Cancelled` preserves the explicit peer
 CANCELLED code rather than treating it as refusal. Stream outcomes distinguish
 normal completion after both ENDs, cancellation with origin/reason and failure.
 No outcome causes automatic retry or application rollback.
+
+StreamAction.ProtocolError lets only the registered owner terminate one active
+application stream using the existing stream ERROR/PROTOCOL_ERROR encoding. It
+discards that stream's unsent DATA/END, reports a local ProtocolViolation outcome
+and preserves unrelated streams and connection authority. Wrong owner/connection
+or terminal handles cannot queue the error. This adds no Transport frame type and
+does not grant a consumer the ability to close the whole connection.

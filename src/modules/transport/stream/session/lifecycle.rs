@@ -80,6 +80,30 @@ impl Session {
         Ok(())
     }
 
+    /// Terminate one owned active application stream with existing PROTOCOL_ERROR, preserving unrelated streams.
+    /// # Errors
+    /// Foreign owner/connection, closed/terminal streams and exhausted response capacity fail without granting connection-wide authority.
+    pub fn protocol_error(
+        &mut self,
+        owner: &StreamOwner,
+        stream: &StreamHandle,
+    ) -> Result<(), SessionError> {
+        tracing::trace!(
+            function = "Session::protocol_error",
+            "Reporting an application protocol violation on one stream"
+        );
+        if self.closed {
+            return Err(SessionError::Closed);
+        }
+        stream
+            .authorize(self.handle.id(), owner)
+            .map_err(SessionError::Authority)?;
+        let id = stream.wire_id().get();
+        if !self.streams.contains_key(&id) {
+            return Err(SessionError::Protocol);
+        }
+        self.fail_stream(id, ErrorCode::ProtocolError, FailureCode::ProtocolViolation)
+    }
     /// Report a fully written frame; normal completion waits for local END delivery.
     pub fn sent(&mut self, kind: FrameType, id: u32) {
         tracing::trace!(

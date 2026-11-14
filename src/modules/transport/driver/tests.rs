@@ -160,14 +160,16 @@ fn outgoing_control_contract_through_authentication_and_close() {
     else {
         panic!("missing stream");
     };
-    assert!(matches!(
-        driver.submit(Request::Stream {
-            owner: super::super::handles::StreamOwner::new(),
-            stream: stream.clone(),
-            action: StreamAction::Data(vec![1])
-        }),
-        Err(TransportError::WrongStreamOwner)
-    ));
+    for action in [StreamAction::Data(vec![1]), StreamAction::ProtocolError] {
+        assert!(matches!(
+            driver.submit(Request::Stream {
+                owner: super::super::handles::StreamOwner::new(),
+                stream: stream.clone(),
+                action
+            }),
+            Err(TransportError::WrongStreamOwner)
+        ));
+    }
     for action in [
         StreamAction::Data(vec![1]),
         StreamAction::End,
@@ -181,6 +183,23 @@ fn outgoing_control_contract_through_authentication_and_close() {
             })
             .unwrap();
     }
+    // A fresh owned stream can report a protocol error without closing its authenticated connection.
+    let Accepted::Stream(bad) = driver
+        .submit(Request::OpenStream {
+            connection: connection.clone(),
+            owner: owner.clone(),
+        })
+        .unwrap()
+    else {
+        panic!("missing stream")
+    };
+    driver
+        .submit(Request::Stream {
+            owner: owner.clone(),
+            stream: bad,
+            action: StreamAction::ProtocolError,
+        })
+        .unwrap();
     driver
         .submit(Request::Ping {
             connection: connection.clone(),

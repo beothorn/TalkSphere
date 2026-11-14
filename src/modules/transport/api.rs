@@ -86,6 +86,8 @@ pub enum StreamAction {
     Data(Vec<u8>),
     End,
     Cancel(CancellationReason),
+    /// Terminate only this owned stream with the existing PROTOCOL_ERROR wire ERROR.
+    ProtocolError,
 }
 
 /// Control port requests; identity and default limits come from composition.

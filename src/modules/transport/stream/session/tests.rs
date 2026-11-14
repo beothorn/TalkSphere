@@ -876,3 +876,38 @@ fn drain_respects_queued_open_barrier() {
         vec![FrameType::Open, FrameType::Open, FrameType::GoAway]
     );
 }
+// Application protocol failure discards only target DATA/END, emits stream ERROR and preserves unrelated live work and ownership checks.
+#[test]
+fn owned_application_protocol_error_is_stream_scoped() {
+    let (mut state, registry, owner) = setup();
+    let bad = state.open(&registry, &owner).unwrap();
+    let healthy = state.open(&registry, &owner).unwrap();
+    state.send(&owner, &bad, vec![1]).unwrap();
+    state.end(&owner, &bad).unwrap();
+    assert_eq!(
+        state.protocol_error(&StreamOwner::new(), &bad),
+        Err(SessionError::Authority(
+            crate::modules::transport::TransportError::WrongStreamOwner
+        ))
+    );
+    state.protocol_error(&owner, &bad).unwrap();
+    assert!(!state.is_closed());
+    state.send(&owner, &healthy, vec![2]).unwrap();
+    assert_eq!(
+        state.protocol_error(&owner, &bad),
+        Err(SessionError::Protocol)
+    );
+    let frames: Vec<_> = state
+        .outbound
+        .iter()
+        .filter(|f| f.header().stream_id() == bad.wire_id().get())
+        .collect();
+    assert_eq!(frames.len(), 2);
+    assert_eq!(frames[0].header().frame_type(), FrameType::Open);
+    assert_eq!(frames[1].header().frame_type(), FrameType::Error);
+    assert_eq!(
+        ErrorPayload::decode(frames[1].payload()).unwrap().code(),
+        ErrorCode::ProtocolError
+    );
+    assert!(state.events.iter().any(|e|matches!(e,Event::StreamClosed {stream,outcome:StreamOutcome::Failed(Failure {code:FailureCode::ProtocolViolation,origin:FailureOrigin::Local})} if stream==&bad)));
+}

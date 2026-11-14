@@ -113,6 +113,7 @@ impl<S: SocketProvider, T: Clock, I: Identity, C: Cryptography> Driver<S, T, I, 
                     StreamAction::Data(bytes) => session.send(&owner, &stream, bytes),
                     StreamAction::End => session.end(&owner, &stream),
                     StreamAction::Cancel(reason) => session.cancel(&owner, &stream, reason),
+                    StreamAction::ProtocolError => session.protocol_error(&owner, &stream),
                 }
                 .map_err(session_error)?;
                 Ok(Accepted::Queued)
