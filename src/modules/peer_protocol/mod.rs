@@ -204,3 +204,10 @@ mod wanted_tests;
 #[cfg(test)]
 #[path = "tests/checks.rs"]
 mod check_tests;
+
+/// Explicit family-authorized cached response binding.
+pub mod replay;
+
+#[cfg(test)]
+#[path = "tests/replay.rs"]
+mod replay_tests;

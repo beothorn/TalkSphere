@@ -11,14 +11,30 @@ use crate::modules::{
         message::Message,
         value,
     },
-    services::{self, handler::Requester},
+    services,
 };
 use std::{
     collections::BTreeMap,
     sync::Arc,
     time::{Duration, Instant},
 };
-pub(in crate::modules::peer_protocol) struct World {
+pub(in crate::modules::peer_protocol) trait Family:
+    services::handler::Requester + services::handler::Provider
+{
+    // Trusted fixture offerings are explicit metadata, not installed by incoming protocol documents.
+    fn offering(&self, issuer: IdentityId) -> board::offering::Offering;
+    // Custom fixture families reject all standard contracts unless a test explicitly supplies a pinned catalogue.
+    fn standards() -> Arc<dyn services::registry::Standards> {
+        Arc::new(services::registry::NoStandards)
+    }
+}
+impl Family for Echo {
+    // Ordinary and evidence Echo fixtures retain the same independently defined custom contract.
+    fn offering(&self, issuer: IdentityId) -> board::offering::Offering {
+        Echo::offering(self, issuer)
+    }
+}
+pub(in crate::modules::peer_protocol) struct World<F = Echo> {
     pub local: IdentityId,
     pub requester: IdentityId,
     pub authority: Arc<Authority>,
@@ -28,7 +44,7 @@ pub(in crate::modules::peer_protocol) struct World {
     pub board_authority: Arc<board::authority::Authority>,
     pub ledger: Arc<ledger::state::Ledger<ledger::persistence::Memory>>,
     pub ledger_authority: Arc<ledger::authority::Authority>,
-    pub family: Arc<Echo>,
+    pub family: Arc<F>,
     pub gate: Arc<dyn Gate>,
     pub runtime: Arc<services::runtime::Coordinator<services::persistence::Memory>>,
 }
@@ -80,8 +96,10 @@ impl World {
     fn with_role(bytes: bool, requester_side: bool) -> Self {
         Self::build(requester_side, Arc::new(Echo::new(bytes)))
     }
+}
+impl<F: Family + 'static> World<F> {
     // All fixture module owners use public grants and retain independent financial/journal state.
-    fn build(requester_side: bool, family: Arc<Echo>) -> Self {
+    pub(in crate::modules::peer_protocol) fn build(requester_side: bool, family: Arc<F>) -> Self {
         let local = IdentityId([if requester_side { 1 } else { 2 }; 32]);
         let requester = IdentityId([if requester_side { 2 } else { 1 }; 32]);
         let authority = Arc::new(Authority::new());
@@ -91,7 +109,7 @@ impl World {
                 local,
                 services.clone(),
                 Default::default(),
-                Arc::new(services::registry::NoStandards),
+                F::standards(),
             )
             .unwrap(),
         );
@@ -114,14 +132,12 @@ impl World {
         )
         .unwrap();
         let offering = family.offering(local);
+        let offering_id = offering.id.clone();
         let raw=serde_json::json!({"version":1,"providedServices":[offering.source],"wantedServices":[]}).to_string();
         let prepared = board::prepared::Prepared::new(
             local,
             raw.as_bytes(),
-            &BTreeMap::from([(
-                "fixture".into(),
-                family.definition().document.bytes().to_vec(),
-            )]),
+            &BTreeMap::from([(offering_id, family.definition().document.bytes().to_vec())]),
             Default::default(),
             registry.as_ref(),
         )
@@ -264,7 +280,7 @@ impl World {
         let metadata = value::encode(input, Limits::default(), false)
             .unwrap()
             .metadata;
-        let raw=serde_json::json!({"type":"propose","offeringId":"fixture","publisherId":text::format(self.local),"service":o.service,"serviceVersion":1,"mode":"invoke","input":metadata,"creditIssuer":text::format(self.local),"maximumPrice":"7"}).to_string();
+        let raw=serde_json::json!({"type":"propose","offeringId":o.id,"publisherId":text::format(self.local),"service":o.service,"serviceVersion":1,"mode":"invoke","input":metadata,"creditIssuer":text::format(self.local),"maximumPrice":"7"}).to_string();
         (
             association,
             selected,

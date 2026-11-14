@@ -28,9 +28,9 @@ impl Entropy for Random {
             .map_err(|_| Error::Unavailable)
     }
 }
-pub(in crate::modules::peer_protocol) struct Pair {
-    pub provider: World,
-    pub requester: World,
+pub(in crate::modules::peer_protocol) struct Pair<F = super::family::Echo> {
+    pub provider: World<F>,
+    pub requester: World<F>,
     pub issuer: Issuer,
     pub client: Client,
 }
@@ -48,8 +48,13 @@ impl Pair {
             World::checks(true, included),
         )
     }
+}
+impl<F: super::world::Family + 'static> Pair<F> {
     // Shared trusted setup is independent of whether remote checks were explicitly installed.
-    fn from_worlds(provider: World, requester: World) -> Self {
+    pub(in crate::modules::peer_protocol) fn from_worlds(
+        provider: World<F>,
+        requester: World<F>,
+    ) -> Self {
         let issuer = Issuer::new(
             provider.local,
             provider.authority.clone(),

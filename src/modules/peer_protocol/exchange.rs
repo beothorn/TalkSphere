@@ -61,6 +61,7 @@ pub struct Exchange {
     accepted: bool,
     closed: bool,
     poisoned: bool,
+    cached: bool,
 }
 impl Exchange {
     /// Start a fresh exchange with its trusted Transport stream opener direction.
@@ -75,6 +76,7 @@ impl Exchange {
             accepted: false,
             closed: false,
             poisoned: false,
+            cached: false,
         }
     }
     /// Observe a structurally validated control; this ordering model does not prove its semantic authorization.
@@ -157,6 +159,39 @@ impl Exchange {
         self.phase = next;
         Ok(())
     }
+    /// Permit local cached result only with original-owner family-approved committed response proof.
+    /// # Errors
+    /// Unrelated early results and wrong sender/order still poison this stream.
+    pub fn cached_local(
+        &mut self,
+        _proof: &crate::modules::services::replay::Cached,
+    ) -> Result<(), Error> {
+        tracing::trace!("Advancing an explicitly validated local cached result");
+        self.cached_result(Direction::Local)
+    }
+    /// Permit remote cached result only for an explicit requester-authorized original family retry.
+    /// # Errors
+    /// Missing matching proposal or wrong result direction remains a stream protocol error.
+    pub fn cached_remote(
+        &mut self,
+        _proof: &crate::modules::services::replay::Retry,
+    ) -> Result<(), Error> {
+        tracing::trace!("Advancing an explicitly authorized remote cached result");
+        self.cached_result(Direction::Remote)
+    }
+    // This exception requires opaque semantic proof at its public entry points, never a boolean decoded from JSON.
+    fn cached_result(&mut self, direction: Direction) -> Result<(), Error> {
+        tracing::trace!("Checking the narrow cached-result ordering exception");
+        if self.live(direction).is_err() || self.phase != Phase::Quote || direction != self.provider
+        {
+            self.poisoned = true;
+            return Err(Error::Invalid);
+        }
+        self.cached = true;
+        self.accepted = true;
+        self.phase = Phase::Output;
+        Ok(())
+    }
     /// Check whether a binary record is legal here; the owning Receiver additionally verifies every declared byte.
     /// # Errors
     /// Bodies outside accepted input/output phases poison this stream.
@@ -193,6 +228,7 @@ impl Exchange {
         let allowed = if direction == self.requester {
             match self.phase {
                 Phase::Reply(_) => true,
+                Phase::Output if self.cached => true,
                 Phase::InputEnd => {
                     self.phase = Phase::Result;
                     true

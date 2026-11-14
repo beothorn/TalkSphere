@@ -115,3 +115,6 @@ mod lifecycle_tests;
 mod privacy_tests;
 
 pub mod input;
+
+/// Explicit family-authorized cached retransmission contracts.
+pub mod replay;

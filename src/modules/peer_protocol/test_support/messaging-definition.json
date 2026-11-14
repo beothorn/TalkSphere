@@ -1,0 +1,89 @@
+{
+  "id": "messaging-standard",
+  "service": "cr2se.messaging",
+  "serviceVersion": 1,
+  "description": "Retain signed messages until recipient recovery or expiration.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Operation: store, discover, recover, status, renew, or remove." },
+      "placementId": { "type": "bytes", "description": "Provider-generated 32-byte placement identifier.", "optional": true },
+      "messageId": { "type": "bytes", "description": "Sender-generated 32-byte message identifier.", "optional": true },
+      "senderId": { "type": "bytes", "description": "Sender CR2SE ID.", "optional": true },
+      "recipientId": { "type": "bytes", "description": "Recipient CR2SE ID.", "optional": true },
+      "senderCreatedAt": { "type": "uint64", "description": "Sender-claimed creation time in Unix seconds.", "optional": true },
+      "payloadEncoding": { "type": "string", "description": "Payload representation identifier.", "optional": true },
+      "payloadSize": { "type": "uint64", "description": "Exact payload size in bytes.", "optional": true },
+      "payloadHash": { "type": "bytes", "description": "32-byte SHA-256 payload hash.", "optional": true },
+      "senderPublicKey": { "type": "bytes", "description": "Sender's 32-byte Ed25519 public key.", "optional": true },
+      "senderSignature": { "type": "bytes", "description": "Sender's 64-byte message signature.", "optional": true },
+      "payload": { "type": "bytes", "description": "Exact message payload bytes.", "optional": true },
+      "retentionSeconds": { "type": "uint64", "description": "Requested initial retention in whole seconds.", "optional": true },
+      "afterAcceptedAt": { "type": "uint64", "description": "Exclusive discovery cursor acceptance time.", "optional": true },
+      "afterPlacementId": { "type": "bytes", "description": "Exclusive discovery cursor placement ID.", "optional": true },
+      "limit": { "type": "uint32", "description": "Maximum discovery results requested.", "optional": true },
+      "recoveryId": { "type": "bytes", "description": "Recipient-generated 32-byte recovery replay identifier.", "optional": true },
+      "recipientPublicKey": { "type": "bytes", "description": "Recipient's 32-byte Ed25519 public key.", "optional": true },
+      "recipientSignature": { "type": "bytes", "description": "Recipient's 64-byte recovery authorization signature.", "optional": true },
+      "expectedExpiresAt": { "type": "uint64", "description": "Placement expiration expected by the requester.", "optional": true },
+      "additionalSeconds": { "type": "uint64", "description": "Retention seconds added by renewal.", "optional": true },
+      "removalId": { "type": "bytes", "description": "Sender-generated 32-byte removal replay identifier.", "optional": true },
+      "minimumReleaseCredits": { "type": "uint64", "description": "Smallest early-release credit amount the sender accepts.", "optional": true }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "operation": { "type": "string", "description": "Completed Messaging operation." },
+      "placementId": { "type": "bytes", "description": "Provider-generated 32-byte placement identifier.", "optional": true },
+      "messageId": { "type": "bytes", "description": "Sender-generated 32-byte message identifier.", "optional": true },
+      "senderId": { "type": "bytes", "description": "Sender CR2SE ID.", "optional": true },
+      "recipientId": { "type": "bytes", "description": "Recipient CR2SE ID.", "optional": true },
+      "senderCreatedAt": { "type": "uint64", "description": "Sender-claimed creation time in Unix seconds.", "optional": true },
+      "payloadEncoding": { "type": "string", "description": "Payload representation identifier.", "optional": true },
+      "payloadSize": { "type": "uint64", "description": "Exact payload size in bytes.", "optional": true },
+      "payloadHash": { "type": "bytes", "description": "32-byte SHA-256 payload hash.", "optional": true },
+      "senderPublicKey": { "type": "bytes", "description": "Sender's 32-byte Ed25519 public key.", "optional": true },
+      "senderSignature": { "type": "bytes", "description": "Sender's 64-byte message signature.", "optional": true },
+      "payload": { "type": "bytes", "description": "Exact recovered payload bytes.", "optional": true },
+      "acceptedAt": { "type": "uint64", "description": "Provider acceptance time in Unix seconds.", "optional": true },
+      "previousExpiresAt": { "type": "uint64", "description": "Expiration before renewal.", "optional": true },
+      "expiresAt": { "type": "uint64", "description": "Current placement expiration in Unix seconds.", "optional": true },
+      "state": { "type": "string", "description": "Placement state: pending or recovered.", "optional": true },
+      "messages": { "type": "array", "description": "Discovered pending message metadata.", "items": { "type": "object", "fields": {
+        "placementId": { "type": "bytes", "description": "Provider-generated 32-byte placement identifier." },
+        "messageId": { "type": "bytes", "description": "Sender-generated 32-byte message identifier." },
+        "senderId": { "type": "bytes", "description": "Sender CR2SE ID." },
+        "senderCreatedAt": { "type": "uint64", "description": "Sender-claimed creation time in Unix seconds." },
+        "payloadEncoding": { "type": "string", "description": "Payload representation identifier." },
+        "payloadSize": { "type": "uint64", "description": "Exact payload size in bytes." },
+        "payloadHash": { "type": "bytes", "description": "32-byte SHA-256 payload hash." },
+        "acceptedAt": { "type": "uint64", "description": "Provider acceptance time in Unix seconds." },
+        "expiresAt": { "type": "uint64", "description": "Placement expiration in Unix seconds." }
+      } }, "optional": true },
+      "more": { "type": "bool", "description": "Whether another discovery result existed when the page was produced.", "optional": true },
+      "recoveryId": { "type": "bytes", "description": "Recipient-generated 32-byte recovery identifier.", "optional": true },
+      "recoveredAt": { "type": "uint64", "description": "Provider recovery time in Unix seconds.", "optional": true },
+      "recipientPublicKey": { "type": "bytes", "description": "Recipient's 32-byte Ed25519 public key.", "optional": true },
+      "recipientSignature": { "type": "bytes", "description": "Recipient's 64-byte recovery authorization signature.", "optional": true },
+      "providerSignature": { "type": "bytes", "description": "Provider's 64-byte recovery receipt signature.", "optional": true },
+      "removalId": { "type": "bytes", "description": "Sender-generated 32-byte removal identifier.", "optional": true },
+      "removed": { "type": "bool", "description": "True after successful early removal.", "optional": true },
+      "releaseCredits": { "type": "uint64", "description": "Provider-issued credits returned for early release.", "optional": true },
+      "price": { "type": "uint64", "description": "Credits charged for the successful operation.", "optional": true }
+    }
+  },
+  "check": {
+    "description": "Challenge a pending placement for one sender-selected payload byte.",
+    "input": { "type": "object", "fields": {
+      "placementId": { "type": "bytes", "description": "Provider-generated 32-byte pending placement identifier." },
+      "offset": { "type": "uint64", "description": "Zero-based challenged payload offset." }
+    } },
+    "output": { "type": "object", "fields": {
+      "outcome": { "type": "string", "description": "Requester-computed result: pass, fail, or inconclusive." },
+      "placementId": { "type": "bytes", "description": "Placement identifier that was checked." },
+      "offset": { "type": "uint64", "description": "Challenged payload offset." },
+      "value": { "type": "bytes", "description": "One-byte provider evidence when returned.", "optional": true }
+    } }
+  }
+}

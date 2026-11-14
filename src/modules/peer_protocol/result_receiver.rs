@@ -17,6 +17,10 @@ use crate::modules::services::{
     value::Budget,
 };
 use std::{sync::Arc, time::Instant};
+enum Sink {
+    Ordinary,
+    Replay(Box<crate::modules::services::replay::Retry>),
+}
 enum Phase {
     Metadata,
     Bodies(Receiver),
@@ -33,6 +37,7 @@ pub struct ResultReceiver {
     limits: Limits,
     phase: Phase,
     price: Option<u64>,
+    sink: Sink,
 }
 impl ResultReceiver {
     /// Bind one original reserved requester attempt before receiving provider output.
@@ -59,6 +64,40 @@ impl ResultReceiver {
             limits,
             phase: Phase::Metadata,
             price: None,
+            sink: Sink::Ordinary,
+        })
+    }
+    /// Bind an explicit family retry to its original invocation while authenticating the new provider stream.
+    /// # Errors
+    /// Wrong purpose, peer or finite limits cannot create a provisional retry result receiver.
+    pub fn for_retry(
+        context: &Context<'_>,
+        authority: Arc<Authority>,
+        retry: crate::modules::services::replay::Retry,
+        limits: Limits,
+    ) -> Result<Self, Error> {
+        tracing::trace!("Starting original-key result reception on an explicit family retry");
+        let p = retry.peer();
+        context.check(&authority, p.local, Action::Invoke, 0)?;
+        limits.validate()?;
+        let association = Association {
+            local: p.local,
+            peer: p.remote,
+            operation: super::contract::OperationKey {
+                requester: p.key.requester,
+                connection: p.key.connection,
+                stream: p.key.stream,
+            },
+        };
+        Ok(Self {
+            authority,
+            association,
+            invocation: retry.invocation().clone(),
+            deadline: context.deadline,
+            limits,
+            phase: Phase::Metadata,
+            price: None,
+            sink: Sink::Replay(Box::new(retry)),
         })
     }
     /// Receive result metadata once, then require complete bodies before result.end; no result escapes provisionally.
@@ -151,6 +190,10 @@ impl ResultReceiver {
         }
         if let Phase::Failure(failure) = self.phase {
             let peer = super::acceptance::peer(self.association);
+            // A retry failure cannot contradict or release the original accepted operation.
+            if matches!(self.sink, Sink::Replay(_)) {
+                return Err(failure.code.error());
+            }
             runtime.decline(services_context, peer)?;
             runtime.abort(services_context, peer.key)?;
             return Err(failure.code.error());
@@ -171,15 +214,24 @@ impl ResultReceiver {
             },
             self.limits.state_bytes,
         )?;
-        runtime.receive(
-            services_context,
-            super::acceptance::peer(self.association),
-            RemoteResult {
-                output,
-                bytes: Blob::new(bytes, self.limits.state_bytes)?,
-                price,
-            },
-        )?;
+        let result = RemoteResult {
+            output,
+            bytes: Blob::new(bytes, self.limits.state_bytes)?,
+            price,
+        };
+        match self.sink {
+            Sink::Ordinary => runtime.receive(
+                services_context,
+                super::acceptance::peer(self.association),
+                result,
+            )?,
+            Sink::Replay(retry) => runtime.receive_replay(
+                services_context,
+                &retry,
+                super::acceptance::peer(self.association),
+                result,
+            )?,
+        }
         Ok(self.association)
     }
     /// Inspect only a provisional diagnostic failure; accounting waits for normal completion.

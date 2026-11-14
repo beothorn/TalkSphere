@@ -73,3 +73,12 @@ content and delegates to assess; unresolved references return Unsupported. Expli
 family overrides may price/validate declared properties before bodies, but cannot
 execute, charge or fabricate completed content. Existing implementations remain
 valid through these conservative defaults.
+
+Requester.cached_retry is an explicit optional family permission, defaulting to
+None. It returns a purpose/placement/recovery-or-removal identity only for a
+well-formed known request, without checking new prices/balances. Provider's separate
+allow_cached_retry validates original cached ownership/retention for the same
+caller; it defaults to false. Neither callback installs capabilities or executes
+work. Calls must be bounded and must not reenter their coordinator. The narrow
+Messaging retry coordinator still independently compares every original field and
+requires retained commitment before returning output.

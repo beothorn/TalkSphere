@@ -32,3 +32,8 @@ decision. finish applies it through the original coordinator only after normal
 completion, acknowledging abort before releasing uncommitted capacity. Abnormal
 completion preserves Unknown even if a failure control was received. A failure
 after result.end poisons the exchange and cannot overwrite committed work.
+
+for_retry consumes an explicit Services Retry and binds its approved new stream to
+the original accepted invocation. Complete normal results use receive_replay inside
+the original coordinator; no adapter forges old Transport provenance. Failure or
+interruption on a retry never releases or contradicts the original obligation.

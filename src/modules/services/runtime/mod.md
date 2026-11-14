@@ -120,3 +120,8 @@ New paid admission refuses an operation key already present in Ledger without ma
 local_identity exposes only the configured local coordinator owner. Composition
 can reject accidental cross-owner routing before attempting operation decisions;
 this observation grants no payload, recovery or accounting authority.
+
+Each open coordinator also creates an opaque process-local domain for explicit
+family retry permits. The domain is not persisted or transmitted. A permit from
+another coordinator instance is denied even when public node IDs and keys match;
+recovery requires a new permit from original durable history.

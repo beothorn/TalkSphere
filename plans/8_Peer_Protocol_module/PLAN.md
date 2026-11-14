@@ -33,7 +33,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **25.** Implement wanted-offering role reversal.
 - [x] **26.** Bind paid checks to challenge-only evidence.
 - [x] **27.** Reconcile included allowances with complete evidence delivery.
-- [ ] **28.** Add explicit family-authorized cached retry handling.
+- [x] **28.** Add explicit family-authorized cached retry handling.
 - [ ] **29.** Bind authenticated balance and transfer-query controls.
 - [ ] **30.** Implement transfer quote and acceptance exchanges.
 - [ ] **31.** Implement bounded claim-redemption exchanges.
@@ -307,3 +307,5 @@ Step25 completed: installed prospective providers create owner-scoped wanted inv
 Step26 completed: challenge-only paid checks bind exact quotes, immutable mode/price/response terms, two-sided reservations, terminal gates and trusted timing beginning at input.end. Evidence schemas exclude provider outcomes; exact standard identifier/sample widths and actual custom-resource checks verify paid wrong evidence, private expectations, malformed/late/missing evidence, local-only refusal and entropy failure. Unresolved pre-quote ownership keys are explicitly unsupported; included consumption remains step27. Issue10 still limits global response-loss charging claims. Required checks pass; production coverage15876/16920 =93.83%.
 
 Step27 completed: included allowances now distinguish in-flight reservation, complete consumption, definitive incomplete/acknowledged-abort release and uncertain guards. Complete requester evidence consumes only after normal terminal reception; provider commitment alone does not. Wire-owner delivery observations consume sender capabilities, and concurrency/restart/lost-write tests retain original scope limits and conservative legacy guards without new receipts. Paid issue10 remains separate. Required checks pass; production coverage16005/17044 =93.90%.
+
+Step28 completed: explicit family-approved Messaging recovery/removal retries match original caller, placement/ID and every defined request/control field before current publication, prices or balances. Opaque cached/explicit-retry capabilities permit the narrow early-result ordering exception and original-key result application without new work, holds or charges. Pinned full-schema narrow fixtures verify detached cached output, drain/removal, depleted funds, conflicting fields, unrelated callers and unknown outcomes; they do not implement Messaging signatures/resources. Upstream recheck on2026-11-14 found no protocol changes. Required checks pass; production coverage16443/17477 =94.08%.

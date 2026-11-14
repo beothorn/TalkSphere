@@ -117,6 +117,13 @@ pub trait Requester: super::validation::Semantics {
     /// # Errors
     /// Reject unsupported pricing and invalid or overflowing terms.
     fn terms(&self, offering: &Offering) -> Result<(), Error>;
+    /// Explicitly identify a service-defined recovery/removal replay; ordinary contracts default to no cached retry.
+    /// # Errors
+    /// Malformed known replay fields fail without consulting new prices or balances.
+    fn cached_retry(&self, _input: &Value) -> Result<Option<super::replay::Id>, Error> {
+        tracing::trace!("Refusing absent family cached-retry permission");
+        Ok(None)
+    }
     /// Calculate exact price from validated offering terms and provider factors without performing work.
     /// The default supports only positive fixed prices; calculated models require installed family rules.
     /// # Errors
@@ -228,6 +235,19 @@ pub trait Requester: super::validation::Semantics {
 }
 /// Provider port supplied only by authorized composition; no sockets, Board tables or Ledger access.
 pub trait Provider: Send + Sync {
+    /// Authorize cached retransmission of original committed family work for the same authenticated caller.
+    /// Inspect original cached ownership/retention only, never new prices, balances or pending-state eligibility.
+    /// # Errors
+    /// Family refusal/unavailability must not manufacture cached success; the default has no such capability.
+    fn allow_cached_retry(
+        &self,
+        _original: &Invocation,
+        _peer: Peer,
+        _input: &Value,
+    ) -> Result<bool, Error> {
+        tracing::trace!("Refusing absent provider cached-retry capability");
+        Ok(false)
+    }
     /// Assess bounded metadata, authorization and capacity; never execute or settle.
     /// # Errors
     /// Refuse unsupported/invalid/capacity-limited work before acceptance.

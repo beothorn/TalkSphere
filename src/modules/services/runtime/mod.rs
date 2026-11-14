@@ -60,6 +60,7 @@ struct State {
 }
 /// Single-writer recoverable coordinator over a real accounting participant and installed family ports.
 pub struct Coordinator<P: Persistence> {
+    domain: Arc<()>,
     config: Config,
     journal: Journal<P>,
     accounting: Arc<dyn Accounting>,
@@ -159,6 +160,7 @@ impl<P: Persistence> Coordinator<P> {
             pins.insert(*key, pin);
         }
         Ok(Self {
+            domain: Arc::new(()),
             config,
             journal,
             accounting,
@@ -194,3 +196,5 @@ mod inspection;
 mod payment;
 mod recovery;
 mod settlement;
+
+mod replay;

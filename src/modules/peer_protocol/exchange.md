@@ -27,3 +27,12 @@ callers must consult authoritative owner state. Local grants, semantic fields,
 exact quote consent, body completeness and participant commitment are separate
 mandatory checks before any effect. This pure ordering model performs no I/O,
 Ledger mutation, code installation, work retry or application dispatch itself.
+
+cached_local accepts original-owner Cached proof and cached_remote accepts an
+explicit requester Retry. These are the only early-result exception: matching
+propose must already be observed, the result sender must be provider, and no new
+quote/accept/input body is introduced. The transition itself observes result;
+callers must not apply an additional ordinary result transition. Requester END is
+then permitted during cached output. Missing bodies/markers or interruption still
+cannot become success. Composition must correlate proof to the actual authenticated
+association before invoking this ordering-only helper.
