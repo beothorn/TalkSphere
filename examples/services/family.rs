@@ -1,4 +1,4 @@
-//! Explicit volatile custom text handler used only by the local Services example.
+//! Explicit volatile custom text handler shared by the local Services and authenticated Peer Protocol examples.
 use std::{collections::BTreeMap, sync::Mutex};
 use talksphere::modules::{
     board::{
@@ -87,7 +87,7 @@ impl Requester for Echo {
         })
     }
 }
-// Volatile token binds the original owner/key and effect; it never authorizes production networking.
+// A volatile participant token binds the original owner/key and effect; it is never network authentication.
 fn token(key: OperationKey, effect: &Blob) -> Result<Blob, Error> {
     use sha2::{Digest, Sha256};
     tracing::trace!("Binding local example effect token");

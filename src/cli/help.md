@@ -16,3 +16,8 @@ or inconsistent runtime credentials, unsupported platforms and runtime failures 
 start networking. The application version is not a conformance declaration.
 
 The services topic describes the explicitly installed volatile local custom-handler example, finite library defaults, separate protected-store recovery and exit statuses. The overview distinguishes implemented Services library coordination from pending network application protocols.
+
+The peer-protocol topic explains the explicit authenticated two-node example,
+overview/detailed example help, temporary protected identities, volatile custom
+service/accounting scope, separate framing/admission/owner configuration and
+recovery boundaries. It does not enable Peer Protocol in default serve.

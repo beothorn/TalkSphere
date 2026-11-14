@@ -21,7 +21,7 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("serve"));
     assert!(overview.contains("--version"));
     assert!(overview.contains(
-        "authenticated Transport server available on Linux; network application protocols pending"
+        "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available"
     ));
     for arguments in [&[][..], &["-h"], &["help"]] {
         assert_eq!(successful_stdout(arguments), overview);
@@ -116,6 +116,26 @@ fn services_help_explains_scope_and_recovery() {
         "volatile",
         "fresh grants",
         "no application protocol",
+    ] {
+        assert!(details.contains(text), "{details}");
+    }
+}
+
+// Peer Protocol remains discoverable without creating keys, stores, grants or network listeners.
+#[test]
+fn peer_protocol_help_explains_explicit_nodes_and_configuration() {
+    let overview = successful_stdout(&["--help"]);
+    assert!(overview.contains("help peer-protocol"));
+    let details = successful_stdout(&["help", "peer-protocol"]);
+    for text in [
+        "cargo run --locked --example peer -- run",
+        "help run",
+        "volatile",
+        "no application protocol",
+        "bounded workers",
+        "RUST_LOG",
+        "RUNTIME.md",
+        "status 0",
     ] {
         assert!(details.contains(text), "{details}");
     }

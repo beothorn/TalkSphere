@@ -9,6 +9,7 @@ pub(super) enum Topic {
     Board,
     Ledger,
     Services,
+    PeerProtocol,
     ServerOptions,
     Logging,
 }
@@ -24,6 +25,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::PeerProtocol,
+        names: &["peer-protocol"],
+        label: "help peer-protocol",
+        summary: "Exercise authenticated custom work and inspect Peer Protocol configuration.",
+        details: "Usage: talksphere help peer-protocol | cargo run --locked --example peer -- run\n\nThe explicit two-node example uses real protected Identity, Cryptography, TCP, Board, Services and Ledger; price=7 and both remaining balances=93. Service/accounting state is volatile and cannot resume. It installs only a custom text handler; paid Storage and optional families remain separate modules. Default serve still registers no application protocol.\nExample overview: cargo run --locked --example peer -- --help; detailed configuration: cargo run --locked --example peer -- help run. No arguments show example help successfully. run is explicit permission to create temporary protected credentials and ephemeral loopback listeners; no operator store is opened.\nLibrary configuration separates Bridge framing/workers, Endpoint aggregate admission, independently installed handlers and owner authorities; absent claim keys, checks or wanted policy return unsupported. Synchronous dependencies execute on bounded workers. Durable owner recovery never retries unknown work automatically. RUST_LOG selects stderr target/level filters; payloads and private keys are excluded.\nHelp/success exits with status 0; invalid syntax exits 2; example runtime/configuration failures exit 1. See docs/peer-protocol/RUNTIME.md, docs/peer-protocol/NODES.md and plans/8_Peer_Protocol_module/PLAN.md.\n",
+    },
     HelpTopic {
         topic: Topic::Services,
         names: &["services"],
@@ -140,7 +148,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: authenticated Transport server available on Linux; network application protocols pending.\n\n\
+         Status: authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -167,7 +175,7 @@ mod tests {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
         assert!(overview.contains(
-            "authenticated Transport server available on Linux; network application protocols pending"
+            "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available"
         ));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));

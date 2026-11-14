@@ -50,6 +50,21 @@ Cargo.lock is tracked. For an optimized executable, run `cargo build --locked --
 See [production coverage](docs/coverage.md) for the measured-code exclusions and
 coverage command. Follow [AGENTS.md](AGENTS.md) when contributing.
 
+Exercise two authenticated nodes with an explicitly installed volatile custom service:
+
+```sh
+cargo run --locked -- help peer-protocol
+cargo run --locked --example peer -- --help
+cargo run --locked --example peer -- help run
+cargo run --locked --example peer -- run
+```
+
+See [Peer Protocol runtime configuration](docs/peer-protocol/RUNTIME.md) for finite
+budgets, protected initialization, supported capabilities and recovery limits, and
+[real-node evidence](docs/peer-protocol/NODES.md) for process/restart exercises.
+The example uses independent real owners; it does not enable a paid standard family
+or change the default Transport-only `serve` profile.
+
 Focused checks:
 
 ```sh

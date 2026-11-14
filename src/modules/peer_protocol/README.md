@@ -48,3 +48,5 @@ completion before publishing observations and verifies malformed-stream isolatio
 Its explicitly installed metadata-only test factory is not a full service node;
 these are same-implementation instances in one process, not interoperability or
 complete-services process evidence.
+
+Use `cargo run --locked --example peer -- run` for the finite real two-node custom-service example; `--help` and `help run` explain its explicit volatile scope. See [runtime configuration](../../../docs/peer-protocol/RUNTIME.md) for owner initialization, quotas and recovery.
