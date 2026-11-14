@@ -358,3 +358,52 @@ fn zero_fee_and_requester_quote_refusal() {
     assert_eq!(f.ledger.balance(&lc, f.owner), Ok(91));
     assert_eq!(f.ledger.balance(&lc, f.recipient), Ok(9));
 }
+
+// A valid fee quote with an undersized local result node budget cannot move any credits.
+#[test]
+fn response_capacity_is_checked_before_transfer_commit() {
+    let f = Issuer::new();
+    let server = transfer::Issuer::new(transfer::Config {
+        peer: f.peer.clone(),
+        authority: f.authority.clone(),
+        ledger: f.ledger.clone(),
+        limits: Limits {
+            nodes: 4,
+            ..Default::default()
+        },
+        policy: Arc::new(transfer::Fixed(2)),
+    })
+    .unwrap();
+    let auth = Arc::new(Authority::new());
+    let grant = auth.grant(f.owner, Action::Request, 16_777_216).unwrap();
+    let pg = f.peer.grant(f.local, Action::Invoke, 16_777_216).unwrap();
+    let lg = f
+        .authority
+        .grant(f.local, ledger::authority::Action::Control, 16_777_216)
+        .unwrap();
+    let lc = ledger_context(&lg);
+    let (ca, sa) = route(&f, 1);
+    let client = Request::new(&context(&grant), auth, ca, signed(&f, 2)).unwrap();
+    let Begin::Quote(quote) = server
+        .begin(
+            &context(&pg),
+            &lc,
+            sa,
+            &Message::parse(client.bytes(), 65536).unwrap(),
+            Time {
+                now_milliseconds: 0,
+                expires_milliseconds: 100,
+            },
+        )
+        .unwrap()
+    else {
+        panic!("new quote")
+    };
+    let accept = Message::parse(serde_json::json!({"type":"ledger.transfer.accept", "transferId": super::base64::encode(&f.order.transfer_id), "fee":"2"}).to_string().as_bytes(),65536).unwrap();
+    assert_eq!(
+        server.accept(&context(&pg), &lc, &quote, sa, &accept, 1),
+        Err(Error::Limit)
+    );
+    assert_eq!(f.ledger.balance(&lc, f.owner), Ok(100));
+    assert_eq!(f.ledger.balance(&lc, f.recipient), Ok(0));
+}

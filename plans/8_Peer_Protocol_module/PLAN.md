@@ -38,7 +38,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **30.** Implement transfer quote and acceptance exchanges.
 - [x] **31.** Implement bounded claim-redemption exchanges.
 - [x] **32.** Verify third-party settlement on independent issuer streams.
-- [ ] **33.** Connect the engine to real Transport composition.
+- [x] **33.** Connect the engine to real Transport composition.
 - [ ] **34.** Verify resource isolation and concurrent exchanges.
 - [ ] **35.** Exercise complete exchanges between real local nodes.
 - [ ] **36.** Add discoverable runtime configuration and exercise instructions.
@@ -333,3 +333,5 @@ Step33 outgoing check progress: paid/included challenge-only request factories n
 Step33 wanted orchestration progress: explicit provider invitations now retain their original direct wanted selection, while configured publisher policy alone supplies input/spending and independent quote consent. Provided and wanted provider paths share exact issue/accept/input/commit/result gates with role-appropriate current views. Bounded observers publish original local requester/provider keys only after normal completion; absent policy refuses without fabricating work. End-to-end role reversal and refusal scenarios pass over real independent module owners; endpoint tests are split by responsibility. Required checks/API docs pass; production coverage19619/21086 =93.04%. Cached retry orchestration, concrete claim composition, resource/process exercises and final acceptance/handoff remain.
 
 Step33 retry orchestration progress: explicit original-key request plans now retain the family-approved replay capability through the early cached-result ordering exception and normal original-owner completion. Repeated recover/remove responses after provider drain complete the same financial key without repricing, reservation or execution. Unknown control tags become stream protocol errors. Required checks and warning-free API docs pass; production coverage19750/21202 =93.15%. Protected claim composition and subsequent integration/resource/process/acceptance work remain.
+
+Step33 completed: authenticated opt-in Transport registration now reaches the complete incoming/outgoing endpoint factories, including wanted roles, checks, original-key retries and an installable protected issuer claim adapter. Synchronous public module dependencies remain worker-owned; default serve remains Transport-only until explicit node composition. Financial controls now preflight reply shape before effects and preserve Unknown on unexpected postcommit encoding failure. Real TCP metadata/isolation evidence and real-owner handler scenarios pass; full service-node/process exercises are specifically step35. Required checks and warning-free API docs pass; production coverage19819/21271 =93.17%. No new protocol defect was confirmed.

@@ -224,11 +224,20 @@ impl<P: Persistence> Issuer<P> {
             scalar::uint64(&v["fee"])?,
             now_milliseconds,
         )?;
+        // Refuse locally unrepresentable replies before monetary commitment. Concurrent
+        // accepted retries may return an earlier stored fee, so encode that actual result below.
+        read::transfer_result(
+            &ledger::transfer_state::TransferResult {
+                order: accepted.order().clone(),
+                fee: accepted.fee(),
+            },
+            self.config.limits,
+        )?;
         let result = self
             .config
             .ledger
             .commit_transfer(ledger_context, &accepted)?;
-        read::transfer_result(&result, self.config.limits)
+        read::transfer_result(&result, self.config.limits).map_err(|_| Error::Unknown)
     }
     /// Drop only an original stream's unaccepted quote on a trusted close/cancellation event.
     /// # Errors

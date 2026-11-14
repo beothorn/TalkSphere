@@ -25,3 +25,8 @@ owned balances. Explicit failure and abnormal completion cannot publish success.
 Claim redemption may commit on its first request, so interrupted exchanges remain
 Unknown even without a fee-acceptance phase. No claim creation/grant/trust operation
 is exposed to peers.
+
+The fixed public reply shape is preflighted under local control-node limits before
+monetary commitment. A later unexpected encoding failure retains Unknown rather
+than claiming a definitive no-effect failure. Interrupted transmission still
+requires the original durable owner's replay/status rules.

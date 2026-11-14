@@ -21,3 +21,8 @@ gross/fee/net. Wrong acceptance or current insufficient funds produces no new
 transfer. Durable uncertainty remains Unknown. Failed sends retain stored results;
 discard removes only unaccepted transient quotes. No administrative grant, credit
 creation, service execution or ordinary work retry is exposed.
+
+The fixed public reply shape is preflighted under local control-node limits before
+monetary commitment. A later unexpected encoding failure retains Unknown rather
+than claiming a definitive no-effect failure. Interrupted transmission still
+requires the original durable owner's replay/status rules.

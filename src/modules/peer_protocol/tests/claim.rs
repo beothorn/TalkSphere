@@ -95,16 +95,18 @@ fn encrypted_claim_wire_redemption_and_owner_replay() {
         .grant(issuer, ledger::authority::Action::Control, 16_777_216)
         .unwrap();
     let lc = ledger_context(&control);
-    let ledger = ledger::state::Ledger::initialize(
-        issuer,
-        authority.clone(),
-        ledger::persistence::Memory::default(),
-        Default::default(),
-        &ledger_context(&admin),
-        1000,
-        100,
-    )
-    .unwrap();
+    let ledger = Arc::new(
+        ledger::state::Ledger::initialize(
+            issuer,
+            authority.clone(),
+            ledger::persistence::Memory::default(),
+            Default::default(),
+            &ledger_context(&admin),
+            1000,
+            100,
+        )
+        .unwrap(),
+    );
     let portable = ledger
         .create_claim(
             &ledger_context(&admin),
@@ -117,6 +119,7 @@ fn encrypted_claim_wire_redemption_and_owner_replay() {
     let object = portable
         .encrypt(owner, &recipient, &mut opener.crypto)
         .unwrap();
+    let opener = Arc::new(opener);
     assert_eq!(object.len(), ENVELOPE_BYTES);
     assert!(!object.windows(32).any(|b| b == [5; 32]));
     let peer = Arc::new(Authority::new());
@@ -149,17 +152,19 @@ fn encrypted_claim_wire_redemption_and_owner_replay() {
             .value()
             .clone();
         wire["amount"] = serde_json::json!("9999");
-        let result = claim::respond(
-            &pc,
-            peer.as_ref(),
-            incoming,
-            &Message::parse(wire.to_string().as_bytes(), 65536).unwrap(),
-            Ports {
-                owner: &ledger,
-                control: &lc,
-                decryptor: &opener,
-            },
+        let adapter = crate::composition::peer::claims::Claims::new(
+            ledger.clone(),
+            authority.clone(),
+            peer.clone(),
+            opener.clone(),
             Limits::default(),
+        )
+        .unwrap();
+        let result = crate::modules::peer_protocol::engine::endpoint::Claims::redeem(
+            &adapter,
+            incoming,
+            pc.deadline,
+            &Message::parse(wire.to_string().as_bytes(), 65536).unwrap(),
         )
         .unwrap();
         let Record::Control(bytes) = result else {
@@ -210,7 +215,7 @@ fn encrypted_claim_wire_redemption_and_owner_replay() {
                 Ports {
                     owner: &ledger,
                     control: &lc,
-                    decryptor: &opener
+                    decryptor: opener.as_ref()
                 },
                 Limits::default()
             )
@@ -291,6 +296,27 @@ fn claim_dependency_and_completion_failures_are_explicit() {
             Limits::default()
         ),
         Err(Error::Unavailable)
+    );
+    assert_eq!(decryptor.0.load(Ordering::SeqCst), 1);
+    // A locally unrepresentable response fails before decryption or issuance.
+    let limits = Limits {
+        nodes: 3,
+        ..Default::default()
+    };
+    assert_eq!(
+        claim::respond(
+            &context(&pg),
+            f.peer.as_ref(),
+            incoming,
+            &message,
+            Ports {
+                owner: f.ledger.as_ref(),
+                control: &lc,
+                decryptor: &decryptor
+            },
+            limits
+        ),
+        Err(Error::Limit)
     );
     assert_eq!(decryptor.0.load(Ordering::SeqCst), 1);
     assert_eq!(f.ledger.balance(&lc, owner), Ok(100));

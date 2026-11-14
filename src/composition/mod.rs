@@ -9,3 +9,5 @@ pub mod server;
 pub mod logging;
 
 pub mod services;
+
+pub mod peer;

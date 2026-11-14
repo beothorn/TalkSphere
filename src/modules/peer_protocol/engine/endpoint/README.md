@@ -14,7 +14,9 @@ Wanted invitation/publisher factories preserve local input, consent and payer
 roles independently of the stream opener. Explicit family-authorized cached retries
 reuse the original requester operation and cannot start fresh work. Complete real
 node composition remains in progress; default `serve` stays Transport-only.
-A missing claim decryptor, family or check rule is explicitly unsupported.
+Trusted composition can install the [protected claim adapter](../../../../composition/peer/claims.md)
+with a real issuer Ledger and protected decryptor. A missing claim decryptor,
+family or check rule is explicitly unsupported.
 
 From the repository root:
 

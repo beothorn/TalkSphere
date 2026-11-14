@@ -55,6 +55,12 @@ pub fn respond<P: Persistence, D: Decryptor>(
     if message.kind() != Kind::LedgerClaimRedeem {
         return Err(Error::Unsupported);
     }
+    // Check the fixed public reply's complete shape before decrypting or committing issuance.
+    // The all-zero public ID and longest amount are sizing values, never redemption inputs.
+    super::read::encode(
+        &serde_json::json!({"type":"ledger.claim.result","claimId":super::super::base64::encode(&[0;32]),"amount":u64::MAX.to_string()}),
+        limits,
+    )?;
     let object = super::super::base64::decode(
         message.value()["envelope"].as_str().ok_or(Error::Invalid)?,
         ENVELOPE_BYTES,
@@ -69,7 +75,7 @@ pub fn respond<P: Persistence, D: Decryptor>(
     super::read::encode(
         &serde_json::json!({"type":"ledger.claim.result","claimId":super::super::base64::encode(&result.id),"amount":result.amount.to_string()}),
         limits,
-    )
+    ).map_err(|_| Error::Unknown)
 }
 /// Original outgoing encrypted redemption, retaining public expected claim ID and issuer provenance only.
 pub struct Request {
