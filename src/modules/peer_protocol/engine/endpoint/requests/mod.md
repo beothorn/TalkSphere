@@ -11,6 +11,7 @@ Plans are trusted local objects, never peer-deserialized commands:
 
 - `Board` retrieves metadata into an explicit direct-publisher cache.
 - `Definition` supplies that cache and an exact offering ID after retrieving Board.
+- `Retry` supplies an original Services operation key for an explicit family-authorized cached result, without fresh pricing, reservation or execution.
 - `Invoke` supplies a sealed selection, local input, spending and separate consent.
 - `Check` supplies only an installed public challenge and separate local check consent.
 - `Offer` invites a wanted publisher using only its exact retrieved contract and installed local provider capability.

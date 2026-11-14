@@ -234,6 +234,14 @@ impl ResultReceiver {
         }
         Ok(self.association)
     }
+    // Borrow only the owner-issued retry capability so stream ordering can authorize the narrow cached-result transition.
+    pub(super) fn replay_proof(&self) -> Option<&crate::modules::services::replay::Retry> {
+        tracing::trace!("Inspecting original owner retry authority for cached-result ordering");
+        match &self.sink {
+            Sink::Replay(retry) => Some(retry),
+            Sink::Ordinary => None,
+        }
+    }
     /// Inspect only a provisional diagnostic failure; accounting waits for normal completion.
     pub fn failure(&self) -> Option<&super::failure::Failure> {
         tracing::trace!("Inspecting provisional remote failure diagnostics");

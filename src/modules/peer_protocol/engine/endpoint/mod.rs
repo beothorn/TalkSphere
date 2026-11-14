@@ -286,3 +286,15 @@ fn ledger_context(
 
 #[cfg(test)]
 mod tests;
+
+// An unknown control tag is a stream protocol violation; unsupported installed capabilities remain semantic failures after parsing.
+fn parse_control(bytes: &[u8], nodes: usize) -> Result<Message, Error> {
+    tracing::trace!("Parsing a control within authenticated endpoint dispatch");
+    peer::message::Message::parse(bytes, nodes).map_err(|error| {
+        if error == Error::Unsupported {
+            Error::Invalid
+        } else {
+            error
+        }
+    })
+}

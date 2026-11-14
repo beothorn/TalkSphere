@@ -11,8 +11,9 @@ The provided-work/check and independent-control responder is implemented and
 unit-tested over real module owners. Explicit outgoing metadata, provided work and independent control factories are
 also implemented over a direct metadata cache. Paid/included outgoing check factories also preserve original Transport timing.
 Wanted invitation/publisher factories preserve local input, consent and payer
-roles independently of the stream opener. Explicit retry and complete real node
-composition remain in progress; default `serve` stays Transport-only.
+roles independently of the stream opener. Explicit family-authorized cached retries
+reuse the original requester operation and cannot start fresh work. Complete real
+node composition remains in progress; default `serve` stays Transport-only.
 A missing claim decryptor, family or check rule is explicitly unsupported.
 
 From the repository root:

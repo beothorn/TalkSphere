@@ -14,7 +14,7 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
         let c = &owner.config;
         match record {
             Record::Control(bytes) => {
-                let message = Message::parse(&bytes, c.limits.nodes)?;
+                let message = parse_control(&bytes, c.limits.nodes)?;
                 self.exchange.control(Direction::Remote, message.kind())?;
                 if let Err(error) = self.control(&message, output) {
                     self.cause = Some(error);

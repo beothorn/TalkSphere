@@ -28,3 +28,11 @@ retry, input coalescing or fresh financial attempt is introduced.
 The explicit Ceiling value also implements the separate CheckConsent contract;
 check schema, entitlement and timing validation remain independent of ordinary
 work, as described in the [check request contract](check.md).
+
+An explicit `Plan.Retry` obtains the original requester owner's replay permission.
+Only the installed family's approved recovery/removal operation can take the
+cached-result ordering exception. It reuses the retained request and financial
+key; no direct metadata refresh, fresh quote consent or second reservation is
+introduced. A normal cached result completes that original key. Missing or
+conflicting cached output preserves the original owner's uncertainty and never
+authorizes a new attempt or refund.

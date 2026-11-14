@@ -334,3 +334,24 @@ fn absent_claim_decryptor_is_an_explicit_unsupported_response() {
     handler.remote_end(&mut queue).unwrap();
     handler.closed(StreamOutcome::Completed).unwrap();
 }
+
+// Unknown control tags are stream protocol violations, distinct from unsupported installed service capabilities.
+#[test]
+fn unknown_control_tags_never_become_semantic_capability_failures() {
+    let pair = Pair::new(false);
+    let endpoint = endpoint(&pair);
+    let (a, _, _) = pair.provider.proposal(1, &Value::String("x".into()));
+    let mut queue = output(2_000_000);
+    let mut handler = endpoint
+        .open(scope(a), Direction::Remote, &mut queue)
+        .unwrap();
+    assert_eq!(
+        handler.record(
+            Record::Control(br#"{"type":"future.unknown"}"#.to_vec()),
+            &mut queue
+        ),
+        Err(Error::Invalid)
+    );
+    assert!(drain(&mut queue).is_empty());
+    assert_eq!(pair.provider.family.executions.load(Ordering::SeqCst), 0);
+}

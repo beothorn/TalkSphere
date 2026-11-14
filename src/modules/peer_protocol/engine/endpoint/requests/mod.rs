@@ -31,6 +31,8 @@ impl FeeConsent for ExactFee {
 }
 /// Trusted local intent; this type is never deserialized from peer control messages.
 pub enum Plan {
+    /// Retry only a retained family-authorized original financial operation, without a new price or charge.
+    Retry(services::contract::OperationKey),
     /// Offer installed provider capability for a directly retrieved wanted contract, without inventing input or payer permission.
     Offer(Box<super::wanted::Invitation>),
     /// Request evidence under the installed check contract, without private expected values.
@@ -216,6 +218,10 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
         let context = context(&grant, scope.deadline);
         let a = scope.association(scope.local)?;
         let (state, wire, half_close) = match plan {
+            Plan::Retry(original) => {
+                let (state, wire) = invocation::State::retry(owner.as_ref(), scope, original)?;
+                (State::Invoke(Box::new(state)), wire, false)
+            }
             Plan::Offer(_) => return Err(Error::Invalid),
             Plan::Check(plan) => {
                 let (state, wire) = check::State::new(owner.as_ref(), scope, *plan)?;
@@ -328,8 +334,18 @@ impl<P: services::persistence::Persistence, L: ledger::persistence::Persistence>
             };
         };
         let c = &self.owner.config;
-        let message = Message::parse(&bytes, c.limits.nodes)?;
-        self.exchange.control(Direction::Remote, message.kind())?;
+        let message = parse_control(&bytes, c.limits.nodes)?;
+        let cached = if message.kind() == Kind::Result {
+            match &mut self.state {
+                Some(State::Invoke(state)) => state.cached_result(&mut self.exchange)?,
+                _ => false,
+            }
+        } else {
+            false
+        };
+        if !cached {
+            self.exchange.control(Direction::Remote, message.kind())?;
+        }
         if message.kind() == Kind::Failure {
             self.failure = Some(peer::failure::Failure::parse(&message)?);
         }

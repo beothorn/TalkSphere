@@ -38,11 +38,13 @@ pub(in crate::modules::peer_protocol::engine::endpoint) struct State {
     nodes: usize,
     request: Option<peer::requester::Request>,
     cache: Option<Arc<PeerCache>>,
-    consent: Arc<dyn Consent>,
+    consent: Option<Arc<dyn Consent>>,
     sender: Option<peer::input_transfer::InputSender>,
     receiver: Option<peer::result_receiver::ResultReceiver>,
     failure: Option<peer::failure::Failure>,
     key: Option<services::contract::OperationKey>,
+    replaying: bool,
+    result_started: bool,
 }
 impl State {
     // Authorize only locally chosen input/terms on the actual authenticated provider stream.
@@ -85,11 +87,13 @@ impl State {
                 nodes: c.limits.nodes,
                 request: Some(request),
                 cache: Some(plan.cache),
-                consent: plan.consent,
+                consent: Some(plan.consent),
                 sender: None,
                 receiver: None,
                 failure: None,
                 key: None,
+                replaying: false,
+                result_started: false,
             },
             wire,
         ))
@@ -154,14 +158,98 @@ impl State {
                 nodes: c.limits.nodes,
                 request: Some(request),
                 cache: None,
-                consent,
+                consent: Some(consent),
                 sender: None,
                 receiver: None,
                 failure: None,
                 key: None,
+                replaying: false,
+                result_started: false,
             },
             wire,
         ))
+    }
+    // Restore only an explicit retained family operation onto a distinct authenticated response stream, without repricing or new reservation.
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn retry<
+        P: services::persistence::Persistence,
+        L: ledger::persistence::Persistence,
+    >(
+        owner: &Owner<P, L>,
+        scope: Scope,
+        original: services::contract::OperationKey,
+    ) -> Result<(Self, Vec<u8>), Error> {
+        tracing::trace!("Authorizing an explicit original-key family retry");
+        let c = &owner.config;
+        let request = c
+            .authority
+            .grant(c.local, Action::Request, c.limits.state_bytes)?;
+        let invoke = c
+            .authority
+            .grant(c.local, Action::Invoke, c.limits.state_bytes)?;
+        let service = c.services.grant(
+            c.local,
+            services::authority::Action::Request,
+            c.limits.state_bytes,
+        )?;
+        let observe = c.services.grant(
+            c.local,
+            services::authority::Action::Observe,
+            c.limits.state_bytes,
+        )?;
+        let association = scope.association(scope.local)?;
+        let retry = c.runtime.retry_requester(
+            &services_context(&service, scope.deadline),
+            &services_context(&observe, scope.deadline),
+            original,
+            peer::acceptance::peer(association),
+        )?;
+        let message = peer::replay::request(
+            &context(&request, scope.deadline),
+            &c.authority,
+            &retry,
+            c.limits,
+        )?;
+        let receiver = peer::result_receiver::ResultReceiver::for_retry(
+            &context(&invoke, scope.deadline),
+            c.authority.clone(),
+            retry,
+            c.limits,
+        )?;
+        Ok((
+            Self {
+                scope,
+                association,
+                nodes: c.limits.nodes,
+                request: None,
+                cache: None,
+                consent: None,
+                sender: None,
+                receiver: Some(receiver),
+                failure: None,
+                key: Some(original),
+                replaying: true,
+                result_started: false,
+            },
+            message.bytes().to_vec(),
+        ))
+    }
+    // Only an opaque original-owner retry permit authorizes early Result; ordinary proposals retain strict quote/accept ordering.
+    pub(in crate::modules::peer_protocol::engine::endpoint) fn cached_result(
+        &mut self,
+        exchange: &mut Exchange,
+    ) -> Result<bool, Error> {
+        tracing::trace!("Checking the explicit requester cached-result ordering exception");
+        if !self.replaying || self.result_started {
+            return Ok(false);
+        }
+        let proof = self
+            .receiver
+            .as_ref()
+            .and_then(|r| r.replay_proof())
+            .ok_or(Error::Denied)?;
+        exchange.cached_remote(proof)?;
+        self.result_started = true;
+        Ok(true)
     }
     // Independent quote checks and local consent precede one durable requester reservation and the first accept byte.
     pub(in crate::modules::peer_protocol::engine::endpoint) fn control<
@@ -204,7 +292,11 @@ impl State {
             let candidate = owner
                 .client
                 .validate(&ic, &sc, request, association, message)?;
-            let approved = self.consent.approve(&candidate)?;
+            let approved = self
+                .consent
+                .as_ref()
+                .ok_or(Error::Invalid)?
+                .approve(&candidate)?;
             let hash = candidate.hash();
             let consent = owner.client.consent(&rc, candidate, hash, approved)?;
             let remote = self
@@ -246,7 +338,13 @@ impl State {
             return self.pump(exchange, output, end_requested);
         }
         if let Some(receiver) = &mut self.receiver {
-            return receiver.control(&ic, association, message);
+            receiver.control(&ic, association, message)?;
+            if self.replaying && !*end_requested {
+                exchange.end(Direction::Local)?;
+                output.end();
+                *end_requested = true;
+            }
+            return Ok(());
         }
         if message.kind() != Kind::Failure {
             return Err(Error::Invalid);
