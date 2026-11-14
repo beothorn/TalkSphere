@@ -41,3 +41,7 @@ An interrupted ledger.transfer is Unknown even before fee acceptance because its
 signed ID may refer to an earlier durable commitment. This possibility is separate
 from accepted(): it does not assert fresh fee consent or allow early END/bodies.
 Normal explicit failures do not reverse any prior historical transfer.
+
+ledger.claim.redeem may commit immediately on receipt; interrupted redemption also
+retains Unknown independently of fee consent. Owner-specific claim replay guards
+remain with Ledger, not with transient stream state.

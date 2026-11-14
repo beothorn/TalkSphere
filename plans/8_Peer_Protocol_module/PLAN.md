@@ -36,7 +36,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **28.** Add explicit family-authorized cached retry handling.
 - [x] **29.** Bind authenticated balance and transfer-query controls.
 - [x] **30.** Implement transfer quote and acceptance exchanges.
-- [ ] **31.** Implement bounded claim-redemption exchanges.
+- [x] **31.** Implement bounded claim-redemption exchanges.
 - [ ] **32.** Verify third-party settlement on independent issuer streams.
 - [ ] **33.** Connect the engine to real Transport composition.
 - [ ] **34.** Verify resource isolation and concurrent exchanges.
@@ -313,3 +313,5 @@ Step28 completed: explicit family-approved Messaging recovery/removal retries ma
 Step29 completed: caller-scoped balance and protected original/new-owner transfer queries use real Ledger Control ports without Services work or book mutations. Complete requester observations bind original issuer/connection/stream, tuple and exact gross/fee/net under normal termination; unrelated existing/missing queries are concealed. Strict real Ed25519 transfer fixtures exercise the protected records. Required checks pass; production coverage16633/17678 =94.09%.
 
 Step30 completed: real signed transfers quote trusted exact fees without reservation and commit only after original-stream ID/fee acceptance and atomic capacity recheck. Explicit client consent distinguishes fresh accepted fees from stored historical replies; signed retries bypass changed fee policy and cannot recharge. Zero fees, invalid proofs/IDs/streams, expiry, depleted funds and conservative interruption pass. Required checks pass; production coverage16949/18012 =94.10%.
+
+Step31 completed: exact bounded encrypted claim controls use Ledger authenticated decryption/owner replay ports and return only original public ID/stored amount. Real generic encryption verifies complete authentication, wrong-owner/tamper refusal, predecryption size checks, unavailable keys, once-only issuance and normal requester completion. Claim interruption remains Unknown; no administrator wire operation is exposed. Required checks pass; production coverage17058/18129 =94.09%.

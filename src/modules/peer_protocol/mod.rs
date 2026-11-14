@@ -222,3 +222,7 @@ mod ledger_read_tests;
 #[cfg(test)]
 #[path = "tests/transfer.rs"]
 mod transfer_tests;
+
+#[cfg(test)]
+#[path = "tests/claim.rs"]
+mod claim_tests;
