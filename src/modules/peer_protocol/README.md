@@ -12,9 +12,11 @@ An opt-in [authenticated stream adapter](engine/bridge/mod.md) now connects
 framing, worker ownership and bounded output through the real Transport API.
 An [incoming endpoint factory](engine/endpoint/README.md) now composes provided
 work/checks, metadata and independent Ledger controls over actual owners.
-Explicit outgoing metadata, provided work and independent controls now use
-one-shot request factories and direct-publisher cache checks. Outgoing checks,
-wanted orchestration and complete real node composition remain in progress.
+Explicit outgoing metadata, provided work/checks, wanted invitations, cached
+retries and independent controls use one-shot request factories and direct-publisher
+cache checks. [Real local node exercises](../../../docs/peer-protocol/NODES.md)
+cover complete work, evidence, wanted roles and independent third-party settlement,
+including three processes and protected issuer-record restart.
 The default server does not register a peer application protocol yet. Application composition supplies grants
 and verified peer context; protocol internals do not own sockets or balances.
 
@@ -30,7 +32,15 @@ cargo run --locked -- --help
 See the [plan](../../../plans/8_Peer_Protocol_module/PLAN.md),
 [requirements](REQUIREMENTS.md), [local contracts](contract.md) and
 [upstream specification](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md).
-No standalone service-node exercise is available until production composition is complete.
+Run the explicit custom-handler node exercises with:
+
+```sh
+cargo test --locked --lib modules::peer_protocol::engine::endpoint::tests::network -- --nocapture
+```
+
+These fixtures use real public module owners and protected credentials; their
+custom service resources remain explicitly volatile. The default server still
+requires opt-in application composition to register this protocol.
 
 The Linux `peer_protocol_streams` test runs two real TCP endpoints with protected
 Identity stores, actual Cryptography and Board metadata. It requires normal

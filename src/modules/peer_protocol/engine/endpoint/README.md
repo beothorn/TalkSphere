@@ -12,8 +12,8 @@ unit-tested over real module owners. Explicit outgoing metadata, provided work a
 also implemented over a direct metadata cache. Paid/included outgoing check factories also preserve original Transport timing.
 Wanted invitation/publisher factories preserve local input, consent and payer
 roles independently of the stream opener. Explicit family-authorized cached retries
-reuse the original requester operation and cannot start fresh work. Complete real
-node composition remains in progress; default `serve` stays Transport-only.
+reuse the original requester operation and cannot start fresh work. [Real local node exercises](../../../../../docs/peer-protocol/NODES.md) cover complete
+exchanges; default `serve` stays Transport-only.
 Trusted composition can install the [protected claim adapter](../../../../composition/peer/claims.md)
 with a real issuer Ledger and protected decryptor. A missing claim decryptor,
 family or check rule is explicitly unsupported.
@@ -29,9 +29,9 @@ cargo run --locked -- --help
 
 The first test command exercises inline/detached work through real two-sided
 reservation and commitment, paid/included evidence, exact signed Ledger transfers
-and refusal paths under test-owned authenticated scopes. The network command
-currently exercises actual Identity/Cryptography/TCP/Board metadata only; it does
-not yet demonstrate service-node process conformance. See the
+and refusal paths under test-owned authenticated scopes. The integration-test command exercises TCP metadata isolation. The additional
+[complete node exercises](../../../../../docs/peer-protocol/NODES.md) cover services,
+wanted/check exchanges, three-party settlement and protected issuer process restart. See the
 [endpoint contract](mod.md), [bridge contract](../bridge/mod.md),
 [module guide](../../README.md) and the pinned
 [upstream protocol](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md).

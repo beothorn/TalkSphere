@@ -143,3 +143,6 @@ mod retries;
 
 #[path = "resources.rs"]
 mod resource_tests;
+
+#[cfg(target_os = "linux")]
+mod network;

@@ -36,6 +36,9 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             }
             record @ Record::Body { .. } => {
                 self.exchange.body(Direction::Remote)?;
+                if let Phase::Requester(state) = &mut self.phase {
+                    return state.body(owner.as_ref(), &record);
+                }
                 let grant = c
                     .authority
                     .grant(c.local, Action::Invoke, c.limits.state_bytes)?;

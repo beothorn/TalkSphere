@@ -100,8 +100,30 @@ impl World {
 impl<F: Family + 'static> World<F> {
     // All fixture module owners use public grants and retain independent financial/journal state.
     pub(in crate::modules::peer_protocol) fn build(requester_side: bool, family: Arc<F>) -> Self {
-        let local = IdentityId([if requester_side { 1 } else { 2 }; 32]);
-        let requester = IdentityId([if requester_side { 2 } else { 1 }; 32]);
+        Self::with_identities(
+            IdentityId([if requester_side { 1 } else { 2 }; 32]),
+            IdentityId([if requester_side { 2 } else { 1 }; 32]),
+            requester_side,
+            family,
+        )
+    }
+    // Real-network fixtures supply identities obtained from protected credentials instead of asserting synthetic authentication.
+    pub(in crate::modules::peer_protocol) fn with_identities(
+        local: IdentityId,
+        requester: IdentityId,
+        requester_side: bool,
+        family: Arc<F>,
+    ) -> Self {
+        Self::with_policy(local, requester, requester_side, family, Default::default())
+    }
+    // Explicit node exercises opt in to third-party delivery risk in both gate and real accounting participant.
+    pub(in crate::modules::peer_protocol) fn with_policy(
+        local: IdentityId,
+        requester: IdentityId,
+        requester_side: bool,
+        family: Arc<F>,
+        policy: ledger::terms::Policy,
+    ) -> Self {
         let authority = Arc::new(Authority::new());
         let services = Arc::new(services::authority::Authority::new());
         let registry = Arc::new(
@@ -189,15 +211,14 @@ impl<F: Family + 'static> World<F> {
         let read = ledger_authority
             .grant(local, ledger::authority::Action::Read, 16_777_216)
             .unwrap();
-        let gate =
-            Arc::new(LedgerGate::new(local, ledger.clone(), read, Default::default()).unwrap());
+        let gate = Arc::new(LedgerGate::new(local, ledger.clone(), read, policy).unwrap());
         let coordinate = ledger_authority
             .grant(local, ledger::authority::Action::Coordinate, 16_777_216)
             .unwrap();
         let accounting = Arc::new(services::accounting::Ledger::new(
             ledger.clone(),
             coordinate,
-            Default::default(),
+            policy,
         ));
         let runtime = Arc::new(
             services::runtime::Coordinator::open(
