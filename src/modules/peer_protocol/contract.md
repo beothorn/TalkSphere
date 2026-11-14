@@ -24,3 +24,10 @@ Association is an observation containing local identity, authenticated peer
 identity and the complete OperationKey. Trusted Transport composition supplies
 it and the incoming-event grant; it is not decoded from peer JSON or itself a
 financial capability. Metadata requests correlate all fields before attribution.
+
+Value parsing applies `bodies`, `nodes` and `state_bytes` to each logical value;
+received nonempty detached descriptors may be just one byte. The configured
+Endpoint additionally reserves shared logical-byte/body capacity across handlers
+and peers through [aggregate admission](engine/endpoint/resources.md). Transport
+framing, queued input/output and worker admission have their own explicit Bridge
+configuration. Operators must compose these independent budgets together.

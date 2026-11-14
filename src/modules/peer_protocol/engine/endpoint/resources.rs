@@ -18,7 +18,7 @@ impl Default for Budgets {
         tracing::trace!("Selecting aggregate endpoint admission budgets");
         Self {
             value_bytes: 268_435_456,
-            bodies: 65_536,
+            bodies: 524_288,
             per_peer: 4,
         }
     }
@@ -44,10 +44,12 @@ impl Pool {
             return Err(Error::Invalid);
         }
         let bytes = limits.state_bytes.checked_mul(4).ok_or(Error::Limit)?;
-        // Detached values must exceed the protocol's 4096-byte inline threshold.
+        // A legal detached body can be just one byte; the inline encoder threshold
+        // is not a lower bound for received references, including ignored extensions.
         let bodies = limits
             .bodies
-            .min(limits.state_bytes / 4097)
+            .min(limits.nodes)
+            .min(limits.state_bytes)
             .checked_mul(2)
             .ok_or(Error::Limit)?
             .max(1);

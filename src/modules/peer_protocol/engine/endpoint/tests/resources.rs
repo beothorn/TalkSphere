@@ -206,3 +206,49 @@ fn trace_diagnostics_omit_payloads_and_claim_envelopes() {
         assert!(text.len() < 1_000_000);
     });
 }
+
+// Many legal one-byte detached bodies must reserve references independently of the inline encoding threshold.
+#[test]
+fn small_detached_bodies_are_charged_against_aggregate_reference_capacity() {
+    let limits = Limits {
+        state_bytes: 16,
+        nodes: 9,
+        bodies: 8,
+        exchanges: 4,
+        ..Default::default()
+    };
+    let metadata = serde_json::Value::Array(
+        (0..8)
+            .map(|id| serde_json::json!({"$bytes":id,"length":"1"}))
+            .collect(),
+    );
+    let pending = peer::value::Pending::parse(
+        &metadata,
+        &serde_json::json!({"type":"array","items":{"type":"bytes"}}),
+        limits,
+        false,
+    )
+    .unwrap();
+    assert_eq!(pending.descriptors().len(), 8);
+    let pool = resources::Pool::new(
+        limits,
+        resources::Budgets {
+            value_bytes: 256,
+            bodies: 16,
+            per_peer: 4,
+        },
+    )
+    .unwrap();
+    let first = pool
+        .open(IdentityId([1; 32]), || Ok(Box::new(Noop)))
+        .unwrap();
+    assert!(matches!(
+        pool.open(IdentityId([2; 32]), || Ok(Box::new(Noop))),
+        Err(Error::Limit)
+    ));
+    drop(first);
+    assert!(
+        pool.open(IdentityId([2; 32]), || Ok(Box::new(Noop)))
+            .is_ok()
+    );
+}

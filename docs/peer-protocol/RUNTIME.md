@@ -79,7 +79,7 @@ explain inputs, outputs, authority and failure rules without requiring Rust know
 | --- | --- |
 | Bridge |4 connections/exchanges,2 workers,131072 pending input bytes/stream,1048581 queued output bytes/stream,32000000 aggregate framing-reservation bytes,32 controls/second/stream,10-second original exchange lifetime |
 | Wire logical values |65536 bytes/value,4096 nodes,16 detached references,4 unaccepted quotes and4 exchanges |
-| Endpoint aggregate admission |268435456 logical bytes,65536 body references,4 handlers/authenticated peer across all connections |
+| Endpoint aggregate admission |268435456 logical bytes,524288 body references,4 handlers/authenticated peer across all connections |
 | Services/Ledger owners |Finite module defaults; separate identity-bound authority, journals, holds and permanent replay records |
 | Example family |One separately authorized seven-credit custom operation with inline text bounded to128 result bytes |
 
