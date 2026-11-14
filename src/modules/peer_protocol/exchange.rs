@@ -62,6 +62,7 @@ pub struct Exchange {
     closed: bool,
     poisoned: bool,
     cached: bool,
+    transfer_retry_possible: bool,
 }
 impl Exchange {
     /// Start a fresh exchange with its trusted Transport stream opener direction.
@@ -77,6 +78,7 @@ impl Exchange {
             closed: false,
             poisoned: false,
             cached: false,
+            transfer_retry_possible: false,
         }
     }
     /// Observe a structurally validated control; this ordering model does not prove its semantic authorization.
@@ -119,7 +121,10 @@ impl Exchange {
                 Kind::LedgerBalance => Phase::Reply(Kind::LedgerBalanceResult),
                 Kind::LedgerTransferGet => Phase::Reply(Kind::LedgerTransferResult),
                 Kind::LedgerClaimRedeem => Phase::Reply(Kind::LedgerClaimResult),
-                Kind::LedgerTransfer => Phase::FeeQuote,
+                Kind::LedgerTransfer => {
+                    self.transfer_retry_possible = true;
+                    Phase::FeeQuote
+                }
                 _ => return Err(Error::Invalid),
             },
             Phase::Wanted if direction == self.requester && kind == Kind::Propose => Phase::Quote,
@@ -256,7 +261,7 @@ impl Exchange {
         }
         self.closed = true;
         if !normal {
-            return Ok(if self.accepted {
+            return Ok(if self.accepted || self.transfer_retry_possible {
                 Outcome::Unknown
             } else {
                 Outcome::Failure

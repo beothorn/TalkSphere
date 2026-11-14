@@ -38,6 +38,15 @@ pub struct Transfer {
     result: TransferResult,
 }
 impl Transfer {
+    // Only sibling authenticated Ledger control paths can mint a normally completed issuer observation.
+    pub(super) fn observed(association: Association, result: TransferResult) -> Self {
+        tracing::trace!("Retaining a normally completed issuer transfer observation");
+        Self {
+            association,
+            result,
+        }
+    }
+
     /// Read trusted original issuer identity from the independent authenticated exchange.
     pub fn issuer(&self) -> IdentityId {
         tracing::trace!("Reading authenticated transfer-query issuer");
@@ -161,10 +170,9 @@ impl Request {
                 {
                     return Err(Error::Denied);
                 }
-                Ok(Response::Transfer(Box::new(Transfer {
-                    association: observed,
-                    result,
-                })))
+                Ok(Response::Transfer(Box::new(Transfer::observed(
+                    observed, result,
+                ))))
             }
             _ => Err(Error::Invalid),
         }

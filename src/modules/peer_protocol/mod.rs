@@ -218,3 +218,7 @@ pub mod ledger_control;
 #[cfg(test)]
 #[path = "tests/ledger_read.rs"]
 mod ledger_read_tests;
+
+#[cfg(test)]
+#[path = "tests/transfer.rs"]
+mod transfer_tests;

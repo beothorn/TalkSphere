@@ -35,7 +35,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **27.** Reconcile included allowances with complete evidence delivery.
 - [x] **28.** Add explicit family-authorized cached retry handling.
 - [x] **29.** Bind authenticated balance and transfer-query controls.
-- [ ] **30.** Implement transfer quote and acceptance exchanges.
+- [x] **30.** Implement transfer quote and acceptance exchanges.
 - [ ] **31.** Implement bounded claim-redemption exchanges.
 - [ ] **32.** Verify third-party settlement on independent issuer streams.
 - [ ] **33.** Connect the engine to real Transport composition.
@@ -311,3 +311,5 @@ Step27 completed: included allowances now distinguish in-flight reservation, com
 Step28 completed: explicit family-approved Messaging recovery/removal retries match original caller, placement/ID and every defined request/control field before current publication, prices or balances. Opaque cached/explicit-retry capabilities permit the narrow early-result ordering exception and original-key result application without new work, holds or charges. Pinned full-schema narrow fixtures verify detached cached output, drain/removal, depleted funds, conflicting fields, unrelated callers and unknown outcomes; they do not implement Messaging signatures/resources. Upstream recheck on2026-11-14 found no protocol changes. Required checks pass; production coverage16443/17477 =94.08%.
 
 Step29 completed: caller-scoped balance and protected original/new-owner transfer queries use real Ledger Control ports without Services work or book mutations. Complete requester observations bind original issuer/connection/stream, tuple and exact gross/fee/net under normal termination; unrelated existing/missing queries are concealed. Strict real Ed25519 transfer fixtures exercise the protected records. Required checks pass; production coverage16633/17678 =94.09%.
+
+Step30 completed: real signed transfers quote trusted exact fees without reservation and commit only after original-stream ID/fee acceptance and atomic capacity recheck. Explicit client consent distinguishes fresh accepted fees from stored historical replies; signed retries bypass changed fee policy and cannot recharge. Zero fees, invalid proofs/IDs/streams, expiry, depleted funds and conservative interruption pass. Required checks pass; production coverage16949/18012 =94.10%.

@@ -36,3 +36,8 @@ callers must not apply an additional ordinary result transition. Requester END i
 then permitted during cached output. Missing bodies/markers or interruption still
 cannot become success. Composition must correlate proof to the actual authenticated
 association before invoking this ordering-only helper.
+
+An interrupted ledger.transfer is Unknown even before fee acceptance because its
+signed ID may refer to an earlier durable commitment. This possibility is separate
+from accepted(): it does not assert fresh fee consent or allow early END/bodies.
+Normal explicit failures do not reverse any prior historical transfer.
