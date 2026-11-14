@@ -37,7 +37,7 @@ This is roadmap milestone9 and planning folder8, following Services.
 - [x] **29.** Bind authenticated balance and transfer-query controls.
 - [x] **30.** Implement transfer quote and acceptance exchanges.
 - [x] **31.** Implement bounded claim-redemption exchanges.
-- [ ] **32.** Verify third-party settlement on independent issuer streams.
+- [x] **32.** Verify third-party settlement on independent issuer streams.
 - [ ] **33.** Connect the engine to real Transport composition.
 - [ ] **34.** Verify resource isolation and concurrent exchanges.
 - [ ] **35.** Exercise complete exchanges between real local nodes.
@@ -315,3 +315,5 @@ Step29 completed: caller-scoped balance and protected original/new-owner transfe
 Step30 completed: real signed transfers quote trusted exact fees without reservation and commit only after original-stream ID/fee acceptance and atomic capacity recheck. Explicit client consent distinguishes fresh accepted fees from stored historical replies; signed retries bypass changed fee policy and cannot recharge. Zero fees, invalid proofs/IDs/streams, expiry, depleted funds and conservative interruption pass. Required checks pass; production coverage16949/18012 =94.10%.
 
 Step31 completed: exact bounded encrypted claim controls use Ledger authenticated decryption/owner replay ports and return only original public ID/stored amount. Real generic encryption verifies complete authentication, wrong-owner/tamper refusal, predecryption size checks, unavailable keys, once-only issuance and normal requester completion. Claim interruption remains Unknown; no administrator wire operation is exposed. Required checks pass; production coverage17058/18129 =94.09%.
+
+Step32 completed: original committed third-party payment actions bind direct issuer queries to independent connections and exact retained owner/newOwner/ID/gross/fee/net. Opaque normal-completion observations plus separate Evidence/Coordinate grants settle each local book once; forwarded requester data, changed fees and reused bindings fail without reversing work. Real signed issuer transfers and three financial owners verify unknown/unsettled states and idempotent confirmation. Process/network service evidence remains steps33–35. Required checks pass; production coverage17149/18229 =94.08%.
