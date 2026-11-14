@@ -6,6 +6,8 @@ canonical scalar/byte binding and provisional detached body reception/transmissi
 provided-proposal authorization, immutable provider quotes, independent requester
 validation, explicit spending consent and [durable two-sided acceptance](acceptance.md)
 and [challenge-only remote check binding](checks/README.md) are also available.
+A [bounded dependency worker pool](engine/worker.md) keeps synchronous module calls
+outside the Transport reactor, retaining correlated late results without retry.
 Exchange orchestration and real module/network composition are still in progress.
 No peer application protocol is registered yet. Application composition supplies grants
 and verified peer context; protocol internals do not own sockets or balances.
