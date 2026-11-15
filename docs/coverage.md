@@ -110,3 +110,6 @@ paid-check timeout question; coverage percentage alone is not conformance.
 
 Storage step 2 measured **20038/21388 executable production lines (93.69%)**.
 Contract admission tests and the complete existing test suite passed.
+
+Storage step 3 changes test-only helpers; production code and its measured
+93.69% coverage denominator are unchanged. The full suite and required checks pass.

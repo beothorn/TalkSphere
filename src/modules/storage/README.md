@@ -22,3 +22,8 @@ cargo run --locked -- --help
 See [requirements and port audit](REQUIREMENTS.md) and the plain-language
 [contract](contract.md). No-argument application invocation shows help; use
 `cargo run --locked -- help <topic>` for detailed existing command help.
+
+Test-only deterministic ports model wall-clock rollback, collisions, entropy and
+hashing failure, bounded partial reads and concurrent durable writes. Restart
+reconstructs an adapter from retained bytes; lost replies preserve commitment.
+These helpers supply no production authentication or durability.

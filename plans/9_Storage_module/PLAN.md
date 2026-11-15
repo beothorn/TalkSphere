@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–2 are complete and later steps remain pending.
+Status: implementation authorized; steps 1–3 are complete and later steps remain pending.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -8,7 +8,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
 - [x] **1.** Reconcile Storage requirements with the existing module contracts.
 - [x] **2.** Define Storage types and dependency ports.
-- [ ] **3.** Add deterministic Storage test helpers.
+- [x] **3.** Add deterministic Storage test helpers.
 - [ ] **4.** Import pinned Storage definitions and independent fixtures.
 - [ ] **5.** Implement exact Storage price calculations.
 - [ ] **6.** Validate Storage offering terms and advertised maxima.
