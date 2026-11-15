@@ -174,7 +174,9 @@ Individual protocol findings and confirmed upstream issue URLs are retained in
 The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
-module is paid Storage; see the [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md).
+module is paid Storage; its [38-step plan](plans/9_Storage_module/PLAN.md) is ready
+for review and has not been implemented. See the
+[Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
 Persistent minimum-node composition and optional standard families remain later work.
 
 ## Board document tools

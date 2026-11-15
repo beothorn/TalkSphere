@@ -83,10 +83,11 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   settlement and persistent issuer replay. Standard families, global paid-check
   timeout ambiguity and the persistent minimum node retain their documented scope.
   See the [Storage handoff](../src/modules/peer_protocol/HANDOFF.md).
-- [ ] **10. Storage module.** Implement requester/provider store, ranged
+- [ ] **10. [Storage module](9_Storage_module/PLAN.md).** Implement requester/provider store, ranged
   retrieval, renewal guards, removal, expiration and paid byte checks, with
   authorization, durable leases and hash verification. Keep local persistence
-  independent of the paid Storage service.
+  independent of the paid Storage service. The detailed 38-step plan is proposed
+  for review; implementation has not started.
 - [ ] **11. Minimum useful node milestone.** Compose the eight required modules
   with authorized local control and configured contacts. Demonstrate a paid
   nonempty store, restart and verified paid retrieval between two identities,
