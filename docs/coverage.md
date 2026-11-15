@@ -107,3 +107,6 @@ and warning-free API documentation. See the
 [Peer Protocol acceptance matrix](../src/modules/peer_protocol/ACCEPTANCE.md) for
 independent vector provenance, standard-family substitution scope and the open
 paid-check timeout question; coverage percentage alone is not conformance.
+
+Storage step 2 measured **20038/21388 executable production lines (93.69%)**.
+Contract admission tests and the complete existing test suite passed.

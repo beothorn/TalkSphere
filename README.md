@@ -175,7 +175,8 @@ The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
 establish interoperability with an independent implementation. The next roadmap
 module is paid Storage; its [38-step plan](plans/9_Storage_module/PLAN.md) is ready
-for review and has not been implemented. See the
+and implementation is underway; the [Storage guide](src/modules/storage/README.md)
+records current scope. See the
 [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
 Persistent minimum-node composition and optional standard families remain later work.
 
