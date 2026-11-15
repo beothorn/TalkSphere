@@ -31,3 +31,6 @@ These helpers supply no production authentication or durability.
 Pinned complete definitions, terms, hash and literal prices are recorded in
 [fixture provenance](fixtures/README.md); these pass independent schema/hash
 checks and do not establish provider conformance.
+
+[Exact pricing](pricing.md) implements single-round store and usage calculations
+with a documented overflow argument; it does not register a Storage provider.

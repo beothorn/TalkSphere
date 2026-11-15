@@ -113,3 +113,7 @@ Contract admission tests and the complete existing test suite passed.
 
 Storage step 3 changes test-only helpers; production code and its measured
 93.69% coverage denominator are unchanged. The full suite and required checks pass.
+
+Storage step 5 measured **20088/21438 executable production lines (93.70%)**.
+Exact rational prices pass pinned literals, uint64 extrema and independent
+small-rational oracle cases; required checks and the full suite pass.
