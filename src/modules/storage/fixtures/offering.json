@@ -1,0 +1,40 @@
+{
+  "id": "storage-standard",
+  "service": "cr2se.storage",
+  "serviceVersion": 1,
+  "description": "Store requester-selected data for a requester-selected period.",
+  "creditIssuer": "cr2se:3FEKTKCHTGJQLPTATWZZ3HFFBN6JGGCOYNV56CAPN5DECXQZSJOQ",
+  "pricing": {
+    "model": "cr2se.storage.v1",
+    "minimumPrice": 1,
+    "byteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "byteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "retrievalByteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "renewalByteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "removePrice": 2
+  },
+  "checkPrice": 3,
+  "info": {
+    "maximumBytes": 100,
+    "minimumRetentionSeconds": 1,
+    "maximumRetentionSeconds": 100,
+    "maximumTotalRetentionSeconds": 200,
+    "maximumRetrieveBytes": 100,
+    "checkResponseSeconds": 5
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}

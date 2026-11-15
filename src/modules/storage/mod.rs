@@ -5,3 +5,6 @@ pub mod contract;
 
 #[cfg(test)]
 mod test_support;
+
+#[cfg(test)]
+mod fixture_tests;

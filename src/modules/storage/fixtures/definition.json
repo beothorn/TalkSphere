@@ -1,0 +1,156 @@
+{
+  "id": "storage-standard",
+  "service": "cr2se.storage",
+  "serviceVersion": 1,
+  "description": "Store requester-selected data for a requester-selected period.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "operation": {
+        "type": "string",
+        "description": "Operation: store, retrieve, renew, or remove."
+      },
+      "leaseId": {
+        "type": "bytes",
+        "description": "Provider-generated 32-byte lease identifier; omitted for store.",
+        "optional": true
+      },
+      "sizeBytes": {
+        "type": "uint64",
+        "description": "Exact number of bytes in store data.",
+        "optional": true
+      },
+      "retentionSeconds": {
+        "type": "uint64",
+        "description": "Requested initial retention in whole seconds.",
+        "optional": true
+      },
+      "contentHash": {
+        "type": "bytes",
+        "description": "SHA-256 hash of the complete stored byte sequence.",
+        "optional": true
+      },
+      "data": {
+        "type": "bytes",
+        "description": "Store data, streamed when necessary.",
+        "optional": true
+      },
+      "offset": {
+        "type": "uint64",
+        "description": "Zero-based first byte offset for retrieval.",
+        "optional": true
+      },
+      "length": {
+        "type": "uint64",
+        "description": "Number of bytes requested for retrieval.",
+        "optional": true
+      },
+      "expectedExpiresAt": {
+        "type": "uint64",
+        "description": "Current lease expiration expected by a renewal requester.",
+        "optional": true
+      },
+      "additionalSeconds": {
+        "type": "uint64",
+        "description": "Whole seconds requested by renewal.",
+        "optional": true
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "operation": {
+        "type": "string",
+        "description": "Completed operation: store, retrieve, renew, or remove."
+      },
+      "leaseId": {
+        "type": "bytes",
+        "description": "Provider-generated 32-byte lease identifier."
+      },
+      "sizeBytes": {
+        "type": "uint64",
+        "description": "Complete stored-object size in bytes.",
+        "optional": true
+      },
+      "contentHash": {
+        "type": "bytes",
+        "description": "SHA-256 hash of the complete stored byte sequence.",
+        "optional": true
+      },
+      "acceptedAt": {
+        "type": "uint64",
+        "description": "Provider lease-acceptance time in Unix seconds.",
+        "optional": true
+      },
+      "previousExpiresAt": {
+        "type": "uint64",
+        "description": "Expiration time immediately before a successful renewal.",
+        "optional": true
+      },
+      "expiresAt": {
+        "type": "uint64",
+        "description": "Current lease expiration time in Unix seconds.",
+        "optional": true
+      },
+      "offset": {
+        "type": "uint64",
+        "description": "Zero-based offset of returned retrieval data.",
+        "optional": true
+      },
+      "data": {
+        "type": "bytes",
+        "description": "Exact bytes returned by retrieval.",
+        "optional": true
+      },
+      "price": {
+        "type": "uint64",
+        "description": "Credits charged for the successful operation.",
+        "optional": true
+      },
+      "removed": {
+        "type": "bool",
+        "description": "True when the lease was ended successfully.",
+        "optional": true
+      }
+    }
+  },
+  "check": {
+    "description": "Challenge an active lease for the byte at one requester-selected offset and compare it locally with the original byte.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "leaseId": {
+          "type": "bytes",
+          "description": "Provider-generated 32-byte active lease identifier."
+        },
+        "offset": {
+          "type": "uint64",
+          "description": "Zero-based offset of the challenged byte."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": {
+          "type": "string",
+          "description": "Requester-computed result: pass, fail, or inconclusive."
+        },
+        "leaseId": {
+          "type": "bytes",
+          "description": "Lease identifier that was checked."
+        },
+        "offset": {
+          "type": "uint64",
+          "description": "Zero-based offset that was checked."
+        },
+        "value": {
+          "type": "bytes",
+          "description": "One-byte provider evidence when evidence was returned.",
+          "optional": true
+        }
+      }
+    }
+  }
+}

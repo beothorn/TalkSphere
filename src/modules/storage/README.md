@@ -27,3 +27,7 @@ Test-only deterministic ports model wall-clock rollback, collisions, entropy and
 hashing failure, bounded partial reads and concurrent durable writes. Restart
 reconstructs an adapter from retained bytes; lost replies preserve commitment.
 These helpers supply no production authentication or durability.
+
+Pinned complete definitions, terms, hash and literal prices are recorded in
+[fixture provenance](fixtures/README.md); these pass independent schema/hash
+checks and do not establish provider conformance.
