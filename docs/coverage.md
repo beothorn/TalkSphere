@@ -121,3 +121,6 @@ small-rational oracle cases; required checks and the full suite pass.
 Storage step 6 measured **20149/21500 executable production lines (93.72%)**.
 Offering tests cover both roles, compatible extensions, invalid rates/limits and
 advertised maximum-price overflow. Full required checks pass.
+
+Storage steps 7–8 measured **20329/21687 executable production lines (93.74%)**.
+Operation validation and lease authorization pass all required checks.
