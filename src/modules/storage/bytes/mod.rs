@@ -1,6 +1,7 @@
 //! Protected Linux upload staging and immutable positional byte reads; no lease or payment authority.
 mod fs_support;
 mod io;
+mod snapshot;
 use crate::modules::{cryptography::primitives::hash::Sha256State, services::Error};
 use rustix::fs::{self, AtFlags, FlockOperation, Mode, OFlags, RenameFlags};
 use std::{fs::File, os::unix::fs::FileExt, path::Path, sync::Arc};
@@ -8,6 +9,8 @@ use std::{fs::File, os::unix::fs::FileExt, path::Path, sync::Arc};
 struct Directory {
     file: File,
     _lock: File,
+    #[cfg(test)]
+    snapshot_fault: std::sync::atomic::AtomicU8,
 }
 /// Exclusive protected byte owner; clones share one writer lock and descriptor anchor.
 #[derive(Clone)]
@@ -56,7 +59,12 @@ impl Store {
         );
         fs_support::protected(&lock, false)?;
         fs::flock(&lock, FlockOperation::NonBlockingLockExclusive).map_err(|_| Error::Denied)?;
-        Ok(Self(Arc::new(Directory { file, _lock: lock })))
+        Ok(Self(Arc::new(Directory {
+            file,
+            _lock: lock,
+            #[cfg(test)]
+            snapshot_fault: std::sync::atomic::AtomicU8::new(0),
+        })))
     }
     /// Begin one locally authorized positive upload after checking its declared length against the caller's quota.
     /// IDs originate from trusted owner randomness, never peer filesystem names.
@@ -289,4 +297,4 @@ fn name(id: [u8; 32], pending: bool) -> String {
     output
 }
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

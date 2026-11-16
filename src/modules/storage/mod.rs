@@ -3,6 +3,7 @@
 //! Contract foundations only: no provider is registered or advertised until durable execution exists.
 pub mod clock_policy;
 pub mod contract;
+pub mod image;
 pub mod lease;
 pub mod operation;
 pub mod pricing;

@@ -133,3 +133,7 @@ Storage execution remain later work.
 Storage step 11 measured **20682/22042 executable production lines (93.83%)**.
 Protected real filesystem staging, exact short writes/reads, collision protection,
 retained handles and pre/post-install durability cuts pass with all required checks.
+
+Storage step 12 measured **21053/22422 executable production lines (93.89%)**.
+Identity-bound metadata, exact retained outputs/tokens, corruption/count limits,
+real file reopen and snapshot durability cuts pass all required checks.

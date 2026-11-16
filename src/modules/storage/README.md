@@ -36,7 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–11 are complete; durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–12 are complete; durable execution and integration remain pending.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -54,3 +54,9 @@ The Linux [byte adapter](bytes/mod.md) durably stages exact uploads and retains
 immutable positional range handles. Exercise it with
 `cargo test --locked modules::storage::bytes` from the repository root.
 Byte installation alone does not create an active paid lease.
+
+[Metadata images](image.md) retain exact lease descriptions, operation results,
+preparation tokens and retention anchors with identity/version/checksum checks.
+The byte owner also implements [atomic metadata persistence](bytes/snapshot.md).
+`cargo test --locked modules::storage::image` exercises actual metadata/byte reopen
+and gates missing or corrupt active objects before recovery admission.
