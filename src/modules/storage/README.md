@@ -36,7 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–10 are complete; durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–11 are complete; durable execution and integration remain pending.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -49,3 +49,8 @@ anchor/lease persistence remains part of the later owner implementation.
 [Quota admission](quota.md) atomically bounds bytes, lease slots, pending operations
 and retained results, including per-owner pending work. Durable owner recovery
 must rebuild its holds before exposing new admission.
+
+The Linux [byte adapter](bytes/mod.md) durably stages exact uploads and retains
+immutable positional range handles. Exercise it with
+`cargo test --locked modules::storage::bytes` from the repository root.
+Byte installation alone does not create an active paid lease.

@@ -15,3 +15,6 @@ mod test_support;
 
 #[cfg(test)]
 mod fixture_tests;
+
+#[cfg(target_os = "linux")]
+pub mod bytes;

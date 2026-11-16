@@ -129,3 +129,7 @@ Storage steps 9–10 measured **20448/21802 executable production lines (93.79%)
 Retention, requester clock policy and concurrent quota tests pass with all
 required checks and warning-free API documentation. Durable ownership and network
 Storage execution remain later work.
+
+Storage step 11 measured **20682/22042 executable production lines (93.83%)**.
+Protected real filesystem staging, exact short writes/reads, collision protection,
+retained handles and pre/post-install durability cuts pass with all required checks.
