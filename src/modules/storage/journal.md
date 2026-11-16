@@ -31,3 +31,19 @@ reopens the gate; absent/corrupt/unavailable metadata keeps it closed. Known
 precommit failures preserve the last acknowledged image. Snapshot bounds and
 logical result budgets are enforced before an acknowledged mutation. No method
 executes work, opens peer streams, changes balances or grants remote retries.
+
+prepare also decodes the exact family proposal, checks it against a private copy
+of current owner metadata and excludes another prepared mutation on the same
+lease. No lease change becomes visible merely from preparation.
+
+commit accepts only the original prepared key/token after the trusted coordinator
+records commit. It applies the retained exact proposal and persists its terminal
+phase atomically. Identical terminal repeats validate the original token and do
+not reapply the mutation; wrong tokens and contradictory decisions conflict.
+
+abort accepts an explicit recorded coordinator abort: None for unprepared staged
+work, or the exact original preparation token. It cannot reverse committed work.
+Aborted token history remains durable for validating repeated decisions. Both
+methods preserve Unknown after a possibly installed snapshot; reload resolves
+status before any repetition. These are privileged local lifecycle ports, never
+peer operations or permission to choose a different coordinator decision.

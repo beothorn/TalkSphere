@@ -53,7 +53,7 @@ fn completion() -> Completion {
     Completion {
         output: Value::Uint64(u64::MAX),
         result: Blob::new(b"result".to_vec(), 6).unwrap(),
-        effect: Blob::new(b"effect".to_vec(), 6).unwrap(),
+        effect: Blob::new(vec![0], 1).unwrap(),
         price: 7,
     }
 }
@@ -106,7 +106,7 @@ fn original_key_preparation_and_reopen() {
         Err(Error::Conflict)
     ));
     assert!(matches!(
-        journal.prepare(key(1), &Blob::new(vec![0], 1).unwrap()),
+        journal.prepare(key(1), &Blob::new(vec![9], 1).unwrap()),
         Err(Error::Conflict)
     ));
     assert!(matches!(
@@ -266,4 +266,159 @@ fn real_journal_reopen_and_corruption_gate() {
     std::fs::write(p.0.join("metadata.bin"), b"corrupt").unwrap();
     assert_eq!(recovered.reload(), Err(Error::Invalid));
     assert!(matches!(recovered.status(key(1)), Err(Error::Unknown)));
+}
+
+// Construct a complete owner proposal independently of journal mutation helpers; bytes remain a separate participant concern.
+fn lease() -> crate::modules::storage::contract::Lease {
+    use crate::modules::storage::contract::{Lease, State};
+    Lease {
+        id: [8; 32],
+        requester: IdentityId([2; 32]),
+        provider: IdentityId([1; 32]),
+        accepted_terms: Blob::new(b"terms".to_vec(), 5).unwrap(),
+        size_bytes: 3,
+        content_hash: [9; 32],
+        accepted_at: 1000,
+        expires_at: 1010,
+        store_price: 7,
+        state: State::Active,
+    }
+}
+// Encode an exact family-owned proposal into the retained completion's opaque effect reference.
+fn proposed(effect: crate::modules::storage::effect::Effect) -> Completion {
+    let mut c = completion();
+    c.effect = Blob::new(effect.encode(limits()).unwrap(), limits().bytes).unwrap();
+    c
+}
+// Observe installed image through the public persistence contract, without accessing journal locks or tables.
+fn installed(store: &Store) -> Image {
+    Image::decode(
+        &store.load(limits().bytes).unwrap().unwrap(),
+        IdentityId([1; 32]),
+        limits(),
+    )
+    .unwrap()
+}
+
+// Create, renew and remove decisions each apply once; original tokens remain valid through terminal response loss.
+#[test]
+fn exact_commit_and_serialized_mutations() {
+    use crate::modules::storage::{contract::State, effect::Effect};
+    let (journal, store, _) = fixture(vec![Write::Commit; 24]);
+    let original = lease();
+    let c = proposed(Effect::Create(original.clone()));
+    journal.stage(key(1), [4; 32], c.clone()).unwrap();
+    let wrong = Blob::new(vec![1], 1).unwrap();
+    assert_eq!(journal.commit(key(1), &wrong), Err(Error::Conflict));
+    let token = journal.prepare(key(1), &c.effect).unwrap();
+    assert_eq!(journal.commit(key(1), &wrong), Err(Error::Conflict));
+    journal.commit(key(1), &token).unwrap();
+    let writes = store.durable.lock().unwrap().commits;
+    journal.commit(key(1), &token).unwrap();
+    assert_eq!(store.durable.lock().unwrap().commits, writes);
+    assert!(journal.prepare(key(1), &c.effect).unwrap() == token);
+    assert_eq!(journal.abort(key(1), Some(&token)), Err(Error::Conflict));
+    assert_eq!(installed(&store).leases.len(), 1);
+    let mut renewed = original.clone();
+    renewed.expires_at = 1014;
+    let c = proposed(Effect::Renew {
+        expected_expires_at: 1010,
+        lease: renewed.clone(),
+    });
+    journal.stage(key(2), [5; 32], c.clone()).unwrap();
+    let token = journal.prepare(key(2), &c.effect).unwrap();
+    journal.commit(key(2), &token).unwrap();
+    journal.commit(key(2), &token).unwrap();
+    let state = installed(&store);
+    assert_eq!(state.leases[0].expires_at, 1014);
+    assert_eq!(state.leases[0].content_hash, original.content_hash);
+    assert_eq!(state.leases[0].accepted_at, original.accepted_at);
+    let removal = proposed(Effect::Remove {
+        id: original.id,
+        expected_expires_at: 1014,
+    });
+    journal.stage(key(3), [6; 32], removal.clone()).unwrap();
+    let token = journal.prepare(key(3), &removal.effect).unwrap();
+    renewed.expires_at = 1018;
+    let competing = proposed(Effect::Renew {
+        expected_expires_at: 1014,
+        lease: renewed,
+    });
+    journal.stage(key(4), [7; 32], competing.clone()).unwrap();
+    assert!(matches!(
+        journal.prepare(key(4), &competing.effect),
+        Err(Error::Conflict)
+    ));
+    journal.commit(key(3), &token).unwrap();
+    assert_eq!(installed(&store).leases[0].state, State::Removed);
+    assert!(matches!(
+        journal.prepare(key(4), &competing.effect),
+        Err(Error::Conflict)
+    ));
+    journal.abort(key(4), None).unwrap();
+}
+// Staged/prepared aborts release no committed mutation and retain exact token validation for repeated decisions.
+#[test]
+fn aborts_preserve_original_token_and_forbid_reactivation() {
+    let (journal, store, _) = fixture(vec![Write::Commit; 12]);
+    let c = completion();
+    let wrong = Blob::new(vec![1], 1).unwrap();
+    journal.stage(key(1), [4; 32], c.clone()).unwrap();
+    assert_eq!(journal.abort(key(1), Some(&wrong)), Err(Error::Conflict));
+    journal.abort(key(1), None).unwrap();
+    let writes = store.durable.lock().unwrap().commits;
+    journal.abort(key(1), None).unwrap();
+    assert_eq!(store.durable.lock().unwrap().commits, writes);
+    assert_eq!(journal.abort(key(1), Some(&wrong)), Err(Error::Conflict));
+    assert!(matches!(journal.completion(key(1)), Err(Error::Conflict)));
+    assert!(matches!(
+        journal.stage(key(1), [4; 32], c.clone()),
+        Err(Error::Conflict)
+    ));
+    assert!(matches!(
+        journal.prepare(key(1), &c.effect),
+        Err(Error::Conflict)
+    ));
+    journal.stage(key(2), [5; 32], c.clone()).unwrap();
+    let token = journal.prepare(key(2), &c.effect).unwrap();
+    assert_eq!(journal.abort(key(2), None), Err(Error::Conflict));
+    assert_eq!(journal.abort(key(2), Some(&wrong)), Err(Error::Conflict));
+    journal.abort(key(2), Some(&token)).unwrap();
+    journal.abort(key(2), Some(&token)).unwrap();
+    assert_eq!(journal.abort(key(2), Some(&wrong)), Err(Error::Conflict));
+    assert_eq!(journal.commit(key(2), &token), Err(Error::Conflict));
+    assert_eq!(journal.commit(key(9), &wrong), Err(Error::Unavailable));
+    assert_eq!(journal.abort(key(9), None), Err(Error::Unavailable));
+}
+// A lost terminal acknowledgement never reapplies a create or guesses that committed work was aborted.
+#[test]
+fn uncertain_terminal_decision_recovers_once() {
+    use crate::modules::storage::effect::Effect;
+    for commit in [true, false] {
+        let (journal, store, _) = fixture(vec![
+            Write::Commit,
+            Write::Commit,
+            Write::Commit,
+            Write::LoseReply,
+        ]);
+        let c = proposed(Effect::Create(lease()));
+        journal.stage(key(1), [4; 32], c.clone()).unwrap();
+        let token = journal.prepare(key(1), &c.effect).unwrap();
+        let result = if commit {
+            journal.commit(key(1), &token)
+        } else {
+            journal.abort(key(1), Some(&token))
+        };
+        assert_eq!(result, Err(Error::Unknown));
+        assert!(matches!(journal.status(key(1)), Err(Error::Unknown)));
+        journal.reload().unwrap();
+        if commit {
+            journal.commit(key(1), &token).unwrap();
+            assert_eq!(installed(&store).leases.len(), 1);
+        } else {
+            journal.abort(key(1), Some(&token)).unwrap();
+            assert!(installed(&store).leases.is_empty());
+        }
+        assert_eq!(store.durable.lock().unwrap().commits, 4);
+    }
 }

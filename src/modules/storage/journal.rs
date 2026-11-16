@@ -152,6 +152,27 @@ impl Journal {
             Stage::Aborted(_) => return Err(Error::Conflict),
             Stage::Staged => {}
         }
+        let effect_proposal =
+            super::effect::Effect::decode(effect.bytes(), self.provider, self.limits)?;
+        if let Some(resource) = effect_proposal.resource() {
+            for (other_index, other) in image.operations.iter().enumerate() {
+                if other_index != index
+                    && matches!(other.status, Stage::Prepared(_))
+                    && super::effect::Effect::decode(
+                        other.completion.effect.bytes(),
+                        self.provider,
+                        self.limits,
+                    )?
+                    .resource()
+                        == Some(resource)
+                {
+                    return Err(Error::Conflict);
+                }
+            }
+        }
+        let mut checked = image.clone();
+        effect_proposal.apply(&mut checked, key.requester)?;
+        checked.encode(self.limits)?;
         let nonce = self.crypto.lease_id()?;
         let mut binding = b"TalkSphere Storage participant token v1".to_vec();
         for bytes in [
@@ -173,6 +194,58 @@ impl Journal {
         candidate.operations[index].status = Stage::Prepared(token.clone());
         self.persist(&mut state, candidate)?;
         Ok(token)
+    }
+    /// Apply an immutable coordinator commit to the exact prepared proposal at most once.
+    /// Only trusted local Services coordination may invoke this after durably recording its decision.
+    /// # Errors
+    /// Conflict rejects wrong tokens, unprepared work, aborts or changed resource guards.
+    /// Unknown gates possible installed commitment until reload; no timeout permits rollback.
+    pub fn commit(&self, key: OperationKey, token: &Blob) -> Result<(), Error> {
+        tracing::trace!("Applying an original Storage coordinator commit decision");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        let index = image
+            .operations
+            .iter()
+            .position(|r| r.key == key)
+            .ok_or(Error::Unavailable)?;
+        match &image.operations[index].status {
+            Stage::Committed(original) if original == token => return Ok(()),
+            Stage::Prepared(original) if original == token => {}
+            _ => return Err(Error::Conflict),
+        }
+        let effect = super::effect::Effect::decode(
+            image.operations[index].completion.effect.bytes(),
+            self.provider,
+            self.limits,
+        )?;
+        let mut candidate = image.clone();
+        effect.apply(&mut candidate, key.requester)?;
+        candidate.operations[index].status = Stage::Committed(token.clone());
+        self.persist(&mut state, candidate)
+    }
+    /// Apply only an explicit coordinator abort, preserving original token checks after response loss.
+    /// Prepared work requires its exact token; staged work requires None; committed effects cannot abort.
+    /// # Errors
+    /// Conflict rejects contradictory decisions or token reuse; Unknown preserves possible snapshot commitment.
+    pub fn abort(&self, key: OperationKey, token: Option<&Blob>) -> Result<(), Error> {
+        tracing::trace!("Applying an original Storage coordinator abort decision");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        let index = image
+            .operations
+            .iter()
+            .position(|r| r.key == key)
+            .ok_or(Error::Unavailable)?;
+        match &image.operations[index].status {
+            Stage::Aborted(original) if original.as_ref() == token => return Ok(()),
+            Stage::Staged if token.is_none() => {}
+            Stage::Prepared(original) if Some(original) == token => {}
+            _ => return Err(Error::Conflict),
+        }
+        let mut candidate = image.clone();
+        candidate.operations[index].status = Stage::Aborted(token.cloned());
+        self.persist(&mut state, candidate)
     }
     /// Observe family-local staged/prepared/terminal state without converting timeout into abort.
     /// # Errors

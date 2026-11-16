@@ -141,3 +141,8 @@ real file reopen and snapshot durability cuts pass all required checks.
 Storage step 13 measured **21214/22587 executable production lines (93.92%)**.
 Original-key staging/preparation, concurrent duplicate calls, dependency failures,
 unknown-write gating and real protected journal reopen pass all required checks.
+
+Storage step 14 measured **21410/22784 executable production lines (93.97%)**.
+Exact create/renew/remove proposals, prepared mutation exclusion, idempotent
+terminal decisions, immutable renewal guards and lost terminal replies pass
+all required checks. These are local participant tests, not paid node conformance.
