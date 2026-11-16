@@ -36,5 +36,5 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–6 are complete;
-operation validation, durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–7 are complete; durable execution and integration remain pending.
+[Operation validation](operation.md) checks complete values and separate byte challenges.

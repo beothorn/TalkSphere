@@ -2,6 +2,7 @@
 //!
 //! Contract foundations only: no provider is registered or advertised until durable execution exists.
 pub mod contract;
+pub mod operation;
 pub mod pricing;
 pub mod terms;
 
