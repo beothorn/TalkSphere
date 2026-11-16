@@ -124,3 +124,8 @@ advertised maximum-price overflow. Full required checks pass.
 
 Storage steps 7–8 measured **20329/21687 executable production lines (93.74%)**.
 Operation validation and lease authorization pass all required checks.
+
+Storage steps 9–10 measured **20448/21802 executable production lines (93.79%)**.
+Retention, requester clock policy and concurrent quota tests pass with all
+required checks and warning-free API documentation. Durable ownership and network
+Storage execution remain later work.

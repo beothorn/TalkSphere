@@ -6,6 +6,7 @@ pub mod contract;
 pub mod lease;
 pub mod operation;
 pub mod pricing;
+pub mod quota;
 pub mod retention;
 pub mod terms;
 
