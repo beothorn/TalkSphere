@@ -4,6 +4,7 @@
 pub mod clock_policy;
 pub mod contract;
 pub mod image;
+pub mod journal;
 pub mod lease;
 pub mod operation;
 pub mod pricing;

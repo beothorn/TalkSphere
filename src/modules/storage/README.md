@@ -36,7 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–12 are complete; durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–13 are complete; durable execution and integration remain pending.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -60,3 +60,9 @@ preparation tokens and retention anchors with identity/version/checksum checks.
 The byte owner also implements [atomic metadata persistence](bytes/snapshot.md).
 `cargo test --locked modules::storage::image` exercises actual metadata/byte reopen
 and gates missing or corrupt active objects before recovery admission.
+
+The [participant journal](journal.md) durably stages original-key completions,
+prepares exact effects and recovers original tokens after uncertain writes.
+`cargo test --locked modules::storage::journal` covers concurrent preparation,
+dependency failures and actual protected snapshot reopen. No paid provider is
+registered until the remaining owner, operation and integration steps are ready.

@@ -137,3 +137,7 @@ retained handles and pre/post-install durability cuts pass with all required che
 Storage step 12 measured **21053/22422 executable production lines (93.89%)**.
 Identity-bound metadata, exact retained outputs/tokens, corruption/count limits,
 real file reopen and snapshot durability cuts pass all required checks.
+
+Storage step 13 measured **21214/22587 executable production lines (93.92%)**.
+Original-key staging/preparation, concurrent duplicate calls, dependency failures,
+unknown-write gating and real protected journal reopen pass all required checks.
