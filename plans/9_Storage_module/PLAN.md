@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–8 are complete and later steps remain pending.
+Status: implementation authorized; steps 1–9 are complete and later steps remain pending.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -14,7 +14,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **6.** Validate Storage offering terms and advertised maxima.
 - [x] **7.** Validate operation-specific inputs and outputs.
 - [x] **8.** Implement owner-authorized lease lookup.
-- [ ] **9.** Implement retention clocks and terminal lease states.
+- [x] **9.** Implement retention clocks and terminal lease states.
 - [ ] **10.** Reserve bounded capacity for pending Storage work.
 - [ ] **11.** Persist bounded upload staging and immutable byte handles.
 - [ ] **12.** Persist lease metadata and retained operation results.
