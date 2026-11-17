@@ -189,3 +189,10 @@ Logical removal, independent requester checks, accepted read completion, later
 inactive-operation refusal, renewal ordering, explicit abort and failed/lost
 persistence acknowledgements pass all required checks and warning-free rustdoc.
 Physical reclamation and full paid network composition remain later steps.
+
+Storage step 25 measured **22983/24426 executable production lines (94.09%)**.
+Terminal expiry, bounded cursor batches, shared byte lifetimes, pinned/orphan-name
+accounting, failed deletion and lost metadata/unlink replies pass required checks
+and warning-free rustdoc. Coverage exposed an existing Identity test lock-reopen
+race; the same bounded post-drop retry used by its atomic tests now covers backup
+and restore cuts. The subsequent full verification and coverage run passed.

@@ -18,9 +18,9 @@ and inventories every byte entry. Receiving or unreferenced entries keep admissi
 closed until explicitly resolved by the owner; they are not silently deleted.
 
 Quota reconstruction retains original operation keys and accounts for complete
-result encodings/buffers, lease history and all proposed create bytes. Until
-explicit reclamation is implemented, terminal/orphan bytes remain conservatively
-charged. Committed lease metadata must match unique original create records.
+result encodings/buffers, lease history and directory-backed or descriptor-pinned
+create bytes. [Bounded terminal cleanup](cleanup.md) releases byte capacity only
+after confirmed deletion without pins; ID and result history remains charged. Committed lease metadata must match unique original create records.
 Insufficient configured limits do not evict existing obligations. Reboot progress
 requires independently trusted elapsed time; clock uncertainty remains unavailable.
 
@@ -42,3 +42,6 @@ verified local finalization contract; missing history closes admission rather
 than treating a family commit as proof of complete local coordination. Current
 Services retains its original operation records. This is a local profile limit,
 not a new peer requirement or a protocol defect.
+
+[Cleanup](cleanup.md) exposes the bounded collection outcome and trusted Gate
+collection operation, including cursors, deferred pins and durable absence.

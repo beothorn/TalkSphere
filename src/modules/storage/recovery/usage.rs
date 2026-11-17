@@ -15,6 +15,7 @@ pub(super) fn rebuild(
     image: &Image,
     image_limits: super::super::image::Limits,
     limits: Limits,
+    retained: &BTreeSet<[u8; 32]>,
 ) -> Result<Quota, Error> {
     tracing::trace!("Reconstructing original Storage resource holds before admission");
     let quota = Quota::new(limits)?;
@@ -23,7 +24,7 @@ pub(super) fn rebuild(
         if matches!(record.status, Stage::Staged | Stage::Prepared(_)) {
             return Err(Error::Unknown);
         }
-        let usage = record_usage(image, record, image_limits)?;
+        let usage = record_usage(image, record, image_limits, retained)?;
         if let Effect::Create(original) = Effect::decode(
             record.completion.effect.bytes(),
             image.provider,
@@ -60,6 +61,7 @@ pub(super) fn record_usage(
     image: &Image,
     record: &crate::modules::storage::image::Retained,
     image_limits: super::super::image::Limits,
+    retained: &BTreeSet<[u8; 32]>,
 ) -> Result<Usage, Error> {
     tracing::trace!("Calculating retained Storage operation resource usage");
     let encoded = services::codec::encode(
@@ -85,9 +87,40 @@ pub(super) fn record_usage(
         image.provider,
         image_limits,
     )? {
-        // Terminal/orphan bytes stay charged until owner-confirmed reclamation is implemented.
-        usage.bytes = original.size_bytes;
+        // Only physically present or descriptor-retained object bytes consume byte capacity; ID and result history remains.
+        usage.bytes = if retained.contains(&original.id) {
+            original.size_bytes
+        } else {
+            0
+        };
         usage.leases = usize::from(pending || matches!(record.status, Stage::Committed(_)));
     }
     Ok(usage)
+}
+
+// Retain directory-backed and descriptor-only object IDs under finite owner inventory bounds.
+pub(super) fn objects(
+    bytes: &super::super::bytes::Store,
+    image: &Image,
+    limits: super::super::image::Limits,
+) -> Result<BTreeSet<[u8; 32]>, Error> {
+    tracing::trace!("Accounting for directory-backed and pinned Storage object bytes");
+    let maximum = limits
+        .leases
+        .checked_add(limits.operations)
+        .ok_or(Error::Limit)?;
+    let mut retained = bytes
+        .inventory(maximum)?
+        .into_iter()
+        .map(|entry| entry.id)
+        .collect::<BTreeSet<_>>();
+    for record in &image.operations {
+        if let Effect::Create(original) =
+            Effect::decode(record.completion.effect.bytes(), image.provider, limits)?
+            && bytes.has_pins(original.id)?
+        {
+            retained.insert(original.id);
+        }
+    }
+    Ok(retained)
 }

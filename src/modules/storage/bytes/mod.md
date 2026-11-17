@@ -43,3 +43,8 @@ escape admission accounting.
 
 [Scoped ranges](range.md) retain accepted byte ownership and reject reads outside
 the pinned subrange even when the underlying file contains additional bytes.
+
+Immutable handles and ranges also retain shared per-object lifetime markers.
+The owner cleanup path synchronizes new pins with physical deletion and waits
+for all markers before reclaiming bytes; protected descriptors and writer
+authority remain alive while callers hold their handles.

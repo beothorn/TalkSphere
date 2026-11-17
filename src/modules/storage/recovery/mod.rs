@@ -1,4 +1,5 @@
 //! Linux Storage startup admission over public coordinator recovery and independently durable family state.
+mod cleanup;
 mod usage;
 use super::{
     bytes::Store,
@@ -16,6 +17,7 @@ use crate::modules::{
         runtime::{Coordinator, Phase},
     },
 };
+pub use cleanup::Cleanup;
 use std::sync::{Arc, Mutex};
 
 /// Trusted local coordinator recovery; it resumes original records rather than executing work again.
@@ -138,7 +140,8 @@ impl Gate {
             }
         }
 
-        let quota = usage::rebuild(&image, self.journal.image_limits(), self.limits)?;
+        let retained = usage::objects(&self.bytes, &image, self.journal.image_limits())?;
+        let quota = usage::rebuild(&image, self.journal.image_limits(), self.limits, &retained)?;
         let mut admission = self.admission.lock().map_err(|_| Error::Unavailable)?;
         admission.quota = Some(quota);
         admission.ready = true;
@@ -247,7 +250,9 @@ impl Gate {
                 .iter()
                 .find(|r| r.key == key)
                 .ok_or(Error::Unknown)?;
-            let usage = usage::record_usage(&image, record, self.journal.image_limits())?;
+            let retained = usage::objects(&self.bytes, &image, self.journal.image_limits())?;
+            let usage =
+                usage::record_usage(&image, record, self.journal.image_limits(), &retained)?;
             admission
                 .quota
                 .as_ref()

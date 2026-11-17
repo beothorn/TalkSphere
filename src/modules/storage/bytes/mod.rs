@@ -2,19 +2,29 @@
 mod fs_support;
 mod inventory;
 mod io;
+mod reclaim;
 pub use inventory::Entry;
 mod range;
 mod snapshot;
 use crate::modules::{cryptography::primitives::hash::Sha256State, services::Error};
 pub use range::Range;
 use rustix::fs::{self, AtFlags, FlockOperation, Mode, OFlags, RenameFlags};
-use std::{fs::File, os::unix::fs::FileExt, path::Path, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    os::unix::fs::FileExt,
+    path::Path,
+    sync::{Arc, Mutex, Weak},
+};
 
 struct Directory {
     file: File,
     _lock: File,
+    pins: Mutex<BTreeMap<[u8; 32], Weak<()>>>,
     #[cfg(test)]
     snapshot_fault: std::sync::atomic::AtomicU8,
+    #[cfg(test)]
+    reclaim_fault: std::sync::atomic::AtomicU8,
 }
 /// Exclusive protected byte owner; clones share one writer lock and descriptor anchor.
 #[derive(Clone)]
@@ -37,6 +47,7 @@ pub struct Upload {
 pub struct Handle {
     directory: Arc<Directory>,
     file: Arc<File>,
+    _pin: Arc<()>,
     id: [u8; 32],
     length: u64,
 }
@@ -66,8 +77,11 @@ impl Store {
         Ok(Self(Arc::new(Directory {
             file,
             _lock: lock,
+            pins: Mutex::new(BTreeMap::new()),
             #[cfg(test)]
             snapshot_fault: std::sync::atomic::AtomicU8::new(0),
+            #[cfg(test)]
+            reclaim_fault: std::sync::atomic::AtomicU8::new(0),
         })))
     }
     /// Begin one locally authorized positive upload after checking its declared length against the caller's quota.
@@ -119,6 +133,7 @@ impl Store {
     /// Storage/Denied reject unavailable or unsafe objects; Invalid rejects mismatched lengths.
     pub fn reopen(&self, id: [u8; 32], length: u64) -> Result<Handle, Error> {
         tracing::trace!("Reopening retained immutable Storage bytes");
+        let mut pins = self.0.pins.lock().map_err(|_| Error::Unavailable)?;
         let file = File::from(
             fs::openat(
                 &self.0.file,
@@ -135,6 +150,7 @@ impl Store {
         Ok(Handle {
             directory: self.0.clone(),
             file: Arc::new(file),
+            _pin: reclaim::pin(&mut pins, id),
             id,
             length,
         })
@@ -204,6 +220,7 @@ impl Upload {
         self.cut(2)?;
         self.file.sync_all().map_err(|_| Error::Storage)?;
         self.cut(3)?;
+        let mut pins = self.directory.pins.lock().map_err(|_| Error::Unavailable)?;
         fs::renameat_with(
             &self.directory.file,
             name(self.id, true),
@@ -226,6 +243,7 @@ impl Upload {
         Ok(Handle {
             directory: self.directory.clone(),
             file: Arc::new(file),
+            _pin: reclaim::pin(&mut pins, self.id),
             id: self.id,
             length: self.length,
         })

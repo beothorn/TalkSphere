@@ -341,6 +341,44 @@ impl Journal {
         self.persist(&mut state, candidate.clone())?;
         Ok(candidate)
     }
+    // Advance durable logical time and expire only leases free of original staged/prepared conflicting effects.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn cleanup_time(
+        &self,
+        now: super::contract::Time,
+        reboot_elapsed: Option<u64>,
+    ) -> Result<(Image, usize), Error> {
+        tracing::trace!("Persisting terminal Storage expiry while protecting unresolved mutations");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        let mut protected = std::collections::BTreeSet::new();
+        for record in &image.operations {
+            if matches!(record.status, Stage::Staged | Stage::Prepared(_))
+                && let Some(id) = super::effect::Effect::decode(
+                    record.completion.effect.bytes(),
+                    self.provider,
+                    self.limits,
+                )?
+                .resource()
+            {
+                protected.insert(id);
+            }
+        }
+        let mut candidate = image.clone();
+        candidate.anchor = candidate.anchor.advance(now, reboot_elapsed)?;
+        let mut expired = 0;
+        for lease in &mut candidate.leases {
+            if !protected.contains(&lease.id)
+                && super::retention::refresh(lease, candidate.anchor.unix_seconds)
+            {
+                expired += 1;
+            }
+        }
+        if expired > 0 || candidate.anchor != image.anchor {
+            self.persist(&mut state, candidate.clone())?;
+        }
+        Ok((candidate, expired))
+    }
     // Install only a completely encoded acknowledged candidate; possible commitment closes the owner gate.
     fn persist(&self, state: &mut Option<Image>, candidate: Image) -> Result<(), Error> {
         tracing::trace!("Acknowledging an atomic Storage participant image");
