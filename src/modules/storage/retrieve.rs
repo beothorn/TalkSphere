@@ -12,7 +12,8 @@ use crate::modules::{
     board::offering::Direction,
     services::{
         Error,
-        handler::Invocation,
+        contract::OperationKey,
+        handler::{Blob, Invocation},
         pricing::Price,
         validation,
         value::{Budget, Value},
@@ -21,12 +22,24 @@ use crate::modules::{
 
 /// Accepted provider-owned range and immutable original terms; resource admission remains with the caller.
 pub struct Pinned {
+    key: OperationKey,
+    accepted: Blob,
     lease: Lease,
     range: Range,
     offset: u64,
     price: u64,
 }
 impl Pinned {
+    /// Return the trusted original accepted operation key without creating any remote retry authority.
+    pub fn key(&self) -> OperationKey {
+        tracing::trace!("Reading original accepted Storage retrieval scope");
+        self.key
+    }
+    // Preserve exact original public accepted terms for local result binding, without decoding coordinator state.
+    pub(crate) fn accepted_terms(&self) -> &Blob {
+        tracing::trace!("Borrowing original accepted Storage retrieval binding");
+        &self.accepted
+    }
     /// Borrow the exact authorized range; its descriptor survives subsequent unlink and metadata changes.
     pub fn bytes(&self) -> &Range {
         tracing::trace!("Borrowing an accepted Storage retrieval range");
@@ -110,6 +123,8 @@ pub fn accept(
         .reopen(lease.id, lease.size_bytes)?
         .range(offset, length)?;
     Ok(Pinned {
+        key: invocation.key,
+        accepted: invocation.accepted.clone(),
         lease: lease.clone(),
         range,
         offset,

@@ -247,6 +247,30 @@ impl Journal {
         candidate.operations[index].status = Stage::Aborted(token.cloned());
         self.persist(&mut state, candidate)
     }
+    // Bound and clone only the original matched result, avoiding an entire owner-image copy on read recovery.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn original_result(
+        &self,
+        key: OperationKey,
+        binding: [u8; 32],
+        budget: crate::modules::services::value::Budget,
+        maximum: usize,
+    ) -> Result<Option<Completion>, Error> {
+        tracing::trace!("Observing only bounded original Storage result bytes");
+        let state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        let Some(record) = image.operations.iter().find(|r| r.key == key) else {
+            return Ok(None);
+        };
+        if record.binding != binding || matches!(record.status, Stage::Aborted(_)) {
+            return Err(Error::Conflict);
+        }
+        record.completion.output.bounded(budget)?;
+        if record.completion.result.bytes().len() > maximum {
+            return Err(Error::Limit);
+        }
+        Ok(Some(record.completion.clone()))
+    }
     /// Observe family-local staged/prepared/terminal state without converting timeout into abort.
     /// # Errors
     /// Unknown gates possibly committed metadata; poisoned locks are Unavailable.

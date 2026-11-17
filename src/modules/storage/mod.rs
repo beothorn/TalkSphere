@@ -31,3 +31,6 @@ mod binding;
 
 #[cfg(target_os = "linux")]
 pub mod retrieve;
+
+#[cfg(target_os = "linux")]
+pub mod retrieve_result;

@@ -47,4 +47,44 @@ impl Range {
         let absolute = self.offset.checked_add(offset).ok_or(Error::Invalid)?;
         self.handle.read(absolute, length, maximum)
     }
+    // Verify a single coherent full-object byte sequence while retaining only the accepted range.
+    // No full-object data escapes this internal provider check; temporary chunks remain bounded.
+    pub(crate) fn verified(
+        &self,
+        expected: [u8; 32],
+        maximum_range: usize,
+        maximum_object: u64,
+    ) -> Result<Vec<u8>, Error> {
+        tracing::trace!(
+            "Verifying retained Storage object while collecting only the accepted range"
+        );
+        use crate::modules::cryptography::primitives::hash::Sha256State;
+        let length = usize::try_from(self.length).map_err(|_| Error::Limit)?;
+        if length > maximum_range || self.handle.len() > maximum_object {
+            return Err(Error::Limit);
+        }
+        let object_length = usize::try_from(self.handle.len()).map_err(|_| Error::Limit)?;
+        let mut hash = Sha256State::new(object_length);
+        let mut output = Vec::with_capacity(length);
+        let end = self.offset.checked_add(self.length).ok_or(Error::Invalid)?;
+        let mut position = 0;
+        while position < self.handle.len() {
+            let count = (self.handle.len() - position).min(65536);
+            let chunk = self.handle.read(position, count, 65536)?;
+            hash.update(&chunk).map_err(|_| Error::Limit)?;
+            let chunk_end = position.checked_add(count).ok_or(Error::Invalid)?;
+            let start = self.offset.max(position);
+            let stop = end.min(chunk_end);
+            if start < stop {
+                let first = usize::try_from(start - position).map_err(|_| Error::Limit)?;
+                let last = usize::try_from(stop - position).map_err(|_| Error::Limit)?;
+                output.extend_from_slice(&chunk[first..last]);
+            }
+            position = chunk_end;
+        }
+        if output.len() != length || hash.finish() != expected {
+            return Err(Error::Storage);
+        }
+        Ok(output)
+    }
 }

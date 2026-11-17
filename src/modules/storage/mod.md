@@ -25,3 +25,7 @@ expectations and retain only acknowledged results in application-owned catalogs.
 
 Linux [retrieval acceptance](retrieve.md) retains an authorized bounded subrange
 under immutable accepted prices, independently of later lease/Board state changes.
+
+[Retained retrieval results](retrieve_result.md) bound capacity before reading,
+check the complete backing object while exposing only accepted bytes, and retain
+the original completion without repeating a committed read.

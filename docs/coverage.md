@@ -162,3 +162,8 @@ Storage independent steps 18–19 measured **22144/23559 executable production
 lines (93.99%)**. Requester result/catalog checks and native scoped range
 acceptance pass required checks. Step 17 remains pending upstream issue #11;
 these results do not claim a complete paid Storage provider.
+
+Storage step 20 measured **22300/23720 executable production lines (94.01%)**.
+Exact range results, cross-chunk integrity scans, original-key journal recovery,
+short/corrupt source failures and capacity refusal pass all required checks.
+Paid creation and complete network handler composition remain pending.

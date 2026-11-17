@@ -100,4 +100,9 @@ Independent [retrieval acceptance](retrieve.md) completes step 19 with scoped
 immutable [range references](bytes/range.md). Timely pins survive later expiry,
 removal and unlink; new expired/foreign/invalid-range calls fail before data reads.
 Run `cargo test --locked modules::storage::retrieve` for actual byte-adapter tests.
-Result staging and complete paid network integration remain later steps.
+[Complete range results](retrieve_result.md) now finish step 20 with pre-I/O
+resource bounds, bounded whole-object integrity scans, and original-key durable
+result retention through the participant journal. Corrupt or short backing bytes
+produce no successful output; retained local results survive source loss and
+journal reopen. This local recovery adds no remote retry operation. Complete
+paid network integration remains a later step.

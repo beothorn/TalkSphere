@@ -26,3 +26,7 @@ remain separate operations; this helper neither sends data nor charges credits.
 This independent range contract does not resolve upstream issue #11 or register
 a paid Storage provider. Caller composition must persist authoritative terminal
 observations and bound ownership through existing owner and Services contracts.
+
+Pinned.key retains the original trusted operation association. Exact accepted
+terms are also retained privately for local result binding; no new peer replay
+capability or filesystem path is exposed.

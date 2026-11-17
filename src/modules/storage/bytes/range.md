@@ -15,3 +15,8 @@ Clones share immutable descriptor ownership and use positional reads without a
 shared mutable cursor. They can finish accepted reads after metadata expiry,
 removal or unlink. The owner must retain/reconcile resource quotas and lifetime;
 these references authorize neither a new lease operation nor additional spending.
+
+Internal provider result construction can verify a bounded complete-object hash
+while collecting only the accepted range in that same scan. Whole-object bytes
+outside the range never become public output; short/corrupt backing data fails
+before a successful completion is returned.
