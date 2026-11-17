@@ -76,3 +76,39 @@ pub(crate) fn store(wanted: bool) -> (Invocation, Value, Value) {
 fn object(fields: Vec<(&str, Value)>) -> Value {
     Value::Object(fields.into_iter().map(|(n, v)| (n.into(), v)).collect())
 }
+
+// Build independent renewal input/output and trusted original lease data; this bypasses paid lease creation only in tests.
+pub(crate) fn renew() -> (Invocation, Value, Value, super::super::contract::Lease) {
+    use super::super::contract::{Lease, State};
+    let (mut invocation, _, _) = store(false);
+    let lease = Lease {
+        id: [8; 32],
+        requester: invocation.requester,
+        provider: invocation.provider,
+        accepted_terms: invocation.accepted.clone(),
+        size_bytes: 3,
+        content_hash: HASH,
+        accepted_at: 1000,
+        expires_at: 1010,
+        store_price: 17,
+        state: State::Active,
+    };
+    invocation.key.stream = 2;
+    invocation.pricing = Price::Fixed(15);
+    invocation.maximum = 15;
+    invocation.factors = object(vec![("sizeBytes", Value::Uint64(3))]);
+    let input = object(vec![
+        ("operation", Value::String("renew".into())),
+        ("leaseId", Value::Bytes(lease.id.to_vec())),
+        ("expectedExpiresAt", Value::Uint64(1010)),
+        ("additionalSeconds", Value::Uint64(10)),
+    ]);
+    let output = object(vec![
+        ("operation", Value::String("renew".into())),
+        ("leaseId", Value::Bytes(lease.id.to_vec())),
+        ("previousExpiresAt", Value::Uint64(1010)),
+        ("expiresAt", Value::Uint64(1020)),
+        ("price", Value::Uint64(15)),
+    ]);
+    (invocation, input, output, lease)
+}

@@ -12,6 +12,8 @@ pub mod operation;
 pub mod pricing;
 pub mod quota;
 pub mod renewal;
+#[cfg(target_os = "linux")]
+pub mod renewal_commit;
 pub mod requester;
 pub mod retention;
 pub mod terms;

@@ -181,7 +181,7 @@ fn field<'a>(value: &'a Value, name: &str) -> Result<&'a Value, Error> {
         .ok_or(Error::Invalid)
 }
 // Preserve exact unsigned protocol seconds and reject lossy numeric substitutions.
-fn number(value: &Value, name: &str) -> Result<u64, Error> {
+pub(super) fn number(value: &Value, name: &str) -> Result<u64, Error> {
     tracing::trace!("Checking exact Storage renewal dimension");
     match field(value, name)? {
         Value::Uint64(n) => Ok(*n),
@@ -189,7 +189,7 @@ fn number(value: &Value, name: &str) -> Result<u64, Error> {
     }
 }
 // Decode only a fixed lease identifier, never a path, hash-based authority or provider-supplied ownership claim.
-fn id(value: &Value) -> Result<[u8; 32], Error> {
+pub(super) fn id(value: &Value) -> Result<[u8; 32], Error> {
     tracing::trace!("Reading original Storage renewal identity");
     match field(value, "leaseId")? {
         Value::Bytes(b) => b.as_slice().try_into().map_err(|_| Error::Invalid),

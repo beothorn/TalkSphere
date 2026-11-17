@@ -118,3 +118,11 @@ expected-expiry guards, current duration/total limits and exact size-based price
 without extending the lease. Requesters compare the sole size factor with their
 retained lease. Exercise step 22 with
 `cargo test --locked modules::storage::renewal`.
+
+[Accepted renewal staging](renewal_commit.md) completes step 23 through recovered
+owner admission and existing guarded participant preparation/commit. Competing
+renewals cannot both prepare; failed writes and lost acknowledgements retain
+original decision semantics. [Requester renewal validation](requester/renew.md)
+checks the exact previous/new expiration and preserves immutable lease metadata.
+Run `cargo test --locked modules::storage::renewal_commit` and
+`cargo test --locked modules::storage::requester::renew` from the repository root.

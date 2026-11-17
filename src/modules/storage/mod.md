@@ -32,3 +32,6 @@ the original completion without repeating a committed read.
 
 [Renewal assessment and pricing](renewal.md) authorize current guards and compare
 exact provider factors with independently retained size before quote acceptance.
+
+[Accepted renewal staging](renewal_commit.md) reserves result capacity and retains
+guarded proposals through original participant decisions.

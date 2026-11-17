@@ -239,3 +239,6 @@ pub(crate) mod contracts;
 
 #[cfg(target_os = "linux")]
 pub(crate) mod ranges;
+
+#[cfg(target_os = "linux")]
+pub(crate) mod mutations;

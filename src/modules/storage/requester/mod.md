@@ -9,3 +9,6 @@ new acceptance-time rule. Provider lease creation still awaits CR2SE issue #11.
 
 [Retrieval verification](retrieve.md) compares complete results with independent
 lease metadata, hashes full objects, and reports partial-range integrity limits.
+
+[Renewal validation](renew.md) checks original guards, prices and previous/new
+expiration before returning updated independently retained lease metadata.

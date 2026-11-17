@@ -177,3 +177,9 @@ Storage step 22 measured **22496/23927 executable production lines (94.02%)**.
 Authorized renewal assessment, stale/expired guards, exact independent size factors,
 checked duration/total limits and uint64-size pricing pass all required checks
 and warning-free rustdoc without changing existing lease obligations.
+
+Storage step 23 measured **22669/24105 executable production lines (94.04%)**.
+Native renewal staging/reopen, competing preparation threads, renew/remove guard
+ordering, pending expiry, confirmed/uncertain persistence and independent requester
+validation pass required checks and warning-free rustdoc. Decisions and charging
+remain Services-owned; these tests do not claim complete paid network integration.
