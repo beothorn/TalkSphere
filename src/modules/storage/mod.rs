@@ -27,7 +27,6 @@ pub mod bytes;
 #[cfg(target_os = "linux")]
 pub mod recovery;
 
-
 mod binding;
 
 #[cfg(target_os = "linux")]
