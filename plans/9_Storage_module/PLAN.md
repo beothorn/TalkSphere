@@ -358,6 +358,12 @@ and provider accounting evidence for issue #10 without automatic trust/refund ch
 
 ### 28. Register Storage handlers and publish usable offerings
 
+Partial progress: the independent [standard catalogue](../../src/modules/storage/standard.md)
+constructs offering-bound complete definitions and recognizes the pinned schema
+through Services Standards. Unit tests exercise complete tampering, optional
+extensions, budgets and real Registry admission without provider support. This
+does not complete requester/provider installation or usable publication.
+
 Pending prerequisite: complete step 17 after resolving upstream issue #11; an
 installation that refuses store cannot advertise the complete Storage contract.
 

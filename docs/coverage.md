@@ -208,3 +208,10 @@ malformed/foreign/missing evidence, activity ambiguity and bounded unbiased
 sampling pass all required checks and warning-free rustdoc. All 109 Storage
 unit tests pass. Step 17 and complete provider/network acceptance remain pending
 CR2SE issue #11; no paid Storage provider is advertised.
+
+The independent catalogue portion of Storage step 28 measured
+**23284/24741 executable production lines (94.11%)**. Five new tests cover
+complete schema tampering, equivalent descriptions and numeric versions, optional
+extensions, bounded JSON serialization and real Services Registry admission
+without provider support. Required checks and warning-free rustdoc pass. Step 28
+remains unchecked pending complete handler installation/publication and step 17.

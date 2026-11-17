@@ -155,3 +155,9 @@ inconclusive. No outcome automatically refunds charges or changes trust. Optiona
 [secure sampling](requester/sampling.md) uses bounded rejection draws without bias.
 Run `cargo test --locked modules::storage::requester::byte_check` and
 `cargo test --locked modules::storage::requester::sampling` from the repository root.
+
+The independent [standard catalogue](standard.md) now supplies the pinned complete
+definition and checks Storage schema meaning through public Services Standards.
+This is partial progress on step 28: real handler installation and usable provider
+publication remain pending step 17 and issue #11. Exercise it with
+`cargo test --locked modules::storage::standard` from the repository root.

@@ -8,3 +8,8 @@ Source revision: [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b627
 
 The `abc` hash is literal ST-02 evidence in fixture_tests.rs. These are independent
 schema/hash fixtures, not evidence of a working Storage provider or node.
+
+The production standard catalogue embeds definition.json as its independently
+pinned schema source; offering.json and price/hash scenarios remain test evidence.
+Remote input never replaces the embedded catalogue. Recognition alone does not
+install requester/provider code or advertise a usable paid service.

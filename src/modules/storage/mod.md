@@ -41,3 +41,7 @@ decisions while preserving accepted reads and original results.
 
 [Paid byte evidence](byte_check.md) pins an authorized original byte under current
 separately accepted check terms, without providing a correctness conclusion.
+
+The [standard catalogue](standard.md) recognizes the pinned complete logical
+Storage schema independently of peer descriptions and executable registration.
+It creates no provider or publication capability.

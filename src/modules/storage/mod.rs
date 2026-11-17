@@ -23,6 +23,7 @@ pub mod renewal;
 pub mod renewal_commit;
 pub mod requester;
 pub mod retention;
+pub mod standard;
 pub mod terms;
 
 #[cfg(test)]
