@@ -275,6 +275,48 @@ impl Journal {
         *state = Some(image);
         Ok(())
     }
+    /// Obtain a complete immutable owner snapshot for authorized recovery and family resource lookup.
+    /// # Errors
+    /// Unknown preserves possibly installed metadata; poisoned locks are Unavailable.
+    pub fn snapshot(&self) -> Result<Image, Error> {
+        tracing::trace!("Reading complete Storage owner recovery snapshot");
+        self.state
+            .lock()
+            .map_err(|_| Error::Unavailable)?
+            .as_ref()
+            .cloned()
+            .ok_or(Error::Unknown)
+    }
+    /// Read finite metadata policy without granting mutation or bypassing owner admission.
+    pub fn image_limits(&self) -> Limits {
+        tracing::trace!("Reading Storage participant image limits");
+        self.limits
+    }
+    #[cfg(target_os = "linux")]
+    // Advance only fully resolved owner history; no participant deadline is an abort decision.
+    pub(crate) fn recovered_time(
+        &self,
+        now: super::contract::Time,
+        reboot_elapsed: Option<u64>,
+    ) -> Result<Image, Error> {
+        tracing::trace!("Persisting recovered Storage retention state");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        if image
+            .operations
+            .iter()
+            .any(|r| matches!(r.status, Stage::Staged | Stage::Prepared(_)))
+        {
+            return Err(Error::Unknown);
+        }
+        let mut candidate = image.clone();
+        candidate.anchor = candidate.anchor.advance(now, reboot_elapsed)?;
+        for lease in &mut candidate.leases {
+            super::retention::refresh(lease, candidate.anchor.unix_seconds);
+        }
+        self.persist(&mut state, candidate.clone())?;
+        Ok(candidate)
+    }
     // Install only a completely encoded acknowledged candidate; possible commitment closes the owner gate.
     fn persist(&self, state: &mut Option<Image>, candidate: Image) -> Result<(), Error> {
         tracing::trace!("Acknowledging an atomic Storage participant image");

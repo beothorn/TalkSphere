@@ -1,6 +1,8 @@
 //! Protected Linux upload staging and immutable positional byte reads; no lease or payment authority.
 mod fs_support;
+mod inventory;
 mod io;
+pub use inventory::Entry;
 mod snapshot;
 use crate::modules::{cryptography::primitives::hash::Sha256State, services::Error};
 use rustix::fs::{self, AtFlags, FlockOperation, Mode, OFlags, RenameFlags};

@@ -36,3 +36,7 @@ This local adapter writes bounded chunks, but the existing Peer Protocol/Service
 Value path still buffers finite complete bodies. Advertising limits must respect
 both that memory budget and local byte quotas. No API grants requester authority,
 creates leases, authorizes payment, encrypts or replicates data.
+
+[Inventory](inventory.md) supplies bounded protected object/upload IDs and lengths
+for owner recovery. Unexpected, unresolved or unreferenced bytes cannot silently
+escape admission accounting.

@@ -187,3 +187,39 @@ fn protected_paths_and_retained_handles() {
     assert!(Store::open(&link.0, false).is_err());
     std::fs::remove_file(&link.0).unwrap();
 }
+
+// Recovery inventories every canonical owner entry without following links or ignoring malformed files.
+#[test]
+fn bounded_inventory_identifies_provisional_and_complete_bytes() {
+    let p = path();
+    let store = Store::open(&p.0, true).unwrap();
+    assert_eq!(store.inventory(0), Ok(vec![]));
+    let mut u = store.begin([0xab; 32], 3, 3).unwrap();
+    u.append(0, b"a").unwrap();
+    assert_eq!(
+        store.inventory(1),
+        Ok(vec![Entry {
+            id: [0xab; 32],
+            length: 1,
+            pending: true
+        }])
+    );
+    assert_eq!(store.inventory(0), Err(Error::Limit));
+    u.append(1, b"bc").unwrap();
+    drop(u.finish(HASH).unwrap());
+    assert_eq!(
+        store.inventory(1),
+        Ok(vec![Entry {
+            id: [0xab; 32],
+            length: 3,
+            pending: false
+        }])
+    );
+    let bad = p.0.join(format!("object-{}", "AA".repeat(32)));
+    std::fs::write(&bad, b"bad").unwrap();
+    assert_eq!(store.inventory(2), Err(Error::Invalid));
+    std::fs::remove_file(bad).unwrap();
+    let unknown = p.0.join("unexpected");
+    std::fs::write(&unknown, b"bad").unwrap();
+    assert_eq!(store.inventory(2), Err(Error::Invalid));
+}

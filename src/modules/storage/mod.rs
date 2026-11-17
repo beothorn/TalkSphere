@@ -21,3 +21,6 @@ mod fixture_tests;
 
 #[cfg(target_os = "linux")]
 pub mod bytes;
+
+#[cfg(target_os = "linux")]
+pub mod recovery;

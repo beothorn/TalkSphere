@@ -1,6 +1,6 @@
 # Storage requirements and integration audit
 
-Behavior baseline: [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f), rechecked 2026-11-16;
+Behavior baseline: [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f), rechecked 2026-11-17;
 main has six later commits, none changing protocol files.
 This is a requirements map, not executed acceptance evidence.
 

@@ -36,7 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–14 are complete; durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–15 are complete; durable execution and integration remain pending.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -69,5 +69,11 @@ registered until the remaining owner, operation and integration steps are ready.
 
 [Exact metadata effects](effect.md) and the participant journal now apply
 explicit coordinator commit/abort decisions once, preserving original tokens
-and guarded lease mutations. Recovery admission, complete handlers, payment
-integration and executable network Storage remain steps 15–38.
+and guarded lease mutations. Complete handlers, payment integration and executable network Storage remain
+steps 16–38.
+
+The Linux [recovery gate](recovery/mod.md) keeps new work closed until original
+Services coordination, retention recovery, active byte integrity and quota
+reconstruction complete. Receiving/unreferenced inventory and unavailable
+coordinator history fail closed. Exercise it with
+`cargo test --locked modules::storage::recovery`.

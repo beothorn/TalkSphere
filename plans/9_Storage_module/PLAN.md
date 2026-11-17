@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–14 are complete and later steps remain pending.
+Status: implementation authorized; steps 1–15 are complete and later steps remain pending.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -20,7 +20,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **12.** Persist lease metadata and retained operation results.
 - [x] **13.** Implement durable participant preparation and status queries.
 - [x] **14.** Implement idempotent participant commit and abort.
-- [ ] **15.** Recover Storage participants before admitting new work.
+- [x] **15.** Recover Storage participants before admitting new work.
 - [ ] **16.** Assess store metadata before receiving upload bodies.
 - [ ] **17.** Stage validated uploads as durable lease proposals.
 - [ ] **18.** Validate store results against requester expectations.

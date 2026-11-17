@@ -47,3 +47,9 @@ Aborted token history remains durable for validating repeated decisions. Both
 methods preserve Unknown after a possibly installed snapshot; reload resolves
 status before any repetition. These are privileged local lifecycle ports, never
 peer operations or permission to choose a different coordinator decision.
+
+snapshot returns a complete bounded immutable owner Image for privileged recovery
+and family lookup, preserving Unknown after possible commitment. image_limits
+returns the configured finite metadata policy without granting mutation. The
+Linux recovery gate advances/persists retention only after all original local
+coordination resolves; a participant deadline is never an abort decision.

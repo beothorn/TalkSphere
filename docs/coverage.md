@@ -146,3 +146,9 @@ Storage step 14 measured **21410/22784 executable production lines (93.97%)**.
 Exact create/renew/remove proposals, prepared mutation exclusion, idempotent
 terminal decisions, immutable renewal guards and lost terminal replies pass
 all required checks. These are local participant tests, not paid node conformance.
+
+Storage step 15 measured **21710/23103 executable production lines (93.97%)**.
+Real owner reopen, terminal coordination checks, byte inventory, clock recovery,
+quota reconstruction and fail-closed admission pass all required checks and
+warning-free rustdoc. The finite profile retains coordinator history and charges
+terminal/orphan bytes conservatively until explicit reclamation is implemented.
