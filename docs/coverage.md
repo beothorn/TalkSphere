@@ -196,3 +196,8 @@ accounting, failed deletion and lost metadata/unlink replies pass required check
 and warning-free rustdoc. Coverage exposed an existing Identity test lock-reopen
 race; the same bounded post-drop retry used by its atomic tests now covers backup
 and restore cuts. The subsequent full verification and coverage run passed.
+
+Storage step 26 measured **23103/24549 executable production lines (94.11%)**.
+Separately paid byte evidence, private-field refusal, exact offsets/prices,
+accepted pin lifetime, missing/short backing bytes and optional overlap/one-second
+frequency boundaries pass required checks and warning-free rustdoc.

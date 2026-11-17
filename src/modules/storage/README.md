@@ -141,3 +141,9 @@ reconstruction. Follow the returned cursor through each sweep to avoid a pinned
 object blocking later IDs. History and results remain retained; cleanup does not
 promise secure erasure or unlimited history capacity. Run
 `cargo test --locked modules::storage::recovery::cleanup` from the repository root.
+
+[Paid byte evidence](byte_check.md) completes step 26 with current positive check
+pricing, authenticated active ownership, exact one-byte pins and explicit optional
+overlap/one-second interval rules. Expected bytes remain private and outcomes are
+requester-owned. Run `cargo test --locked modules::storage::byte_check` from the
+repository root; handler and paid network composition remain later steps.

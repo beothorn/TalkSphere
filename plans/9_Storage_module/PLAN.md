@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–16 and 18–25 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
+Status: implementation authorized; steps 1–16 and 18–26 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -31,7 +31,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **23.** Commit serialized lease extensions.
 - [x] **24.** Implement charged logical lease removal.
 - [x] **25.** Reclaim expired and removed lease resources safely.
-- [ ] **26.** Implement authorized paid byte evidence.
+- [x] **26.** Implement authorized paid byte evidence.
 - [ ] **27.** Verify byte challenges using private expectations and trusted timing.
 - [ ] **28.** Register Storage handlers and publish usable offerings.
 - [ ] **29.** Bind Storage requester operations to Peer Protocol.

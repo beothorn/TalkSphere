@@ -2,6 +2,8 @@
 //!
 //! Contract foundations only: no provider is registered or advertised until durable execution exists.
 pub mod assessment;
+#[cfg(target_os = "linux")]
+pub mod byte_check;
 pub mod clock_policy;
 pub mod contract;
 pub mod effect;

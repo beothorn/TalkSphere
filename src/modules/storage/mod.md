@@ -38,3 +38,6 @@ guarded proposals through original participant decisions.
 
 [Logical removal](removal.md) ends availability through guarded participant
 decisions while preserving accepted reads and original results.
+
+[Paid byte evidence](byte_check.md) pins an authorized original byte under current
+separately accepted check terms, without providing a correctness conclusion.

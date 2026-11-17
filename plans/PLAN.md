@@ -86,7 +86,7 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
 - [ ] **10. [Storage module](9_Storage_module/PLAN.md).** Implement requester/provider store, ranged
   retrieval, renewal guards, removal, expiration and paid byte checks, with
   authorization, durable leases and hash verification. Keep local persistence
-  independent of the paid Storage service. The detailed plan records 24 completed steps; actual lease creation awaits
+  independent of the paid Storage service. The detailed plan records 25 completed steps; actual lease creation awaits
   [upstream acceptance-time clarification #11](https://github.com/beothorn/CR2SE/issues/11).
 - [ ] **11. Minimum useful node milestone.** Compose the eight required modules
   with authorized local control and configured contacts. Demonstrate a paid
