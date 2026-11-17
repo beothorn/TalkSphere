@@ -88,3 +88,10 @@ Paid lease creation awaits [upstream acceptance-time clarification #11](https://
 recorded in the [protocol evidence](../../../CR2SE%20bugs/0008-storage-acceptance-time-before-durability.md).
 A slow durable commit currently exposes conflicting timestamp requirements.
 Step 17 remains unchecked and no paid provider is advertised.
+
+Independent [requester store validation](requester/store.md) and
+[acknowledged catalog retention](requester/catalog.md) complete step 18 while
+step 17 remains pending #11. Run
+`cargo test --locked modules::storage::requester` from the repository root.
+These contracts do not establish a complete paid provider or choose a new
+acceptance-time rule.

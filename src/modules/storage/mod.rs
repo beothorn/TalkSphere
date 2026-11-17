@@ -11,6 +11,7 @@ pub mod lease;
 pub mod operation;
 pub mod pricing;
 pub mod quota;
+pub mod requester;
 pub mod retention;
 pub mod terms;
 
@@ -25,3 +26,6 @@ pub mod bytes;
 
 #[cfg(target_os = "linux")]
 pub mod recovery;
+
+
+mod binding;

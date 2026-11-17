@@ -234,3 +234,5 @@ fn bounded_source_and_concurrent_writes_are_deterministic() {
         Some([0]) | Some([1])
     ));
 }
+
+pub(crate) mod contracts;

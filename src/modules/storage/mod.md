@@ -19,3 +19,6 @@ resource holds. Linux [byte persistence](bytes/mod.md) and the
 Actual paid lease creation remains pending upstream acceptance-time clarification
 [#11](https://github.com/beothorn/CR2SE/issues/11); no precommit timing rule is
 silently advertised as a complete Storage implementation.
+
+[Requester contracts](requester/mod.md) independently validate original store
+expectations and retain only acknowledged results in application-owned catalogs.
