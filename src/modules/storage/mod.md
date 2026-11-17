@@ -35,3 +35,6 @@ exact provider factors with independently retained size before quote acceptance.
 
 [Accepted renewal staging](renewal_commit.md) reserves result capacity and retains
 guarded proposals through original participant decisions.
+
+[Logical removal](removal.md) ends availability through guarded participant
+decisions while preserving accepted reads and original results.

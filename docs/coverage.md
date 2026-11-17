@@ -183,3 +183,9 @@ Native renewal staging/reopen, competing preparation threads, renew/remove guard
 ordering, pending expiry, confirmed/uncertain persistence and independent requester
 validation pass required checks and warning-free rustdoc. Decisions and charging
 remain Services-owned; these tests do not claim complete paid network integration.
+
+Storage step 24 measured **22787/24228 executable production lines (94.05%)**.
+Logical removal, independent requester checks, accepted read completion, later
+inactive-operation refusal, renewal ordering, explicit abort and failed/lost
+persistence acknowledgements pass all required checks and warning-free rustdoc.
+Physical reclamation and full paid network composition remain later steps.

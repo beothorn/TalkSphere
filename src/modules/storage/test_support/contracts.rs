@@ -112,3 +112,23 @@ pub(crate) fn renew() -> (Invocation, Value, Value, super::super::contract::Leas
     ]);
     (invocation, input, output, lease)
 }
+
+// Independently specify the positive current remove charge and successful logical state, without claiming physical deletion.
+pub(crate) fn remove() -> (Invocation, Value, Value, super::super::contract::Lease) {
+    let (mut invocation, _, _, lease) = renew();
+    invocation.key.stream = 3;
+    invocation.maximum = 2;
+    invocation.pricing = Price::Fixed(2);
+    invocation.factors = Value::Object(vec![]);
+    let input = object(vec![
+        ("operation", Value::String("remove".into())),
+        ("leaseId", Value::Bytes(lease.id.to_vec())),
+    ]);
+    let output = object(vec![
+        ("operation", Value::String("remove".into())),
+        ("leaseId", Value::Bytes(lease.id.to_vec())),
+        ("removed", Value::Bool(true)),
+        ("price", Value::Uint64(2)),
+    ]);
+    (invocation, input, output, lease)
+}

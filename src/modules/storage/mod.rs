@@ -8,9 +8,13 @@ pub mod effect;
 pub mod image;
 pub mod journal;
 pub mod lease;
+#[cfg(target_os = "linux")]
+mod mutation_result;
 pub mod operation;
 pub mod pricing;
 pub mod quota;
+#[cfg(target_os = "linux")]
+pub mod removal;
 pub mod renewal;
 #[cfg(target_os = "linux")]
 pub mod renewal_commit;

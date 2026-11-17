@@ -1,8 +1,10 @@
 //! Real durable renewal results, competing guarded participants and failure/reply-loss recovery through owner admission.
 use super::*;
+use crate::modules::services::handler::Blob;
 use crate::modules::storage::{
     image::Stage,
     journal::Journal,
+    quota::Usage,
     requester::renew,
     test_support::{
         Write,

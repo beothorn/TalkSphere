@@ -12,3 +12,6 @@ lease metadata, hashes full objects, and reports partial-range integrity limits.
 
 [Renewal validation](renew.md) checks original guards, prices and previous/new
 expiration before returning updated independently retained lease metadata.
+
+[Removal validation](remove.md) returns terminal metadata only after matching
+original accepted identity, price and true removal success.

@@ -1,8 +1,8 @@
 //! Bounded original-key renewal staging through recovered owner admission and coordinator-owned participant decisions.
-use super::{contract::Time, effect::Effect, quota::Usage, recovery::Gate, renewal};
+use super::{contract::Time, effect::Effect, recovery::Gate, renewal};
 use crate::modules::services::{
     self, Error,
-    handler::{Blob, Completion, Invocation, Peer},
+    handler::{Completion, Invocation, Peer},
     value::{Budget, Value},
 };
 
@@ -82,37 +82,18 @@ pub fn stage(
             ("price".into(), Value::Uint64(assessed.price)),
         ]);
         super::operation::output(&output, super::operation::Operation::Renew, limits.values)?;
-        let encoded = services::codec::encode(&output, limits.values, limits.bytes)?;
-        let effect = Effect::Renew {
-            expected_expires_at: previous,
-            lease,
-        }
-        .encode(limits)?;
-        let usage = Usage {
-            operations: 1,
-            result_bytes: u64::try_from(encoded.len())
-                .map_err(|_| Error::Limit)?
-                .checked_mul(2)
-                .ok_or(Error::Limit)?,
-            ..Usage::default()
-        };
-        let completion = Completion {
+        super::mutation_result::retain(
+            journal,
+            quota,
+            invocation.key,
+            binding,
             output,
-            result: Blob::new(encoded, limits.bytes)?,
-            price: assessed.price,
-            effect: Blob::new(effect, limits.bytes)?,
-        };
-        quota.reserve(invocation.key, usage)?;
-        match journal.stage(invocation.key, binding, completion) {
-            Ok(result) => Ok(result),
-            Err(Error::Unknown) => Err(Error::Unknown),
-            Err(error) => {
-                quota
-                    .transition(invocation.key, Usage::default())
-                    .map_err(|_| Error::Unknown)?;
-                Err(error)
-            }
-        }
+            assessed.price,
+            Effect::Renew {
+                expected_expires_at: previous,
+                lease,
+            },
+        )
     })
 }
 #[cfg(test)]

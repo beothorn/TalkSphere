@@ -126,3 +126,11 @@ original decision semantics. [Requester renewal validation](requester/renew.md)
 checks the exact previous/new expiration and preserves immutable lease metadata.
 Run `cargo test --locked modules::storage::renewal_commit` and
 `cargo test --locked modules::storage::requester::renew` from the repository root.
+
+[Logical removal](removal.md) completes step 24 through exact current pricing,
+original-key result retention and guarded participant commitment. Later operations
+see an inactive lease; accepted retrieval pins still complete. Independent
+[requester validation](requester/remove.md) checks `removed:true`, ID and price
+without changing original store charges or claiming physical erasure. Run
+`cargo test --locked modules::storage::removal` and
+`cargo test --locked modules::storage::requester::remove` from the repository root.
