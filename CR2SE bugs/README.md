@@ -16,6 +16,8 @@ Confirmed reports:
 
 - [0007: Check timeout charging after provider commitment is ambiguous](0007-check-timeout-settlement.md) — reported upstream as [#10](https://github.com/beothorn/CR2SE/issues/10).
 
+- [0008: Storage timestamps precede durable acceptance](0008-storage-acceptance-time-before-durability.md) — reported upstream as [#11](https://github.com/beothorn/CR2SE/issues/11).
+
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision
 and sections. Include a minimal trace, conflicting statements or vector that
