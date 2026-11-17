@@ -11,6 +11,7 @@ pub mod lease;
 pub mod operation;
 pub mod pricing;
 pub mod quota;
+pub mod renewal;
 pub mod requester;
 pub mod retention;
 pub mod terms;

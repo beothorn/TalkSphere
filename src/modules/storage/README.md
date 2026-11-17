@@ -112,3 +112,9 @@ range, count, whole-object hash metadata and exact current price. Full reads are
 rehashed; partial reads compare optional private original bytes and explicitly
 report when only metadata was checked. Exercise step 21 with
 `cargo test --locked modules::storage::requester::retrieve`.
+
+[Renewal assessment](renewal.md) checks authenticated ownership, active retention,
+expected-expiry guards, current duration/total limits and exact size-based price
+without extending the lease. Requesters compare the sole size factor with their
+retained lease. Exercise step 22 with
+`cargo test --locked modules::storage::renewal`.

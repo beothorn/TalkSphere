@@ -29,3 +29,6 @@ under immutable accepted prices, independently of later lease/Board state change
 [Retained retrieval results](retrieve_result.md) bound capacity before reading,
 check the complete backing object while exposing only accepted bytes, and retain
 the original completion without repeating a committed read.
+
+[Renewal assessment and pricing](renewal.md) authorize current guards and compare
+exact provider factors with independently retained size before quote acceptance.

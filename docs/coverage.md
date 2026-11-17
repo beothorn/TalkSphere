@@ -172,3 +172,8 @@ Storage step 21 measured **22376/23799 executable production lines (94.02%)**.
 Requester retrieval metadata, original roles/prices, incomplete output, full-object
 hash verification and explicit partial-range integrity limits pass required checks
 and warning-free rustdoc. Saved complete values remain independently verifiable.
+
+Storage step 22 measured **22496/23927 executable production lines (94.02%)**.
+Authorized renewal assessment, stale/expired guards, exact independent size factors,
+checked duration/total limits and uint64-size pricing pass all required checks
+and warning-free rustdoc without changing existing lease obligations.
