@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–16 and 18–26 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
+Status: implementation authorized; steps 1–16 and 18–27 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -32,7 +32,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **24.** Implement charged logical lease removal.
 - [x] **25.** Reclaim expired and removed lease resources safely.
 - [x] **26.** Implement authorized paid byte evidence.
-- [ ] **27.** Verify byte challenges using private expectations and trusted timing.
+- [x] **27.** Verify byte challenges using private expectations and trusted timing.
 - [ ] **28.** Register Storage handlers and publish usable offerings.
 - [ ] **29.** Bind Storage requester operations to Peer Protocol.
 - [ ] **30.** Support wanted Storage with requester-owned consent.
@@ -51,6 +51,10 @@ Reviewed on 2026-11-15 against
 [CR2SE d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
 Upstream `main` is six commits ahead, with no changes to the reviewed protocol
 files. Recheck the specification and issue status before implementation.
+Rechecked on 2026-11-17: no reviewed protocol files changed and issue #11 remains
+open without a clarification. Independent steps 18–27 are complete; actual store
+creation in step 17 and the complete provider/network path in steps 28–38 remain
+unverified until that dependency is resolved.
 
 - [Storage specification, including the complete definition and pricing examples](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md).
 - [Input contract](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/inputs/README.md).
@@ -353,6 +357,9 @@ Test exact timeout boundaries and missing expectations. Preserve separate reques
 and provider accounting evidence for issue #10 without automatic trust/refund changes.
 
 ### 28. Register Storage handlers and publish usable offerings
+
+Pending prerequisite: complete step 17 after resolving upstream issue #11; an
+installation that refuses store cannot advertise the complete Storage contract.
 
 Install the complete independently recognized standard definition and actual
 requester/provider handlers through Services. Compose recovered durable Storage,

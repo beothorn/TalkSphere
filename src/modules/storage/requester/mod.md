@@ -15,3 +15,7 @@ expiration before returning updated independently retained lease metadata.
 
 [Removal validation](remove.md) returns terminal metadata only after matching
 original accepted identity, price and true removal success.
+
+[Private byte-check verification](byte_check.md) consumes original authenticated
+transport observations and independent expected bytes without changing accounting.
+[Secure sampling](sampling.md) optionally chooses unbiased private offsets.

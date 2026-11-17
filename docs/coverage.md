@@ -201,3 +201,10 @@ Storage step 26 measured **23103/24549 executable production lines (94.11%)**.
 Separately paid byte evidence, private-field refusal, exact offsets/prices,
 accepted pin lifetime, missing/short backing bytes and optional overlap/one-second
 frequency boundaries pass required checks and warning-free rustdoc.
+
+Storage step 27 measured **23175/24623 executable production lines (94.12%)**.
+Private expected-byte comparisons, exact original send/response/end timing,
+malformed/foreign/missing evidence, activity ambiguity and bounded unbiased
+sampling pass all required checks and warning-free rustdoc. All 109 Storage
+unit tests pass. Step 17 and complete provider/network acceptance remain pending
+CR2SE issue #11; no paid Storage provider is advertised.

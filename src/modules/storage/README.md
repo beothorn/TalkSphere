@@ -147,3 +147,11 @@ pricing, authenticated active ownership, exact one-byte pins and explicit option
 overlap/one-second interval rules. Expected bytes remain private and outcomes are
 requester-owned. Run `cargo test --locked modules::storage::byte_check` from the
 repository root; handler and paid network composition remain later steps.
+
+[Requester byte verification](requester/byte_check.md) completes step 27 using
+private original bytes and original send/response/end observations. Wrong timely
+bytes fail; late, incomplete, foreign or expiration-ambiguous evidence is
+inconclusive. No outcome automatically refunds charges or changes trust. Optional
+[secure sampling](requester/sampling.md) uses bounded rejection draws without bias.
+Run `cargo test --locked modules::storage::requester::byte_check` and
+`cargo test --locked modules::storage::requester::sampling` from the repository root.

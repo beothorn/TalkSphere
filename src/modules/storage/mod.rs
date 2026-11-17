@@ -4,6 +4,7 @@
 pub mod assessment;
 #[cfg(target_os = "linux")]
 pub mod byte_check;
+mod check_contract;
 pub mod clock_policy;
 pub mod contract;
 pub mod effect;
