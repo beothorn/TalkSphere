@@ -157,3 +157,8 @@ Storage step 16 measured **21910/23304 executable production lines (94.02%)**.
 Complete/unresolved store metadata, provisional capacity refusal, exact pre-upload
 prices and backward-compatible metadata-aware Services quote calculation pass
 all required checks. Actual paid lease creation remains pending upstream issue #11.
+
+Storage independent steps 18–19 measured **22144/23559 executable production
+lines (93.99%)**. Requester result/catalog checks and native scoped range
+acceptance pass required checks. Step 17 remains pending upstream issue #11;
+these results do not claim a complete paid Storage provider.

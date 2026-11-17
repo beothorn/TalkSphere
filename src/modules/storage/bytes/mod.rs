@@ -3,8 +3,10 @@ mod fs_support;
 mod inventory;
 mod io;
 pub use inventory::Entry;
+mod range;
 mod snapshot;
 use crate::modules::{cryptography::primitives::hash::Sha256State, services::Error};
+pub use range::Range;
 use rustix::fs::{self, AtFlags, FlockOperation, Mode, OFlags, RenameFlags};
 use std::{fs::File, os::unix::fs::FileExt, path::Path, sync::Arc};
 

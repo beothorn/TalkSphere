@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–16 and 18 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
+Status: implementation authorized; steps 1–16 and 18–19 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -24,7 +24,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **16.** Assess store metadata before receiving upload bodies.
 - [ ] **17.** Stage validated uploads as durable lease proposals.
 - [x] **18.** Validate store results against requester expectations.
-- [ ] **19.** Assess retrieval ranges and pin accepted bytes.
+- [x] **19.** Assess retrieval ranges and pin accepted bytes.
 - [ ] **20.** Return exact ranges through retained result handles.
 - [ ] **21.** Validate retrieved bytes and whole-object hash metadata.
 - [ ] **22.** Assess renewal guards and exact pricing factors.

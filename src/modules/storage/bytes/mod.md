@@ -40,3 +40,6 @@ creates leases, authorizes payment, encrypts or replicates data.
 [Inventory](inventory.md) supplies bounded protected object/upload IDs and lengths
 for owner recovery. Unexpected, unresolved or unreferenced bytes cannot silently
 escape admission accounting.
+
+[Scoped ranges](range.md) retain accepted byte ownership and reject reads outside
+the pinned subrange even when the underlying file contains additional bytes.

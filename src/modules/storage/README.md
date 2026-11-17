@@ -95,3 +95,9 @@ step 17 remains pending #11. Run
 `cargo test --locked modules::storage::requester` from the repository root.
 These contracts do not establish a complete paid provider or choose a new
 acceptance-time rule.
+
+Independent [retrieval acceptance](retrieve.md) completes step 19 with scoped
+immutable [range references](bytes/range.md). Timely pins survive later expiry,
+removal and unlink; new expired/foreign/invalid-range calls fail before data reads.
+Run `cargo test --locked modules::storage::retrieve` for actual byte-adapter tests.
+Result staging and complete paid network integration remain later steps.

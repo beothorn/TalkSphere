@@ -22,3 +22,6 @@ silently advertised as a complete Storage implementation.
 
 [Requester contracts](requester/mod.md) independently validate original store
 expectations and retain only acknowledged results in application-owned catalogs.
+
+Linux [retrieval acceptance](retrieve.md) retains an authorized bounded subrange
+under immutable accepted prices, independently of later lease/Board state changes.
