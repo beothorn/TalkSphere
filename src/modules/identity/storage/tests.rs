@@ -2,7 +2,11 @@
 use super::file::*;
 use crate::modules::{
     cryptography::{identity_keys::IdentityKeys, test_support::ScriptedEntropy},
-    identity::{authority::Authority, config::Limits, record::CredentialRecord},
+    identity::{
+        authority::{Administration, Authority, Capability},
+        config::Limits,
+        record::CredentialRecord,
+    },
 };
 use std::{
     collections::VecDeque,
@@ -30,6 +34,20 @@ impl Drop for Fixture {
     // Remove only the test-owned tree, never a caller-provided path.
     fn drop(&mut self) {
         fs::remove_dir_all(&self.0).unwrap();
+    }
+}
+// Reopen a dropped writer within a finite bound when a concurrent test's fork briefly retains its CLOEXEC descriptor.
+// A genuinely live writer still fails after the deadline; only transient lock contention is retried.
+pub(super) fn reopen(path: &std::path::Path) -> (FileStore, Capability<Administration>) {
+    use crate::modules::identity::error::IdentityError;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        match FileStore::open(path, limits()) {
+            Err(IdentityError::Conflict) if std::time::Instant::now() < deadline => {
+                std::thread::yield_now()
+            }
+            result => return result.unwrap(),
+        }
     }
 }
 // Independent valid fixture staging is never used as production identity material.
@@ -127,17 +145,7 @@ fn atomic_installation_cut_points_preserve_complete_pairs() {
         );
         assert!(!path.join("identity.pending").exists());
         drop(store);
-        // A concurrent test may fork between descriptor open and CLOEXEC processing.
-        // Await release within a bound; a genuinely retained lock still fails this assertion.
-        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-        let (mut store, admin) = loop {
-            match FileStore::open(&path, limits()) {
-                Err(IdentityError::Conflict) if std::time::Instant::now() < deadline => {
-                    std::thread::yield_now()
-                }
-                result => break result.unwrap(),
-            }
-        };
+        let (mut store, admin) = reopen(&path);
         if cut == Cut::Installed {
             assert!(
                 store

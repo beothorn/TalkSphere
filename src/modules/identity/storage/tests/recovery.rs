@@ -2,7 +2,7 @@
 use super::{
     FileStore,
     atomic::Cut,
-    tests::{Fixture, limits},
+    tests::{Fixture, limits, reopen},
 };
 use crate::modules::{
     cryptography::random::SystemEntropy,
@@ -35,7 +35,7 @@ fn backups_obey_protected_destination_durability() {
             })
         );
         drop(destination);
-        let (destination, authority) = FileStore::open(&path, limits()).unwrap();
+        let (destination, authority) = reopen(&path);
         assert!(!path.join("identity.pending").exists());
         if cut == Cut::Installed {
             let record = destination.reconcile(&authority).unwrap();
@@ -57,7 +57,7 @@ fn restore_failure_cuts_never_replace_or_regenerate() {
     let mut original = Identity::new(source, SystemEntropy, limits(), 1).unwrap();
     let (_, public) = original.create(&source_admin).unwrap();
     drop(original);
-    let (source, source_admin) = FileStore::open(&root.0.join("source"), limits()).unwrap();
+    let (source, source_admin) = reopen(&root.0.join("source"));
     for (index, cut) in [Cut::Created, Cut::Written, Cut::Synced, Cut::Installed]
         .into_iter()
         .enumerate()
@@ -73,7 +73,7 @@ fn restore_failure_cuts_never_replace_or_regenerate() {
             matches!(target.restore(&admin,&cap,public.identity.id(),&source,&source_admin),Err(error) if error==if cut==Cut::Installed {IdentityError::OutcomeUnknown} else {IdentityError::Unavailable})
         );
         drop(target);
-        let (store, admin) = FileStore::open(&path, limits()).unwrap();
+        let (store, admin) = reopen(&path);
         if cut == Cut::Installed {
             assert_eq!(
                 store
