@@ -106,3 +106,9 @@ result retention through the participant journal. Corrupt or short backing bytes
 produce no successful output; retained local results survive source loss and
 journal reopen. This local recovery adds no remote retry operation. Complete
 paid network integration remains a later step.
+
+[Requester retrieval verification](requester/retrieve.md) checks original scope,
+range, count, whole-object hash metadata and exact current price. Full reads are
+rehashed; partial reads compare optional private original bytes and explicitly
+report when only metadata was checked. Exercise step 21 with
+`cargo test --locked modules::storage::requester::retrieve`.

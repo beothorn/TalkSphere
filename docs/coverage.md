@@ -167,3 +167,8 @@ Storage step 20 measured **22300/23720 executable production lines (94.01%)**.
 Exact range results, cross-chunk integrity scans, original-key journal recovery,
 short/corrupt source failures and capacity refusal pass all required checks.
 Paid creation and complete network handler composition remain pending.
+
+Storage step 21 measured **22376/23799 executable production lines (94.02%)**.
+Requester retrieval metadata, original roles/prices, incomplete output, full-object
+hash verification and explicit partial-range integrity limits pass required checks
+and warning-free rustdoc. Saved complete values remain independently verifiable.
