@@ -113,10 +113,11 @@ pub fn quote(assessed: &Assessed, requester_maximum: u64) -> Result<Price, Error
     tracing::trace!("Authorizing quoted price within explicit requester spending bound");
     let auth = assessed.authorized();
     let o = auth.selection().offering();
-    let price = auth
-        .implementation()
-        .requester()
-        .pricing(o, assessed.factors())?;
+    let price = auth.implementation().requester().pricing_for(
+        o,
+        assessed.metadata(),
+        assessed.factors(),
+    )?;
     if price == Price::Included {
         return Err(Error::Invalid);
     }

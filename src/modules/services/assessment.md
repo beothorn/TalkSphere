@@ -29,3 +29,7 @@ implement their actual metadata rules without invented bytes. Returned metadata,
 factors and optional provisional pin are bounded and authority is rechecked before
 retention. Existing assess still handles complete Value input. Neither operation
 reserves Ledger funds or executes work.
+
+metadata exposes the validated immutable local projection for installed family
+pricing. It does not serialize requester-known fields as provider wire factors
+or grant execution authority.

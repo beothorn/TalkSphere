@@ -82,3 +82,9 @@ caller; it defaults to false. Neither callback installs capabilities or executes
 work. Calls must be bounded and must not reenter their coordinator. The narrow
 Messaging retry coordinator still independently compares every original field and
 requires retained commitment before returning output.
+
+Requester.pricing_for receives validated local assessment metadata separately
+from provider-only factors. Calculated families can use independently understood
+size/duration input without inventing peer pricingInputs. The default delegates
+to pricing, preserving existing fixed/custom handlers. Services quote calculation
+uses this callback only after normal assessment validation.

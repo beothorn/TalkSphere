@@ -118,3 +118,7 @@ pub mod input;
 
 /// Explicit family-authorized cached retransmission contracts.
 pub mod replay;
+
+#[cfg(test)]
+#[path = "tests/metadata_pricing.rs"]
+mod metadata_pricing_tests;

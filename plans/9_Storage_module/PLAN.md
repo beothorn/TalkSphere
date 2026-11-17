@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–15 are complete and later steps remain pending.
+Status: implementation authorized; steps 1–16 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -21,7 +21,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **13.** Implement durable participant preparation and status queries.
 - [x] **14.** Implement idempotent participant commit and abort.
 - [x] **15.** Recover Storage participants before admitting new work.
-- [ ] **16.** Assess store metadata before receiving upload bodies.
+- [x] **16.** Assess store metadata before receiving upload bodies.
 - [ ] **17.** Stage validated uploads as durable lease proposals.
 - [ ] **18.** Validate store results against requester expectations.
 - [ ] **19.** Assess retrieval ranges and pin accepted bytes.
@@ -94,7 +94,7 @@ expand advertised limits beyond the composition's actual budgets.
 requester check timeout does not establish rollback of a provider's committed
 charge. Record each side's observed result and accounting separately; do not
 invent an acknowledgement, refund or globally uncharged-timeout guarantee.
-No additional confirmed protocol defect was identified in this planning review.
+The implementation review confirmed [issue #11](https://github.com/beothorn/CR2SE/issues/11): store pseudocode samples acceptance time before durable commit, contrary to the normative acceptance boundary. See the [local evidence report](../../CR2SE%20bugs/0008-storage-acceptance-time-before-durability.md); step 17 remains pending clarification. The original planning review identified no additional defect.
 Investigate contradictions before choosing interoperable behavior, search open
 and closed upstream issues, and retain confirmed reports and issue URLs under
 [CR2SE bugs](../../CR2SE%20bugs/README.md). A local adapter limitation is not a
@@ -259,6 +259,8 @@ Test invalid limits, stale publication, price disagreement and refusal before bo
 execution, while leaving lease creation to durable completion.
 
 ### 17. Stage validated uploads as durable lease proposals
+
+Pending: resolve [upstream issue #11](https://github.com/beothorn/CR2SE/issues/11) before choosing actual acceptance timestamps and completing this step.
 
 After accepted terms and reservation, require complete input and exact SHA-256,
 length and terminal markers before staging a lease. Generate unpredictable unique

@@ -14,6 +14,11 @@ pub struct Assessed {
     pub(crate) assessment: Assessment,
 }
 impl Assessed {
+    /// Borrow independently validated local assessment metadata without making it a provider wire factor.
+    pub fn metadata(&self) -> &Value {
+        tracing::trace!("Borrowing validated service assessment metadata");
+        &self.assessment.metadata
+    }
     /// Borrow assessed price factors without permitting execution or settlement.
     pub fn factors(&self) -> &Value {
         tracing::trace!("Borrowing bounded provider pricing factors");

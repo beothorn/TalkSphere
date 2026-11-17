@@ -31,3 +31,8 @@ Every present field must be a uint64 equal to the independently validated result
 envelope. Outputs without such fields remain permitted. This shared check is
 performed during durable result retention and before peer result transmission;
 family-specific formula and content validation remain independently required.
+
+quote passes validated local assessment metadata and provider-only factors to
+Requester.pricing_for. Its default retains existing pricing behavior; installed
+calculated families can derive prices from requester-known dimensions without
+adding protocol pricingInputs. Explicit maximum enforcement remains unchanged.

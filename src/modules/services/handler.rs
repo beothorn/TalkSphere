@@ -143,6 +143,20 @@ pub trait Requester: super::validation::Semantics {
             .ok_or(Error::Unsupported)?;
         Ok(super::pricing::Price::Fixed(price))
     }
+    /// Calculate a quote from independently validated local assessment metadata and provider-only factors.
+    /// This keeps requester-known sizes/durations separate from specified wire pricingInputs.
+    /// Existing families retain their pricing behavior through the default delegation.
+    /// # Errors
+    /// Propagates unsupported terms, malformed metadata/factors and unrepresentable prices before acceptance.
+    fn pricing_for(
+        &self,
+        offering: &Offering,
+        _metadata: &Value,
+        factors: &Value,
+    ) -> Result<super::pricing::Price, Error> {
+        tracing::trace!("Calculating service price with validated local assessment metadata");
+        self.pricing(offering, factors)
+    }
     /// Derive independently understood local assessment metadata from authorized complete requester input.
     /// Body-bearing families override this with their defined length/hash projection, never placeholder payloads.
     /// # Errors

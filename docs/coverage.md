@@ -152,3 +152,8 @@ Real owner reopen, terminal coordination checks, byte inventory, clock recovery,
 quota reconstruction and fail-closed admission pass all required checks and
 warning-free rustdoc. The finite profile retains coordinator history and charges
 terminal/orphan bytes conservatively until explicit reclamation is implemented.
+
+Storage step 16 measured **21910/23304 executable production lines (94.02%)**.
+Complete/unresolved store metadata, provisional capacity refusal, exact pre-upload
+prices and backward-compatible metadata-aware Services quote calculation pass
+all required checks. Actual paid lease creation remains pending upstream issue #11.

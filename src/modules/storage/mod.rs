@@ -1,6 +1,7 @@
 //! Paid immutable byte leases; Services callers supply authority and platform dependencies.
 //!
 //! Contract foundations only: no provider is registered or advertised until durable execution exists.
+pub mod assessment;
 pub mod clock_policy;
 pub mod contract;
 pub mod effect;

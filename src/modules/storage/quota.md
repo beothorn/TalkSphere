@@ -20,3 +20,8 @@ There is no automatic release on timeout, session loss or dropped observers.
 The owner must retain prepared holds through uncertainty and apply only known
 commit/abort decisions. This index neither supplies durability nor proves local
 caller authority: it belongs behind the owner's authorized serialized boundary.
+
+probe checks capacity for a fresh key under the same checked aggregate rules,
+without reserving, changing or releasing a hold. Existing keys return Conflict.
+A successful provisional assessment is not a promise of later capacity; execution
+must reserve before any platform effect and preserve uncertain holds.

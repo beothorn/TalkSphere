@@ -31,6 +31,18 @@ impl Quota {
             holds: Mutex::new(BTreeMap::new()),
         })
     }
+    /// Check whether a fresh original key could fit without reserving, changing or releasing any hold.
+    /// This is only a provisional assessment; execution must reserve again before platform effects.
+    /// # Errors
+    /// Conflict rejects existing keys; Limit rejects current capacity and Unavailable poisoned state.
+    pub fn probe(&self, key: OperationKey, usage: Usage) -> Result<(), Error> {
+        tracing::trace!("Checking provisional Storage capacity without reserving work");
+        let holds = self.holds.lock().map_err(|_| Error::Unavailable)?;
+        if holds.contains_key(&key) {
+            return Err(Error::Conflict);
+        }
+        check(&holds, key, usage, self.limits)
+    }
     /// Add one original-key hold without replacing an existing different binding.
     /// Identical repeats consume no additional capacity. This authorizes no financial effect.
     /// # Errors
