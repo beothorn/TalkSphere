@@ -3,6 +3,7 @@ mod checks;
 mod payment;
 mod quote;
 mod result;
+mod wanted;
 use super::*;
 use crate::modules::{
     board::{
@@ -327,6 +328,14 @@ impl Endpoint {
             .candidate(request, &self.quote(price, factors))
             .unwrap();
         let current = Captured(candidate.selection().clone());
+        self.reserve_candidate(candidate, &current)
+    }
+    // Complete consent/admission against the caller's current publication authority rather than deriving authority from quote bytes.
+    fn reserve_candidate(
+        &self,
+        candidate: wire::requester::Candidate,
+        current: &dyn services::quote::Current,
+    ) -> Outgoing {
         let hash = candidate.hash();
         let grant = self
             .authority
@@ -362,7 +371,7 @@ impl Endpoint {
                 Admission {
                     quote_context: &sc(&request),
                     coordinate_context: &sc(&coordinate),
-                    current: &current,
+                    current,
                     runtime: &self.runtime,
                 },
                 consent,

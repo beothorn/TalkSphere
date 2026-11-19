@@ -29,10 +29,15 @@ The integration tests cover:
   original body offsets and last-byte completion.
 - Separately paid check proposals containing only public challenge fields,
   three-credit consent/reservation and refusal of leaked private expected bytes.
+- Wanted store against actual local Board publication with requester-owned input,
+  exact consent, finite issuance and reversed provider-opened stream ordering.
+- Wanted invitation role/ID mismatches, explicit application refusal and withdrawn
+  terms before or during the policy callback leaving issuance untouched.
 - No Storage opt-in to Messaging cached retries.
 
-The tests deliberately use controlled remote quotes/results and a controlled
-current-quote port. Transport provenance is supplied by the trusted test adapter;
+The tests deliberately use controlled remote quotes/results. Ordinary tests use
+a controlled current-quote port; wanted tests query the actual local Board owner.
+Transport provenance is supplied by the trusted test adapter;
 this is not an authenticated native-process test or evidence that an actual
 provider retained bytes. The requester coordinator and Ledger use explicit
 volatile Memory adapters here. They establish orchestration and local accounting
@@ -52,3 +57,8 @@ The ordinary and check Peer Protocol APIs continue enforcing distinct local
 Request/Invoke/Coordinate grants, immutable original association, selected issuer,
 explicit spending bounds and exact consent hashes. No private expected data,
 encryption key or application trust decision is put into public challenge input.
+
+Wanted tests install only the publisher's requester. Invitations and successful
+remote results are controlled fixtures; no prospective Storage provider runs.
+They do not complete AT-E02's provider-side receipt/spend-back or demonstrate
+follow-up operations against an actual newly created lease. Step 30 stays pending.

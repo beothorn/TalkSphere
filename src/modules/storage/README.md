@@ -36,7 +36,8 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–16 are complete; durable execution and integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–16 and 18–27 are
+complete; durable store creation and full handler/network integration remain pending.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -173,7 +174,11 @@ This advances step 28; provider creation/publication still depends on step 17.
 [Requester Peer Protocol integration](requester/client/PEER.md) now exercises
 ordinary quotes, exact consent, bounded detached bodies, terminal result gates
 and local requester coordination/accounting through actual public module ports.
-Paid byte-check proposals preserve private expectations. Run
+Paid byte-check proposals preserve private expectations. Wanted invitations use
+actual requester-owned Board publication, local input/spending policy and finite
+issuance; withdrawal/refusal cannot spend credits. Payment tests cover provider
+currency, requester issuance and independent signed external-issuer settlement
+with exact fees and one-time confirmation. Run
 `cargo test --locked modules::storage::requester::client::tests::wire`.
 These controlled remote-reply tests use volatile local adapters; authenticated
 provider process and disk-recovery acceptance remain separate pending steps.

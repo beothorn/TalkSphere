@@ -245,3 +245,11 @@ bounds, uncertain/refused payment, mismatched evidence and duplicate confirmatio
 pass required checks and warning-free rustdoc. The tests use volatile owners and
 controlled remote Storage output; full provider-side policy, actual issuer network
 provenance and durable restart coverage remain pending in step 31 and later steps.
+
+Storage wanted-requester integration measured **23818/25298 executable production
+lines (94.15%)**. Actual local wanted publication, locally chosen input/spending,
+provider-opened stream ordering, finite issuance and duplicate requester commit
+pass alongside unauthorized invitations, refusal and publication withdrawal before
+or during application choice. Required checks and warning-free rustdoc pass.
+These tests install no Storage provider and use controlled remote results;
+contribution spend-back and full AT-E02 remain pending under step 30.

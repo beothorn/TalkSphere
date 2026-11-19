@@ -398,6 +398,13 @@ changed terms; generic Storage cannot opt into Messaging's cached-retry path.
 
 ### 30. Support wanted Storage with requester-owned consent
 
+Partial requester evidence: [Peer integration tests and scope](../../src/modules/storage/requester/client/PEER.md)
+exercise actual local wanted publication, trusted input/spending policy, reversed
+stream roles, exact consent and finite requester issuance. Unauthorized invitations,
+policy refusal and publication withdrawal before/during input choice leave funds
+untouched. Remote Storage output is controlled; the actual provider, contribution
+spend-back and follow-up leased operations remain unverified. Keep this step unchecked.
+
 Allow an initial store through a wanted offering while the publisher retains
 input, encryption and spending authority. Preserve requester/provider/issuer roles
 when the provider opens the stream; later operations select current provided
