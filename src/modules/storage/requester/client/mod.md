@@ -52,3 +52,7 @@ cargo run --locked -- --help
 
 Behavior follows pinned [Storage inputs](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/inputs/README.md)
 and [outputs](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/outputs/README.md).
+
+[Peer Protocol integration evidence](PEER.md) exercises these actual ports through
+requester-only registration, original quote consent, complete result reception
+and real local Services/Ledger decisions, with its adapter scope stated explicitly.

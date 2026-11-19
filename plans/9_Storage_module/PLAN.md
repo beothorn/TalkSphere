@@ -383,6 +383,13 @@ Do not enable an incomplete intermediate provider in the normal server profile.
 
 ### 29. Bind Storage requester operations to Peer Protocol
 
+Partial progress: [real requester integration tests](../../src/modules/storage/requester/client/PEER.md)
+exercise public cached selection, ordinary/check proposals, exact quote consent,
+bounded detached transfer, terminal result gates and actual requester Services/
+Ledger decisions. Remote replies/currentness are controlled test inputs and
+local journals are volatile; full provider-backed and durable requester binding
+is not yet complete. Keep this step unchecked until those remaining paths pass.
+
 Construct locally authorized store/retrieve/renew/remove/check plans with explicit
 input and spending consent, authenticated provider selection and bounded body
 ownership. Feed complete results into independent Storage verification and durable

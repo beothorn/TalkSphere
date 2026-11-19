@@ -169,3 +169,11 @@ expectations are keyed by provider and original attempt, preserving colliding
 opaque IDs and delayed results. Run
 `cargo test --locked modules::storage::requester::client` from the repository root.
 This advances step 28; provider creation/publication still depends on step 17.
+
+[Requester Peer Protocol integration](requester/client/PEER.md) now exercises
+ordinary quotes, exact consent, bounded detached bodies, terminal result gates
+and local requester coordination/accounting through actual public module ports.
+Paid byte-check proposals preserve private expectations. Run
+`cargo test --locked modules::storage::requester::client::tests::wire`.
+These controlled remote-reply tests use volatile local adapters; authenticated
+provider process and disk-recovery acceptance remain separate pending steps.

@@ -230,3 +230,10 @@ two incomplete abrupt-child captures under the documented failure-mode procedure
 the percentage counts valid profiles with all production source in the denominator.
 Requester-only registration enables no provider; step 17 and full step 28 remain
 pending upstream acceptance-time clarification.
+
+Storage requester Peer Protocol integration measured **23813/25298 executable
+production lines (94.13%)**. Seven new integration tests run actual cached contract
+selection, scoped ordinary/check quotes, consent, detached bodies, terminal result
+gates and requester Services/Ledger decisions. Required checks and warning-free
+rustdoc pass. Remote replies/currentness are controlled and local stores are
+volatile here; no provider durability/process or full payment-mode claim is made.

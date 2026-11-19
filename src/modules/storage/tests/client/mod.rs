@@ -2,6 +2,7 @@
 mod checks;
 mod quote;
 mod result;
+mod wire;
 use super::*;
 use crate::modules::{
     board::config::Limits as BoardLimits,
