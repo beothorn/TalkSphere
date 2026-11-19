@@ -19,3 +19,7 @@ original accepted identity, price and true removal success.
 [Private byte-check verification](byte_check.md) consumes original authenticated
 transport observations and independent expected bytes without changing accounting.
 [Secure sampling](sampling.md) optionally chooses unbiased private offsets.
+
+The [installed Client](client/mod.md) implements actual Services requester and
+paid-check ports using these validators and independently retained original
+provider/attempt expectations. It enables no provider registration by itself.

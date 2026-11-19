@@ -366,6 +366,10 @@ does not complete requester/provider installation or usable publication.
 Services quote callbacks now preserve the original authenticated peer/key and
 current offering through metadata projection, remote factor validation and
 pricing, so provider-scoped lease expectations need no issuer/ID-only lookup.
+The [installed requester](../../src/modules/storage/requester/client/mod.md) now
+implements real Services quote/result/check ports against original local
+provider/attempt lease and range expectations. Requester-only Registry tests
+retain provider absence; full provider installation and publication are pending.
 
 Pending prerequisite: complete step 17 after resolving upstream issue #11; an
 installation that refuses store cannot advertise the complete Storage contract.

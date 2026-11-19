@@ -95,22 +95,43 @@ pub fn verify(
             }
         }
         Reply::Evidence { peer, value } => {
-            if peer != invocation.provider
-                || operation::evidence(value, budget).is_err()
-                || renewal::id(value).ok() != Some(expected.lease_id)
-                || renewal::number(value, "offset").ok() != Some(expected.offset)
-            {
+            if peer != invocation.provider {
                 return Check::Inconclusive;
             }
-            let Value::Object(fields) = value else {
-                return Check::Inconclusive;
-            };
-            match fields.iter().find(|(n, _)| n == "value").map(|(_, v)| v) {
-                Some(Value::Bytes(bytes)) if bytes.as_slice() == [expected.byte] => Check::Pass,
-                Some(Value::Bytes(_)) => Check::Fail,
-                _ => Check::Inconclusive,
-            }
+            compare(challenge, value, expected, budget)
         }
+    }
+}
+// Compare exact associated bytes only after the caller establishes authenticated provenance, private activity and trusted timely completion.
+pub(super) fn compare(
+    challenge: &Value,
+    evidence: &Value,
+    expected: &Expected,
+    budget: Budget,
+) -> Check {
+    tracing::trace!(
+        "Comparing complete Storage evidence with independently retained original byte"
+    );
+    if operation::challenge(challenge, budget).is_err()
+        || renewal::id(challenge).ok() != Some(expected.lease_id)
+        || renewal::number(challenge, "offset").ok() != Some(expected.offset)
+        || operation::evidence(evidence, budget).is_err()
+        || renewal::id(evidence).ok() != Some(expected.lease_id)
+        || renewal::number(evidence, "offset").ok() != Some(expected.offset)
+    {
+        return Check::Inconclusive;
+    }
+    let Value::Object(fields) = evidence else {
+        return Check::Inconclusive;
+    };
+    match fields
+        .iter()
+        .find(|(name, _)| name == "value")
+        .map(|(_, value)| value)
+    {
+        Some(Value::Bytes(bytes)) if bytes.as_slice() == [expected.byte] => Check::Pass,
+        Some(Value::Bytes(_)) => Check::Fail,
+        _ => Check::Inconclusive,
     }
 }
 // Require one coherent original send/evidence/end sequence within the accepted inclusive response interval.

@@ -161,3 +161,11 @@ definition and checks Storage schema meaning through public Services Standards.
 This is partial progress on step 28: real handler installation and usable provider
 publication remain pending step 17 and issue #11. Exercise it with
 `cargo test --locked modules::storage::standard` from the repository root.
+
+The [installed Storage requester](requester/client/mod.md) now connects exact
+scoped quote validation, ordinary complete-result checks and separately paid
+byte-check rules through actual Services traits. Original local lease/range
+expectations are keyed by provider and original attempt, preserving colliding
+opaque IDs and delayed results. Run
+`cargo test --locked modules::storage::requester::client` from the repository root.
+This advances step 28; provider creation/publication still depends on step 17.

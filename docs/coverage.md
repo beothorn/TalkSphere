@@ -221,3 +221,12 @@ production lines (94.10%)**. Context-aware metadata, remote factor validation an
 quote pricing preserve the original authorized peer/key in provided and wanted
 roles; legacy defaults remain compatible. Required checks and warning-free
 rustdoc pass. This local Services port extension changes no protocol wire fields.
+
+Storage step 28 installed-requester integration measured **23806/25298 executable
+production lines (94.10%)**. All 129 Storage unit tests and the required repository
+checks pass, including scoped exact quotes, original lease snapshots, complete
+result validation and paid evidence rules. Rustdoc is warning-free. LLVM discarded
+two incomplete abrupt-child captures under the documented failure-mode procedure;
+the percentage counts valid profiles with all production source in the denominator.
+Requester-only registration enables no provider; step 17 and full step 28 remain
+pending upstream acceptance-time clarification.
