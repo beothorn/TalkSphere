@@ -2,7 +2,10 @@
 use super::*;
 use wire::{record::Record, result_receiver::ResultReceiver};
 // Begin one original provisional result receiver with scoped incoming authority; it exposes no successful application output.
-fn receiver(endpoint: &Endpoint, outgoing: &Outgoing) -> (wire::authority::Grant, ResultReceiver) {
+pub(super) fn receiver(
+    endpoint: &Endpoint,
+    outgoing: &Outgoing,
+) -> (wire::authority::Grant, ResultReceiver) {
     let invoke = endpoint
         .authority
         .grant(
@@ -21,7 +24,7 @@ fn receiver(endpoint: &Endpoint, outgoing: &Outgoing) -> (wire::authority::Grant
     (invoke, receiver)
 }
 // Simulate a complete remote value using the public wire codec, delivering all detached bytes before the explicit result.end marker.
-fn deliver(
+pub(super) fn deliver(
     endpoint: &Endpoint,
     grant: &wire::authority::Grant,
     receiver: &mut ResultReceiver,

@@ -51,7 +51,7 @@ Reviewed on 2026-11-15 against
 [CR2SE d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
 Upstream `main` is six commits ahead, with no changes to the reviewed protocol
 files. Recheck the specification and issue status before implementation.
-Rechecked on 2026-11-19: no reviewed protocol files changed and issue #11 remains
+Rechecked on 2026-11-20: no reviewed protocol files changed and issue #11 remains
 open without a clarification. Independent steps 18–27 are complete; actual store
 creation in step 17 and the complete provider/network path in steps 28–38 remain
 unverified until that dependency is resolved.
@@ -405,6 +405,14 @@ terms at the actual lease provider. Test unauthorized invitations, finite
 requester-issued credits and the contribution path described in AT-E02.
 
 ### 31. Verify Storage accounting across supported payment modes
+
+Partial requester evidence: [Peer integration tests and scope](../../src/modules/storage/requester/client/PEER.md)
+exercise provider-issued credits, finite requester issuance and third-party
+fee/total consent, unknown/refused settlement, independent signed issuer transfer
+and exact idempotent confirmation without repeating work. All owners in these
+tests use volatile adapters and remote Storage output is controlled; provider-side
+policy/charging, actual retained leases and durable restart coverage remain pending.
+Keep this step unchecked.
 
 Exercise provider-issued, requester-issued and explicitly supported third-party
 credit policies using real Services/Ledger contracts. Verify one exact local charge

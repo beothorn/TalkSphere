@@ -12,6 +12,14 @@ The integration tests cover:
 - Provider-size, issuer, price and contract tampering rejected before consent.
 - Changed supported economic terms requiring a fresh exact-byte quote hash.
 - Explicit finite provider-issued test funding and original-key local holds.
+- Requester-issued credits consuming finite issuance and recording one provider balance.
+- External-issuer quotes binding the original transfer ID, fee and total consent bound.
+- Committed external-currency work retaining its hold through unknown/refused
+  payment until exact original issuer evidence settles once.
+- Independent issuer accounting with a real owner signature, same-stream fee
+  acceptance, exact gross/net balances and idempotent transfer commitment.
+- Changed transfer IDs, recipients, gross amounts and fees rejected at settlement,
+  with the original retained Storage result and local trust preserved.
 - Only complete result bodies, result.end and normal original END reaching Services.
 - Independent Storage result validation before requester preparation/commit.
 - One exact requester-side local charge despite repeated commit delivery.
@@ -28,8 +36,10 @@ current-quote port. Transport provenance is supplied by the trusted test adapter
 this is not an authenticated native-process test or evidence that an actual
 provider retained bytes. The requester coordinator and Ledger use explicit
 volatile Memory adapters here. They establish orchestration and local accounting
-behavior, not disk restart durability or provider-side accounting. Those remain
-separate plan steps 31–35. No result here resolves the acceptance-time conflict
+behavior, not disk restart durability or provider-side Storage accounting. The independent
+issuer ledger is also volatile; receipt provenance is supplied by the trusted test
+adapter rather than an actual issuer Transport connection. Full provider payment
+policies and persistence remain separate requirements in plan steps 31–35. No result here resolves the acceptance-time conflict
 in CR2SE issue #11 or completes provider registration/publication in step 28.
 
 From the repository root run:

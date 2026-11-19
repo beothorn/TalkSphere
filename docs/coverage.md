@@ -237,3 +237,11 @@ selection, scoped ordinary/check quotes, consent, detached bodies, terminal resu
 gates and requester Services/Ledger decisions. Required checks and warning-free
 rustdoc pass. Remote replies/currentness are controlled and local stores are
 volatile here; no provider durability/process or full payment-mode claim is made.
+
+Storage requester payment-mode integration measured **23817/25298 executable
+production lines (94.15%)**. Requester issuance and independent signed external
+issuer transfer/fee settlement join the provider-currency tests. Exact consent
+bounds, uncertain/refused payment, mismatched evidence and duplicate confirmation
+pass required checks and warning-free rustdoc. The tests use volatile owners and
+controlled remote Storage output; full provider-side policy, actual issuer network
+provenance and durable restart coverage remain pending in step 31 and later steps.

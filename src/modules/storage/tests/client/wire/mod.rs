@@ -1,5 +1,6 @@
 //! Public Board/Peer Protocol/Services/Ledger requester integration with controlled remote quotes/results, not a running Storage provider.
 mod checks;
+mod payment;
 mod quote;
 mod result;
 use super::*;
@@ -29,6 +30,7 @@ use std::time::{Duration, Instant};
 const CREDIT: u64 = 100_000;
 struct Endpoint {
     client: WireClient,
+    payment: Payment,
     family: Arc<Client>,
     registry: Arc<Registry>,
     selection: Selection,
@@ -81,6 +83,15 @@ fn lc(grant: &ledger::authority::Grant) -> ledger::contract::Context<'_> {
 }
 // Real requester-only registration and a directly attributed cached contract supply a Selection without installing any provider.
 fn endpoint(client: Client, inv: &Invocation) -> Endpoint {
+    endpoint_with_payment(client, inv, inv.provider, Payment::default())
+}
+// Keep the authenticated roles fixed while selecting an explicit issuer and immutable transfer/fee binding.
+fn endpoint_with_payment(
+    client: Client,
+    inv: &Invocation,
+    issuer: IdentityId,
+    payment: Payment,
+) -> Endpoint {
     let family = Arc::new(client);
     let services = Arc::new(services::authority::Authority::new());
     let catalogue = Arc::new(Catalogue::new(BoardLimits::default()).unwrap());
@@ -113,9 +124,9 @@ fn endpoint(client: Client, inv: &Invocation) -> Endpoint {
         deadline: Instant::now() + Duration::from_secs(60),
         cancelled: false,
     };
-    // Select provider-issued credits explicitly; the pinned schema fixture's illustrative issuer is a different identity.
+    // Select the test currency explicitly; the pinned fixture has an unrelated illustrative issuer.
     let mut offering = inv.offering.source.clone();
-    offering["creditIssuer"] = crate::modules::identity::text::format(inv.provider).into();
+    offering["creditIssuer"] = crate::modules::identity::text::format(issuer).into();
     let raw = json!({"version":1,"providedServices":[offering],"wantedServices":[]});
     let remote = cache
         .store(
@@ -181,12 +192,14 @@ fn endpoint(client: Client, inv: &Invocation) -> Endpoint {
             ledger::persistence::Memory::default(),
             Default::default(),
             &lc(&admin),
-            1_000_000,
+            CREDIT,
             100_000,
         )
         .unwrap(),
     );
-    ledger.set_owned(&lc(&admin), inv.provider, CREDIT).unwrap();
+    if issuer != inv.requester {
+        ledger.set_owned(&lc(&admin), issuer, CREDIT).unwrap();
+    }
     let coordinate = ledger_authority
         .grant(
             inv.requester,
@@ -223,6 +236,7 @@ fn endpoint(client: Client, inv: &Invocation) -> Endpoint {
     };
     Endpoint {
         client,
+        payment,
         family,
         registry,
         selection,
@@ -237,7 +251,11 @@ fn endpoint(client: Client, inv: &Invocation) -> Endpoint {
 impl Endpoint {
     // The literal incoming remote quote is independent of the Storage provider encoder and uses exact specified factor widths.
     fn quote(&self, price: u64, factors: Json) -> Message {
-        let quote = json!({"type":"quote","quoteId":wire::base64::encode(&[6;32]),"offering":self.selection.offering().source,"creditIssuer":crate::modules::identity::text::format(self.selection.roles().2),"priceMode":"fixed","maximumPrice":price.to_string(),"pricingInputs":factors});
+        let mut quote = json!({"type":"quote","quoteId":wire::base64::encode(&[6;32]),"offering":self.selection.offering().source,"creditIssuer":crate::modules::identity::text::format(self.selection.roles().2),"priceMode":"fixed","maximumPrice":price.to_string(),"pricingInputs":factors});
+        if let (Some(id), Some(fee)) = (self.payment.transfer, self.payment.fee) {
+            quote["transferId"] = json!(wire::base64::encode(&id));
+            quote["transferFee"] = json!(fee.to_string());
+        }
         Message::parse(&serde_json::to_vec(&quote).unwrap(), 65536).unwrap()
     }
     // Only local input ownership, role-scoped grants and explicit spending create a proposal; no accept or body can be sent yet.
@@ -267,7 +285,7 @@ impl Endpoint {
                 input,
                 Spending {
                     maximum,
-                    payment: Payment::default(),
+                    payment: self.payment,
                 },
             )
             .unwrap()
@@ -361,9 +379,12 @@ impl Endpoint {
                 16_777_216,
             )
             .unwrap();
-        self.ledger
-            .available(&lc(&read), self.association.peer, true)
-            .unwrap()
+        let issuer = self.selection.roles().2;
+        if issuer == self.association.local {
+            self.ledger.capacities(&lc(&read)).unwrap().0
+        } else {
+            self.ledger.available(&lc(&read), issuer, true).unwrap()
+        }
     }
     // Inspect a requester coordinator only under its original local Observe authority.
     fn phase(&self) -> Option<services::runtime::Phase> {
