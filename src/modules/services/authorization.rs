@@ -27,6 +27,12 @@ impl Authorized {
         tracing::trace!("Reading authorized invocation attempt association");
         self.peer.key
     }
+    /// Return the original authenticated local/remote/key association retained by authorization.
+    /// This copy preserves role and attempt correlation without granting execution, spending or network authority.
+    pub fn peer(&self) -> Peer {
+        tracing::trace!("Reading original authorized requester peer association");
+        self.peer
+    }
     /// Borrow explicitly supplied requester input; provider-side authorization does not invent it.
     pub fn input(&self) -> Option<&Value> {
         tracing::trace!("Borrowing explicitly authorized requester input");

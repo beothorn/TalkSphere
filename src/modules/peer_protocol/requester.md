@@ -40,3 +40,8 @@ and quote grants. It uses the acceptance contract to reserve, retain original
 input and mark one outgoing attempt before returning accept bytes. Repeated
 admission cannot double-dispatch; unknown local outcomes require original-key
 recovery rather than a fresh wire attempt.
+
+Quote validation passes the original Services-authorized peer and selected
+current offering to requester metadata projection. Lease-scoped families can
+retain independent provider/attempt expectations before validating wire factors;
+payload identity fields and credit issuers never replace the authenticated peer.

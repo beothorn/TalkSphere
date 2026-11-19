@@ -88,3 +88,14 @@ from provider-only factors. Calculated families can use independently understood
 size/duration input without inventing peer pricingInputs. The default delegates
 to pricing, preserving existing fixed/custom handlers. Services quote calculation
 uses this callback only after normal assessment validation.
+
+Requester.pricing_with_peer, assessment_metadata_with_peer and
+validate_assessment_with_peer receive the original authorized Peer (local identity,
+authenticated remote identity and original requester/connection/stream key) plus
+the selected current offering. Resource-aware families can bind quote metadata
+and independently retained factors to the actual provider rather than the issuer
+or a payload identity. Services supplies this association after authorization;
+peer input cannot override it. Defaults delegate to pricing_for, assessment_metadata
+and validate_assessment, preserving existing installed handlers. Peer Protocol
+uses the context-aware projection for incoming quotes; Services remote assessment
+and quote calculation use the corresponding context-aware validation/pricing.

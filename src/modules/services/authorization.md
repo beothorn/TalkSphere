@@ -15,3 +15,7 @@ create grants, input or code installations. No reservation or execution occurs.
 Authorized exposes immutable selection, key, explicit input and pinned exact
 implementation. It does not itself confer Ledger authority. These process-local
 pins are later copied into durable accepted-operation ownership.
+
+Authorized.peer returns a copy of the original authenticated local/remote/key
+association for family quote callbacks. It grants no new execution, spending or
+network permission and does not infer a provider from credit-issuer identity.

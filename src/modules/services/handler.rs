@@ -157,6 +157,57 @@ pub trait Requester: super::validation::Semantics {
         tracing::trace!("Calculating service price with validated local assessment metadata");
         self.pricing(offering, factors)
     }
+    /// Calculate a quote with the original authenticated local/remote/key association from Services authorization.
+    /// Families with provider-scoped resources use this context instead of inferring a provider from the credit issuer.
+    /// The default preserves existing metadata-aware pricing implementations.
+    /// # Errors
+    /// Preserves family authorization, pricing, metadata/factor and bound failures before acceptance.
+    fn pricing_with_peer(
+        &self,
+        _peer: Peer,
+        offering: &Offering,
+        metadata: &Value,
+        factors: &Value,
+    ) -> Result<super::pricing::Price, Error> {
+        tracing::trace!(
+            "Calculating requester price with the original authorized peer association"
+        );
+        self.pricing_for(offering, metadata, factors)
+    }
+    /// Derive quote metadata under the original authenticated association and selected current offering.
+    /// The default preserves existing input projection; providers and issuers are not inferred from payload fields.
+    /// # Errors
+    /// Preserves bounded input, unsupported contract and family authorization failures without effects.
+    fn assessment_metadata_with_peer(
+        &self,
+        _peer: Peer,
+        _offering: &Offering,
+        input: &Value,
+        budget: super::value::Budget,
+    ) -> Result<Value, Error> {
+        tracing::trace!(
+            "Projecting requester metadata with original authenticated selection context"
+        );
+        self.assessment_metadata(input, budget)
+    }
+    /// Validate remote factors against original local input using the authenticated association and current offering.
+    /// The default preserves legacy assessment validation; resource-aware families can bind local expectations to the provider and key.
+    /// # Errors
+    /// Rejects malformed, unowned or changed quote expectations before spending, with original family errors preserved.
+    fn validate_assessment_with_peer(
+        &self,
+        _peer: Peer,
+        _offering: &Offering,
+        input: &Value,
+        metadata: &Value,
+        factors: &Value,
+        budget: super::value::Budget,
+    ) -> Result<(), Error> {
+        tracing::trace!(
+            "Validating remote quote expectations with original authenticated peer context"
+        );
+        self.validate_assessment(input, metadata, factors, budget)
+    }
     /// Derive independently understood local assessment metadata from authorized complete requester input.
     /// Body-bearing families override this with their defined length/hash projection, never placeholder payloads.
     /// # Errors

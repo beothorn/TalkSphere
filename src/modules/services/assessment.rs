@@ -106,12 +106,17 @@ pub fn remote(
         return Err(Error::Limit);
     }
     context.check(authority, local, Action::Request, bytes)?;
-    authorized.implementation.requester().validate_assessment(
-        authorized.input.as_ref().ok_or(Error::Denied)?,
-        &assessment.metadata,
-        &assessment.factors,
-        budget,
-    )?;
+    authorized
+        .implementation
+        .requester()
+        .validate_assessment_with_peer(
+            authorized.peer(),
+            authorized.selection().offering(),
+            authorized.input.as_ref().ok_or(Error::Denied)?,
+            &assessment.metadata,
+            &assessment.factors,
+            budget,
+        )?;
     Ok(Assessed {
         authorized,
         assessment,

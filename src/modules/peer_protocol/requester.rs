@@ -275,7 +275,12 @@ impl Client {
         let metadata = authorized
             .implementation()
             .requester()
-            .assessment_metadata(input, self.budget())?;
+            .assessment_metadata_with_peer(
+                authorized.peer(),
+                authorized.selection().offering(),
+                input,
+                self.budget(),
+            )?;
         let described = services::input::Input::Complete(input.clone());
         let operation = quote::operation(&described);
         let factors = factors(&authorized.selection().offering().service, operation, v)?;

@@ -113,7 +113,8 @@ pub fn quote(assessed: &Assessed, requester_maximum: u64) -> Result<Price, Error
     tracing::trace!("Authorizing quoted price within explicit requester spending bound");
     let auth = assessed.authorized();
     let o = auth.selection().offering();
-    let price = auth.implementation().requester().pricing_for(
+    let price = auth.implementation().requester().pricing_with_peer(
+        auth.peer(),
         o,
         assessed.metadata(),
         assessed.factors(),

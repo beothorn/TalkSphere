@@ -215,3 +215,9 @@ complete schema tampering, equivalent descriptions and numeric versions, optiona
 extensions, bounded JSON serialization and real Services Registry admission
 without provider support. Required checks and warning-free rustdoc pass. Step 28
 remains unchecked pending complete handler installation/publication and step 17.
+
+Storage step 28 requester-context integration measured **23326/24788 executable
+production lines (94.10%)**. Context-aware metadata, remote factor validation and
+quote pricing preserve the original authorized peer/key in provided and wanted
+roles; legacy defaults remain compatible. Required checks and warning-free
+rustdoc pass. This local Services port extension changes no protocol wire fields.

@@ -51,7 +51,7 @@ Reviewed on 2026-11-15 against
 [CR2SE d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
 Upstream `main` is six commits ahead, with no changes to the reviewed protocol
 files. Recheck the specification and issue status before implementation.
-Rechecked on 2026-11-17: no reviewed protocol files changed and issue #11 remains
+Rechecked on 2026-11-19: no reviewed protocol files changed and issue #11 remains
 open without a clarification. Independent steps 18–27 are complete; actual store
 creation in step 17 and the complete provider/network path in steps 28–38 remain
 unverified until that dependency is resolved.
@@ -363,6 +363,9 @@ constructs offering-bound complete definitions and recognizes the pinned schema
 through Services Standards. Unit tests exercise complete tampering, optional
 extensions, budgets and real Registry admission without provider support. This
 does not complete requester/provider installation or usable publication.
+Services quote callbacks now preserve the original authenticated peer/key and
+current offering through metadata projection, remote factor validation and
+pricing, so provider-scoped lease expectations need no issuer/ID-only lookup.
 
 Pending prerequisite: complete step 17 after resolving upstream issue #11; an
 installation that refuses store cannot advertise the complete Storage contract.
