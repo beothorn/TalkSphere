@@ -2,6 +2,8 @@
 mod checks;
 mod payment;
 mod quote;
+#[cfg(target_os = "linux")]
+mod recovery;
 mod result;
 mod wanted;
 use super::*;
@@ -29,7 +31,10 @@ use crate::modules::{
 use serde_json::{Value as Json, json};
 use std::time::{Duration, Instant};
 const CREDIT: u64 = 100_000;
-struct Endpoint {
+struct Endpoint<
+    L: ledger::persistence::Persistence = ledger::persistence::Memory,
+    S: services::persistence::Persistence = services::persistence::Memory,
+> {
     client: WireClient,
     payment: Payment,
     family: Arc<Client>,
@@ -38,9 +43,9 @@ struct Endpoint {
     association: Association,
     authority: Arc<wire::authority::Authority>,
     services: Arc<services::authority::Authority>,
-    ledger: Arc<ledger::state::Ledger<ledger::persistence::Memory>>,
+    ledger: Arc<ledger::state::Ledger<L>>,
     ledger_authority: Arc<ledger::authority::Authority>,
-    runtime: Coordinator<services::persistence::Memory>,
+    runtime: Coordinator<S>,
 }
 struct Captured(Selection);
 impl services::quote::Current for Captured {
@@ -93,6 +98,29 @@ fn endpoint_with_payment(
     issuer: IdentityId,
     payment: Payment,
 ) -> Endpoint {
+    endpoint_with_stores(
+        client,
+        inv,
+        issuer,
+        payment,
+        ledger::persistence::Memory::default(),
+        services::persistence::Memory::default(),
+        true,
+    )
+}
+// Open each independent owner with its own adapter; recovery must not reinitialize balances or retained operation records.
+fn endpoint_with_stores<
+    L: ledger::persistence::Persistence + 'static,
+    S: services::persistence::Persistence,
+>(
+    client: Client,
+    inv: &Invocation,
+    issuer: IdentityId,
+    payment: Payment,
+    ledger_store: L,
+    service_store: S,
+    initialize: bool,
+) -> Endpoint<L, S> {
     let family = Arc::new(client);
     let services = Arc::new(services::authority::Authority::new());
     let catalogue = Arc::new(Catalogue::new(BoardLimits::default()).unwrap());
@@ -182,25 +210,39 @@ fn endpoint_with_payment(
     let admin = ledger_authority
         .grant(
             inv.requester,
-            ledger::authority::Action::Administer,
+            if initialize {
+                ledger::authority::Action::Administer
+            } else {
+                ledger::authority::Action::Read
+            },
             16_777_216,
         )
         .unwrap();
-    let ledger = Arc::new(
-        ledger::state::Ledger::initialize(
+    let ledger = Arc::new(if initialize {
+        let ledger = ledger::state::Ledger::initialize(
             inv.requester,
             ledger_authority.clone(),
-            ledger::persistence::Memory::default(),
+            ledger_store,
             Default::default(),
             &lc(&admin),
             CREDIT,
-            100_000,
+            CREDIT,
         )
-        .unwrap(),
-    );
-    if issuer != inv.requester {
-        ledger.set_owned(&lc(&admin), issuer, CREDIT).unwrap();
-    }
+        .unwrap();
+        if issuer != inv.requester {
+            ledger.set_owned(&lc(&admin), issuer, CREDIT).unwrap();
+        }
+        ledger
+    } else {
+        ledger::state::Ledger::open(
+            inv.requester,
+            ledger_authority.clone(),
+            ledger_store,
+            Default::default(),
+            &lc(&admin),
+        )
+        .unwrap()
+    });
     let coordinate = ledger_authority
         .grant(
             inv.requester,
@@ -213,17 +255,24 @@ fn endpoint_with_payment(
         coordinate,
         Default::default(),
     ));
+    let recover = services
+        .grant(
+            inv.requester,
+            services::authority::Action::Recover,
+            16_777_216,
+        )
+        .unwrap();
     let runtime = Coordinator::open(
         services::runtime::Config {
             local: inv.requester,
             authority: services.clone(),
             limits: Default::default(),
         },
-        &sc(&register),
-        services::persistence::Memory::default(),
+        &sc(if initialize { &register } else { &recover }),
+        service_store,
         accounting,
         registry.clone(),
-        true,
+        initialize,
     )
     .unwrap();
     let association = Association {
@@ -249,7 +298,7 @@ fn endpoint_with_payment(
         runtime,
     }
 }
-impl Endpoint {
+impl<L: ledger::persistence::Persistence, S: services::persistence::Persistence> Endpoint<L, S> {
     // The literal incoming remote quote is independent of the Storage provider encoder and uses exact specified factor widths.
     fn quote(&self, price: u64, factors: Json) -> Message {
         let mut quote = json!({"type":"quote","quoteId":wire::base64::encode(&[6;32]),"offering":self.selection.offering().source,"creditIssuer":crate::modules::identity::text::format(self.selection.roles().2),"priceMode":"fixed","maximumPrice":price.to_string(),"pricingInputs":factors});

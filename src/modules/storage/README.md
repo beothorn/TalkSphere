@@ -180,5 +180,8 @@ issuance; withdrawal/refusal cannot spend credits. Payment tests cover provider
 currency, requester issuance and independent signed external-issuer settlement
 with exact fees and one-time confirmation. Run
 `cargo test --locked modules::storage::requester::client::tests::wire`.
-These controlled remote-reply tests use volatile local adapters; authenticated
-provider process and disk-recovery acceptance remain separate pending steps.
+Ordinary remote-reply tests use volatile adapters. Separate
+[requester native recovery tests](requester/client/RECOVERY.md) reopen independent
+Services/Ledger files at coordination boundaries and after lost durability replies,
+preserving exact retained results and one charge. Authenticated provider processes
+and full Storage participant recovery remain separate pending requirements.

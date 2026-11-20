@@ -253,3 +253,13 @@ pass alongside unauthorized invitations, refusal and publication withdrawal befo
 or during application choice. Required checks and warning-free rustdoc pass.
 These tests install no Storage provider and use controlled remote results;
 contribution spend-back and full AT-E02 remain pending under step 30.
+
+Storage native requester recovery measured **23816/25298 executable production
+lines (94.14%)**. All 729 library tests and the required repository checks pass,
+including sixteen requester integration tests. Four-operation native reopen
+boundaries, exact retained result/effect bytes, unknown remote outcomes, denial
+of local abort after dispatch and eight independent coordinator/participant
+persistence failures pass with fresh authorities and no duplicate charge.
+Rustdoc is warning-free and local Markdown links pass. This is local requester
+recovery evidence; actual paid provider obligations and complete step 32 remain
+pending step 17 and CR2SE issue #11.

@@ -387,8 +387,9 @@ Partial progress: [real requester integration tests](../../src/modules/storage/r
 exercise public cached selection, ordinary/check proposals, exact quote consent,
 bounded detached transfer, terminal result gates and actual requester Services/
 Ledger decisions. Remote replies/currentness are controlled test inputs and
-local journals are volatile; full provider-backed and durable requester binding
-is not yet complete. Keep this step unchecked until those remaining paths pass.
+ordinary local journals are volatile. Separate [native requester recovery tests](../../src/modules/storage/requester/client/RECOVERY.md)
+now reopen independent Services/Ledger files with exact results/charges and lost
+acknowledgements; full provider-backed requester binding remains incomplete. Keep this step unchecked until those remaining paths pass.
 
 Construct locally authorized store/retrieve/renew/remove/check plans with explicit
 input and spending consent, authenticated provider selection and bounded body
@@ -429,6 +430,15 @@ confirmation under AT-E06; payment uncertainty never reexecutes or removes a
 committed lease. Document and test explicit refusal for unsupported policies.
 
 ### 32. Exercise crash recovery at every coordination boundary
+
+Partial requester evidence: [native recovery matrix](../../src/modules/storage/requester/client/RECOVERY.md)
+reopens independent Linux Services/Ledger owners after staging, preparation, commit
+decision and acknowledgement for all four operations. Lost preparation/decision/charge/
+final replies and confirmed no-write failures preserve original holds, exact results
+and one charge. Incomplete remote results remain unknown; dispatched work cannot
+be locally refunded or resent. These are drop/reopen and injected reply tests, with
+controlled remote output and no provider. Full Storage participant/process cuts
+and actual durable lease obligations remain pending; keep this step unchecked.
 
 Run SV-09 and AT-E04 with real Storage bytes/metadata and independent durable
 Services/Ledger owners, crashing before/after preparation, decision, participant
