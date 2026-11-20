@@ -183,5 +183,7 @@ with exact fees and one-time confirmation. Run
 Ordinary remote-reply tests use volatile adapters. Separate
 [requester native recovery tests](requester/client/RECOVERY.md) reopen independent
 Services/Ledger files at coordination boundaries and after lost durability replies,
-preserving exact retained results and one charge. Authenticated provider processes
+preserving exact retained results and one charge. Native payment tests also retain
+finite issuance and third-party payment state through requester/issuer reopen.
+Authenticated provider processes
 and full Storage participant recovery remain separate pending requirements.

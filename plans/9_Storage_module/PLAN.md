@@ -51,8 +51,10 @@ Reviewed on 2026-11-15 against
 [CR2SE d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
 Upstream `main` is six commits ahead, with no changes to the reviewed protocol
 files. Recheck the specification and issue status before implementation.
-Rechecked on 2026-11-20: no reviewed protocol files changed and issue #11 remains
-open without a clarification. Independent steps 18–27 are complete; actual store
+Rechecked on 2026-11-21: no reviewed protocol files changed and issue #11 remains
+open without a clarification. The three other published branches returned by
+GitHub were compared with main; all are behind main with no additional commits,
+so no acceptance-time fix was found there. Independent steps 18–27 are complete; actual store
 creation in step 17 and the complete provider/network path in steps 28–38 remain
 unverified until that dependency is resolved.
 
@@ -417,9 +419,12 @@ requester-issued credits and the contribution path described in AT-E02.
 Partial requester evidence: [Peer integration tests and scope](../../src/modules/storage/requester/client/PEER.md)
 exercise provider-issued credits, finite requester issuance and third-party
 fee/total consent, unknown/refused settlement, independent signed issuer transfer
-and exact idempotent confirmation without repeating work. All owners in these
-tests use volatile adapters and remote Storage output is controlled; provider-side
-policy/charging, actual retained leases and durable restart coverage remain pending.
+and exact idempotent confirmation without repeating work. Separate
+[native payment recovery tests](../../src/modules/storage/requester/client/RECOVERY.md)
+now preserve finite issuance and pending/unknown/refused/settled external payment
+through requester and independent issuer journal reopen, retaining exact output
+and charging once. Remote Storage output and issuer provenance remain controlled;
+provider-side policy/charging and actual retained leases remain pending.
 Keep this step unchecked.
 
 Exercise provider-issued, requester-issued and explicitly supported third-party
@@ -436,7 +441,9 @@ reopens independent Linux Services/Ledger owners after staging, preparation, com
 decision and acknowledgement for all four operations. Lost preparation/decision/charge/
 final replies and confirmed no-write failures preserve original holds, exact results
 and one charge. Incomplete remote results remain unknown; dispatched work cannot
-be locally refunded or resent. These are drop/reopen and injected reply tests, with
+be locally refunded or resent. Native requester-issued and third-party payment
+recovery also retain finite issuance, exact fees/transfers and one-time settlement
+without replacing committed output. These are drop/reopen and injected reply tests, with
 controlled remote output and no provider. Full Storage participant/process cuts
 and actual durable lease obligations remain pending; keep this step unchecked.
 

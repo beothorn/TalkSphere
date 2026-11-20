@@ -3,7 +3,15 @@ use super::*;
 use ledger::payment::{Payment as State, Receipt};
 
 // Finish one complete original response, then repeat commitment to expose accidental double charging or result execution.
-fn complete(endpoint: &Endpoint, input: Value, output: &Value, price: u64) {
+pub(super) fn complete<
+    L: ledger::persistence::Persistence,
+    S: services::persistence::Persistence,
+>(
+    endpoint: &Endpoint<L, S>,
+    input: Value,
+    output: &Value,
+    price: u64,
+) {
     let outgoing = endpoint.reserve(input, price, json!({}));
     let (grant, mut receiver) = result::receiver(endpoint, &outgoing);
     result::deliver(endpoint, &grant, &mut receiver, output, price, true);
@@ -142,7 +150,13 @@ fn issuer_result(
 }
 
 // Explicit local Evidence authority models independently authenticated issuer provenance; forwarded peer fields cannot construct receipts.
-fn receipt(endpoint: &Endpoint, result: ledger::transfer_state::TransferResult) -> Receipt {
+pub(super) fn receipt<
+    L: ledger::persistence::Persistence,
+    S: services::persistence::Persistence,
+>(
+    endpoint: &Endpoint<L, S>,
+    result: ledger::transfer_state::TransferResult,
+) -> Receipt {
     let grant = endpoint
         .ledger_authority
         .grant(

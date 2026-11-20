@@ -9,15 +9,20 @@ The test harness's persistence type parameters are test-only composition helpers
 
 The requirements remain pinned to
 [CR2SE d40b6278](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f),
-including [AT-E04](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md)
+including [AT-E04](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md),
+[AT-E06](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md)
 and [durable coordination](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md#durable-effects-across-process-boundaries).
-Upstream main and issue #11 were rechecked on 2026-11-20; reviewed protocol files
+Upstream main and issue #11 were rechecked on 2026-11-21; reviewed protocol files
 are unchanged and the acceptance-time conflict remains unresolved.
 
 | Scenario | Executed assertions |
 | --- | --- |
 | Store, retrieve, renew and remove, each reopened after staging, preparation, commit decision and final acknowledgement | Original phase and hold survive; fresh-authority resume commits once; stale authority is denied; every typed output field and exact price survives. |
 | Second reopen after completion | Retained result/effect bytes match exactly; the original provider-currency balance and available amount remain charged once. |
+| Requester-issued credits at each completion boundary | Finite issuance survives reopen; the provider has exactly one issued balance after resume; no self-balance is fabricated. |
+| Third-party Pending, Unknown and Unsettled payment, each independently reopened | Committed output, exact gross/fee/transfer binding and original owned-credit hold survive; work cannot be resent. |
+| Independent issuer commits a real signed transfer and its reply is discarded | After native issuer reopen, original/new owners can query the exact original result; unrelated callers cannot; gross debit and net credit are exact. |
+| Settlement followed by requester reopen | Exact evidence settles once, stale local evidence authority is refused, fresh original evidence is idempotent, and retained Storage output/effect bytes and local trust are preserved. |
 | No remote result or output missing result.end | Repeated reopen retains Executing and its original hold; resume stays Unknown; outbound cannot resend; no successful result is exposed. |
 | Local abort attempted after dispatch, staging or preparation | Both before and after reopen, abort cannot erase potentially committed remote work, release the hold or manufacture success. |
 | Ledger preparation durable, reply lost | Services remains Staged; reopen recognizes original preparation and finishes once. |
@@ -37,12 +42,15 @@ kill, machine power-loss, authenticated node-process or independent implementati
 interoperability tests. Remote quotes/results are controlled fixtures; no Storage
 provider runs and no paid lease is created. Original private lease expectations
 are explicit fixtures, not a demonstrated durable requester catalog. The independent
-issuer settlement tests still use Memory and trusted synthetic provenance.
+issuer in the added native payment tests also reopens its own protected Ledger
+file; the earlier focused settlement tests use Memory. Both groups supply trusted
+synthetic issuer provenance rather than an actual issuer Transport connection.
+These tests do not complete AT-E06's provider-side direct query/settlement path.
 
-This advances requester recovery in steps 29 and 32. Full step 32 additionally
+This advances requester recovery in steps 29, 31 and 32. Full step 32 additionally
 requires real provider bytes/metadata, all Storage participant cuts, actual provider
 obligations and remote uncertainty, pending step 17 and
-[CR2SE issue #11](https://github.com/beothorn/CR2SE/issues/11). Neither plan step is
+[CR2SE issue #11](https://github.com/beothorn/CR2SE/issues/11). None of these plan steps is
 marked complete by this evidence. The tests do not introduce remote cached retries,
 refunds, replacement stores or a runnable paid Storage provider.
 

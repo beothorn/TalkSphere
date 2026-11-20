@@ -1,6 +1,7 @@
 //! Requester recovery drops all module owners and reopens independent native journals; remote results and lease expectations remain controlled fixtures.
 mod boundaries;
 mod faults;
+mod payment;
 use super::*;
 use services::runtime::{Decision, Phase};
 use std::{
@@ -34,12 +35,22 @@ impl Drop for Directory {
 }
 // Fresh codecs, Registry, grants and module heaps reopen acknowledged bytes from separate public native adapters.
 fn open(path: &Path, inv: &Invocation, initialize: bool) -> Native {
+    open_with_payment(path, inv, inv.provider, Payment::default(), initialize)
+}
+// Reopen the originally accepted currency/fee binding without substituting the provider or minting replacement funds.
+fn open_with_payment(
+    path: &Path,
+    inv: &Invocation,
+    issuer: IdentityId,
+    payment: Payment,
+    initialize: bool,
+) -> Native {
     let f = fixture();
     endpoint_with_stores(
         f.client,
         inv,
-        inv.provider,
-        Payment::default(),
+        issuer,
+        payment,
         ledger::linux::FileStore::open(&path.join("ledger"), Default::default(), initialize)
             .unwrap(),
         services::linux::FileStore::open(&path.join("services"), Default::default(), initialize)

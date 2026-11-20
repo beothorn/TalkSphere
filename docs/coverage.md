@@ -263,3 +263,13 @@ persistence failures pass with fresh authorities and no duplicate charge.
 Rustdoc is warning-free and local Markdown links pass. This is local requester
 recovery evidence; actual paid provider obligations and complete step 32 remain
 pending step 17 and CR2SE issue #11.
+
+Storage native requester/issuer payment recovery measured **23822/25298 executable
+production lines (94.17%)**. All 731 library tests, integration/doctests and required
+repository checks pass; rustdoc is warning-free and local Markdown links pass.
+Requester-issued credits retain finite issuance across all completion boundaries.
+Third-party pending/unknown/refused state, exact fee/order binding, independent
+native issuer transfer queries after a lost reply and one-time confirmation
+survive reopen without changing retained Storage results or trust. These are
+requester accounting tests with controlled Storage output and synthetic issuer
+provenance; actual provider obligations and complete steps 31/32 remain pending.
