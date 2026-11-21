@@ -29,6 +29,8 @@ pub(super) struct Owners {
     pub services: Arc<services::authority::Authority>,
     pub account: Arc<ledger::state::Ledger<ledger::linux::FileStore>>,
     pub ledger_authority: Arc<ledger::authority::Authority>,
+    #[cfg(test)]
+    pub peer_authority: Arc<peer::authority::Authority>,
 }
 
 pub(super) struct Catalog(pub Mutex<Option<Lease>>);
@@ -138,6 +140,38 @@ pub(super) fn open_with_wanted(
     catalog: Arc<Catalog>,
     wanted: Option<peer::engine::endpoint::wanted::Publisher>,
 ) -> Result<Owners, String> {
+    open_configured(
+        root,
+        local,
+        other,
+        requester,
+        create,
+        catalog,
+        PaymentProfile::default(),
+        wanted,
+    )
+}
+
+/// Explicit economic choices for controlled local integration scenarios.
+#[derive(Default)]
+pub(super) struct PaymentProfile {
+    pub issuer: Option<IdentityId>,
+    pub fee: u64,
+    pub allow_third_party: bool,
+}
+
+// Wire an explicit issuer policy without allowing an incoming request to select local policy.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn open_configured(
+    root: &Path,
+    local: IdentityId,
+    other: IdentityId,
+    requester: bool,
+    create: bool,
+    catalog: Arc<Catalog>,
+    payment: PaymentProfile,
+    wanted: Option<peer::engine::endpoint::wanted::Publisher>,
+) -> Result<Owners, String> {
     tracing::trace!("Opening independent native owners for the authenticated Storage exercise");
     if create {
         std::fs::create_dir(root).map_err(failure)?;
@@ -166,7 +200,7 @@ pub(super) fn open_with_wanted(
         .map_err(failure)?,
     );
     let clock = Arc::new(Clock::new()?);
-    let offered = offering(local)?;
+    let offered = offering(payment.issuer.unwrap_or(local))?;
     let wanted_offerings = if wanted.is_some() {
         let mut offer = offered.clone();
         offer["id"] = "storage-wanted".into();
@@ -318,7 +352,7 @@ pub(super) fn open_with_wanted(
     let account = Arc::new(account);
     let policy = ledger::terms::Policy {
         requester_credits: true,
-        third_party: false,
+        third_party: payment.allow_third_party,
     };
     let accounting = Arc::new(services::accounting::Ledger::new(
         account.clone(),
@@ -420,9 +454,10 @@ pub(super) fn open_with_wanted(
     let gate = Arc::new(
         peer::admission::LedgerGate::new(local, account.clone(), read, policy).map_err(failure)?,
     );
+    let peer_authority = Arc::new(peer::authority::Authority::new());
     let endpoint = Endpoint::new(peer::engine::endpoint::Config {
         local,
-        authority: Arc::new(peer::authority::Authority::new()),
+        authority: peer_authority.clone(),
         services: services.clone(),
         board,
         board_authority: ba,
@@ -431,7 +466,7 @@ pub(super) fn open_with_wanted(
         ledger: account.clone(),
         ledger_authority: la.clone(),
         gate,
-        transfer_policy: Arc::new(peer::ledger_control::transfer::Fixed(0)),
+        transfer_policy: Arc::new(peer::ledger_control::transfer::Fixed(payment.fee)),
         claims: None,
         wanted,
         resources: Default::default(),
@@ -453,5 +488,7 @@ pub(super) fn open_with_wanted(
         services,
         account,
         ledger_authority: la,
+        #[cfg(test)]
+        peer_authority,
     })
 }

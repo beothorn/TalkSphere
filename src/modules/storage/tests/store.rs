@@ -102,3 +102,62 @@ fn invalid_content_and_overflow_never_create_a_lease() {
     assert!(f.bytes.reopen([7; 32], 3).is_err());
     assert_eq!(f.journal.snapshot().unwrap().leases.len(), 1);
 }
+
+// Two authenticated owners race for one remaining byte allocation; only the original winner can read it.
+#[test]
+fn concurrent_owner_uploads_share_a_finite_capacity_without_crossing_authority() {
+    use crate::modules::identity::api::IdentityId;
+    use crate::modules::storage::test_support::mutations::limits;
+    use std::sync::{Arc, Barrier};
+    let f = fixture();
+    let gate = Gate::new(
+        f.journal.clone(),
+        f.bytes.clone(),
+        super::super::contract::Limits {
+            bytes: 6,
+            ..limits()
+        },
+    )
+    .unwrap();
+    gate.recover(&Terminal(&f.journal), time(1), None).unwrap();
+    let (first, input, _) = contracts::store(false);
+    let mut second = first.clone();
+    second.key.requester = IdentityId([3; 32]);
+    second.requester = second.key.requester;
+    let mut first = first;
+    first.key.stream = 9;
+    second.key.stream = 11;
+    let barrier = Arc::new(Barrier::new(2));
+    let crypto = CryptoPort;
+    let (a, b) = std::thread::scope(|scope| {
+        let start = |inv: &Invocation| {
+            barrier.wait();
+            stage(&gate, inv, &input, &crypto, B)
+        };
+        let (first, second) = (&first, &second);
+        let a = scope.spawn(move || start(first));
+        let b = scope.spawn(move || start(second));
+        (a.join().unwrap(), b.join().unwrap())
+    });
+    let (winner, loser, template) = match (a, b) {
+        (Ok(template), Err(Error::Limit)) => (first, second, template),
+        (Err(Error::Limit), Ok(template)) => (second, first, template),
+        _ => panic!("exactly one owner must obtain the finite upload hold"),
+    };
+    let token = gate.prepare(winner.key, &template.effect).unwrap();
+    let result = finalize(&gate, winner.key, &token, &template, time(2), None).unwrap();
+    gate.commit_store(winner.key, &token, &template, &result)
+        .unwrap();
+    assert!(gate.status(loser.key).unwrap().is_none());
+    let image = f.journal.snapshot().unwrap();
+    let lease = image
+        .leases
+        .iter()
+        .find(|lease| lease.id == [7; 32])
+        .unwrap();
+    assert_eq!(lease.requester, winner.requester);
+    assert!(matches!(
+        super::super::lease::authorize(Some(lease), winner.provider, loser.requester, &lease.id),
+        Err(Error::Denied)
+    ));
+}

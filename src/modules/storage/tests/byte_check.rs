@@ -186,12 +186,12 @@ fn missing_short_and_changed_byte() {
     };
     assert_eq!(fields[2].1, Value::Bytes(vec![b'd']));
     std::fs::write(&path, b"a").unwrap();
-    assert!(matches!(pin.evidence(), Err(Error::Storage)));
+    assert!(matches!(pin.evidence(), Err(Error::EvidenceUnavailable)));
     drop(pin);
     std::fs::remove_file(&path).unwrap();
     assert!(matches!(
         accept(&source, &f, &inv, &challenge(1), 2, 2000),
-        Err(Error::Storage)
+        Err(Error::EvidenceUnavailable)
     ));
 }
 // Finite tracked lease capacity is independent of prices; changed current accepted check terms never inherit the original store charge.

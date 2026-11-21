@@ -33,7 +33,7 @@ pub(crate) const B: Budget = Budget {
     bytes: 4096,
 };
 pub(crate) struct Faults {
-    store: Arc<Store>,
+    pub store: Arc<Store>,
     pub writes: Mutex<VecDeque<Write>>,
 }
 impl Persistence for Faults {

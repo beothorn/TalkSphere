@@ -1,7 +1,13 @@
 //! Authenticated paid Storage with independent durable owners and a provider reopen between store and retrieve.
 #[cfg(test)]
+#[path = "interruption.rs"]
+mod interruption;
+#[cfg(test)]
 #[path = "replicas.rs"]
 mod replicas;
+#[cfg(test)]
+#[path = "settlement.rs"]
+mod settlement;
 #[cfg(test)]
 #[path = "wanted.rs"]
 mod wanted;

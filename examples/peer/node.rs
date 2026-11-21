@@ -63,6 +63,15 @@ impl Node {
         endpoint: Endpoint<P, L>,
         signal: Signal,
     ) -> Result<Self, String> {
+        Self::with_factory(path, Arc::new(endpoint), signal)
+    }
+
+    // Allow the test driver to supply an instrumented factory while Transport still authenticates the stream.
+    pub(super) fn with_factory(
+        path: &Path,
+        factory: Arc<dyn peer::engine::bridge::Factory>,
+        signal: Signal,
+    ) -> Result<Self, String> {
         tracing::trace!("Composing an explicit authenticated example node");
         let config = Config::new(Options::local(path.into()).map_err(failure)?).map_err(failure)?;
         let credentials = server::credentials::load(&config, false).map_err(failure)?;
@@ -79,7 +88,7 @@ impl Node {
                 controls_per_second: 32,
                 lifetime: Duration::from_secs(10),
             },
-            Arc::new(endpoint),
+            factory,
         )
         .map_err(failure)?;
         let address = transport.listen().map_err(failure)?.address;
