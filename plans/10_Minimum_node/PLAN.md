@@ -10,12 +10,12 @@ Storage over real connections.
 ## Steps
 
 - [x] **1.** Reconcile the minimum-profile requirements with the completed module evidence.
-- [ ] **2.** Define the node state layout and validated node configuration.
+- [x] **2.** Define the node state layout and validated node configuration.
 - [ ] **3.** Add explicit node initialization and inspection commands.
-- [ ] **4.** Move the native Storage clock and entropy adapters into production composition.
-- [ ] **5.** Persist a requester lease catalog in protected durable storage.
-- [ ] **6.** Load the provider Storage offering and capacity limits from operator configuration.
-- [ ] **7.** Open and recover every durable owner before admitting peer work.
+- [x] **4.** Move the native Storage clock and entropy adapters into production composition.
+- [x] **5.** Persist a requester lease catalog in protected durable storage.
+- [x] **6.** Load the provider Storage offering and capacity limits from operator configuration.
+- [x] **7.** Open and recover every durable owner before admitting peer work.
 - [ ] **8.** Register Peer Protocol on the server's authenticated connections.
 - [ ] **9.** Install the Storage provider handler and publish its offering after recovery.
 - [ ] **10.** Install the Storage requester ports against the durable lease catalog.
