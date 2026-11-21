@@ -5,9 +5,10 @@ use std::{
     collections::BTreeMap,
     path::Path,
     sync::{Arc, Mutex},
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
-use storage::contract::{Clock as _, Lease, Time};
+use storage::contract::{Clock as _, Lease};
+use talksphere::composition::node::adapters::{NativeClock, SystemCrypto};
 use talksphere::modules::{
     board,
     identity::{api::IdentityId, text},
@@ -49,59 +50,6 @@ impl storage::requester::client::Leases for Catalog {
             return Err(services::Error::Denied);
         }
         storage::lease::authorize(lease.as_ref(), provider, requester, &id).cloned()
-    }
-}
-
-struct Crypto;
-impl storage::contract::Crypto for Crypto {
-    // Obtain unpredictable identifiers from the host's cryptographic entropy source.
-    fn lease_id(&self) -> Result<[u8; 32], services::Error> {
-        tracing::trace!("Generating an opaque Storage lease identifier");
-        let mut id = [0; 32];
-        getrandom::fill(&mut id).map_err(|_| services::Error::Unavailable)?;
-        Ok(id)
-    }
-
-    // Hash the exact logical bytes without changing the payload.
-    fn hash(&self, bytes: &[u8]) -> Result<[u8; 32], services::Error> {
-        tracing::trace!("Hashing exact Storage object bytes");
-        talksphere::modules::cryptography::primitives::hash::sha256(bytes, bytes.len())
-            .map_err(|_| services::Error::Limit)
-    }
-}
-
-struct Clock([u8; 16]);
-impl Clock {
-    // A boot identifier stays stable across processes and detects the absence of trusted reboot evidence.
-    fn new() -> Result<Self, String> {
-        tracing::trace!("Preparing the native Storage exercise clock");
-        let id = std::fs::read_to_string("/proc/sys/kernel/random/boot_id").map_err(failure)?;
-        let digest = talksphere::modules::cryptography::primitives::hash::sha256(id.as_bytes(), 64)
-            .map_err(failure)?;
-        Ok(Self(digest[..16].try_into().map_err(failure)?))
-    }
-}
-impl storage::contract::Clock for Clock {
-    // Read uptime and UTC separately from the same host; uptime remains comparable across process restarts.
-    fn now(&self) -> Result<Time, services::Error> {
-        tracing::trace!("Sampling native uptime and UTC for Storage retention");
-        let uptime =
-            std::fs::read_to_string("/proc/uptime").map_err(|_| services::Error::Unavailable)?;
-        let elapsed_seconds = uptime
-            .split_whitespace()
-            .next()
-            .and_then(|s| s.split('.').next())
-            .and_then(|s| s.parse().ok())
-            .ok_or(services::Error::Invalid)?;
-        let unix_seconds = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|_| services::Error::Invalid)?
-            .as_secs();
-        Ok(Time {
-            unix_seconds,
-            elapsed_seconds,
-            boot: self.0,
-        })
     }
 }
 
@@ -199,7 +147,7 @@ pub(super) fn open_configured(
         )
         .map_err(failure)?,
     );
-    let clock = Arc::new(Clock::new()?);
+    let clock = Arc::new(NativeClock::new()?);
     let offered = offering(payment.issuer.unwrap_or(local))?;
     let wanted_offerings = if wanted.is_some() {
         let mut offer = offered.clone();
@@ -224,7 +172,7 @@ pub(super) fn open_configured(
     } else {
         let bytes =
             Arc::new(storage::bytes::Store::open(&root.join("storage"), create).map_err(failure)?);
-        let crypto = Arc::new(Crypto);
+        let crypto = Arc::new(SystemCrypto);
         let limits = storage::image::Limits {
             bytes: 1_048_576,
             leases: 8,
