@@ -302,7 +302,7 @@ fn run() -> Result<(), String> {
         Arc::new(Catalog(Mutex::new(Some(lease.clone())))),
     )?;
     let mut a = Node::new(&restored, a_owner.endpoint.clone(), signal.clone())?;
-    let mut c = Host::start(&c_dir, &c_identity, cid, aid, false, signal, false)?;
+    let mut c = Host::start(&c_dir, &c_identity, cid, aid, false, signal.clone(), false)?;
     let (connection, cache) = connect(&mut a, &mut c, &a_owner, cid)?;
     let mut network = Network {
         requester: &mut a,
@@ -330,6 +330,53 @@ fn run() -> Result<(), String> {
         cryptography::primitives::hash::sha256(object, object.len()).map_err(failure)?,
         lease.content_hash
     );
+    // Rebuild the lost copy at a new independent identity; the live independent count rises only
+    // after that provider's complete successful store result is validated and cataloged.
+    let (d_dir, d_identity) = (root.0.join("d"), root.0.join("d-identity"));
+    let did = node::identity(&d_identity)?;
+    assert!(![aid, bid, cid].contains(&did));
+    let grant = a_owner
+        .ledger_authority
+        .grant(
+            aid,
+            talksphere::modules::ledger::authority::Action::Administer,
+            16_777_216,
+        )
+        .map_err(failure)?;
+    a_owner
+        .account
+        .set_owned(
+            &talksphere::modules::ledger::contract::Context {
+                version: 1,
+                grant: &grant,
+                deadline: Instant::now() + Duration::from_secs(10),
+                cancelled: false,
+            },
+            did,
+            1_000_000,
+        )
+        .map_err(failure)?;
+    let live_before = BTreeSet::from([lease.provider]).len();
+    let mut d = Host::start(&d_dir, &d_identity, did, aid, true, signal, false)?;
+    let (connection, cache) =
+        connect(&mut a, &mut d, &a_owner, did).map_err(|e| format!("connect at D failed. {e}"))?;
+    let mut network_d = Network {
+        requester: &mut a,
+        provider: &mut d,
+        owner: &a_owner,
+        connection,
+        cache,
+        provider_id: did,
+        requester_id: aid,
+    };
+    let rebuilt = purchase(&mut network_d, object)
+        .map_err(|e| format!("replacement lease at D failed. {e}"))?;
+    assert_eq!(rebuilt.content_hash, lease.content_hash);
+    assert_eq!(
+        BTreeSet::from([lease.provider, rebuilt.provider]).len(),
+        live_before + 1
+    );
+    d.stop()?;
     c.stop()?;
     drop(a);
     assert_eq!(

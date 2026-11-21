@@ -1,7 +1,7 @@
 # Storage
 
 Contract foundations for [CR2SE Storage version 1](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md).
-Implementation is in progress under the [38-step plan](../../../plans/9_Storage_module/PLAN.md).
+All 38 steps of the [plan](../../../plans/9_Storage_module/PLAN.md) are complete for a finite native Linux loopback profile; see the [handoff](HANDOFF.md) and [acceptance evidence](ACCEPTANCE.md).
 The library provides an installable handler and an authenticated Linux exercise.
 
 Services will call requester/provider contracts and coordinate Ledger decisions.
@@ -36,7 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–27 are complete. Provider composition and network acceptance are in progress.
+unrepresentable prices at advertised maxima before use.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.

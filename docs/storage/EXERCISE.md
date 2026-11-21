@@ -41,3 +41,10 @@ They also store independently encrypted replicas at two providers, save the
 requester key backup and catalog separately, restore the original identity and
 recover and decrypt from one provider while the other is offline. Two leases
 at a single provider count as one provider.
+
+After one provider is lost the replica test also rebuilds the copy at a new
+independent identity. Interruption tests cover an interrupted upload, a lost
+result, a lost paid-check reply, a confirmed missing byte and a foreign
+requester, and a settlement test pays through an independent third-party issuer.
+This is a native loopback profile; default `serve` does not install the paid
+Storage handler.

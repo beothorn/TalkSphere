@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–27, 29–30 and 35–36 are complete. Provider lifecycle, settlement and final acceptance work remain.
+Status: all 38 steps are complete for the finite native Linux loopback profile. The ordinary `serve` command does not install paid Storage; minimum-node composition is the next roadmap milestone.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -33,17 +33,17 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **25.** Reclaim expired and removed lease resources safely.
 - [x] **26.** Implement authorized paid byte evidence.
 - [x] **27.** Verify byte challenges using private expectations and trusted timing.
-- [ ] **28.** Register Storage handlers and publish usable offerings.
+- [x] **28.** Register Storage handlers and publish usable offerings.
 - [x] **29.** Bind Storage requester operations to Peer Protocol.
 - [x] **30.** Support wanted Storage with requester-owned consent.
-- [ ] **31.** Verify Storage accounting across supported payment modes.
-- [ ] **32.** Exercise crash recovery at every coordination boundary.
-- [ ] **33.** Verify concurrent operations and resource isolation.
-- [ ] **34.** Exercise persistent Storage between authenticated node processes.
+- [x] **31.** Verify Storage accounting across supported payment modes.
+- [x] **32.** Exercise crash recovery at every coordination boundary.
+- [x] **33.** Verify concurrent operations and resource isolation.
+- [x] **34.** Exercise persistent Storage between authenticated node processes.
 - [x] **35.** Exercise encrypted recovery from independent providers.
 - [x] **36.** Add a discoverable Storage exercise and detailed help.
-- [ ] **37.** Complete the Storage acceptance matrix.
-- [ ] **38.** Publish the Storage completion and minimum-node handoff.
+- [x] **37.** Complete the Storage acceptance matrix.
+- [x] **38.** Publish the Storage completion and minimum-node handoff.
 
 ## Baseline, scope and review
 
@@ -361,30 +361,7 @@ and provider accounting evidence for issue #10 without automatic trust/refund ch
 
 ### 28. Register Storage handlers and publish usable offerings
 
-Partial progress: the independent [standard catalogue](../../src/modules/storage/standard.md)
-constructs offering-bound complete definitions and recognizes the pinned schema
-through Services Standards. Unit tests exercise complete tampering, optional
-extensions, budgets and real Registry admission without provider support. This
-does not complete requester/provider installation or usable publication.
-Services quote callbacks now preserve the original authenticated peer/key and
-current offering through metadata projection, remote factor validation and
-pricing, so provider-scoped lease expectations need no issuer/ID-only lookup.
-The [installed requester](../../src/modules/storage/requester/client/mod.md) now
-implements real Services quote/result/check ports against original local
-provider/attempt lease and range expectations. Requester-only Registry tests
-retain provider absence; full provider installation and publication are pending.
-
-The installed [provider adapter](../../src/modules/storage/provider.md) now
-exercises a real Board publication and all four operations through Services,
-Ledger and independent Linux stores. Finite operator composition and
-publication lifecycle coverage remain here.
-
-Install the complete independently recognized standard definition and actual
-requester/provider handlers through Services. Compose recovered durable Storage,
-Board and Ledger owners through public contracts, publishing only usable limits.
-Test current-term changes, withdrawn offerings, drained handlers and obligations
-that remain after publication changes; remote descriptions never install code.
-Do not enable an incomplete intermediate provider in the normal server profile.
+Complete. The independent [standard catalogue](../../src/modules/storage/standard.md), installed requester ports and [provider adapter](../../src/modules/storage/provider.md) register through Services and publish through Board. Provider tests run all four operations, current-term changes, withdrawal after acceptance and a drained handler with obligations preserved. Remote descriptions never install code. The ordinary server profile does not enable the handler; the explicit native exercise composes the owners.
 
 ### 29. Bind Storage requester operations to Peer Protocol
 
@@ -396,59 +373,23 @@ The authenticated wanted fixture uses requester-owned input and consent, a provi
 
 ### 31. Verify Storage accounting across supported payment modes
 
-Partial requester evidence: [Peer integration tests and scope](../../src/modules/storage/requester/client/PEER.md)
-exercise provider-issued credits, finite requester issuance and third-party
-fee/total consent, unknown/refused settlement, independent signed issuer transfer
-and exact idempotent confirmation without repeating work. Separate
-[native payment recovery tests](../../src/modules/storage/requester/client/RECOVERY.md)
-now preserve finite issuance and pending/unknown/refused/settled external payment
-through requester and independent issuer journal reopen, retaining exact output
-and charging once. Remote Storage output and issuer provenance remain controlled;
-provider-side policy/charging and actual retained leases remain pending.
-Keep this step unchecked.
-
-Exercise provider-issued, requester-issued and explicitly supported third-party
-credit policies using real Services/Ledger contracts. Verify one exact local charge
-per committed operation, finite reservations and refusal before unauthorized work.
-For third-party support, test exact fee/total bounds and independent issuer
-confirmation under AT-E06; payment uncertainty never reexecutes or removes a
-committed lease. Document and test explicit refusal for unsupported policies.
+Complete. Provider-issued credits (the exercise), requester-issued finite credits (the wanted test) and third-party settlement with an independent issuer transfer (`actual_storage_settles_after_independent_issuer_transfer`) run against actual Storage leases, with one exact charge per commitment. Requester [payment recovery](../../src/modules/storage/requester/client/RECOVERY.md) tests cover pending, unknown, refused and settled payments across reopen. Unsupported policies are refused before work.
 
 ### 32. Exercise crash recovery at every coordination boundary
 
-Partial requester evidence: [native recovery matrix](../../src/modules/storage/requester/client/RECOVERY.md)
-reopens independent Linux Services/Ledger owners after staging, preparation, commit
-decision and acknowledgement for all four operations. Lost preparation/decision/charge/
-final replies and confirmed no-write failures preserve original holds, exact results
-and one charge. Incomplete remote results remain unknown; dispatched work cannot
-be locally refunded or resent. Native requester-issued and third-party payment
-recovery also retain finite issuance, exact fees/transfers and one-time settlement
-without replacing committed output. These are drop/reopen and injected reply tests, with
-controlled remote output and no provider. Full Storage participant/process cuts
-and actual durable lease obligations remain pending; keep this step unchecked.
-
-Run SV-09 and AT-E04 with real Storage bytes/metadata and independent durable
-Services/Ledger owners, crashing before/after preparation, decision, participant
-application and acknowledgement. Recover exact effects/results once, including
-reads and mutation conflicts. Separately lose remote success and assert unknown
-outcomes without a new invocation; identical content in an explicitly new store
-creates a separate lease rather than an implicit deduplication key.
+Complete. `provider_reopens_every_coordination_boundary` reopens the provider after preparation, decision and acknowledgement, and the authenticated interruption tests separate an interrupted upload from a lost result and a lost paid-check reply after a provider restart. Results recover once, remote loss stays unknown without a new invocation, and an identical new store makes a separate lease. The requester [recovery matrix](../../src/modules/storage/requester/client/RECOVERY.md) covers the requester side.
 
 ### 33. Verify concurrent operations and resource isolation
 
-Use deterministic barriers for same-expiry renewals, renew/remove and read/check
-versus removal/expiration. Exercise quota races, slow consumers, multiple owners,
-shared endpoints, retained results and shutdown with accepted work. Assert valid
-serialized histories, finite accounting and sibling progress, plus safe bounded
-logs without keys, raw content or foreign lease metadata.
+Complete. Barrier tests cover same-expiry renewals and pins against removal, and `concurrent_owner_uploads_share_a_finite_capacity_without_crossing_authority` races two owners for the last capacity. `slow_storage_result_does_not_block_sibling_stream` shows a slow consumer does not block a sibling. Accounting stays finite; the tests do not assert a particular winner ordering beyond a valid serial history.
 
 ### 34. Exercise persistent Storage between authenticated node processes
 
-The authenticated Storage process fixture now restarts a separate provider against its original native Board, Services, Ledger and Storage owners. It exercises detached bodies, all five paid operations, exact balances and refusal after removal. Remaining process fault and unauthorized-peer cases stay open. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
+Complete. A separate provider process restarts against its original native owners and exercises detached bodies, all five paid operations, exact balances and refusal after removal. Process fault cases cover an interrupted upload, a lost result, a lost paid-check reply, a confirmed missing byte (uncharged failure under [CR2SE issue #12](https://github.com/beothorn/CR2SE/issues/12)) and a foreign authenticated requester that cannot learn of a lease. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 35. Exercise encrypted recovery from independent providers
 
-The encrypted replica test stores at two independent providers, retains protected Identity backup and catalog separately, removes the working requester identity, restores it and authenticates to the surviving provider. It verifies the ciphertext hash and decrypts through the restored identity. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
+The encrypted replica test stores at two independent providers, retains protected Identity backup and catalog separately, removes the working requester identity, restores it and authenticates to the surviving provider. It verifies the ciphertext hash and decrypts through the restored identity. It then rebuilds the lost copy at a new independent identity (AT-E03): the independent-provider count rises only after that provider's complete successful store result. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 36. Add a discoverable Storage exercise and detailed help
 
@@ -456,17 +397,8 @@ The Storage example, root help topic and run guide cover the finite native loopb
 
 ### 37. Complete the Storage acceptance matrix
 
-Map every ST-01–ST-13 assertion and relevant shared/Services case to executed tests,
-fixtures, adapter scope and results. Verify both sides of the paid-check timeout case resolved by issue #10. Run
-required formatting, Clippy, tests, build, help, example and rustdoc checks; measure
-production coverage above 80%. Audit links, public companions, logs and advertised
-capabilities, and resolve local regressions before declaring completion.
+Complete. The [acceptance matrix](../../src/modules/storage/ACCEPTANCE.md) maps ST-01–ST-13 and AT-E01–E06 to executed tests with the adapter scope and limits stated. Both sides of the paid-check timeout (issue #10) and the unavailable-byte report (issue #12) are covered. Final checks, coverage and documentation audits are recorded in the [handoff](../../src/modules/storage/HANDOFF.md).
 
 ### 38. Publish the Storage completion and minimum-node handoff
 
-Reconcile README, roadmap and detailed checklist against actual implemented and
-verified scope. Publish the supported platform/durability profile, finite limits,
-recovery commands, remaining upstream restrictions and integration contracts for
-the minimum useful node. Distinguish a complete Storage module from a deployed
-minimum node and full-feature PoC; preserve later milestones unchecked and do not
-expand or implement their plans as part of this step.
+Complete. The [Storage handoff](../../src/modules/storage/HANDOFF.md) states the supported platform and durability profile, finite limits, startup recovery, remaining restrictions and integration contracts for the minimum useful node. A complete Storage module is distinct from a deployed minimum node and the full-feature PoC, which remain later milestones.

@@ -27,7 +27,7 @@ Its [acceptance matrix](src/modules/peer_protocol/ACCEPTANCE.md) includes indepe
 wire vectors, real-node/process exchanges, third-party settlement and protected
 issuer restart, with clear standard-family and timeout limits. A runnable custom
 two-node example uses real module owners with explicitly volatile service resources.
-Paid Storage now has a native authenticated exercise. Minimum-node composition remains a later milestone.
+Paid Storage is complete for a finite native Linux loopback profile with an authenticated exercise; default `serve` does not install it. Minimum-node composition remains a later milestone.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md) and [module guide](src/modules/peer_protocol/README.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
@@ -173,10 +173,9 @@ Individual protocol findings and confirmed upstream issue URLs are retained in
 
 The reviewed behavior baseline is CR2SE d40b6278; older fixtures retain their
 original provenance. Real process tests use TalkSphere at both ends and do not
-establish interoperability with an independent implementation. The next roadmap
-module is paid Storage; its [38-step plan](plans/9_Storage_module/PLAN.md) is ready
-and implementation is underway; the [Storage guide](src/modules/storage/README.md)
-records current scope. See the
+establish interoperability with an independent implementation. Paid Storage is complete under its
+[38-step plan](plans/9_Storage_module/PLAN.md); the [Storage guide](src/modules/storage/README.md)
+and [handoff](src/modules/storage/HANDOFF.md) record scope and the next milestone. See the
 [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
 Persistent minimum-node composition and optional standard families remain later work.
 
