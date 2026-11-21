@@ -171,7 +171,12 @@ impl Journal {
             }
         }
         let mut checked = image.clone();
-        effect_proposal.apply(&mut checked, key.requester)?;
+        match effect_proposal {
+            super::effect::Effect::CreateTemplate(lease) => {
+                super::effect::Effect::Create(lease).apply(&mut checked, key.requester)?;
+            }
+            effect => effect.apply(&mut checked, key.requester)?,
+        }
         checked.encode(self.limits)?;
         let nonce = self.crypto.lease_id()?;
         let mut binding = b"TalkSphere Storage participant token v1".to_vec();
@@ -224,6 +229,45 @@ impl Journal {
         candidate.operations[index].status = Stage::Committed(token.clone());
         self.persist(&mut state, candidate)
     }
+    /// Apply only the finalized completion recorded in the coordinator decision.
+    /// # Errors
+    /// Foreign tokens, changed template fields and conflicting repeats are rejected.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn commit_store(
+        &self,
+        key: OperationKey,
+        token: &Blob,
+        template: &Completion,
+        finalized: &Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Applying the recorded Storage lease timestamps");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        let image = state.as_ref().ok_or(Error::Unknown)?;
+        let index = image
+            .operations
+            .iter()
+            .position(|record| record.key == key)
+            .ok_or(Error::Unavailable)?;
+        let record = &image.operations[index];
+        match &record.status {
+            Stage::Committed(original)
+                if original == token && same_completion(&record.completion, finalized) =>
+            {
+                return Ok(());
+            }
+            Stage::Prepared(original)
+                if original == token && same_completion(&record.completion, template) => {}
+            _ => return Err(Error::Conflict),
+        }
+        let effect =
+            super::store::validate_finalized(self.provider, self.limits, template, finalized)?;
+        let mut candidate = image.clone();
+        effect.apply(&mut candidate, key.requester)?;
+        candidate.operations[index].completion = finalized.clone();
+        candidate.operations[index].status = Stage::Committed(token.clone());
+        self.persist(&mut state, candidate)
+    }
+
     /// Apply only an explicit coordinator abort, preserving original token checks after response loss.
     /// Prepared work requires its exact token; staged work requires None; committed effects cannot abort.
     /// # Errors
@@ -335,8 +379,14 @@ impl Journal {
         }
         let mut candidate = image.clone();
         candidate.anchor = candidate.anchor.advance(now, reboot_elapsed)?;
+        let starts = super::retention::starts(&candidate)?;
         for lease in &mut candidate.leases {
-            super::retention::refresh(lease, candidate.anchor.unix_seconds);
+            let now = super::retention::lease_time(
+                lease,
+                candidate.anchor.unix_seconds,
+                starts.get(&lease.id).copied(),
+            );
+            super::retention::refresh(lease, now);
         }
         self.persist(&mut state, candidate.clone())?;
         Ok(candidate)
@@ -366,10 +416,18 @@ impl Journal {
         }
         let mut candidate = image.clone();
         candidate.anchor = candidate.anchor.advance(now, reboot_elapsed)?;
+        let starts = super::retention::starts(&candidate)?;
         let mut expired = 0;
         for lease in &mut candidate.leases {
             if !protected.contains(&lease.id)
-                && super::retention::refresh(lease, candidate.anchor.unix_seconds)
+                && super::retention::refresh(
+                    lease,
+                    super::retention::lease_time(
+                        lease,
+                        candidate.anchor.unix_seconds,
+                        starts.get(&lease.id).copied(),
+                    ),
+                )
             {
                 expired += 1;
             }

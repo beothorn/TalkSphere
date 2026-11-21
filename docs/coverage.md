@@ -279,3 +279,9 @@ lines (94.09%)**. All 732 library tests and required checks passed. The recovery
 fixture covers lost decision writes, original result replay, one-time accounting
 and abort on timestamp overflow. LLVM skipped one invalid profile from the
 suite under the documented failure-mode procedure.
+
+Storage decision-time lease creation and native provider integration measured
+**24529/26135 executable production lines (93.85%)**. All 735 library tests
+and required checks passed. The provider fixture exercises Board publication,
+all four ordinary operations, exact settlement and native owner stores. LLVM
+skipped one invalid profile under the documented failure-mode procedure.

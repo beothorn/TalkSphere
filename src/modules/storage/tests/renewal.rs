@@ -1,5 +1,6 @@
 //! Renewal quote guards compare trusted owner state with independent requester size expectations.
 use super::*;
+use crate::modules::storage::contract::State;
 use crate::modules::{
     services::{contract::OperationKey, handler::Invocation},
     storage::{

@@ -69,7 +69,7 @@ full retention and exact original result recovery.
 ## TalkSphere handling
 
 Existing Storage work implements reusable validation, assessment, persistence
-and participant primitives. Step 17 now uses the upstream decision-time rule. Provider integration remains
+and participant primitives. Step 17 now uses the upstream decision-time rule. Authenticated provider acceptance remains
 in progress.
 
 ## Resolution

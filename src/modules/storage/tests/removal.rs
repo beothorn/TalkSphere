@@ -1,5 +1,6 @@
 //! Actual logical removal decisions preserve accepted immutable reads and deny later operation attempts without replaying success.
 use super::*;
+use crate::modules::storage::contract::State;
 use crate::modules::storage::{
     image::Stage,
     renewal_commit,

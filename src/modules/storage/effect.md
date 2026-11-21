@@ -23,3 +23,8 @@ The journal may persist this candidate only after receiving the coordinator's
 immutable commit decision. Neither constructing nor applying an Effect authorizes
 payment, creates a remote retry key or proves remote receipt. Renewal/removal
 proposals cannot rewrite original byte or economic obligations.
+
+CreateTemplate contains the fixed new lease fields and purchased duration.
+It reserves an exclusive ID at preparation. CreateAt contains the final UTC
+lease times and the matching decision clock observation. A template cannot
+be applied directly as a lease.

@@ -1,7 +1,7 @@
 //! Authorized separately paid single-byte evidence with bounded optional overlap and one-second admission rules.
 use super::{
     bytes::{Range, Store},
-    contract::{State, Time},
+    contract::Time,
     image::Image,
     lease, operation, renewal,
 };
@@ -107,8 +107,7 @@ impl Admission {
             invocation.requester,
             &id,
         )?;
-        let logical = image.anchor.advance(now, reboot_elapsed)?.unix_seconds;
-        if lease.state != State::Active || logical >= lease.expires_at {
+        if !super::retention::active(image, lease, now, reboot_elapsed)? {
             return Err(Error::Unavailable);
         }
         if offset >= lease.size_bytes {

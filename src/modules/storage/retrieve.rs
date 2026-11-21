@@ -105,8 +105,7 @@ pub fn accept(
     let length = number(input, "length")?;
     let candidate = image.leases.iter().find(|l| l.id == id);
     let lease = lease::authorize(candidate, image.provider, invocation.requester, &id)?;
-    let logical = image.anchor.advance(now, reboot_elapsed)?.unix_seconds;
-    if lease.state != super::contract::State::Active || logical >= lease.expires_at {
+    if !super::retention::active(image, lease, now, reboot_elapsed)? {
         return Err(Error::Unavailable);
     }
     if length > terms.maximum_retrieve_bytes {

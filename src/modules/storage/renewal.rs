@@ -1,6 +1,6 @@
 //! Authorized renewal assessment and exact provider-size pricing without changing an existing lease.
 use super::{
-    contract::{State, Time},
+    contract::Time,
     image::Image,
     lease,
     operation::{self, Operation},
@@ -79,8 +79,7 @@ pub fn assess(
         peer.remote,
         &id,
     )?;
-    let logical = image.anchor.advance(now, reboot_elapsed)?.unix_seconds;
-    if current.state != State::Active || logical >= current.expires_at {
+    if !super::retention::active(image, current, now, reboot_elapsed)? {
         return Err(Error::Unavailable);
     }
     let expires_at = extension(&complete, current, Terms::parse(offering)?)?;

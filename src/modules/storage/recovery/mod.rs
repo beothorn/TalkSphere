@@ -127,11 +127,13 @@ impl Gate {
             }
             let mut known = image.leases.iter().any(|l| l.id == entry.id);
             for record in &image.operations {
-                if let super::effect::Effect::Create(proposal) = super::effect::Effect::decode(
+                if let Some(proposal) = super::effect::Effect::decode(
                     record.completion.effect.bytes(),
                     image.provider,
                     self.journal.image_limits(),
-                )? {
+                )?
+                .created_lease()
+                {
                     known |= proposal.id == entry.id;
                 }
             }
@@ -216,6 +218,35 @@ impl Gate {
         tracing::trace!("Delivering Storage recovery commit");
         self.terminal(key, self.journal.commit(key, token))
     }
+    /// Apply a finalized store decision and update the original capacity hold.
+    /// # Errors
+    /// Preserves conflicting decisions, malformed finalization and durability uncertainty.
+    pub fn commit_store(
+        &self,
+        key: OperationKey,
+        token: &crate::modules::services::handler::Blob,
+        template: &crate::modules::services::handler::Completion,
+        finalized: &crate::modules::services::handler::Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Delivering finalized Storage creation through recovery gate");
+        self.terminal(
+            key,
+            self.journal.commit_store(key, token, template, finalized),
+        )
+    }
+
+    // Read the original immutable metadata and its limits for decision selection.
+    pub(super) fn snapshot(&self) -> Result<(super::image::Image, super::image::Limits), Error> {
+        tracing::trace!("Reading Storage state for the original operation");
+        Ok((self.journal.snapshot()?, self.journal.image_limits()))
+    }
+
+    // Share the protected byte owner inside Storage without granting direct access to other modules.
+    pub(super) fn byte_store(&self) -> &Store {
+        tracing::trace!("Accessing original Storage byte owner");
+        &self.bytes
+    }
+
     /// Deliver only the coordinator's immutable abort while preserving original preparation tokens.
     /// # Errors
     /// Propagates contradictory decisions and uncertainty without releasing another owner's resources.
@@ -225,7 +256,27 @@ impl Gate {
         token: Option<&crate::modules::services::handler::Blob>,
     ) -> Result<(), Error> {
         tracing::trace!("Delivering Storage recovery abort");
-        self.terminal(key, self.journal.abort(key, token))
+        self.observe(self.journal.abort(key, token))?;
+        let cleanup = (|| {
+            let image = self.journal.snapshot()?;
+            let record = image
+                .operations
+                .iter()
+                .find(|r| r.key == key)
+                .ok_or(Error::Unknown)?;
+            let effect = super::effect::Effect::decode(
+                record.completion.effect.bytes(),
+                image.provider,
+                self.journal.image_limits(),
+            )?;
+            if let super::effect::Effect::CreateTemplate(lease) = effect
+                && !self.bytes.reclaim(lease.id)?
+            {
+                return Err(Error::Unknown);
+            }
+            Ok(())
+        })();
+        self.terminal(key, cleanup.map_err(|_| Error::Unknown))
     }
     // Close admission immediately when any lifecycle write may have installed an unacknowledged image.
     fn observe<T>(&self, result: Result<T, Error>) -> Result<T, Error> {

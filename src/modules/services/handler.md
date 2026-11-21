@@ -115,3 +115,7 @@ completion from the durable decision. The Provider checks their association and
 applies the effect once using the original token. A retry uses the same
 decision and values. Ordinary providers continue delivering their prepared
 completion through `commit`.
+
+The local provider can validate its own staged completion against original
+owner state via `validate_local_result`. Returning false selects the
+existing requester validator. Services always checks the schema and price.

@@ -15,6 +15,8 @@ pub mod lease;
 mod mutation_result;
 pub mod operation;
 pub mod pricing;
+#[cfg(target_os = "linux")]
+pub mod provider;
 pub mod quota;
 #[cfg(target_os = "linux")]
 pub mod removal;
@@ -24,6 +26,8 @@ pub mod renewal_commit;
 pub mod requester;
 pub mod retention;
 pub mod standard;
+#[cfg(target_os = "linux")]
+pub mod store;
 pub mod terms;
 
 #[cfg(test)]

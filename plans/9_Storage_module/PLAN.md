@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–16 and 18–27 are complete; step 17 is in progress against the resolved upstream acceptance-time rule.
+Status: implementation authorized; steps 1–27 are complete. Provider composition and acceptance coverage continue in steps 28–38.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -22,7 +22,7 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **14.** Implement idempotent participant commit and abort.
 - [x] **15.** Recover Storage participants before admitting new work.
 - [x] **16.** Assess store metadata before receiving upload bodies.
-- [ ] **17.** Stage validated uploads as durable lease proposals.
+- [x] **17.** Stage validated uploads as durable lease proposals.
 - [x] **18.** Validate store results against requester expectations.
 - [x] **19.** Assess retrieval ranges and pin accepted bytes.
 - [x] **20.** Return exact ranges through retained result handles.
@@ -264,9 +264,10 @@ execution, while leaving lease creation to durable completion.
 [CR2SE issue #11](https://github.com/beothorn/CR2SE/issues/11) is resolved
 by the [decision-time rule](https://github.com/beothorn/CR2SE/commit/ee6caee).
 Services now supports binding the complete result and effect to the commit
-decision while retaining the original template reference for Ledger. The
-Storage owner still needs to stage verified upload bytes, bind the lease
-template and apply the finalized lease using the recorded clock anchor.
+decision while retaining the original template reference for Ledger. The Storage owner stages verified bytes, prepares the fixed lease template
+and applies the finalized result using the recorded clock anchor. Native
+Storage and Services/Ledger tests exercise delayed preparation, arithmetic
+overflow, exact output, clock correction, original-key replay and one charge.
 
 After accepted terms and reservation, require complete input and exact SHA-256,
 length and terminal markers before staging a lease. Generate unpredictable unique
@@ -373,8 +374,10 @@ implements real Services quote/result/check ports against original local
 provider/attempt lease and range expectations. Requester-only Registry tests
 retain provider absence; full provider installation and publication are pending.
 
-Pending prerequisite: complete the Storage owner integration in step 17; an
-installation that refuses store cannot advertise the complete Storage contract.
+The installed [provider adapter](../../src/modules/storage/provider.md) now
+exercises a real Board publication and all four operations through Services,
+Ledger and independent Linux stores. Finite operator composition and
+publication lifecycle coverage remain here.
 
 Install the complete independently recognized standard definition and actual
 requester/provider handlers through Services. Compose recovered durable Storage,

@@ -25,11 +25,13 @@ pub(super) fn rebuild(
             return Err(Error::Unknown);
         }
         let usage = record_usage(image, record, image_limits, retained)?;
-        if let Effect::Create(original) = Effect::decode(
+        if let Some(original) = Effect::decode(
             record.completion.effect.bytes(),
             image.provider,
             image_limits,
-        )? && matches!(record.status, Stage::Committed(_))
+        )?
+        .created_lease()
+            && matches!(record.status, Stage::Committed(_))
         {
             let lease = image
                 .leases
@@ -82,11 +84,13 @@ pub(super) fn record_usage(
         operations: usize::from(pending),
         ..Usage::default()
     };
-    if let Effect::Create(original) = Effect::decode(
+    if let Some(original) = Effect::decode(
         record.completion.effect.bytes(),
         image.provider,
         image_limits,
-    )? {
+    )?
+    .created_lease()
+    {
         // Only physically present or descriptor-retained object bytes consume byte capacity; ID and result history remains.
         usage.bytes = if retained.contains(&original.id) {
             original.size_bytes
@@ -115,8 +119,9 @@ pub(super) fn objects(
         .map(|entry| entry.id)
         .collect::<BTreeSet<_>>();
     for record in &image.operations {
-        if let Effect::Create(original) =
+        if let Some(original) =
             Effect::decode(record.completion.effect.bytes(), image.provider, limits)?
+                .created_lease()
             && bytes.has_pins(original.id)?
         {
             retained.insert(original.id);

@@ -45,3 +45,7 @@ not a new peer requirement or a protocol defect.
 
 [Cleanup](cleanup.md) exposes the bounded collection outcome and trusted Gate
 collection operation, including cursors, deferred pins and durable absence.
+
+Commit store delivers the original coordinator decision, prepared token,
+template and finalized result. It applies the timestamp-bearing lease once
+and updates capacity through the same gate as ordinary commitments.

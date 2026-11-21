@@ -2,7 +2,7 @@
 
 Contract foundations for [CR2SE Storage version 1](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md).
 Implementation is in progress under the [38-step plan](../../../plans/9_Storage_module/PLAN.md).
-There is currently no registered paid Storage provider or runnable Storage command.
+The library provides an installable Storage handler. The runnable Storage exercise remains pending.
 
 Services will call requester/provider contracts and coordinate Ledger decisions.
 Storage owns immutable byte leases, durable effects and results; Board owns
@@ -36,8 +36,7 @@ checks and do not establish provider conformance.
 with a documented overflow argument; it does not register a Storage provider.
 
 [Offering validation](terms.md) rejects invalid current economic terms and
-unrepresentable prices at advertised maxima before use. Steps 1–16 and 18–27 are
-complete; durable store creation and full handler/network integration remain pending.
+unrepresentable prices at advertised maxima before use. Steps 1–27 are complete. Provider composition and network acceptance are in progress.
 [Operation validation](operation.md) checks complete values and separate byte challenges.
 
 [Lease authorization](lease.md) binds access to trusted requester/provider identities.
@@ -85,14 +84,20 @@ keeps that metadata separate from provider wire factors.
 `cargo test --locked modules::storage::assessment` exercises metadata and capacity
 refusal; `cargo test --locked metadata_pricing` verifies the Services callback.
 
-Paid lease creation follows the [upstream decision-time rule](https://github.com/beothorn/CR2SE/commit/ee6caee).
-Services can retain a prepared template and its finalized result together with
-the commit decision. Step 17 still needs the Storage owner to stage the upload
-and apply the finalized lease. Paid provider registration follows that work.
+[Paid lease creation](store.md) applies the
+[upstream decision-time rule](https://github.com/beothorn/CR2SE/commit/ee6caee).
+Services retains the prepared template and finalized result with the commit
+decision. The provider samples time after preparation and applies the exact
+durable result through its original token. Run
+`cargo test --locked --lib modules::storage::store` from the repository root.
+
+The [provider adapter](provider.md) supports actual Board registration and
+all four ordinary operations through native Storage, Services and Ledger
+owners. Run `cargo test --locked --lib published_storage_runs_all_operations_through_services`.
+Authenticated peer exercise and normal server composition are tracked separately.
 
 Independent [requester store validation](requester/store.md) and
-[acknowledged catalog retention](requester/catalog.md) complete step 18 while
-provider-side step 17 is in progress. Run
+[acknowledged catalog retention](requester/catalog.md) complete step 18. Run
 `cargo test --locked modules::storage::requester` from the repository root.
 These contracts do not establish a complete paid provider or choose a new
 acceptance-time rule.
@@ -160,7 +165,7 @@ Run `cargo test --locked modules::storage::requester::byte_check` and
 The independent [standard catalogue](standard.md) now supplies the pinned complete
 definition and checks Storage schema meaning through public Services Standards.
 This is partial progress on step 28: real handler installation and usable provider
-publication remain pending step 17. Exercise it with
+publication in the runnable profile remain pending. Exercise it with
 `cargo test --locked modules::storage::standard` from the repository root.
 
 The [installed Storage requester](requester/client/mod.md) now connects exact

@@ -13,6 +13,15 @@ pub enum Effect {
     NoChange,
     /// Create one independently accepted immutable lease.
     Create(Lease),
+    /// Reserve the original lease fields before sampling time. Expiration holds the duration.
+    CreateTemplate(Lease),
+    /// Apply the exact lease and time observation durably bound to the Services decision.
+    CreateAt {
+        /// Finalized lease with the original fixed fields and exact protocol timestamps.
+        lease: Lease,
+        /// Logical owner time and the corresponding wall and elapsed observation at decision selection.
+        anchor: Anchor,
+    },
     /// Extend only the matching original expiration, preserving every other lease field.
     Renew {
         /// Exact active expiration on which this attempt was accepted.
@@ -40,6 +49,20 @@ impl Effect {
             Self::Create(lease) => {
                 out.push(1);
                 out.extend_from_slice(&lease_image(lease, limits)?);
+            }
+            Self::CreateTemplate(lease) => {
+                if lease.accepted_at != 0 || lease.state != State::Active {
+                    return Err(Error::Invalid);
+                }
+                out.push(4);
+                out.extend_from_slice(&lease_image(lease, limits)?);
+            }
+            Self::CreateAt { lease, anchor } => {
+                if lease.accepted_at != anchor.observation.unix_seconds {
+                    return Err(Error::Invalid);
+                }
+                out.push(5);
+                out.extend_from_slice(&encode_lease(lease, *anchor, limits)?);
             }
             Self::Renew {
                 expected_expires_at,
@@ -91,6 +114,28 @@ impl Effect {
                     lease: decode_lease(bytes.get(9..).ok_or(Error::Invalid)?, provider, limits)?,
                 })
             }
+            Some(4) => {
+                let lease = decode_lease(&bytes[1..], provider, limits)?;
+                if lease.accepted_at != 0 || lease.state != State::Active {
+                    return Err(Error::Invalid);
+                }
+                Ok(Self::CreateTemplate(lease))
+            }
+            Some(5) => {
+                let image = Image::decode(&bytes[1..], provider, limits)?;
+                let ([lease], []) = (image.leases.as_slice(), image.operations.as_slice()) else {
+                    return Err(Error::Invalid);
+                };
+                if lease.accepted_at != image.anchor.observation.unix_seconds
+                    || lease.state != State::Active
+                {
+                    return Err(Error::Invalid);
+                }
+                Ok(Self::CreateAt {
+                    lease: lease.clone(),
+                    anchor: image.anchor,
+                })
+            }
             Some(3) if bytes.len() == 41 => Ok(Self::Remove {
                 id: bytes[1..33].try_into().map_err(|_| Error::Invalid)?,
                 expected_expires_at: u64::from_be_bytes(
@@ -105,10 +150,24 @@ impl Effect {
         tracing::trace!("Identifying Storage metadata mutation scope");
         match self {
             Self::NoChange => None,
-            Self::Create(l) | Self::Renew { lease: l, .. } => Some(l.id),
+            Self::Create(l)
+            | Self::CreateTemplate(l)
+            | Self::CreateAt { lease: l, .. }
+            | Self::Renew { lease: l, .. } => Some(l.id),
             Self::Remove { id, .. } => Some(*id),
         }
     }
+    // Give recovery and quota accounting the original byte and identity binding.
+    pub(super) fn created_lease(&self) -> Option<&Lease> {
+        tracing::trace!("Reading Storage creation resource binding");
+        match self {
+            Self::Create(lease) | Self::CreateTemplate(lease) | Self::CreateAt { lease, .. } => {
+                Some(lease)
+            }
+            _ => None,
+        }
+    }
+
     /// Apply the exact proposal to a private candidate image under original authenticated requester authority.
     /// Callers must persist the candidate only after the coordinator's immutable commit decision.
     /// # Errors
@@ -117,7 +176,8 @@ impl Effect {
         tracing::trace!("Applying an original Storage metadata decision to a private candidate");
         match self {
             Self::NoChange => Ok(()),
-            Self::Create(lease) => {
+            Self::CreateTemplate(_) => Err(Error::Conflict),
+            Self::Create(lease) | Self::CreateAt { lease, .. } => {
                 if lease.requester != requester || lease.provider != image.provider {
                     return Err(Error::Denied);
                 }
@@ -161,13 +221,23 @@ impl Effect {
 // Reuse only this owner's public bounded image format, not another module's private persistence schema.
 fn lease_image(lease: &Lease, limits: Limits) -> Result<Vec<u8>, Error> {
     tracing::trace!("Encoding one exact proposed Storage lease");
-    Image {
-        provider: lease.provider,
-        anchor: Anchor::new(Time {
+    encode_lease(
+        lease,
+        Anchor::new(Time {
             unix_seconds: 0,
             elapsed_seconds: 0,
             boot: [0; 16],
         }),
+        limits,
+    )
+}
+
+// Encode the lease and its decision observation together using the owner's bounded image.
+fn encode_lease(lease: &Lease, anchor: Anchor, limits: Limits) -> Result<Vec<u8>, Error> {
+    tracing::trace!("Encoding Storage lease with original time observation");
+    Image {
+        provider: lease.provider,
+        anchor,
         leases: vec![lease.clone()],
         operations: vec![],
     }

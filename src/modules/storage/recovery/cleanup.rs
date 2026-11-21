@@ -95,10 +95,9 @@ impl Gate {
             let quota = admission.quota.as_ref().ok_or(Error::Unknown)?;
             for record in &image.operations {
                 if matches!(record.status, Stage::Committed(_))
-                    && matches!(
-                        Effect::decode(record.completion.effect.bytes(), image.provider, limits)?,
-                        Effect::Create(_)
-                    )
+                    && Effect::decode(record.completion.effect.bytes(), image.provider, limits)?
+                        .created_lease()
+                        .is_some()
                 {
                     quota
                         .transition(

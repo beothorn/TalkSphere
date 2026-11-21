@@ -156,11 +156,15 @@ impl<P: Persistence> Coordinator<P> {
             budget,
             pin.requester(),
         )?;
-        pin.requester().validate_result(
-            &invocation,
-            op.input.as_ref().ok_or(Error::Invalid)?,
-            &completion.output,
-        )?;
+        let input = op.input.as_ref().ok_or(Error::Invalid)?;
+        let checked_locally = op.terms.provider == self.config.local
+            && pin
+                .provider()?
+                .validate_local_result(&invocation, input, completion)?;
+        if !checked_locally {
+            pin.requester()
+                .validate_result(&invocation, input, &completion.output)?;
+        }
         crate::modules::services::pricing::validate_output_price(
             &completion.output,
             completion.price,

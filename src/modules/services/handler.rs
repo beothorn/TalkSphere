@@ -349,6 +349,19 @@ pub trait Provider: Send + Sync {
     /// # Errors
     /// Changed effects conflict; dependency loss preserves uncertainty.
     fn prepare(&self, key: OperationKey, effect: &Blob) -> Result<Blob, Error>;
+    /// Validate provider-owned staged output using the original local operation context.
+    /// Return false to use the installed requester validation as the default.
+    /// # Errors
+    /// Return a typed error for invalid output or unavailable original state.
+    fn validate_local_result(
+        &self,
+        _invocation: &Invocation,
+        _input: &Value,
+        _result: &Completion,
+    ) -> Result<bool, Error> {
+        tracing::trace!("Using the installed requester validator for provider output");
+        Ok(false)
+    }
     /// Identify original input that uses a prepared template under this exact contract.
     /// The classification must be stable across reopen and independent of the clock.
     fn requires_finalization(&self, _invocation: &Invocation, _input: &Value) -> bool {

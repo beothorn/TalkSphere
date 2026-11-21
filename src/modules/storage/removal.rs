@@ -1,6 +1,6 @@
 //! Paid logical lease removal proposals preserve accepted reads and retain original participant outcomes.
 use super::{
-    contract::{State, Time},
+    contract::Time,
     effect::Effect,
     lease,
     operation::{self, Operation},
@@ -71,8 +71,7 @@ pub fn stage(
             invocation.requester,
             &id,
         )?;
-        let logical = image.anchor.advance(now, reboot_elapsed)?.unix_seconds;
-        if current.state != State::Active || logical >= current.expires_at {
+        if !super::retention::active(&image, current, now, reboot_elapsed)? {
             return Err(Error::Unavailable);
         }
         let output = Value::Object(vec![

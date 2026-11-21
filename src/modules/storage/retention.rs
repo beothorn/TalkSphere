@@ -57,6 +57,64 @@ pub fn expiration(accepted_at: u64, retention_seconds: u64) -> Result<u64, Error
         .ok_or(Error::Limit)
 }
 
+// Read the original wall-to-logical mapping from bounded durable create decisions.
+pub(super) fn starts(
+    image: &super::image::Image,
+) -> Result<std::collections::BTreeMap<[u8; 32], u64>, Error> {
+    tracing::trace!("Reading committed Storage lease clock mappings");
+    let mut starts = std::collections::BTreeMap::new();
+    for record in &image.operations {
+        if !matches!(record.status, super::image::Stage::Committed(_))
+            || record.completion.effect.bytes().first() != Some(&5)
+        {
+            continue;
+        }
+        let bytes = record.completion.effect.bytes();
+        let limits = super::image::Limits {
+            bytes: bytes.len(),
+            leases: 1,
+            operations: 1,
+            values: crate::modules::services::value::Budget {
+                depth: 1,
+                nodes: 1,
+                bytes: 1,
+            },
+        };
+        let super::effect::Effect::CreateAt { lease, anchor } =
+            super::effect::Effect::decode(bytes, image.provider, limits)?
+        else {
+            return Err(Error::Invalid);
+        };
+        if starts.insert(lease.id, anchor.unix_seconds).is_some() {
+            return Err(Error::Invalid);
+        }
+    }
+    Ok(starts)
+}
+
+// Convert owner logical time into the wall time domain of this lease. Older records use the owner clock directly.
+pub(super) fn lease_time(lease: &Lease, logical: u64, start: Option<u64>) -> u64 {
+    tracing::trace!("Measuring lease retention from its original decision clock");
+    start.map_or(logical, |start| {
+        lease
+            .accepted_at
+            .saturating_add(logical.saturating_sub(start))
+    })
+}
+
+// Observe whether an authorized lease is still active using its original decision clock.
+pub(super) fn active(
+    image: &super::image::Image,
+    lease: &Lease,
+    now: Time,
+    reboot_elapsed: Option<u64>,
+) -> Result<bool, Error> {
+    tracing::trace!("Checking original Storage lease deadline");
+    let logical = image.anchor.advance(now, reboot_elapsed)?.unix_seconds;
+    let start = starts(image)?.get(&lease.id).copied();
+    Ok(lease.state == State::Active && lease_time(lease, logical, start) < lease.expires_at)
+}
+
 /// Mark an active lease expired at its deadline, leaving every terminal state irreversible.
 /// Returns whether the owner must persist a transition before serving affected requests.
 /// This changes only the candidate description; the authoritative owner must durably commit it.
