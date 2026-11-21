@@ -26,6 +26,7 @@ pub(super) enum Command {
     NodeShow {
         root: std::path::PathBuf,
     },
+    NodeCtl(super::node_ctl::Ctl),
 }
 
 // Match supported forms and reject unknown or extra arguments with a usage error.
@@ -126,6 +127,14 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
                 root: root.into(),
                 config: Some(file.into()),
             })
+        }
+        [command, option]
+            if command == "node-ctl" && matches!(option.as_str(), "--help" | "-h") =>
+        {
+            Ok(Command::Help(Topic::NodeCtl))
+        }
+        [command, tail @ ..] if command == "node-ctl" => {
+            super::node_ctl::parse(tail).map(Command::NodeCtl)
         }
         [command, tail @ ..] if command == "serve" && tail.len() > 1 => {
             super::server_args::parse(tail).map(Command::ServeConfigured)

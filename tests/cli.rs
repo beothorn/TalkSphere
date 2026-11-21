@@ -21,7 +21,7 @@ fn overview_is_successful_and_discovers_detailed_help() {
     assert!(overview.contains("serve"));
     assert!(overview.contains("--version"));
     assert!(overview.contains(
-        "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available"
+        "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available; minimum useful paid Storage node via node-init, serve --node-root and node-ctl"
     ));
     for arguments in [&[][..], &["-h"], &["help"]] {
         assert_eq!(successful_stdout(arguments), overview);

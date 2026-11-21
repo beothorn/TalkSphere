@@ -6,6 +6,7 @@ mod help;
 mod identity;
 mod ledger;
 mod node;
+mod node_ctl;
 mod serve;
 mod server_args;
 
@@ -114,6 +115,16 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
             }
             Err(error) => {
                 tracing::error!(%error,"Node inspection failed");
+                ExitCode::FAILURE
+            }
+        },
+        Ok(Command::NodeCtl(ctl)) => match node_ctl::execute(&ctl) {
+            Ok(output) => {
+                print!("{output}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                eprintln!("error: {error}");
                 ExitCode::FAILURE
             }
         },

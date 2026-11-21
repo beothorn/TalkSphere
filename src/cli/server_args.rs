@@ -8,6 +8,7 @@ use std::{collections::BTreeSet, net::SocketAddr, path::PathBuf, time::Duration}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ServerArgs {
     pub store: PathBuf,
+    pub node_root: Option<PathBuf>,
     pub listen: SocketAddr,
     pub contacts: Vec<Contact>,
     pub stored_contacts: bool,
@@ -47,6 +48,7 @@ pub(super) fn parse(words: &[String]) -> Result<ServerArgs, String> {
     }
     let mut args = ServerArgs {
         store: PathBuf::new(),
+        node_root: None,
         listen: "127.0.0.1:0"
             .parse()
             .map_err(|_| "invalid default address")?,
@@ -69,6 +71,7 @@ pub(super) fn parse(words: &[String]) -> Result<ServerArgs, String> {
         let invalid = || format!("invalid value for {flag}");
         match flag {
             "--identity-store" => args.store = value.into(),
+            "--node-root" => args.node_root = Some(value.into()),
             "--listen" => args.listen = value.parse().map_err(|_| invalid())?,
             "--contact" => {
                 if args.contacts.len() >= 64 {
@@ -96,8 +99,17 @@ pub(super) fn parse(words: &[String]) -> Result<ServerArgs, String> {
     if args.stored_contacts && !args.contacts.is_empty() {
         return Err("choose explicit or stored contacts, not both".into());
     }
+    if let Some(root) = &args.node_root {
+        if !args.store.as_os_str().is_empty() {
+            return Err("choose --node-root or --identity-store, not both".into());
+        }
+        if args.stored_contacts {
+            return Err("--stored-contacts is not supported with --node-root".into());
+        }
+        args.store = root.join("identity");
+    }
     if args.store.as_os_str().is_empty() {
-        return Err("--identity-store DIRECTORY is required".into());
+        return Err("--identity-store DIRECTORY or --node-root DIRECTORY is required".into());
     }
     args.config()?;
     Ok(args)
@@ -112,6 +124,9 @@ mod tests {
         let args = parse(&["--identity-store", "fixture"]).unwrap();
         assert_eq!(args.listen.port(), 0);
         assert!(args.config().is_ok());
+        let node = parse(&["--node-root", "n"]).unwrap();
+        assert_eq!(node.node_root.as_deref(), Some(std::path::Path::new("n")));
+        assert_eq!(node.store, std::path::Path::new("n/identity"));
         for words in [
             vec![],
             vec!["--identity-store"],
@@ -122,6 +137,10 @@ mod tests {
             vec!["--identity-store", "fixture", "--identity-store", "other"],
             vec!["--identity-store", "fixture", "--listen", "hostname:42"],
             vec!["--identity-store", "fixture", "--stored-contacts", "maybe"],
+            vec!["--identity-store", "fixture", "--node-root", "n"],
+            vec!["--node-root", "n", "--stored-contacts", "yes"],
+            vec!["--node-root", "n", "--node-root", "m"],
+            vec!["--node-root", ""],
         ] {
             assert!(parse(&words).is_err());
         }

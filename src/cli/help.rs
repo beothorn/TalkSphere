@@ -12,6 +12,7 @@ pub(super) enum Topic {
     PeerProtocol,
     Storage,
     Node,
+    NodeCtl,
     ServerOptions,
     Logging,
 }
@@ -27,6 +28,32 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::NodeCtl,
+        names: &[
+            "node-ctl",
+            "--peer",
+            "--amount",
+            "--request-id",
+            "--millionths",
+            "--file",
+            "--retention-seconds",
+            "--max-spend",
+            "--lease",
+            "--provider",
+            "--offset",
+            "--length",
+            "--output",
+            "--seconds",
+            "--expected-expiry",
+            "--expected-file",
+            "--expected-byte",
+            "--unknown",
+        ],
+        label: "node-ctl",
+        summary: "Control a running node: credits, trust, paid Storage and inspection.",
+        details: "Usage: talksphere node-ctl --node-root DIRECTORY ACTION [--option VALUE]...\n\nSends one request to the owner-only control socket of the node started with serve --node-root and prints the reply as JSON. The socket is not reachable from the network and is not the CR2SE Node API. Exit 0 on success; 1 on a node refusal or an unreachable node (stderr shows code: message); 2 on invalid syntax.\nActions:\n  status                          identity, address, role, lease count, unknown outcomes and balances at known providers\n  leases                          cataloged leases with expiry and state\n  outcomes [--unknown]            recent operation outcomes; --unknown lists only operations whose remote outcome is unknown\n  grant --peer ID --amount N [--request-id N]   issue N finite credits to a peer once per request id; resending the same id repeats the reply and never grants twice while the node runs\n  own --peer ID --amount N        record the credits you hold from that issuer (absolute value)\n  trust --peer ID --millionths N  set exact local trust, 0 to 1000000\n  balance --peer ID               issuer-separated owned, issued and trust for that peer\n  fetch --contact CONTACT         authenticate a contact (ID?address=IP&port=PORT) and show its provided offerings\n  store --contact CONTACT --file FILE --retention-seconds N --max-spend N   store a nonempty file of at most 16384 bytes and catalog the validated lease\n  retrieve --lease HEX --max-spend N [--provider ID] [--offset N] [--length N] [--output FILE]   retrieve a range; with --output the validated bytes go to a new owner-only file\n  renew --lease HEX --seconds N --max-spend N [--provider ID] [--expected-expiry N]   extend a lease; the expected expiry defaults to the cataloged one\n  check --lease HEX --max-spend N (--expected-file FILE [--offset N] | --expected-byte HEX --offset N) [--provider ID]   paid one-byte check; expected bytes stay local and a missing offset is sampled securely\n  remove --lease HEX --max-spend N [--provider ID]   charged logical removal\nSpending requires an explicit --max-spend ceiling in credits; the exact quoted price is charged. --provider is needed only when a lease id exists at several providers. A lost reply is reported as unknown_outcome and recorded; it is never retried and never replaced by a new store. Option values must be nonempty and options may not repeat. See plans/10_Minimum_node/PLAN.md.\n",
+    },
     HelpTopic {
         topic: Topic::Node,
         names: &["node-init", "node-show", "--node-root", "--config"],
@@ -116,7 +143,7 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         names: &["serve"],
         label: "serve",
         summary: "Run authenticated Transport connections (Linux).",
-        details: "Usage: talksphere serve --identity-store DIRECTORY [OPTION VALUE]...\n\nRequesting help opens no sockets and exits with status 0.\nLoads existing protected keys; missing or inconsistent credentials never generate replacements.\nReports ready <PUBLIC_ID> <ACTUAL_ADDRESS> and verified authenticated peer IDs.\nFrame payloads remain visible; application encryption and services are separate modules.\nProduction registers no application protocol; unsupported OPEN requests are refused.\nUse talksphere help --listen for contacts, defaults, limits and timeouts.\nSIGINT/SIGTERM stop admission and drain; repeated signals force remaining connections closed.\nInvalid syntax exits with status 2, startup/runtime failure with status 1, normal shutdown with status 0.\nSee plans/4_Transport_integration/PLAN.md and docs/transport-integration/ACCEPTANCE.md.\n",
+        details: "Usage: talksphere serve (--identity-store DIRECTORY | --node-root DIRECTORY) [OPTION VALUE]...\n\nRequesting help opens no sockets and exits with status 0.\nLoads existing protected keys; missing or inconsistent credentials never generate replacements.\nReports ready <PUBLIC_ID> <ACTUAL_ADDRESS> and verified authenticated peer IDs.\nFrame payloads remain visible; application encryption and services are separate modules.\nWithout --node-root, production registers no application protocol and unsupported OPEN requests are refused.\nWith --node-root DIRECTORY (instead of --identity-store) serve runs the minimum useful node created by node-init: it opens and recovers every durable owner, publishes the configured Storage offering, serves Peer Protocol on authenticated connections and accepts local node-ctl requests on the owner-only control.sock. --stored-contacts is not supported with --node-root; SIGINT/SIGTERM let accepted work drain before stopping. See help node-init and help node-ctl.\nUse talksphere help --listen for contacts, defaults, limits and timeouts.\nSIGINT/SIGTERM stop admission and drain; repeated signals force remaining connections closed.\nInvalid syntax exits with status 2, startup/runtime failure with status 1, normal shutdown with status 0.\nSee plans/4_Transport_integration/PLAN.md and docs/transport-integration/ACCEPTANCE.md.\n",
     },
     HelpTopic {
         topic: Topic::Help,
@@ -164,7 +191,7 @@ pub(super) fn render(topic: Topic) -> String {
     let mut overview = format!(
         "TalkSphere {} - Rust server and proof of concept for CR2SE\n\
          Protocol: https://github.com/beothorn/CR2SE\n\
-         Status: authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available.\n\n\
+         Status: authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available; minimum useful paid Storage node via node-init, serve --node-root and node-ctl.\n\n\
          Usage: talksphere [COMMAND | OPTION]\n\n\
          Commands and options:\n",
         env!("CARGO_PKG_VERSION")
@@ -191,7 +218,7 @@ mod tests {
         let overview = render(Topic::Overview);
         assert!(overview.contains("talksphere help <topic>"));
         assert!(overview.contains(
-            "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available"
+            "authenticated Transport server available on Linux; Peer Protocol library and explicit custom-node example available; minimum useful paid Storage node via node-init, serve --node-root and node-ctl"
         ));
         for entry in TOPICS {
             assert!(overview.contains(entry.label));

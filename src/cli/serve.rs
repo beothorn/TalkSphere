@@ -14,6 +14,9 @@ pub(super) fn execute(args: &ServerArgs) -> Result<(), String> {
     use crate::modules::identity::{api::IdentityId, text};
     tracing::trace!("Starting authenticated server from validated CLI configuration");
     let config = args.config()?;
+    if let Some(root) = &args.node_root {
+        return execute_node(root, config);
+    }
     let loaded = credentials::load(&config, args.stored_contacts)
         .map_err(|e| format!("server startup failed: {e:?}"))?;
     let node =
@@ -43,4 +46,52 @@ pub(super) fn execute(args: &ServerArgs) -> Result<(), String> {
 pub(super) fn execute(_args: &ServerArgs) -> Result<(), String> {
     tracing::trace!("Rejecting unsupported authenticated server platform");
     Err("server runtime is unsupported on this platform".into())
+}
+
+// Run the minimum useful node: recover every owner, publish, serve peers and accept local control.
+#[cfg(target_os = "linux")]
+fn execute_node(
+    root: &std::path::Path,
+    config: crate::composition::server::config::Config,
+) -> Result<(), String> {
+    use crate::composition::{
+        node::{control, layout::Layout, runtime},
+        server::{pump::Signal, run::Status, shutdown::Signals},
+    };
+    use crate::modules::identity::{api::IdentityId, text};
+    tracing::trace!("Starting the minimum useful node");
+    let layout = Layout::new(root);
+    let signal = Signal::default();
+    let _signals =
+        Signals::install(signal.clone()).map_err(|e| format!("node startup failed: {e:?}"))?;
+    runtime::run(
+        &layout,
+        config,
+        signal,
+        |status| match status {
+            Status::Ready(ready) => println!(
+                "ready {} {}",
+                text::format(IdentityId(ready.local_id.0)),
+                ready.address
+            ),
+            Status::Authenticated(context) => println!(
+                "authenticated {} {:?}",
+                text::format(IdentityId(context.peer_identity.0)),
+                context.role
+            ),
+            Status::ContactFailed => println!("contact-failed"),
+            Status::ConnectionClosed => println!("connection-closed"),
+            Status::Stopped => println!("stopped"),
+        },
+        |started| control::start(&layout, started),
+    )
+}
+// Unsupported platforms never fall back to an unprotected node.
+#[cfg(not(target_os = "linux"))]
+fn execute_node(
+    _root: &std::path::Path,
+    _config: crate::composition::server::config::Config,
+) -> Result<(), String> {
+    tracing::trace!("Rejecting unsupported node platform");
+    Err("the node is unsupported on this platform".into())
 }
