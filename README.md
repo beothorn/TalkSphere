@@ -27,8 +27,8 @@ Its [acceptance matrix](src/modules/peer_protocol/ACCEPTANCE.md) includes indepe
 wire vectors, real-node/process exchanges, third-party settlement and protected
 issuer restart, with clear standard-family and timeout limits. A runnable custom
 two-node example uses real module owners with explicitly volatile service resources.
-Paid Storage is complete for a finite native Linux loopback profile with an authenticated exercise; default `serve` does not install it. Minimum-node composition remains a later milestone.
-This is not yet the minimum useful node or full-feature PoC. See the
+Paid Storage is complete, and the minimum useful node composes it with every required module: `node-init`, `serve --node-root` and `node-ctl` run a paid Storage node on Linux. Plain `serve --identity-store` still installs no application protocol.
+This is the minimum profile only, not the full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md) and [module guide](src/modules/peer_protocol/README.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
 [Board plan](plans/5_Board_module/PLAN.md),
@@ -177,7 +177,7 @@ establish interoperability with an independent implementation. Paid Storage is c
 [38-step plan](plans/9_Storage_module/PLAN.md); the [Storage guide](src/modules/storage/README.md)
 and [handoff](src/modules/storage/HANDOFF.md) record scope and the next milestone. See the
 [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
-Persistent minimum-node composition and optional standard families remain later work.
+The minimum useful node is complete (see below); the full client journey and optional standard families remain later work.
 
 ## Board document tools
 
@@ -205,6 +205,28 @@ Ledger operation or application protocol.
 Run `cargo run --locked --example ledger` for the bounded volatile accounting
 walkthrough, and see the [Ledger evidence](src/modules/ledger/ACCEPTANCE.md) for
 all local payment modes, failure/replay tests and later composition obligations.
+
+## Minimum useful node
+
+Create two nodes, serve them, fund one side and buy Storage across real authenticated connections
+(full operator steps in the [node guide](docs/minimum-node/RUNBOOK.md)):
+
+```sh
+cargo build --locked
+cargo run --locked -- node-init --node-root /tmp/ts-a       # prints the public ID
+cargo run --locked -- node-init --node-root /tmp/ts-b
+cargo run --locked -- serve --node-root /tmp/ts-b --listen 127.0.0.1:7001
+cargo run --locked -- serve --node-root /tmp/ts-a           # in another terminal
+cargo run --locked -- node-ctl --node-root /tmp/ts-b grant --peer <A-ID> --amount 100000
+cargo run --locked -- node-ctl --node-root /tmp/ts-a store --contact '<B-ID>?address=127.0.0.1&port=7001' --file ./object --retention-seconds 60 --max-spend 100
+cargo run --locked -- help node-ctl
+cargo test --locked --test node_process --test node_cli
+```
+
+`node-ctl` talks to the owner-only `control.sock` of a running node; it is not the CR2SE Node API. The
+node supports provider-issued credits, objects up to 16384 bytes and Storage only. See the
+[acceptance evidence](docs/minimum-node/ACCEPTANCE.md), the
+[handoff](src/composition/node/HANDOFF.md) and the [plan](plans/10_Minimum_node/PLAN.md).
 
 ## Native Storage exercise
 
