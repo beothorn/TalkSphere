@@ -60,6 +60,11 @@ impl Layout {
         tracing::trace!("Reading the node catalog path");
         self.root.join("catalog.json")
     }
+    /// Recent control operation outcomes, including unknown ones.
+    pub fn operations(&self) -> PathBuf {
+        tracing::trace!("Reading the node operations journal path");
+        self.root.join("operations.json")
+    }
     /// Local control socket path.
     pub fn control(&self) -> PathBuf {
         tracing::trace!("Reading the node control socket path");
@@ -83,6 +88,7 @@ mod tests {
             layout.storage(),
             layout.catalog(),
             layout.control(),
+            layout.operations(),
         ];
         let unique: std::collections::BTreeSet<_> = paths.iter().collect();
         assert_eq!(unique.len(), paths.len());

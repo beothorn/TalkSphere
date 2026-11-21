@@ -97,6 +97,12 @@ impl Transport {
         }
         Ok(())
     }
+    /// Time left before a forced close, or `None` when shutdown has not begun.
+    pub fn shutdown_remaining(&self, now: Instant) -> Option<std::time::Duration> {
+        tracing::trace!("Reading the remaining shutdown drain time");
+        self.shutdown_deadline
+            .map(|deadline| deadline.saturating_duration_since(now))
+    }
     /// Report completed draining or force-close on repeated signal/deadline expiry.
     /// The caller must drop the driver before reporting Stopped and releasing the identity lock.
     /// # Errors

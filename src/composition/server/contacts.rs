@@ -44,6 +44,11 @@ impl Transport {
         }
         Ok(outcomes)
     }
+    /// Iterate retained connection authorities so trusted composition can close one it refuses.
+    pub fn connection_handles(&self) -> impl Iterator<Item = &ConnectionHandle> {
+        tracing::trace!("Iterating retained server connection authorities");
+        self.connections.iter()
+    }
     /// Inspect retained local connection authority count without exposing private identity material.
     pub fn connection_count(&self) -> usize {
         tracing::trace!("Inspecting retained server connection count");

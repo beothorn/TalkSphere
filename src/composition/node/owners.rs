@@ -127,11 +127,18 @@ pub fn open(
     } else {
         None
     };
+    let leases = Arc::new(Expectations {
+        local,
+        provider: storage
+            .as_ref()
+            .map(|(_, handler)| -> Arc<dyn storage::requester::client::Leases> { handler.clone() }),
+        catalog: catalog.clone(),
+    });
     let family = Arc::new(
         storage::requester::client::Client::new(
             prepared.definition.clone(),
             &catalogue,
-            catalog.clone(),
+            leases,
             clock.clone(),
             storage::requester::client::Policy {
                 values: BUDGET,
@@ -300,6 +307,41 @@ impl Owners {
             )
             .map(|_| ())
             .map_err(stage("Board publish"))
+    }
+}
+
+/// Original lease expectations for the installed Storage family on a node that is both requester and
+/// provider. When the provider is this node, the quote is the provider's own and its lease lives in the
+/// provider journal; otherwise the lease was bought elsewhere and lives in the requester catalog.
+struct Expectations {
+    local: IdentityId,
+    provider: Option<Arc<dyn storage::requester::client::Leases>>,
+    catalog: Arc<FileCatalog>,
+}
+impl storage::requester::client::Leases for Expectations {
+    // Route by provider so neither role can see the other role's leases.
+    fn lease(
+        &self,
+        key: services::contract::OperationKey,
+        provider: IdentityId,
+        requester: IdentityId,
+        id: [u8; 32],
+    ) -> Result<storage::contract::Lease, services::Error> {
+        tracing::trace!("Routing original lease expectations by provider role");
+        if provider == self.local {
+            return self
+                .provider
+                .as_ref()
+                .ok_or(services::Error::Denied)?
+                .lease(key, provider, requester, id);
+        }
+        storage::requester::client::Leases::lease(
+            self.catalog.as_ref(),
+            key,
+            provider,
+            requester,
+            id,
+        )
     }
 }
 
@@ -514,6 +556,50 @@ mod tests {
         bad.offering.as_mut().unwrap().pricing = serde_json::Value::Null;
         assert!(open(&layout, bad, ME, true).is_err());
         assert!(!layout.storage().exists());
+    }
+    // Optional families have no registered provider, so no peer proposal for them can be admitted;
+    // Storage is selectable as a provider only when an offering is configured.
+    #[test]
+    fn only_storage_is_installed() {
+        let layout = root();
+        let provider = open(&layout, NodeConfig::default(), ME, true).unwrap();
+        assert!(provider.registry.select("cr2se.storage", 1, true).is_ok());
+        for family in [
+            "cr2se.computation",
+            "cr2se.messaging",
+            "cr2se.discovery",
+            "cr2se.files",
+            "cr2se.feeds",
+            "cr2se.pages",
+        ] {
+            assert_eq!(
+                provider.registry.select(family, 1, true).err(),
+                Some(services::Error::Unsupported),
+                "{family}"
+            );
+            assert_eq!(
+                provider.registry.select(family, 1, false).err(),
+                Some(services::Error::Unsupported),
+                "{family}"
+            );
+        }
+        assert_eq!(
+            provider.registry.select("cr2se.storage", 2, true).err(),
+            Some(services::Error::Unsupported)
+        );
+        let only = root();
+        let requester = open(
+            &only,
+            NodeConfig::parse(br#"{"version":1,"offering":null}"#).unwrap(),
+            ME,
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            requester.registry.select("cr2se.storage", 1, true).err(),
+            Some(services::Error::Unsupported)
+        );
+        assert!(requester.registry.select("cr2se.storage", 1, false).is_ok());
     }
     // A missing owner directory stops startup naming that owner instead of continuing partially.
     #[test]
