@@ -78,7 +78,12 @@ impl<P: Persistence> Coordinator<P> {
             self.check(context, Action::Observe, &state)?;
             return Ok(Some(Cached {
                 invocation,
-                completion: op.completion.clone().ok_or(Error::Invalid)?,
+                completion: op
+                    .finalized
+                    .as_ref()
+                    .or(op.completion.as_ref())
+                    .cloned()
+                    .ok_or(Error::Invalid)?,
                 peer,
             }));
         }

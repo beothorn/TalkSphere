@@ -99,3 +99,19 @@ peer input cannot override it. Defaults delegate to pricing_for, assessment_meta
 and validate_assessment, preserving existing installed handlers. Peer Protocol
 uses the context-aware projection for incoming quotes; Services remote assessment
 and quote calculation use the corresponding context-aware validation/pricing.
+
+A Provider whose contract permits fields to be assigned at commit selection
+declares template work using `requires_finalization`. This classification
+must match the original input and contract across restart. Its recovered
+completion contains a prepared template. `validate_template` checks the fixed
+fields and bindings before preparation and on reopen. `finalize` receives the
+original key, preparation token and template when the coordinator selects a
+commit. It may sample the clock and fill only fields authorized by that
+template. It must leave durable state untouched. Invalid or Limit records an
+abort decision. Other failures retain Prepared for recovery.
+
+`commit_finalized` receives both the prepared template and the exact finalized
+completion from the durable decision. The Provider checks their association and
+applies the effect once using the original token. A retry uses the same
+decision and values. Ordinary providers continue delivering their prepared
+completion through `commit`.

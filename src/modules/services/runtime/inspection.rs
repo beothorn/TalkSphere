@@ -42,7 +42,12 @@ impl<P: Persistence> Coordinator<P> {
         if op.phase != Phase::Committed {
             return Err(Error::Unknown);
         }
-        let completion = op.completion.clone().ok_or(Error::Invalid)?;
+        let completion = op
+            .finalized
+            .as_ref()
+            .or(op.completion.as_ref())
+            .cloned()
+            .ok_or(Error::Invalid)?;
         Ok((op.invocation(self.config.limits)?, completion))
     }
     /// Run the installed requester-local verifier on original retained evidence without spending or refunds.
@@ -84,7 +89,7 @@ impl<P: Persistence> Coordinator<P> {
         let Some(input) = &op.input else {
             return Ok(crate::modules::services::handler::Check::Inconclusive);
         };
-        let Some(completion) = &op.completion else {
+        let Some(completion) = op.finalized.as_ref().or(op.completion.as_ref()) else {
             return Ok(crate::modules::services::handler::Check::Inconclusive);
         };
         let accepted = crate::modules::services::handler::Blob::new(

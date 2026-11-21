@@ -12,8 +12,8 @@ The requirements remain pinned to
 including [AT-E04](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md),
 [AT-E06](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/AcceptanceTests.md)
 and [durable coordination](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md#durable-effects-across-process-boundaries).
-Upstream main and issue #11 were rechecked on 2026-11-21; reviewed protocol files
-are unchanged and the acceptance-time conflict remains unresolved.
+The upstream decision-time rule subsequently resolved issue #11. These tests
+use controlled requester fixtures and predate provider-side finalization.
 
 | Scenario | Executed assertions |
 | --- | --- |
@@ -49,8 +49,7 @@ These tests do not complete AT-E06's provider-side direct query/settlement path.
 
 This advances requester recovery in steps 29, 31 and 32. Full step 32 additionally
 requires real provider bytes/metadata, all Storage participant cuts, actual provider
-obligations and remote uncertainty, pending step 17 and
-[CR2SE issue #11](https://github.com/beothorn/CR2SE/issues/11). None of these plan steps is
+obligations and remote uncertainty, pending implementation of step 17. None of these plan steps is
 marked complete by this evidence. The tests do not introduce remote cached retries,
 refunds, replacement stores or a runnable paid Storage provider.
 

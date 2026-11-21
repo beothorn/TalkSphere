@@ -1,6 +1,6 @@
 # 0007: Check timeout charging after provider commitment is ambiguous
 
-- Status: reported upstream
+- Status: resolved upstream
 - Affected CR2SE module(s): Services, Ledger, Storage/Messaging checks and Peer Protocol
 - Upstream revision: [d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f)
 - Specification/contract/pseudocode/vector sections: [Services checks](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/services/README.md#checks), [SV-08/SV-09/SV-10](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/services/acceptanceTests/README.md), [durable coordination](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md#durable-effects-across-process-boundaries), [Storage check](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md#10-storage-check), [peer result completion](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/peer-protocol/README.md#input-result-and-failure)
@@ -80,5 +80,8 @@ trust change or balance reconciliation is added.
 
 ## Resolution
 
-Unresolved; main still has the reviewed protocol contracts. Open and closed issues
-were searched before filing; none covered this postcommit check-timeout case.
+[Issue #10](https://github.com/beothorn/CR2SE/issues/10) is closed.
+[CR2SE 24cce05](https://github.com/beothorn/CR2SE/commit/24cce05) and its
+preceding changes specify independent local decisions on timeout, including
+release after a requester-local abort and refusal of late evidence for that
+attempt. Full Storage network validation remains pending.

@@ -273,3 +273,9 @@ native issuer transfer queries after a lost reply and one-time confirmation
 survive reopen without changing retained Storage results or trust. These are
 requester accounting tests with controlled Storage output and synthetic issuer
 provenance; actual provider obligations and complete steps 31/32 remain pending.
+
+Services decision-time finalization measured **23922/25425 executable production
+lines (94.09%)**. All 732 library tests and required checks passed. The recovery
+fixture covers lost decision writes, original result replay, one-time accounting
+and abort on timestamp overflow. LLVM skipped one invalid profile from the
+suite under the documented failure-mode procedure.

@@ -1,6 +1,6 @@
 # 0008: Storage timestamps precede durable acceptance
 
-- Status: reported upstream
+- Status: resolved upstream
 - Affected CR2SE module(s): Storage, Services composition/recovery
 - Upstream revision: [d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f)
 - Specification/contract/pseudocode/vector sections: [Storage acceptance](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md#acceptance), [providerStore timestamp and commit](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/pseudocode/README.md#L367-L391), [durable coordination](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/ModuleContracts.md#durable-effects-across-process-boundaries)
@@ -69,14 +69,12 @@ full retention and exact original result recovery.
 ## TalkSphere handling
 
 Existing Storage work implements reusable validation, assessment, persistence
-and participant primitives. Step 17's actual paid lease creation remains unchecked
-pending clarification; no paid Storage provider is advertised. We have not
-chosen a new timing rule or claimed that precommit timestamps satisfy the
-post-durability requirement. The issue is distinct from existing paid-check
-response-loss issue #10.
+and participant primitives. Step 17 now uses the upstream decision-time rule. Provider integration remains
+in progress.
 
 ## Resolution
 
-Unresolved as of 2026-11-17. Open and closed issues were searched for acceptedAt,
-retention and durable acceptance before filing; no covering issue was found.
-The GitHub create response confirmed issue #11 and its URL.
+[Issue #11](https://github.com/beothorn/CR2SE/issues/11) is closed.
+[CR2SE ee6caee](https://github.com/beothorn/CR2SE/commit/ee6caee) assigns lease
+times during commit selection after durable preparation and binds the final
+result to the decision for exact recovery.

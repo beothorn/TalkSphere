@@ -103,6 +103,21 @@ impl<P: Persistence> Coordinator<P> {
             .ok_or(Error::Unavailable)?
             .provider()?
             .completion(key)?;
+        let invocation = op.invocation(self.config.limits)?;
+        let input = op.input.as_ref().ok_or(Error::Invalid)?;
+        let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
+        if provider.requires_finalization(&invocation, input) {
+            provider.validate_template(&invocation, input, &completion)?;
+            if completion.effect.bytes().is_empty()
+                || op.pricing.final_price(&op.service, op.version, None)? != completion.price
+            {
+                return Err(Error::Invalid);
+            }
+            let mut op = op;
+            op.completion = Some(completion);
+            op.phase = Phase::Staged;
+            return self.save(context, &mut state, op);
+        }
         self.retain(context, &mut state, op, completion)
     }
     // Both local and remote result paths independently enforce schema, contextual terms and exact final price.
@@ -113,7 +128,21 @@ impl<P: Persistence> Coordinator<P> {
         mut op: Operation,
         completion: crate::modules::services::handler::Completion,
     ) -> Result<(), Error> {
-        tracing::trace!("Validating complete service result before durable retention");
+        tracing::trace!("Retaining validated complete service result");
+        self.validate_completion(state, &op, &completion)?;
+        op.completion = Some(completion);
+        op.phase = Phase::Staged;
+        self.save(context, state, op)
+    }
+
+    // Reuse complete result checks for ordinary results and the final product of a prepared template.
+    pub(super) fn validate_completion(
+        &self,
+        state: &State,
+        op: &Operation,
+        completion: &crate::modules::services::handler::Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Validating complete result against schema, input and price");
         let pin = state.pins.get(&op.key).ok_or(Error::Unavailable)?;
         let invocation = op.invocation(self.config.limits)?;
         let budget = Budget {
@@ -163,9 +192,7 @@ impl<P: Persistence> Coordinator<P> {
         if op.pricing.final_price(&op.service, op.version, billed)? != completion.price {
             return Err(Error::Invalid);
         }
-        op.completion = Some(completion);
-        op.phase = Phase::Staged;
-        self.save(context, state, op)
+        Ok(())
     }
     /// Retain the outgoing attempt before returning complete invocation data to the trusted peer adapter.
     /// Repeated calls never resend accepted work after an ambiguous local reply.

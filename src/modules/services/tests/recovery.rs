@@ -26,10 +26,25 @@ fn open(
     image: Arc<Mutex<Vec<u8>>>,
     initialize: bool,
 ) -> Harness {
+    open_with_time(svc, accounts, image, initialize, None)
+}
+
+// Install the same template-aware handler across reopen with a fresh decision clock sample.
+fn open_with_time(
+    svc: stores::Services,
+    accounts: stores::Ledger,
+    image: Arc<Mutex<Vec<u8>>>,
+    initialize: bool,
+    decision_time: Option<u64>,
+) -> Harness {
     let local = IdentityId([2; 32]);
     let requester = IdentityId([1; 32]);
     let authority = Arc::new(Authority::new());
-    let family = Arc::new(Durable::open(image).unwrap());
+    let family = Arc::new(
+        Durable::open(image)
+            .unwrap()
+            .with_decision_time(decision_time),
+    );
     let (_, _, _, registry) =
         selected_ports(false, family.clone(), family.clone(), authority.clone());
     let ledger_authority = Arc::new(ledger::authority::Authority::new());
@@ -553,4 +568,122 @@ fn missing_coordinator_history_cannot_reuse_ledger_key() {
         Err(Error::Conflict)
     );
     assert_eq!(h.family.executions(), 0);
+}
+
+// A lost decision write either leaves the template prepared or retains the exact final timestamps.
+// Overflow records an abort and releases the original reservation when recovery delivers it.
+#[test]
+fn prepared_template_finalization_survives_decision_write_failures() {
+    use super::value::Value;
+    let local = IdentityId([2; 32]);
+    let key = OperationKey {
+        requester: IdentityId([1; 32]),
+        connection: [8; 32],
+        stream: 1,
+    };
+    for (cut, sample, failure, result, balance) in [
+        (
+            Some(Cut::Before),
+            1040,
+            Error::Storage,
+            Some("input:1060:1070"),
+            93,
+        ),
+        (
+            Some(Cut::After),
+            1040,
+            Error::Unknown,
+            Some("input:1040:1050"),
+            93,
+        ),
+        (None, u64::MAX, Error::Limit, None, 100),
+    ] {
+        let svc = stores::Services::default();
+        let accounts = stores::Ledger::default();
+        let image = Arc::new(Mutex::new(Vec::new()));
+        let h = open_with_time(
+            svc.clone(),
+            accounts.clone(),
+            image.clone(),
+            true,
+            Some(1000),
+        );
+        let grant = h
+            .authority
+            .grant(local, Action::Coordinate, 1_000_000)
+            .unwrap();
+        let c = context(&grant);
+        h.runtime
+            .admit(
+                &c,
+                accepted(h.authority.clone(), &h.registry, 1, 1),
+                Payment::default(),
+            )
+            .unwrap();
+        h.runtime
+            .supply_input(&c, key, Value::String("input".into()))
+            .unwrap();
+        h.runtime.start(&c, key).unwrap();
+        h.runtime.stage(&c, key).unwrap();
+        h.runtime.prepare(&c, key).unwrap();
+        drop(h);
+        let h = open_with_time(
+            svc.clone(),
+            accounts.clone(),
+            image.clone(),
+            false,
+            Some(sample),
+        );
+        let grant = h
+            .authority
+            .grant(local, Action::Coordinate, 1_000_000)
+            .unwrap();
+        if let Some(cut) = cut {
+            svc.script([cut]);
+        }
+        assert_eq!(
+            h.runtime.decide(&context(&grant), key, Decision::Commit),
+            Err(failure)
+        );
+        drop(h);
+
+        let h = open_with_time(svc, accounts, image, false, Some(1060));
+        let coordinate = h
+            .authority
+            .grant(local, Action::Coordinate, 1_000_000)
+            .unwrap();
+        let observe = h
+            .authority
+            .grant(local, Action::Observe, 1_000_000)
+            .unwrap();
+        let read = h
+            .ledger_authority
+            .grant(local, ledger::authority::Action::Read, 1_000_000)
+            .unwrap();
+        let c = context(&coordinate);
+        let lc = ledger::contract::Context {
+            version: 1,
+            grant: &read,
+            deadline: c.deadline,
+            cancelled: false,
+        };
+        let phase = if result.is_some() {
+            Phase::Committed
+        } else {
+            Phase::Aborted
+        };
+        assert_eq!(h.runtime.resume(&c, key), Ok(phase));
+        assert_eq!(h.runtime.resume(&c, key), Ok(phase));
+        let retained = h.runtime.result(&context(&observe), key);
+        if let Some(expected) = result {
+            let retained = retained.unwrap();
+            assert_eq!(retained.output, Value::String(expected.into()));
+            assert_eq!(retained.result.bytes(), expected.as_bytes());
+            assert_eq!(retained.price, 7);
+        } else {
+            assert!(retained.is_err());
+        }
+        assert_eq!(h.ledger.view(&lc, key.requester).unwrap().issued, balance);
+        assert_eq!(h.family.executions(), 1);
+    }
 }

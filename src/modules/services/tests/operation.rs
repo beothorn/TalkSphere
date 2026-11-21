@@ -42,6 +42,7 @@ fn record() -> Operation {
         phase: Phase::Accepted,
         input: None,
         completion: None,
+        finalized: None,
         handler: None,
     }
 }

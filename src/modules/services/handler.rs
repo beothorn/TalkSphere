@@ -349,6 +349,50 @@ pub trait Provider: Send + Sync {
     /// # Errors
     /// Changed effects conflict; dependency loss preserves uncertainty.
     fn prepare(&self, key: OperationKey, effect: &Blob) -> Result<Blob, Error>;
+    /// Identify original input that uses a prepared template under this exact contract.
+    /// The classification must be stable across reopen and independent of the clock.
+    fn requires_finalization(&self, _invocation: &Invocation, _input: &Value) -> bool {
+        tracing::trace!("Using an already complete provider result");
+        false
+    }
+    /// Validate fixed terms in a staged template before preparation or recovery.
+    /// # Errors
+    /// Reject malformed or foreign templates without writing effects.
+    fn validate_template(
+        &self,
+        _invocation: &Invocation,
+        _input: &Value,
+        _template: &Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Refusing an unsupported provider result template");
+        Err(Error::Unsupported)
+    }
+    /// Fill the fields allowed by the prepared template at coordinator decision selection.
+    /// No durable effects may be applied by this callback.
+    /// # Errors
+    /// Invalid or Limit selects abort. Other failures leave the operation prepared.
+    fn finalize(
+        &self,
+        _key: OperationKey,
+        _token: &Blob,
+        _template: &Completion,
+    ) -> Result<Completion, Error> {
+        tracing::trace!("Refusing unsupported provider result finalization");
+        Err(Error::Unsupported)
+    }
+    /// Apply an already recorded finalized decision using its original token and both bound effects.
+    /// # Errors
+    /// Reject foreign tokens and any final effect inconsistent with the original template.
+    fn commit_finalized(
+        &self,
+        _key: OperationKey,
+        _token: &Blob,
+        _template: &Completion,
+        _finalized: &Completion,
+    ) -> Result<(), Error> {
+        tracing::trace!("Refusing unsupported finalized provider commitment");
+        Err(Error::Unsupported)
+    }
     /// Apply a durable coordinator commit at most once using the exact prepared token.
     /// # Errors
     /// Foreign tokens or contradictory decisions fail without changing the recorded decision.

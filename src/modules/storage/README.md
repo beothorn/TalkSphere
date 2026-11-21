@@ -85,14 +85,14 @@ keeps that metadata separate from provider wire factors.
 `cargo test --locked modules::storage::assessment` exercises metadata and capacity
 refusal; `cargo test --locked metadata_pricing` verifies the Services callback.
 
-Paid lease creation awaits [upstream acceptance-time clarification #11](https://github.com/beothorn/CR2SE/issues/11),
-recorded in the [protocol evidence](../../../CR2SE%20bugs/0008-storage-acceptance-time-before-durability.md).
-A slow durable commit currently exposes conflicting timestamp requirements.
-Step 17 remains unchecked and no paid provider is advertised.
+Paid lease creation follows the [upstream decision-time rule](https://github.com/beothorn/CR2SE/commit/ee6caee).
+Services can retain a prepared template and its finalized result together with
+the commit decision. Step 17 still needs the Storage owner to stage the upload
+and apply the finalized lease. Paid provider registration follows that work.
 
 Independent [requester store validation](requester/store.md) and
 [acknowledged catalog retention](requester/catalog.md) complete step 18 while
-step 17 remains pending #11. Run
+provider-side step 17 is in progress. Run
 `cargo test --locked modules::storage::requester` from the repository root.
 These contracts do not establish a complete paid provider or choose a new
 acceptance-time rule.
@@ -160,7 +160,7 @@ Run `cargo test --locked modules::storage::requester::byte_check` and
 The independent [standard catalogue](standard.md) now supplies the pinned complete
 definition and checks Storage schema meaning through public Services Standards.
 This is partial progress on step 28: real handler installation and usable provider
-publication remain pending step 17 and issue #11. Exercise it with
+publication remain pending step 17. Exercise it with
 `cargo test --locked modules::storage::standard` from the repository root.
 
 The [installed Storage requester](requester/client/mod.md) now connects exact

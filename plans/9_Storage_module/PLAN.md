@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–16 and 18–27 are complete; step 17 awaits upstream acceptance-time clarification in issue #11.
+Status: implementation authorized; steps 1–16 and 18–27 are complete; step 17 is in progress against the resolved upstream acceptance-time rule.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -49,14 +49,9 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
 Reviewed on 2026-11-15 against
 [CR2SE d40b6278f24430e814d7fa82094f57261bfcac9f](https://github.com/beothorn/CR2SE/tree/d40b6278f24430e814d7fa82094f57261bfcac9f).
-Upstream `main` is six commits ahead, with no changes to the reviewed protocol
-files. Recheck the specification and issue status before implementation.
-Rechecked on 2026-11-21: no reviewed protocol files changed and issue #11 remains
-open without a clarification. The three other published branches returned by
-GitHub were compared with main; all are behind main with no additional commits,
-so no acceptance-time fix was found there. Independent steps 18–27 are complete; actual store
-creation in step 17 and the complete provider/network path in steps 28–38 remain
-unverified until that dependency is resolved.
+The implementation now follows [CR2SE 24cce05](https://github.com/beothorn/CR2SE/tree/24cce05bb258211b1fe07914bcd0a7743cfcd91c)
+for store finalization and paid-check timeouts. Historical fixtures use the
+original reviewed revision. The store wire fields remain the same.
 
 - [Storage specification, including the complete definition and pricing examples](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md).
 - [Input contract](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/inputs/README.md).
@@ -96,11 +91,11 @@ as a Storage server. Existing bounded in-memory body contracts may support a
 finite advertised Storage profile; do not promise arbitrary-size streaming or
 expand advertised limits beyond the composition's actual budgets.
 
-[Upstream issue #10](https://github.com/beothorn/CR2SE/issues/10) remains open:
-requester check timeout does not establish rollback of a provider's committed
-charge. Record each side's observed result and accounting separately; do not
-invent an acknowledgement, refund or globally uncharged-timeout guarantee.
-The implementation review confirmed [issue #11](https://github.com/beothorn/CR2SE/issues/11): store pseudocode samples acceptance time before durable commit, contrary to the normative acceptance boundary. See the [local evidence report](../../CR2SE%20bugs/0008-storage-acceptance-time-before-durability.md); step 17 remains pending clarification. The original planning review identified no additional defect.
+[Upstream issue #10](https://github.com/beothorn/CR2SE/issues/10) is resolved.
+A requester timeout can post zero local charge while the provider retains its
+committed charge. Record each side's result and accounting separately. Verify
+the requester abort and late-evidence rules through the paid network path.
+The implementation review confirmed [issue #11](https://github.com/beothorn/CR2SE/issues/11): store pseudocode samples acceptance time before durable commit, contrary to the normative acceptance boundary. See the [local evidence report](../../CR2SE%20bugs/0008-storage-acceptance-time-before-durability.md); the upstream correction is available and step 17 remains under implementation. The original planning review identified no additional defect.
 Investigate contradictions before choosing interoperable behavior, search open
 and closed upstream issues, and retain confirmed reports and issue URLs under
 [CR2SE bugs](../../CR2SE%20bugs/README.md). A local adapter limitation is not a
@@ -266,7 +261,12 @@ execution, while leaving lease creation to durable completion.
 
 ### 17. Stage validated uploads as durable lease proposals
 
-Pending: resolve [upstream issue #11](https://github.com/beothorn/CR2SE/issues/11) before choosing actual acceptance timestamps and completing this step.
+[CR2SE issue #11](https://github.com/beothorn/CR2SE/issues/11) is resolved
+by the [decision-time rule](https://github.com/beothorn/CR2SE/commit/ee6caee).
+Services now supports binding the complete result and effect to the commit
+decision while retaining the original template reference for Ledger. The
+Storage owner still needs to stage verified upload bytes, bind the lease
+template and apply the finalized lease using the recorded clock anchor.
 
 After accepted terms and reservation, require complete input and exact SHA-256,
 length and terminal markers before staging a lease. Generate unpredictable unique
@@ -373,7 +373,7 @@ implements real Services quote/result/check ports against original local
 provider/attempt lease and range expectations. Requester-only Registry tests
 retain provider absence; full provider installation and publication are pending.
 
-Pending prerequisite: complete step 17 after resolving upstream issue #11; an
+Pending prerequisite: complete the Storage owner integration in step 17; an
 installation that refuses store cannot advertise the complete Storage contract.
 
 Install the complete independently recognized standard definition and actual
@@ -492,8 +492,7 @@ statuses together; preserve the separate minimum-node composition milestone.
 ### 37. Complete the Storage acceptance matrix
 
 Map every ST-01–ST-13 assertion and relevant shared/Services case to executed tests,
-fixtures, adapter scope and results. Record the exact issue #10 blocked global
-claim rather than counting a requester-only timeout as global conformance. Run
+fixtures, adapter scope and results. Verify both sides of the paid-check timeout case resolved by issue #10. Run
 required formatting, Clippy, tests, build, help, example and rustdoc checks; measure
 production coverage above 80%. Audit links, public companions, logs and advertised
 capabilities, and resolve local regressions before declaring completion.

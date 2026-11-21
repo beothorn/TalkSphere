@@ -132,6 +132,7 @@ impl<P: Persistence> Coordinator<P> {
             phase: Phase::Accepted,
             input: None,
             completion: None,
+            finalized: None,
             handler: None,
         };
         rules.shape(&op.metadata)?;

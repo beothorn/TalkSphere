@@ -80,6 +80,34 @@ impl<P: Persistence> Coordinator<P> {
                 {
                     return Err(Error::Invalid);
                 }
+                if op.check.is_none() && op.terms.provider == self.config.local {
+                    let provider = state.pins.get(&key).ok_or(Error::Unavailable)?.provider()?;
+                    let invocation = op.invocation(self.config.limits)?;
+                    if provider.requires_finalization(
+                        &invocation,
+                        op.input.as_ref().ok_or(Error::Invalid)?,
+                    ) {
+                        let template = op.completion.as_ref().ok_or(Error::Invalid)?;
+                        let token = op.handler.as_ref().ok_or(Error::Invalid)?;
+                        match provider
+                            .finalize(key, token, template)
+                            .and_then(|finalized| {
+                                if finalized.price != template.price {
+                                    return Err(Error::Invalid);
+                                }
+                                self.validate_completion(&state, &op, &finalized)?;
+                                Ok(finalized)
+                            }) {
+                            Ok(finalized) => op.finalized = Some(finalized),
+                            Err(error @ (Error::Invalid | Error::Limit)) => {
+                                op.phase = Phase::Abort;
+                                self.save(context, &mut state, op)?;
+                                return Err(error);
+                            }
+                            Err(error) => return Err(error),
+                        }
+                    }
+                }
                 op.phase = Phase::Commit;
             }
             (_, Decision::Commit) => return Err(Error::Conflict),
@@ -114,7 +142,11 @@ impl<P: Persistence> Coordinator<P> {
                 crate::modules::services::handler::Status::Prepared(original)
                     if &original == token =>
                 {
-                    provider.commit(key, token)?
+                    if let Some(finalized) = &op.finalized {
+                        provider.commit_finalized(key, token, completion, finalized)?;
+                    } else {
+                        provider.commit(key, token)?;
+                    }
                 }
                 _ => return Err(Error::Unknown),
             }

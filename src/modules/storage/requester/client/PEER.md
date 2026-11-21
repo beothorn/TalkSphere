@@ -48,8 +48,7 @@ The native payment tests also reopen an independently persisted issuer Ledger;
 the earlier focused settlement tests use Memory. Receipt provenance is supplied
 by the trusted test adapter rather than an actual issuer Transport connection.
 Full provider payment policies and persistence remain separate requirements in
-plan steps 31–35. No result here resolves the acceptance-time conflict in CR2SE
-issue #11 or completes provider registration/publication in step 28.
+plan steps 31–35. Provider registration and publication in step 28 remain pending.
 
 From the repository root run:
 

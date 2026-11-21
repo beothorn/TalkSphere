@@ -148,7 +148,34 @@ impl<P: Persistence> Coordinator<P> {
                         pin.requester(),
                     )?;
                 }
-                if let Some(c) = &op.completion {
+                let template = if op.terms.provider == config.local && op.completion.is_some() {
+                    let provider = pin.provider()?;
+                    let invocation = op.invocation(config.limits)?;
+                    let input = op.input.as_ref().ok_or(Error::Invalid)?;
+                    if provider.requires_finalization(&invocation, input) {
+                        provider.validate_template(
+                            &invocation,
+                            input,
+                            op.completion.as_ref().ok_or(Error::Invalid)?,
+                        )?;
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+                if op.finalized.is_some()
+                    != (template && matches!(op.phase, Phase::Commit | Phase::Committed))
+                {
+                    return Err(Error::Invalid);
+                }
+                let output = if template {
+                    op.finalized.as_ref()
+                } else {
+                    op.completion.as_ref()
+                };
+                if let Some(c) = output {
                     crate::modules::services::validation::complete(
                         &c.output,
                         &definition.document.value()["output"],

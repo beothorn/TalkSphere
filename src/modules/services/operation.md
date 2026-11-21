@@ -25,3 +25,10 @@ Included delivery observations extend only the mutable private image; immutable
 accepted six-field check bindings remain unchanged. Recovery validates completion
 evidence behind consumed state and refuses inconsistent released/phase records.
 Legacy guards restore conservatively, without creating new free allowances.
+
+A commit for template work retains the original prepared completion and appends
+the finalized completion in the same operation record as the commit decision.
+The original completion continues to identify the Ledger preparation. Existing
+records with no finalized completion keep their original encoding and digest.
+Finalized records must belong to the local provider, have a commit decision and
+preserve the prepared price.

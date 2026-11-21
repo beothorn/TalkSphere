@@ -73,6 +73,7 @@ impl<P: Persistence> Coordinator<P> {
             phase: Phase::Accepted,
             input: None,
             completion: None,
+            finalized: None,
             handler: None,
         };
         let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;

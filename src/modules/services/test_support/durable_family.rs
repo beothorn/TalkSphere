@@ -7,6 +7,7 @@ use crate::modules::{
 use std::sync::{Arc, Mutex};
 pub(in crate::modules::services) struct Durable {
     echo: Echo,
+    decision_time: Option<u64>,
     image: Arc<Mutex<Vec<u8>>>,
     #[cfg(target_os = "linux")]
     disk: Option<Mutex<crate::modules::services::linux::FileStore>>,
@@ -22,10 +23,16 @@ impl Durable {
         };
         Ok(Self {
             echo,
+            decision_time: None,
             image,
             #[cfg(target_os = "linux")]
             disk: None,
         })
+    }
+    // Enable a deterministic decision sample for the template variant of this fixture.
+    pub(in crate::modules::services) fn with_decision_time(mut self, time: Option<u64>) -> Self {
+        self.decision_time = time;
+        self
     }
     // Recover an independently locked protected test-family store for real process-boundary evidence.
     #[cfg(target_os = "linux")]
@@ -108,6 +115,54 @@ impl Provider for Durable {
         let t = self.echo.prepare(k, e)?;
         self.save()?;
         Ok(t)
+    }
+    // Fixture selection remains stable when the observable clock value changes across restart.
+    fn requires_finalization(&self, _: &Invocation, _: &Value) -> bool {
+        self.decision_time.is_some()
+    }
+    // The echo template fixes the original text, which can only acquire a time suffix.
+    fn validate_template(
+        &self,
+        _: &Invocation,
+        input: &Value,
+        template: &Completion,
+    ) -> Result<(), Error> {
+        if &template.output != input {
+            return Err(Error::Invalid);
+        }
+        Ok(())
+    }
+    // Sample the supplied time once and refuse unrepresentable retention before commitment.
+    fn finalize(
+        &self,
+        _: OperationKey,
+        _: &Blob,
+        template: &Completion,
+    ) -> Result<Completion, Error> {
+        let sample = self.decision_time.ok_or(Error::Unsupported)?;
+        let expires = sample.checked_add(10).ok_or(Error::Limit)?;
+        let Value::String(input) = &template.output else {
+            return Err(Error::Invalid);
+        };
+        let result = format!("{input}:{sample}:{expires}");
+        Ok(Completion {
+            output: Value::String(result.clone()),
+            result: Blob::new(result.into_bytes(), 256)?,
+            price: template.price,
+            effect: template.effect.clone(),
+        })
+    }
+    // Apply the prepared echo effect through the original token, even if the resumed clock has moved.
+    fn commit_finalized(
+        &self,
+        key: OperationKey,
+        token: &Blob,
+        template: &Completion,
+        finalized: &Completion,
+    ) -> Result<(), Error> {
+        assert!(finalized.effect == template.effect);
+        assert!(finalized.result != template.result);
+        self.commit(key, token)
     }
     // Persist commitment before an acknowledgement can be lost.
     fn commit(&self, k: OperationKey, t: &Blob) -> Result<(), Error> {

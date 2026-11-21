@@ -46,6 +46,7 @@ pub(super) struct Operation {
     pub input: Option<Value>,
     pub completion: Option<Completion>,
     pub handler: Option<Blob>,
+    pub finalized: Option<Completion>,
 }
 // Shared local image budgets include opaque result bytes; decoding is independent of peer JSON.
 fn budget(l: Limits) -> Budget {
@@ -113,7 +114,7 @@ fn retained_bodies(
                 .checked_sub(input.body_count(budget(limits))?)
                 .ok_or(Error::Limit)?;
         }
-        if let Some(completion) = &op.completion {
+        for completion in op.completion.iter().chain(&op.finalized) {
             let count = completion
                 .output
                 .body_count(budget(limits))?
@@ -261,16 +262,16 @@ impl Operation {
                 Value::Uint64(milliseconds),
             ],
         };
-        let completion = self.completion.as_ref().map(|c| {
+        let encode_completion = |c: &Completion| {
             Value::Array(vec![
                 c.output.clone(),
                 Value::Bytes(c.result.bytes().to_vec()),
                 Value::Uint64(c.price),
                 Value::Bytes(c.effect.bytes().to_vec()),
             ])
-        });
+        };
         let t = &self.terms;
-        Ok(Value::Array(vec![
+        let mut fields = vec![
             Value::Bytes(self.key.requester.0.to_vec()),
             Value::Bytes(self.key.connection.to_vec()),
             Value::Uint32(self.key.stream),
@@ -289,7 +290,7 @@ impl Operation {
             Value::Array(price),
             Value::Uint32(self.phase as u32),
             optional(self.input.clone()),
-            optional(completion),
+            optional(self.completion.as_ref().map(encode_completion)),
             optional(
                 self.handler
                     .as_ref()
@@ -298,14 +299,18 @@ impl Operation {
             Value::Uint64(self.input_bytes),
             self.factors.clone(),
             optional(self.check.as_ref().map(super::checks::Info::value)),
-        ]))
+        ];
+        if let Some(finalized) = &self.finalized {
+            fields.push(encode_completion(finalized));
+        }
+        Ok(Value::Array(fields))
     }
     // Require exact field count/kinds and revalidate immutable amount/role/phase associations on restart.
     fn parse(value: &Value, local: IdentityId) -> Result<Self, Error> {
         let Value::Array(v) = value else {
             return Err(Error::Invalid);
         };
-        if v.len() != 23 {
+        if !matches!(v.len(), 23 | 24) {
             return Err(Error::Invalid);
         }
         let key = OperationKey {
@@ -352,22 +357,21 @@ impl Operation {
             8 => Phase::Aborted,
             _ => return Err(Error::Invalid),
         };
-        let completion = some(&v[18])?
-            .map(|v| {
-                let Value::Array(c) = v else {
-                    return Err(Error::Invalid);
-                };
-                if c.len() != 4 {
-                    return Err(Error::Invalid);
-                }
-                Ok(Completion {
-                    output: c[0].clone(),
-                    result: Blob::new(bytes(&c[1])?, usize::MAX)?,
-                    price: amount(&c[2])?,
-                    effect: Blob::new(bytes(&c[3])?, usize::MAX)?,
-                })
+        let decode_completion = |v: &Value| {
+            let Value::Array(c) = v else {
+                return Err(Error::Invalid);
+            };
+            if c.len() != 4 {
+                return Err(Error::Invalid);
+            }
+            Ok(Completion {
+                output: c[0].clone(),
+                result: Blob::new(bytes(&c[1])?, usize::MAX)?,
+                price: amount(&c[2])?,
+                effect: Blob::new(bytes(&c[3])?, usize::MAX)?,
             })
-            .transpose()?;
+        };
+        let completion = some(&v[18])?.map(decode_completion).transpose()?;
         let o = Self {
             key,
             service,
@@ -382,6 +386,7 @@ impl Operation {
             check: some(&v[22])?.map(super::checks::Info::parse).transpose()?,
             input: some(&v[17])?.cloned(),
             completion,
+            finalized: v.get(23).map(decode_completion).transpose()?,
             handler: some(&v[19])?
                 .map(|v| Blob::new(bytes(v)?, usize::MAX))
                 .transpose()?,
@@ -446,13 +451,24 @@ impl Operation {
         {
             return Err(Error::Invalid);
         }
-        if let Some(c) = &o.completion
-            && ((!included && c.price == 0)
-                || c.price > o.terms.maximum
-                || (o.terms.fixed && c.price != o.terms.maximum)
-                || c.effect.bytes().is_empty())
+        if let Some(finalized) = &o.finalized
+            && (!matches!(phase, Phase::Commit | Phase::Committed)
+                || o.check.is_some()
+                || local != o.terms.provider
+                || o.completion
+                    .as_ref()
+                    .is_none_or(|c| c.price != finalized.price))
         {
             return Err(Error::Invalid);
+        }
+        for c in o.completion.iter().chain(&o.finalized) {
+            if (!included && c.price == 0)
+                || c.price > o.terms.maximum
+                || (o.terms.fixed && c.price != o.terms.maximum)
+                || c.effect.bytes().is_empty()
+            {
+                return Err(Error::Invalid);
+            }
         }
         Ok(o)
     }
