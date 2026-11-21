@@ -25,6 +25,11 @@ impl Layout {
         tracing::trace!("Reading the node configuration path");
         self.root.join("node.json")
     }
+    /// Public identity text written at initialization so inspection never needs the store lock.
+    pub fn public_id(&self) -> PathBuf {
+        tracing::trace!("Reading the node public identity path");
+        self.root.join("public-id")
+    }
     /// Protected Identity store directory.
     pub fn identity(&self) -> PathBuf {
         tracing::trace!("Reading the node identity path");
@@ -70,6 +75,7 @@ mod tests {
         let layout = Layout::new("/n");
         let paths = [
             layout.config(),
+            layout.public_id(),
             layout.identity(),
             layout.board(),
             layout.services(),

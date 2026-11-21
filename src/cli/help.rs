@@ -11,6 +11,7 @@ pub(super) enum Topic {
     Services,
     PeerProtocol,
     Storage,
+    Node,
     ServerOptions,
     Logging,
 }
@@ -26,6 +27,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Node,
+        names: &["node-init", "node-show", "--node-root", "--config"],
+        label: "node-init | node-show",
+        summary: "Create or inspect a minimum useful node root.",
+        details: "Usage: talksphere node-init --node-root DIRECTORY [--config FILE] | talksphere node-show --node-root DIRECTORY\n\nnode-init creates a fresh owner-only node root with its own protected identity and every durable owner (Board, Services, Ledger, Storage, lease catalog). The optional --config FILE is a node.json document (version 1; optional offering, capacity, credits and control members); omitted members use finite defaults and an explicit \"offering\": null makes a requester-only node. The document is validated before anything is created. An existing root with content is refused untouched; a failure after creation leaves the partial root for inspection. Output is only the public CR2SE ID.\nnode-show reads the root without starting it or taking any lock and reports identity, role, capacity, cataloged leases, initialized or incomplete state and whether the control socket exists.\nInvalid syntax exits with status 2; runtime failures exit 1 and explain the problem on stderr; success and help exit 0. See plans/10_Minimum_node/PLAN.md.\n",
+    },
     HelpTopic {
         topic: Topic::Storage,
         names: &["storage"],

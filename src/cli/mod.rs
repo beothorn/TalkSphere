@@ -5,6 +5,7 @@ mod board;
 mod help;
 mod identity;
 mod ledger;
+mod node;
 mod serve;
 mod server_args;
 
@@ -30,6 +31,8 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
         Ok(Command::ServeConfigured(_)
             | Command::Identity { .. }
             | Command::Board { .. }
+            | Command::NodeInit { .. }
+            | Command::NodeShow { .. }
             | Command::Ledger { .. })
     ) && let Err(error) = crate::composition::logging::initialize()
     {
@@ -91,6 +94,26 @@ pub fn run(arguments: impl IntoIterator<Item = OsString>) -> ExitCode {
             }
             Err(error) => {
                 tracing::error!(%error,"Identity operation failed; exiting without replacement");
+                ExitCode::FAILURE
+            }
+        },
+        Ok(Command::NodeInit { root, config }) => match node::init(&root, config.as_deref()) {
+            Ok(public) => {
+                println!("{public}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                tracing::error!(%error,"Node initialization failed; existing state is unchanged");
+                ExitCode::FAILURE
+            }
+        },
+        Ok(Command::NodeShow { root }) => match node::show(&root) {
+            Ok(output) => {
+                print!("{output}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                tracing::error!(%error,"Node inspection failed");
                 ExitCode::FAILURE
             }
         },

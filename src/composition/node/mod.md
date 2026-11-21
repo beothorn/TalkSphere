@@ -11,3 +11,4 @@ It is Linux-only and does not change the ordinary `serve` composition.
 | [Catalog](catalog.md) | Durable requester lease catalog |
 | [Offering](offering.md) | Validated Storage offering and definition |
 | [Owners](owners.md) | Open, create and recover every durable owner |
+| [Initialization](init.md) | Explicit creation and read-only inspection of a node root |

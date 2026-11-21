@@ -11,7 +11,7 @@ Storage over real connections.
 
 - [x] **1.** Reconcile the minimum-profile requirements with the completed module evidence.
 - [x] **2.** Define the node state layout and validated node configuration.
-- [ ] **3.** Add explicit node initialization and inspection commands.
+- [x] **3.** Add explicit node initialization and inspection commands.
 - [x] **4.** Move the native Storage clock and entropy adapters into production composition.
 - [x] **5.** Persist a requester lease catalog in protected durable storage.
 - [x] **6.** Load the provider Storage offering and capacity limits from operator configuration.

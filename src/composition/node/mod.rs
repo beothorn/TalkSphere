@@ -6,6 +6,7 @@
 pub mod adapters;
 pub mod catalog;
 pub mod config;
+pub mod init;
 pub mod layout;
 pub mod offering;
 pub mod owners;

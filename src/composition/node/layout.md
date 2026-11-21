@@ -1,7 +1,7 @@
 # Node layout
 
 A Layout names one node root and derives the fixed paths inside it: `node.json`
-(configuration), `identity/`, `board/`, `services/`, `ledger/`, `storage/`,
+(configuration), `public-id` (public identity text, so inspection needs no store lock), `identity/`, `board/`, `services/`, `ledger/`, `storage/`,
 `catalog.json` (requester lease catalog) and `control.sock` (local control).
 Computing a path never touches the filesystem. Every owner has its own directory,
 so no module reads another module's private state.

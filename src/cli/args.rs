@@ -19,6 +19,13 @@ pub(super) enum Command {
         path: std::path::PathBuf,
         create: bool,
     },
+    NodeInit {
+        root: std::path::PathBuf,
+        config: Option<std::path::PathBuf>,
+    },
+    NodeShow {
+        root: std::path::PathBuf,
+    },
 }
 
 // Match supported forms and reject unknown or extra arguments with a usage error.
@@ -87,6 +94,37 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, String> {
             Ok(Command::Identity {
                 path: path.into(),
                 create: command == "identity-init",
+            })
+        }
+        [command, option]
+            if matches!(command.as_str(), "node-init" | "node-show")
+                && matches!(option.as_str(), "--help" | "-h") =>
+        {
+            Ok(Command::Help(Topic::Node))
+        }
+        [command, option, root]
+            if command == "node-show" && option == "--node-root" && !root.is_empty() =>
+        {
+            Ok(Command::NodeShow { root: root.into() })
+        }
+        [command, option, root]
+            if command == "node-init" && option == "--node-root" && !root.is_empty() =>
+        {
+            Ok(Command::NodeInit {
+                root: root.into(),
+                config: None,
+            })
+        }
+        [command, option, root, flag, file]
+            if command == "node-init"
+                && option == "--node-root"
+                && !root.is_empty()
+                && flag == "--config"
+                && !file.is_empty() =>
+        {
+            Ok(Command::NodeInit {
+                root: root.into(),
+                config: Some(file.into()),
             })
         }
         [command, tail @ ..] if command == "serve" && tail.len() > 1 => {
@@ -179,6 +217,42 @@ mod tests {
             assert_eq!(
                 parse_words(&[command, "--help"]),
                 Ok(Command::Help(Topic::Identity))
+            );
+        }
+    }
+
+    // Node administration needs an explicit nonempty root and accepts only the documented forms.
+    #[test]
+    fn node_commands_require_an_explicit_root() {
+        assert!(matches!(
+            parse_words(&["node-init", "--node-root", "r"]),
+            Ok(Command::NodeInit { config: None, .. })
+        ));
+        assert!(matches!(
+            parse_words(&["node-init", "--node-root", "r", "--config", "c.json"]),
+            Ok(Command::NodeInit {
+                config: Some(_),
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_words(&["node-show", "--node-root", "r"]),
+            Ok(Command::NodeShow { .. })
+        ));
+        for words in [
+            vec!["node-init"],
+            vec!["node-init", "--node-root"],
+            vec!["node-init", "--node-root", ""],
+            vec!["node-init", "--node-root", "r", "--config"],
+            vec!["node-show", "--node-root", "r", "extra"],
+            vec!["node-show", "--config", "x"],
+        ] {
+            assert!(parse_words(&words).is_err(), "accepted {words:?}");
+        }
+        for command in ["node-init", "node-show"] {
+            assert_eq!(
+                parse_words(&[command, "--help"]),
+                Ok(Command::Help(Topic::Node))
             );
         }
     }
