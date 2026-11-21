@@ -10,6 +10,7 @@ pub(super) enum Topic {
     Ledger,
     Services,
     PeerProtocol,
+    Storage,
     ServerOptions,
     Logging,
 }
@@ -25,6 +26,13 @@ pub(super) struct HelpTopic {
 // The overview and detailed help share these definitions. Every new command
 // or option needs a topic here and corresponding parser/behavior tests.
 pub(super) const TOPICS: &[HelpTopic] = &[
+    HelpTopic {
+        topic: Topic::Storage,
+        names: &["storage"],
+        label: "help storage",
+        summary: "Exercise native paid Storage over authenticated loopback.",
+        details: "Usage: talksphere help storage\n\nRun cargo run --locked --example storage -- run on Linux. Creates private temporary owners and authenticated loopback listeners. Stores 5000 bytes for 60 seconds, reopens the provider's native journals, then retrieves, checks, renews and removes the lease. Each lease represents one independently owned copy. RUST_LOG controls stderr logging. Detailed example help is cargo run --locked --example storage -- help run. Help exits with status 0. Example failures use status 1 and invalid syntax uses status 2. See docs/storage/EXERCISE.md.\n",
+    },
     HelpTopic {
         topic: Topic::PeerProtocol,
         names: &["peer-protocol"],

@@ -1,5 +1,5 @@
 //! Real protected Identity and TCP reactor composition for the explicitly authorized finite demonstration.
-use super::{failure, owners::Endpoint};
+use super::failure;
 use std::{
     path::Path,
     sync::Arc,
@@ -19,7 +19,12 @@ use talksphere::{
             self,
             api::{IdentityId, IdentityProvider},
         },
-        peer_protocol::{self as peer, engine::bridge::Bridge},
+        ledger,
+        peer_protocol::{
+            self as peer,
+            engine::{bridge::Bridge, endpoint::Endpoint},
+        },
+        services,
         transport::{api::*, handles::ConnectionHandle},
     },
 };
@@ -50,7 +55,14 @@ pub(super) fn identity(path: &Path) -> Result<IdentityId, String> {
 }
 impl Node {
     // Load the already initialized protected credential and explicitly register this complete custom-service endpoint.
-    pub(super) fn new(path: &Path, endpoint: Endpoint, signal: Signal) -> Result<Self, String> {
+    pub(super) fn new<
+        P: services::persistence::Persistence + 'static,
+        L: ledger::persistence::Persistence + 'static,
+    >(
+        path: &Path,
+        endpoint: Endpoint<P, L>,
+        signal: Signal,
+    ) -> Result<Self, String> {
         tracing::trace!("Composing an explicit authenticated example node");
         let config = Config::new(Options::local(path.into()).map_err(failure)?).map_err(failure)?;
         let credentials = server::credentials::load(&config, false).map_err(failure)?;
@@ -106,7 +118,7 @@ impl Node {
         }
     }
     // Poll bounded actual Transport events before asynchronous peer work; payloads never enter diagnostics.
-    fn poll(&mut self) -> Result<(), String> {
+    pub(super) fn poll(&mut self) -> Result<(), String> {
         tracing::trace!("Polling a bounded example node turn");
         let mut cx = Context::from_waker(&self.waker);
         for _ in 0..64 {
@@ -128,9 +140,12 @@ impl Node {
             .map_err(failure)
     }
     // Explicit local request plans retain original scope, local consent and the actual normal-completion gate.
-    pub(super) fn request(
+    pub(super) fn request<
+        P: services::persistence::Persistence + 'static,
+        L: ledger::persistence::Persistence + 'static,
+    >(
         &mut self,
-        endpoint: &Endpoint,
+        endpoint: &Endpoint<P, L>,
         connection: &ConnectionHandle,
         plan: peer::engine::endpoint::requests::Plan,
     ) -> Result<std::sync::mpsc::Receiver<peer::engine::endpoint::requests::Completion>, String>

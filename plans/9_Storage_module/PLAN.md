@@ -1,6 +1,6 @@
 # Storage module plan
 
-Status: implementation authorized; steps 1–27 are complete. Provider composition and acceptance coverage continue in steps 28–38.
+Status: implementation authorized; steps 1–27, 29–30 and 35–36 are complete. Provider lifecycle, settlement and final acceptance work remain.
 
 This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 
@@ -34,14 +34,14 @@ This is roadmap milestone 10 and planning folder 9, following Peer Protocol.
 - [x] **26.** Implement authorized paid byte evidence.
 - [x] **27.** Verify byte challenges using private expectations and trusted timing.
 - [ ] **28.** Register Storage handlers and publish usable offerings.
-- [ ] **29.** Bind Storage requester operations to Peer Protocol.
-- [ ] **30.** Support wanted Storage with requester-owned consent.
+- [x] **29.** Bind Storage requester operations to Peer Protocol.
+- [x] **30.** Support wanted Storage with requester-owned consent.
 - [ ] **31.** Verify Storage accounting across supported payment modes.
 - [ ] **32.** Exercise crash recovery at every coordination boundary.
 - [ ] **33.** Verify concurrent operations and resource isolation.
 - [ ] **34.** Exercise persistent Storage between authenticated node processes.
-- [ ] **35.** Exercise encrypted recovery from independent providers.
-- [ ] **36.** Add a discoverable Storage exercise and detailed help.
+- [x] **35.** Exercise encrypted recovery from independent providers.
+- [x] **36.** Add a discoverable Storage exercise and detailed help.
 - [ ] **37.** Complete the Storage acceptance matrix.
 - [ ] **38.** Publish the Storage completion and minimum-node handoff.
 
@@ -388,34 +388,11 @@ Do not enable an incomplete intermediate provider in the normal server profile.
 
 ### 29. Bind Storage requester operations to Peer Protocol
 
-Partial progress: [real requester integration tests](../../src/modules/storage/requester/client/PEER.md)
-exercise public cached selection, ordinary/check proposals, exact quote consent,
-bounded detached transfer, terminal result gates and actual requester Services/
-Ledger decisions. Remote replies/currentness are controlled test inputs and
-ordinary local journals are volatile. Separate [native requester recovery tests](../../src/modules/storage/requester/client/RECOVERY.md)
-now reopen independent Services/Ledger files with exact results/charges and lost
-acknowledgements; full provider-backed requester binding remains incomplete. Keep this step unchecked until those remaining paths pass.
-
-Construct locally authorized store/retrieve/renew/remove/check plans with explicit
-input and spending consent, authenticated provider selection and bounded body
-ownership. Feed complete results into independent Storage verification and durable
-requester coordination. Test detached bodies, final markers, stream failure and
-changed terms; generic Storage cannot opt into Messaging's cached-retry path.
+The authenticated exercise connects the installed requester to actual protected provider and requester owners. It completes all four ordinary operations and a separately paid check across a provider restart. Original quote, body and failure boundaries are also exercised by the requester wire tests. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 30. Support wanted Storage with requester-owned consent
 
-Partial requester evidence: [Peer integration tests and scope](../../src/modules/storage/requester/client/PEER.md)
-exercise actual local wanted publication, trusted input/spending policy, reversed
-stream roles, exact consent and finite requester issuance. Unauthorized invitations,
-policy refusal and publication withdrawal before/during input choice leave funds
-untouched. Remote Storage output is controlled; the actual provider, contribution
-spend-back and follow-up leased operations remain unverified. Keep this step unchecked.
-
-Allow an initial store through a wanted offering while the publisher retains
-input, encryption and spending authority. Preserve requester/provider/issuer roles
-when the provider opens the stream; later operations select current provided
-terms at the actual lease provider. Test unauthorized invitations, finite
-requester-issued credits and the contribution path described in AT-E02.
+The authenticated wanted fixture uses requester-owned input and consent, a provider-opened stream and finite requester issuance. It verifies zero initial credits, a 17-credit contribution, and a later three-credit spend at the issuer. The focused requester wire tests cover refused and stale invitations. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 31. Verify Storage accounting across supported payment modes
 
@@ -467,30 +444,15 @@ logs without keys, raw content or foreign lease metadata.
 
 ### 34. Exercise persistent Storage between authenticated node processes
 
-Extend real node/process harnesses with actual Storage, protected Identity,
-Cryptography, Board, Services and Ledger adapters. Store nonempty and detached
-payloads, restart the provider, retrieve verified bytes, then renew/check/remove
-under current terms with optional families absent. Include unauthorized peers,
-interrupted uploads and lost output. Record genuine process/disk evidence separately
-from injected crash tests and from independent-implementation interoperability.
+The authenticated Storage process fixture now restarts a separate provider against its original native Board, Services, Ledger and Storage owners. It exercises detached bodies, all five paid operations, exact balances and refusal after removal. Remaining process fault and unauthorized-peer cases stay open. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 35. Exercise encrypted recovery from independent providers
 
-Cover ST-13 and AT-E03 with requester-side authenticated encryption, separate B/C
-leases and independently retained keys/catalog. Discard requester working data,
-take B offline, restore the same coordinated requester identity and recover,
-hash-check and decrypt from C. Demonstrate that repeated leases at one identity
-do not establish independent redundancy and keys never reach providers. Keep
-this an application integration fixture, not a new Storage replication service.
+The encrypted replica test stores at two independent providers, retains protected Identity backup and catalog separately, removes the working requester identity, restores it and authenticates to the surviving provider. It verifies the ciphertext hash and decrypts through the restored identity. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 36. Add a discoverable Storage exercise and detailed help
 
-Provide an explicit runnable persistent Storage example with finite budgets,
-trusted contacts and isolated state directories; no-argument invocation shows
-help without creating state or opening sockets. Document build/run/test, restart,
-all operations, logging, cleanup and the limits of one provider copy. Update root
-and module READMEs, overview/detailed CLI discovery and tests for options and exit
-statuses together; preserve the separate minimum-node composition milestone.
+The Storage example, root help topic and run guide cover the finite native loopback profile, provider reopen, all operations, logging, cleanup and exit statuses. See the [native exercise and tests](../../docs/storage/EXERCISE.md).
 
 ### 37. Complete the Storage acceptance matrix
 

@@ -27,7 +27,7 @@ Its [acceptance matrix](src/modules/peer_protocol/ACCEPTANCE.md) includes indepe
 wire vectors, real-node/process exchanges, third-party settlement and protected
 issuer restart, with clear standard-family and timeout limits. A runnable custom
 two-node example uses real module owners with explicitly volatile service resources.
-Paid Storage and persistent minimum-node composition remain later milestones.
+Paid Storage now has a native authenticated exercise. Minimum-node composition remains a later milestone.
 This is not yet the minimum useful node or full-feature PoC. See the
 [roadmap](plans/PLAN.md), [Peer Protocol plan](plans/8_Peer_Protocol_module/PLAN.md) and [module guide](src/modules/peer_protocol/README.md), [Services plan](plans/7_Services_module/PLAN.md),
 [Ledger plan](plans/6_Ledger_module/PLAN.md),
@@ -206,6 +206,22 @@ Ledger operation or application protocol.
 Run `cargo run --locked --example ledger` for the bounded volatile accounting
 walkthrough, and see the [Ledger evidence](src/modules/ledger/ACCEPTANCE.md) for
 all local payment modes, failure/replay tests and later composition obligations.
+
+## Native Storage exercise
+
+Run the bounded Linux exercise over authenticated loopback. It stores and
+retrieves a detached object across provider reopen, runs one paid byte check,
+renews and removes the lease, and compares both local account views.
+
+```sh
+cargo run --locked -- help storage
+cargo run --locked --example storage -- run
+cargo test --locked --example storage
+```
+
+The test suite covers a separate provider process, provider-opened wanted
+work and recovery of encrypted bytes from an independent provider.
+See the [Storage exercise guide](docs/storage/EXERCISE.md).
 
 ## Local Services exercise
 

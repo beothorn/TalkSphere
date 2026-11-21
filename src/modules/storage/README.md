@@ -2,7 +2,7 @@
 
 Contract foundations for [CR2SE Storage version 1](https://github.com/beothorn/CR2SE/blob/d40b6278f24430e814d7fa82094f57261bfcac9f/modules/storage/README.md).
 Implementation is in progress under the [38-step plan](../../../plans/9_Storage_module/PLAN.md).
-The library provides an installable Storage handler. The runnable Storage exercise remains pending.
+The library provides an installable handler and an authenticated Linux exercise.
 
 Services will call requester/provider contracts and coordinate Ledger decisions.
 Storage owns immutable byte leases, durable effects and results; Board owns
@@ -192,3 +192,5 @@ preserving exact retained results and one charge. Native payment tests also reta
 finite issuance and third-party payment state through requester/issuer reopen.
 Authenticated provider processes
 and full Storage participant recovery remain separate pending requirements.
+
+Run `cargo run --locked -- help storage` or follow the [native exercise guide](../../../docs/storage/EXERCISE.md).

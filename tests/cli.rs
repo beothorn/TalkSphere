@@ -140,3 +140,13 @@ fn peer_protocol_help_explains_explicit_nodes_and_configuration() {
         assert!(details.contains(text), "{details}");
     }
 }
+
+// The Storage topic advertises the explicit Linux exercise and exposes detailed help without acquiring state.
+#[test]
+fn storage_help_describes_the_native_exercise() {
+    assert!(successful_stdout(&["--help"]).contains("help storage"));
+    let details = successful_stdout(&["help", "storage"]);
+    assert!(details.contains("cargo run --locked --example storage -- run"));
+    assert!(details.contains("cargo run --locked --example storage -- help run"));
+    assert!(details.contains("RUST_LOG"));
+}

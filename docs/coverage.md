@@ -285,3 +285,9 @@ Storage decision-time lease creation and native provider integration measured
 and required checks passed. The provider fixture exercises Board publication,
 all four ordinary operations, exact settlement and native owner stores. LLVM
 skipped one invalid profile under the documented failure-mode procedure.
+
+The authenticated Storage exercise checkpoint passed all 735 library tests,
+the full contributor checks and all six example tests. The native process
+restart, encrypted replica restore, wanted contribution and deliberate
+run/help commands succeeded. Production line coverage was **93.85%**
+(24529/26135) under the library coverage procedure.
