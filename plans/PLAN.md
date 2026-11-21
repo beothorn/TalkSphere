@@ -91,11 +91,12 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   [#11](https://github.com/beothorn/CR2SE/issues/11) and
   [#12](https://github.com/beothorn/CR2SE/issues/12) are resolved. The ordinary `serve` profile does not install
   paid Storage. See the [Storage handoff](../src/modules/storage/HANDOFF.md).
-- [ ] **11. Minimum useful node milestone.** Compose the eight required modules
+- [ ] **11. [Minimum useful node milestone](10_Minimum_node/PLAN.md).** Compose the eight required modules
   with authorized local control and configured contacts. Demonstrate a paid
   nonempty store, restart and verified paid retrieval between two identities,
   then renewal/check/removal, finite credits, failures and concurrent spends.
   Run with every optional module absent; advertise only working capabilities.
+  The 25-step detailed plan is drafted for review and not yet authorized.
 - [ ] **12. Full client journey.** Create a full client journey where two clients
   shares storages, get credits and are able to send messages. The server is able to
   save and retrieve a file.
