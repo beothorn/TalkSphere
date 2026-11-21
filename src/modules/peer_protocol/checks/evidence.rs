@@ -341,8 +341,16 @@ impl Receiver {
                 Ok(observed)
             }
             Phase::Failure(failure) => {
-                runtime.decline(services_context, peer)?;
-                runtime.abort(services_context, peer.key)?;
+                if failure.code == super::super::failure::Code::StorageByteUnavailable {
+                    let stamp = match stamp {
+                        Some(stamp) => stamp,
+                        None => self.clock.mark()?.1,
+                    };
+                    runtime.check_unavailable(services_context, peer, stamp)?;
+                } else {
+                    runtime.decline(services_context, peer)?;
+                    runtime.abort(services_context, peer.key)?;
+                }
                 Err(failure.code.error())
             }
             _ => Err(Error::Invalid),

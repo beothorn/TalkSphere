@@ -28,6 +28,29 @@ pub trait Resume {
     /// # Errors
     /// Missing, unavailable or uncertain coordination must fail without implying abort.
     fn resume(&self, key: OperationKey) -> Result<Phase, Error>;
+    /// Enumerate original unresolved local Storage provider operations.
+    /// # Errors
+    /// Unavailable coordinator state prevents new admission.
+    fn pending_storage(&self) -> Result<Vec<OperationKey>, Error> {
+        tracing::trace!("Using an empty pending-work inventory for an isolated Storage owner");
+        Ok(vec![])
+    }
+
+    /// Recover an unresolved Services entry without an installed Storage record.
+    /// # Errors
+    /// Absence of a family record cannot undo a recorded commit.
+    fn recover_absent(&self, _key: OperationKey) -> Result<Phase, Error> {
+        tracing::trace!("Refusing unowned coordinator-only Storage recovery");
+        Err(Error::Unknown)
+    }
+
+    /// Resolve an original staged upload whose exact immutable object was never installed.
+    /// # Errors
+    /// Missing authority or any potentially committed decision fails without cleanup.
+    fn abort_unfinished_upload(&self, _key: OperationKey) -> Result<Phase, Error> {
+        tracing::trace!("Refusing unavailable Storage upload abort authority");
+        Err(Error::Unknown)
+    }
 }
 /// Direct public Services recovery adapter; caller grants/deadlines remain enforced by Services.
 pub struct Services<'a, P: Persistence> {
@@ -46,6 +69,33 @@ impl<P: Persistence> Resume for Services<'_, P> {
     fn resume(&self, key: OperationKey) -> Result<Phase, Error> {
         tracing::trace!("Resuming original Storage coordination through Services");
         self.coordinator.resume(self.context, key)
+    }
+    // Only this local coordinator can enumerate its unresolved provider work.
+    fn pending_storage(&self) -> Result<Vec<OperationKey>, Error> {
+        tracing::trace!("Enumerating original pending Storage work through Services");
+        self.coordinator
+            .pending_provider(self.context, "cr2se.storage", 1)
+    }
+
+    // Confirm an absent Storage participant from the recovered owner before reconciling its Services record.
+    fn recover_absent(&self, key: OperationKey) -> Result<Phase, Error> {
+        tracing::trace!(
+            "Reconciling original requester reservations for Storage without a family effect"
+        );
+        self.coordinator
+            .recover_absent_provider(self.context, key, "cr2se.storage", 1)
+    }
+
+    // Make one explicit local decision through Services, which refuses any contradictory persisted choice.
+    fn abort_unfinished_upload(&self, key: OperationKey) -> Result<Phase, Error> {
+        tracing::trace!("Resolving a known uninstalled original Storage upload");
+        self.coordinator.decide(
+            self.context,
+            key,
+            crate::modules::services::runtime::Decision::Abort,
+        )?;
+        self.coordinator.abort(self.context, key)?;
+        Ok(Phase::Aborted)
     }
 }
 struct Admission {
@@ -101,14 +151,47 @@ impl Gate {
         if coordinator.local_identity() != image.provider {
             return Err(Error::Denied);
         }
+        let limits = self.journal.image_limits();
+        let maximum = limits
+            .leases
+            .checked_add(limits.operations)
+            .ok_or(Error::Limit)?;
+        let inventory = self.bytes.inventory(maximum)?;
         for record in &image.operations {
-            let phase = coordinator.resume(record.key)?;
+            let effect = super::effect::Effect::decode(
+                record.completion.effect.bytes(),
+                image.provider,
+                limits,
+            )?;
+            let unfinished = matches!(record.status, Stage::Staged)
+                && matches!(effect, super::effect::Effect::CreateTemplate(ref lease)
+                    if !inventory.iter().any(|entry| entry.id == lease.id && !entry.pending));
+            let phase = if unfinished {
+                coordinator.abort_unfinished_upload(record.key)?
+            } else {
+                coordinator.resume(record.key)?
+            };
             let status = self.journal.status(record.key)?;
+            if phase == Phase::Aborted
+                && let super::effect::Effect::CreateTemplate(lease) = effect
+            {
+                self.discard_aborted_upload(lease.id)?;
+            }
             if !matches!(
                 (phase, status),
                 (Phase::Committed, Some(Stage::Committed(_)))
                     | (Phase::Aborted, Some(Stage::Aborted(_)))
             ) {
+                return Err(Error::Unknown);
+            }
+        }
+        for key in coordinator.pending_storage()? {
+            if self.journal.status(key)?.is_some()
+                || !matches!(
+                    coordinator.recover_absent(key)?,
+                    Phase::Committed | Phase::Aborted
+                )
+            {
                 return Err(Error::Unknown);
             }
         }
@@ -205,6 +288,13 @@ impl Gate {
         effect: &crate::modules::services::handler::Blob,
     ) -> Result<crate::modules::services::handler::Blob, Error> {
         tracing::trace!("Delivering Storage recovery preparation");
+        let (image, limits) = self.snapshot()?;
+        if let super::effect::Effect::CreateTemplate(lease) =
+            super::effect::Effect::decode(effect.bytes(), image.provider, limits)?
+            && !matches!(self.journal.status(key)?, Some(Stage::Committed(_)))
+        {
+            self.bytes.reopen(lease.id, lease.size_bytes)?;
+        }
         self.observe(self.journal.prepare(key, effect))
     }
     /// Deliver the coordinator's immutable commit while new work remains gated.
@@ -257,7 +347,7 @@ impl Gate {
     ) -> Result<(), Error> {
         tracing::trace!("Delivering Storage recovery abort");
         self.observe(self.journal.abort(key, token))?;
-        let cleanup = (|| {
+        let cleanup: Result<(), Error> = (|| {
             let image = self.journal.snapshot()?;
             let record = image
                 .operations
@@ -269,15 +359,23 @@ impl Gate {
                 image.provider,
                 self.journal.image_limits(),
             )?;
-            if let super::effect::Effect::CreateTemplate(lease) = effect
-                && !self.bytes.reclaim(lease.id)?
-            {
-                return Err(Error::Unknown);
+            if let super::effect::Effect::CreateTemplate(lease) = effect {
+                self.discard_aborted_upload(lease.id)?;
             }
             Ok(())
         })();
         self.terminal(key, cleanup.map_err(|_| Error::Unknown))
     }
+    // Reconcile both paths after a known abort, including lost physical cleanup acknowledgements.
+    fn discard_aborted_upload(&self, id: [u8; 32]) -> Result<(), Error> {
+        tracing::trace!("Discarding byte resources for a durably aborted Storage upload");
+        self.bytes.discard_upload(id)?;
+        if !self.bytes.reclaim(id)? {
+            return Err(Error::Unknown);
+        }
+        Ok(())
+    }
+
     // Close admission immediately when any lifecycle write may have installed an unacknowledged image.
     fn observe<T>(&self, result: Result<T, Error>) -> Result<T, Error> {
         tracing::trace!("Preserving Storage admission gate across participant uncertainty");

@@ -516,10 +516,21 @@ impl<P: services::persistence::Persistence + 'static, L: ledger::persistence::Pe
             crate::modules::transport::api::StreamOutcome::Completed
         );
         let order = self.exchange.close(normal);
-        let result = if normal {
-            order.and_then(|_| self.finish())
-        } else {
-            Err(Error::Unknown)
+        let timeout = match self.state.as_ref() {
+            Some(State::Check(check)) => check.timed_out(
+                self.owner.as_ref(),
+                self.closed_at.unwrap_or_else(Instant::now),
+            ),
+            _ => Ok(false),
+        };
+        let result = match timeout {
+            Ok(true) => Err(Error::Unknown),
+            Ok(false) if normal => order.and_then(|_| self.finish()),
+            Ok(false) => Err(Error::Unknown),
+            Err(error) => {
+                self.cause.get_or_insert(error);
+                Err(Error::Unknown)
+            }
         };
         let _ = self.completed.try_send(Completion {
             scope: self.scope,

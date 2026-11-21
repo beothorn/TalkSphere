@@ -20,6 +20,26 @@ pub(super) fn pin(pins: &mut BTreeMap<[u8; 32], Weak<()>>, id: [u8; 32]) -> Arc<
     pin
 }
 impl Store {
+    // Remove provisional names only after the trusted owner has a durable abort for this exact ID.
+    pub(crate) fn discard_upload(&self, id: [u8; 32]) -> Result<(), Error> {
+        tracing::trace!("Discarding provisional upload after the original durable abort");
+        let path = name(id, true);
+        match fs::openat(
+            &self.0.file,
+            &path,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
+            Mode::empty(),
+        ) {
+            Ok(file) => {
+                fs_support::protected(&File::from(file), false)?;
+                fs::unlinkat(&self.0.file, path, AtFlags::empty()).map_err(|_| Error::Storage)?;
+            }
+            Err(rustix::io::Errno::NOENT) => {}
+            Err(_) => return Err(Error::Storage),
+        }
+        self.0.file.sync_all().map_err(|_| Error::Unknown)
+    }
+
     // Include descriptor-only bytes in accounting even when an external failure removed their directory name.
     pub(crate) fn has_pins(&self, id: [u8; 32]) -> Result<bool, Error> {
         tracing::trace!("Checking retained Storage object lifetimes before reclamation");

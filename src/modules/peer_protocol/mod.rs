@@ -23,6 +23,8 @@ pub enum Error {
     Insufficient,
     /// Known precommit storage refusal.
     Storage,
+    /// An authorized active Storage check cannot read the original byte.
+    EvidenceUnavailable,
     /// Effects may have committed; consult owner status.
     Unknown,
     /// Required dependency unavailable.
@@ -83,6 +85,7 @@ impl From<crate::modules::services::Error> for Error {
             Source::Conflict => Self::Conflict,
             Source::Insufficient => Self::Insufficient,
             Source::Storage => Self::Storage,
+            Source::EvidenceUnavailable => Self::EvidenceUnavailable,
             Source::Unknown => Self::Unknown,
             Source::Unavailable => Self::Unavailable,
         }

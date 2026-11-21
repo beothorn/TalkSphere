@@ -26,6 +26,10 @@ epochs yield Ambiguous. The response clock begins after the complete challenge i
 sent. Counter overflow fails explicitly. Included attempts and all replay bindings
 are journaled in the same operation namespace as ordinary work.
 
+Rules.unavailable_outcome interprets a timely, authenticated, uncharged
+storage_byte_unavailable report using private expectations; its default is
+Inconclusive, and lost evidence or generic refusal never counts as failure.
+
 Rules.evidence_schema explicitly describes provider evidence separately from the
 requester-computed check.output; its conservative default is Unsupported. Known
 standard Peer Protocol bindings use their specified evidence fields independently.

@@ -431,7 +431,19 @@ impl Operation {
             return Err(Error::Invalid);
         }
         if let Some(info) = &o.check {
-            if (info.received.is_some() || info.delivery == Some(super::checks::Delivery::Complete))
+            if info.unavailable
+                && (o.service != "cr2se.storage"
+                    || local != o.terms.requester
+                    || local == o.terms.provider
+                    || info.included()
+                    || info.received.is_none()
+                    || o.completion.is_some()
+                    || !matches!(phase, Phase::Abort | Phase::Aborted))
+            {
+                return Err(Error::Invalid);
+            }
+            if ((info.received.is_some() && !info.unavailable)
+                || info.delivery == Some(super::checks::Delivery::Complete))
                 && o.completion.is_none()
             {
                 return Err(Error::Invalid);

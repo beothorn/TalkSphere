@@ -18,6 +18,8 @@ Confirmed reports:
 
 - [0008: Storage timestamps precede durable acceptance](0008-storage-acceptance-time-before-durability.md) — resolved upstream as [#11](https://github.com/beothorn/CR2SE/issues/11).
 
+- [0009: Unavailable authorized Storage byte has no distinct wire report](0009-storage-byte-unavailable-report.md) — resolved upstream as [#12](https://github.com/beothorn/CR2SE/issues/12).
+
 Use filenames such as `0001-short-description.md`, choosing the next unused
 number, and copy [TEMPLATE.md](TEMPLATE.md). Link the exact upstream revision
 and sections. Include a minimal trace, conflicting statements or vector that

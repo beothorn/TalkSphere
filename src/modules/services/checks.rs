@@ -114,6 +114,16 @@ pub trait Rules: Send + Sync {
     /// # Errors
     /// Malformed/incomplete evidence cannot authorize settlement.
     fn evidence(&self, challenge: &Value, evidence: &Value) -> Result<(), Error>;
+    /// Interpret a bound, timely, uncharged Storage byte-unavailability report using private expectations.
+    fn unavailable_outcome(
+        &self,
+        _challenge: &Value,
+        _expectations: Option<&Value>,
+        _timing: Timing,
+    ) -> super::handler::Check {
+        tracing::trace!("Treating unsupported byte-unavailability reporting as inconclusive");
+        super::handler::Check::Inconclusive
+    }
     /// Calculate requester-local pass/fail/inconclusive from evidence and private expectations.
     fn outcome(
         &self,
@@ -181,6 +191,7 @@ pub(crate) struct Info {
     pub sent: Option<Stamp>,
     pub received: Option<Stamp>,
     pub delivery: Option<Delivery>,
+    pub unavailable: bool,
 }
 impl Info {
     // Stable consent excludes later local timing observations while retaining original allowance/timing terms.
@@ -201,6 +212,9 @@ impl Info {
             Some(Delivery::Incomplete) => 2,
             Some(Delivery::Unknown) => 3,
         }));
+        if self.unavailable {
+            fields.push(Value::Bool(true));
+        }
         Value::Array(fields)
     }
     // Six original binding fields stay byte-compatible; delivery observations are appended only to the mutable image.
@@ -249,6 +263,7 @@ impl Info {
             return Err(Error::Invalid);
         }
         let received = parse_stamp(received)?;
+        let unavailable = matches!(tail, [Value::Uint32(0), Value::Bool(true)]);
         let delivery = match tail {
             [] => Some(
                 if matches!(mode, Mode::Included { .. }) && received.is_some() {
@@ -257,7 +272,7 @@ impl Info {
                     Delivery::Unknown
                 },
             ),
-            [Value::Uint32(0)] => None,
+            [Value::Uint32(0)] | [Value::Uint32(0), Value::Bool(true)] => None,
             [Value::Uint32(1)] => Some(Delivery::Complete),
             [Value::Uint32(2)] => Some(Delivery::Incomplete),
             [Value::Uint32(3)] => Some(Delivery::Unknown),
@@ -275,6 +290,7 @@ impl Info {
             sent: parse_stamp(sent)?,
             received,
             delivery,
+            unavailable,
         })
     }
     // In-flight reservations and uncertain delivery hold capacity without falsely reporting completed consumption.
@@ -341,6 +357,7 @@ mod allowance_codec_tests {
             sent: None,
             received: None,
             delivery: None,
+            unavailable: false,
         };
         let original = info.binding();
         let Value::Array(fields) = &original else {

@@ -244,6 +244,41 @@ impl State {
         }
         Ok(())
     }
+    // Resolve a timed-out original check using true Transport receive time and fresh local recovery authority.
+    pub(super) fn timed_out<
+        P: services::persistence::Persistence,
+        L: ledger::persistence::Persistence,
+    >(
+        &self,
+        owner: &Owner<P, L>,
+        closed_at: Instant,
+    ) -> Result<bool, Error> {
+        tracing::trace!("Reconciling timed-out original requester evidence");
+        let Some(key) = self.key else {
+            return Ok(false);
+        };
+        let config = &owner.config;
+        let grant = config.services.grant(
+            config.local,
+            services::authority::Action::Coordinate,
+            config.limits.state_bytes,
+        )?;
+        let context = services_context(
+            &grant,
+            Instant::now()
+                .checked_add(Duration::from_secs(5))
+                .ok_or(Error::Limit)?,
+        );
+        match config
+            .runtime
+            .check_timeout(&context, key, owner.clock.stamp_at(closed_at)?)
+        {
+            Ok(()) => Ok(true),
+            Err(services::Error::Conflict | services::Error::Unknown) => Ok(false),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     // Original complete-response timing gates evidence and local accounting; private correctness remains inside installed requester rules.
     pub(super) fn finish<
         P: services::persistence::Persistence,

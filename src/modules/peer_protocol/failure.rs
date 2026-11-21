@@ -35,6 +35,8 @@ pub enum Code {
     Conflict,
     /// Provider failed without successful output.
     InternalError,
+    /// Original Storage check reached an authorized active byte that could not be read.
+    StorageByteUnavailable,
     /// Unknown remote code, treated only as a generic failure.
     Unknown,
 }
@@ -53,6 +55,7 @@ impl Code {
             "resource_limit" => Self::ResourceLimit,
             "conflict" => Self::Conflict,
             "internal_error" => Self::InternalError,
+            "storage_byte_unavailable" => Self::StorageByteUnavailable,
             _ => Self::Unknown,
         }
     }
@@ -70,6 +73,7 @@ impl Code {
             Self::ResourceLimit => "resource_limit",
             Self::Conflict => "conflict",
             Self::InternalError => "internal_error",
+            Self::StorageByteUnavailable => "storage_byte_unavailable",
             Self::Unknown => return None,
         })
     }
@@ -87,6 +91,7 @@ impl Code {
             Error::Conflict => Self::Conflict,
             Error::Insufficient => Self::InsufficientCredits,
             Error::Storage | Error::Unavailable => Self::InternalError,
+            Error::EvidenceUnavailable => Self::StorageByteUnavailable,
             Error::Unknown => return Err(Error::Unknown),
         })
     }
@@ -98,6 +103,7 @@ impl Code {
             Self::Unsupported => Error::Unsupported,
             Self::NotAvailable | Self::InternalError | Self::Unknown => Error::Unavailable,
             Self::NotAuthorized => Error::Denied,
+            Self::StorageByteUnavailable => Error::EvidenceUnavailable,
             Self::TermsChanged | Self::Conflict => Error::Conflict,
             Self::PriceRejected | Self::InsufficientCredits => Error::Insufficient,
             Self::ResourceLimit => Error::Limit,

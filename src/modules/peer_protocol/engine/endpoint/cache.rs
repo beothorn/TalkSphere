@@ -196,6 +196,7 @@ impl services::quote::Current for Current {
             Error::Storage => services::Error::Storage,
             Error::Unknown => services::Error::Unknown,
             Error::Unavailable => services::Error::Unavailable,
+            Error::EvidenceUnavailable => services::Error::EvidenceUnavailable,
         })
     }
 }

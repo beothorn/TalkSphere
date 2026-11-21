@@ -95,6 +95,24 @@ impl Rules for Client {
         }
         Ok(())
     }
+    // A complete bound unavailability report is failure only with an independent, active private expectation.
+    fn unavailable_outcome(
+        &self,
+        challenge: &Value,
+        expectations: Option<&Value>,
+        timing: Timing,
+    ) -> Check {
+        tracing::trace!("Interpreting a timely authorized Storage byte-unavailability report");
+        if matches!(timing, Timing::Within(_))
+            && let Some(expected) =
+                expectations.and_then(|value| private_expected(value, self.policy.values))
+            && renewal::id(challenge) == Ok(expected.lease_id)
+            && number(challenge, "offset") == Ok(expected.offset)
+        {
+            return Check::Fail;
+        }
+        Check::Inconclusive
+    }
     // Services supplies original trusted timing; missing/ambiguous observations and private expectations never become Pass.
     fn outcome(
         &self,

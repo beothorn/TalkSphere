@@ -87,6 +87,7 @@ impl<P: Persistence> Coordinator<P> {
             sent: None,
             received: None,
             delivery: None,
+            unavailable: false,
         };
         let accepted = codec::encode(
             &Value::Array(vec![
@@ -369,6 +370,48 @@ impl<P: Persistence> Coordinator<P> {
         self.retain_check(context, &mut state, op, evidence)
     }
 
+    /// Retain a timely authenticated original Storage byte-unavailability report and abort the local check.
+    /// # Errors
+    /// Foreign, late, incomplete or conflicting observations cannot release a charge or establish failure evidence.
+    pub fn check_unavailable(
+        &self,
+        context: &Context<'_>,
+        peer: crate::modules::services::handler::Peer,
+        stamp: Stamp,
+    ) -> Result<(), Error> {
+        tracing::trace!("Retaining the original authenticated Storage byte-unavailability report");
+        let mut state = self.state.lock().map_err(|_| Error::Unavailable)?;
+        self.check(context, Action::Coordinate, &state)?;
+        let mut op = state.records.get(&peer.key).cloned().ok_or(Error::Denied)?;
+        if peer.local != self.config.local
+            || op.terms.requester != peer.local
+            || op.terms.provider != peer.remote
+            || op.service != "cr2se.storage"
+        {
+            return Err(Error::Denied);
+        }
+        if op.phase != Phase::Executing || op.completion.is_some() {
+            return Err(Error::Conflict);
+        }
+        let info = op.check.as_mut().ok_or(Error::Unsupported)?;
+        let sent = info.sent.ok_or(Error::Unknown)?;
+        if info.included()
+            || sent.epoch != stamp.epoch
+            || !stamp
+                .milliseconds
+                .checked_sub(sent.milliseconds)
+                .is_some_and(|elapsed| elapsed <= info.response)
+        {
+            return Err(Error::Unknown);
+        }
+        info.received = Some(stamp);
+        info.unavailable = true;
+        op.phase = Phase::Abort;
+        self.save(context, &mut state, op)?;
+        drop(state);
+        self.abort(context, peer.key)
+    }
+
     /// Resolve a locally observed check deadline with no complete valid evidence as uncharged and inconclusive.
     /// This specific check rule is not a generic rollback proof for remote service work.
     /// # Errors
@@ -510,7 +553,7 @@ impl<P: Persistence> Coordinator<P> {
             return Err(Error::Denied);
         }
         let info = op.check.as_ref().ok_or(Error::Unsupported)?;
-        if op.phase != Phase::Committed {
+        if op.phase != Phase::Committed && !(op.phase == Phase::Aborted && info.unavailable) {
             return Ok(crate::modules::services::handler::Check::Inconclusive);
         }
         if let Some(expected) = expectations {
@@ -535,13 +578,17 @@ impl<P: Persistence> Coordinator<P> {
             _ => Timing::Ambiguous,
         };
         let evidence = op.completion.as_ref().map(|c| &c.output);
-        Ok(state
+        let rules = state
             .pins
             .get(&key)
             .ok_or(Error::Unavailable)?
             .requester()
             .checks()
-            .ok_or(Error::Unsupported)?
-            .outcome(&op.metadata, evidence, expectations, timing))
+            .ok_or(Error::Unsupported)?;
+        Ok(if info.unavailable {
+            rules.unavailable_outcome(&op.metadata, expectations, timing)
+        } else {
+            rules.outcome(&op.metadata, evidence, expectations, timing)
+        })
     }
 }

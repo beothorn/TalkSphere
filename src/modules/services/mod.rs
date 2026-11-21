@@ -45,6 +45,8 @@ pub enum Error {
     Insufficient,
     /// Known failure before durable commitment.
     Storage,
+    /// An authorized active Storage check cannot read the original byte.
+    EvidenceUnavailable,
     /// Commitment may have occurred; recover through status.
     Unknown,
     /// A required local dependency is unavailable.

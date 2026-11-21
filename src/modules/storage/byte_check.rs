@@ -133,7 +133,10 @@ impl Admission {
         } else if entries.len() >= self.maximum {
             return Err(Error::Limit);
         }
-        let range = bytes.reopen(id, lease.size_bytes)?.range(offset, 1)?;
+        let range = bytes
+            .reopen(id, lease.size_bytes)
+            .map_err(unreadable)?
+            .range(offset, 1)?;
         let active = Arc::new(());
         entries.insert(
             id,
@@ -159,7 +162,7 @@ impl Pinned {
         tracing::trace!(
             "Reading exact single-byte Storage evidence without provider correctness claims"
         );
-        let value = self.range.read(0, 1, 1)?;
+        let value = self.range.read(0, 1, 1).map_err(unreadable)?;
         Ok(Value::Object(vec![
             ("leaseId".into(), Value::Bytes(self.id.to_vec())),
             ("offset".into(), Value::Uint64(self.offset)),
@@ -167,6 +170,15 @@ impl Pinned {
         ]))
     }
 }
+// Only backing-byte failures after active ownership and offset validation can establish a byte-unavailability report.
+fn unreadable(error: Error) -> Error {
+    tracing::trace!("Classifying a failed read of an authorized active Storage byte");
+    match error {
+        Error::Storage | Error::Invalid => Error::EvidenceUnavailable,
+        other => other,
+    }
+}
+
 #[cfg(test)]
 #[path = "tests/byte_check.rs"]
 mod tests;

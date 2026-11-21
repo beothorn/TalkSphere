@@ -31,12 +31,20 @@ pub fn stage(
     tracing::trace!("Staging durable Storage bytes and a timestamp-free lease proposal");
     super::binding::check(invocation)?;
     let (mut lease, data) = describe(invocation, input, budget)?;
+    if crypto.hash(data)? != lease.content_hash {
+        return Err(Error::Invalid);
+    }
     gate.admit(|journal, quota| {
         let limits = journal.image_limits();
         let binding = super::binding::retained(invocation, input, limits)?;
         if let Some(original) =
             journal.original_result(invocation.key, binding, limits.values, limits.bytes)?
         {
+            if let Effect::CreateTemplate(lease) =
+                Effect::decode(original.effect.bytes(), invocation.provider, limits)?
+            {
+                gate.byte_store().reopen(lease.id, lease.size_bytes)?;
+            }
             return Ok(original);
         }
         let image = journal.snapshot()?;
@@ -44,8 +52,36 @@ pub fn stage(
             return Err(Error::Denied);
         }
         let bytes = gate.byte_store();
-        let charged_result = completion(Effect::CreateTemplate(lease.clone()), limits)?;
-        let result_bytes = charged_result
+        let maximum_entries = limits
+            .leases
+            .checked_add(limits.operations)
+            .ok_or(Error::Limit)?;
+        let mut known = bytes
+            .inventory(maximum_entries)?
+            .into_iter()
+            .map(|entry| entry.id)
+            .collect::<std::collections::BTreeSet<_>>();
+        known.extend(image.leases.iter().map(|lease| lease.id));
+        for record in &image.operations {
+            if let Some(original) =
+                Effect::decode(record.completion.effect.bytes(), image.provider, limits)?
+                    .created_lease()
+            {
+                known.insert(original.id);
+            }
+        }
+        const ID_ATTEMPTS: usize = 16;
+        let mut selected = None;
+        for _ in 0..ID_ATTEMPTS {
+            let id = crypto.lease_id()?;
+            if !known.contains(&id) {
+                selected = Some(id);
+                break;
+            }
+        }
+        lease.id = selected.ok_or(Error::Limit)?;
+        let template = completion(Effect::CreateTemplate(lease.clone()), limits)?;
+        let result_bytes = template
             .result
             .bytes()
             .len()
@@ -60,56 +96,21 @@ pub fn stage(
                 result_bytes: u64::try_from(result_bytes).map_err(|_| Error::Limit)?,
             },
         )?;
-        let staged = (|| {
-            const ID_ATTEMPTS: usize = 16;
-            for _ in 0..ID_ATTEMPTS {
-                lease.id = crypto.lease_id()?;
-                if image.leases.iter().any(|l| l.id == lease.id)
-                    || image.operations.iter().try_fold(false, |found, record| {
-                        Ok::<_, Error>(
-                            found
-                                || Effect::decode(
-                                    record.completion.effect.bytes(),
-                                    image.provider,
-                                    limits,
-                                )?
-                                .created_lease()
-                                .is_some_and(|l| l.id == lease.id),
-                        )
-                    })?
-                {
-                    continue;
-                }
-                let mut upload = match bytes.begin(lease.id, lease.size_bytes, lease.size_bytes) {
-                    Ok(upload) => upload,
-                    Err(Error::Conflict) => continue,
-                    Err(error) => return Err(error),
-                };
-                upload.append(0, data)?;
-                let retained = match upload.finish(lease.content_hash) {
-                    Ok(retained) => retained,
-                    Err(Error::Conflict) => continue,
-                    Err(error) => return Err(error),
-                };
-                drop(retained);
-                let result = completion(Effect::CreateTemplate(lease.clone()), limits)
-                    .and_then(|template| journal.stage(invocation.key, binding, template));
-                if let Err(error) = result {
-                    if error != Error::Unknown && bytes.reclaim(lease.id) != Ok(true) {
-                        return Err(Error::Unknown);
-                    }
-                    return Err(error);
-                }
-                return result;
+        // Persist the upload intent before any object path exists, so a crash cannot create an unowned file.
+        let template = match journal.stage(invocation.key, binding, template) {
+            Ok(template) => template,
+            Err(Error::Unknown) => return Err(Error::Unknown),
+            Err(error) => {
+                quota
+                    .transition(invocation.key, Usage::default())
+                    .map_err(|_| Error::Unknown)?;
+                return Err(error);
             }
-            Err(Error::Limit)
-        })();
-        if staged.as_ref().is_err_and(|error| *error != Error::Unknown) {
-            quota
-                .transition(invocation.key, Usage::default())
-                .map_err(|_| Error::Unknown)?;
-        }
-        staged
+        };
+        let mut upload = bytes.begin(lease.id, lease.size_bytes, lease.size_bytes)?;
+        upload.append(0, data)?;
+        drop(upload.finish(lease.content_hash)?);
+        Ok(template)
     })
 }
 

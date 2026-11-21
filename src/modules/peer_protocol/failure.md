@@ -8,6 +8,11 @@ failure. TermsChanged and PriceRejected remain explicit choices when the caller
 knows the more precise context. error supplies a local category without replacing
 the retained Code or interpreting diagnostic text.
 
+storage_byte_unavailable is the distinct uncharged, challenge-bound report that an
+authorized active Storage byte cannot be returned, defined by
+[CR2SE issue #12](https://github.com/beothorn/CR2SE/issues/12). It maps to a
+local evidence-unavailable category; every other refusal stays generic.
+
 Failure contains Code and optional untrusted UTF-8 diagnostic. parse decodes one
 validated failure Message without financial effects. record emits only defined
 codes and checks the1024-byte diagnostic bound before allocating controls. This
