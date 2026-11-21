@@ -4,5 +4,6 @@
 //! public contracts of Identity, Board, Ledger, Services, Peer Protocol and Storage; no
 //! module's private state is used. The ordinary `serve` composition is unchanged.
 pub mod adapters;
+pub mod catalog;
 pub mod config;
 pub mod layout;
