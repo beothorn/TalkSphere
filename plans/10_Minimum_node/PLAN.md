@@ -9,7 +9,7 @@ Storage over real connections.
 
 ## Steps
 
-- [ ] **1.** Reconcile the minimum-profile requirements with the completed module evidence.
+- [x] **1.** Reconcile the minimum-profile requirements with the completed module evidence.
 - [ ] **2.** Define the node state layout and validated node configuration.
 - [ ] **3.** Add explicit node initialization and inspection commands.
 - [ ] **4.** Move the native Storage clock and entropy adapters into production composition.
