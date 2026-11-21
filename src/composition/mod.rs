@@ -11,3 +11,6 @@ pub mod logging;
 pub mod services;
 
 pub mod peer;
+
+#[cfg(target_os = "linux")]
+pub mod node;
