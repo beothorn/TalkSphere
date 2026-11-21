@@ -8,3 +8,4 @@ pub mod catalog;
 pub mod config;
 pub mod layout;
 pub mod offering;
+pub mod owners;
