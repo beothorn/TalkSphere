@@ -26,39 +26,39 @@ float of 10000 credits at its first placement. Credit columns are per item per s
 
 | target | retrievable | target met | not redundant | mean repair | issued/item-day | spent/item-day |
 |---|---|---|---|---|---|---|
-| 1 | 37.0% | 99.9% | 100.0% | 0.1 h | 2.7 | 27.3 |
-| 2 | 59.8% | 99.8% | 0.2% | 0.1 h | 5.2 | 58.3 |
-| 3 | 75.5% | 99.5% | 0.0% | 0.1 h | 7.5 | 85.5 |
-| 5 | 89.5% | 99.1% | 0.0% | 0.1 h | 12.5 | 140.5 |
-| 8 | 97.7% | 98.6% | 0.0% | 0.1 h | 19.7 | 225.0 |
-| 10 | 99.4% | 98.4% | 0.0% | 0.1 h | 23.6 | 286.5 |
-| 15 | 99.9% | 95.7% | 0.0% | 0.2 h | 38.5 | 392.8 |
+| 1 | 39.0% | 99.9% | 100.0% | 0.1 h | 2.6 | 28.7 |
+| 2 | 59.6% | 99.8% | 0.2% | 0.1 h | 5.0 | 57.7 |
+| 3 | 75.7% | 99.7% | 0.0% | 0.1 h | 7.3 | 90.4 |
+| 5 | 90.9% | 99.5% | 0.0% | 0.1 h | 12.2 | 145.3 |
+| 8 | 97.2% | 98.8% | 0.0% | 0.1 h | 19.2 | 225.1 |
+| 10 | 98.9% | 98.3% | 0.0% | 0.1 h | 24.8 | 277.4 |
+| 15 | 100.0% | 95.7% | 0.0% | 0.2 h | 37.7 | 399.3 |
 
 ### Smallest target that keeps data retrievable 99 % of the time
 
 | fleet | target | retrievable | credits/item-day |
 |---|---|---|---|
-| reliable (12 h on, 2 h off, 0.2 %/day wipes) | 3 | 99.8% | 151.4 |
-| flaky (4 h on, 8 h off, 1 %/day wipes) | 10 | 99.4% | 310.1 |
-| very flaky (1 h on, 12 h off, 3 %/day wipes) | > 20 (best 20 reached 62.0%) | 62.0% | - |
+| reliable (12 h on, 2 h off, 0.2 %/day wipes) | 3 | 99.8% | 152.3 |
+| flaky (4 h on, 8 h off, 1 %/day wipes) | 15 | 100.0% | 437.0 |
+| very flaky (1 h on, 12 h off, 3 %/day wipes) | > 20 (best 20 reached 65.0%) | 65.0% | - |
 
 ### Check interval at target 5 with 5 % wipes per day
 
 | check every | retrievable | target met | failed checks | incomplete | spent/item-day |
 |---|---|---|---|---|---|
-| 1 h | 90.8% | 99.0% | 35 | 57615 | 245.5 |
-| 6 h | 88.2% | 99.1% | 25 | 38059 | 135.4 |
-| 24 h | 90.1% | 99.1% | 19 | 15714 | 111.6 |
-| 72 h | 87.9% | 99.3% | 8 | 9621 | 109.2 |
+| 1 h | 88.9% | 99.2% | 20 | 59017 | 240.2 |
+| 6 h | 90.7% | 99.5% | 27 | 36507 | 145.9 |
+| 24 h | 89.6% | 99.4% | 16 | 14688 | 118.1 |
+| 72 h | 89.1% | 99.4% | 7 | 9217 | 111.1 |
 
 ### Dishonest clients at target 5
 
 | dishonest share | retrievable | target met | failed checks | credits to dishonest |
 |---|---|---|---|---|
-| 0.0% | 89.5% | 99.1% | 5 | 0 % |
-| 10.0% | 91.1% | 99.3% | 39 | 11 % |
-| 30.0% | 88.5% | 99.1% | 149 | 32 % |
-| 50.0% | 83.4% | 98.8% | 330 | 56 % |
+| 0.0% | 90.9% | 99.5% | 3 | 0 % |
+| 10.0% | 90.4% | 99.3% | 57 | 13 % |
+| 30.0% | 85.3% | 99.2% | 162 | 36 % |
+| 50.0% | 83.3% | 99.1% | 324 | 57 % |
 
 ### Request limit per identity per minute (10 abusers at 200/s, honest peers about 12/min in bursts of 3)
 
@@ -74,30 +74,34 @@ float of 10000 credits at its first placement. Credit columns are per item per s
 ## What the first results say
 
 1. **The replica target is the main lever.** On the default flaky fleet, 2 copies keep data retrievable about 60 % of the time,
-   5 copies about 90 % and 10 copies about 99 %. The user's initial guess of roughly ten phones is where this model reaches 99 %;
-   going to 15 adds little availability (99.9 %) but lowers the share of time the target is met (95.7 %), because copies take longer
-   to place. Returns diminish quickly past about eight.
-2. **Fleet reliability decides the target.** A reliable fleet needs 3 copies for 99 %; the default flaky fleet needs 10; a very flaky
-   fleet (connected about 8 % of the time) cannot reach 99 % even with 20 copies. When phones are rarely connected, more copies are
-   not the fix: the server would need holders that are connected more of the time, or a different mechanism.
+   5 copies about 91 %, 10 copies about 99 % and 15 copies essentially always. The user's initial guess of roughly ten phones is
+   where this model gets close to 99 %; fifteen copies cost half again as much and lower the share of time the target is met
+   (95.7 %), because copies take longer to place. Returns diminish quickly past about eight.
+2. **Fleet reliability decides the target.** A reliable fleet needs 3 copies for 99 %; the default flaky fleet needs 10 to 15
+   (10 copies reach 98.9 %); a very flaky fleet (connected about 8 % of the time) cannot reach 99 % even with 20 copies. When phones
+   are rarely connected, more copies are not the fix: the server would need holders that are connected more of the time, or a
+   different mechanism.
 3. **Mean repair is short** (about 0.1 hours) once a client offers, because repair is client-initiated: an under-replicated item
    is offered to the next client that fulfils the wanted offering. How fast that happens depends on how often clients offer
    (here every 30 minutes while connected).
-4. **Check frequency barely moves availability.** Between 1 hour and 72 hours, retrievability stays within noise (88 % to 91 %)
-   while checks cost far more at 1 hour. Frequent checks detect lost copies sooner (35 failed checks at 1 hour against 8 at 72), but
-   with copies replaced on offer the target is met about 99 % either way. A daily check is a sensible default; it needs a
-   float large enough that maintenance is never unpaid.
-5. **Credits are paid for work the data owner receives no benefit from.** About 56 % of the credits issued go to dishonest clients
+4. **Check frequency barely moves availability.** Between 1 hour and 72 hours, retrievability stays within noise (89 % to 91 %)
+   while checks cost more than twice as much at 1 hour. Frequent checks detect lost copies sooner, but with copies replaced on
+   offer the target is met about 99 % of the time either way. A daily check is a sensible default; it needs a float large enough
+   that maintenance is never unpaid.
+5. **Credits are paid for work the data owner receives no benefit from.** About 57 % of the credits issued go to dishonest clients
    when half the fleet is dishonest, in proportion to their share: they take the payment and keep nothing. They are caught by checks
-   (330 failed checks at 50 %), and the trust policy lowers their trust, **but nothing yet stops the server offering them more
+   (324 failed checks at 50 %), and the trust policy lowers their trust, **but nothing yet stops the server offering them more
    items**. A follow-up policy should exclude, or deprioritize, clients with failed checks from placement.
-6. **Maintenance costs more than placement.** At target 5 the server spends about 140 credits of holders' currency per item-day
+6. **Maintenance costs more than placement.** At target 5 the server spends about 145 credits of holders' currency per item-day
    on checks and renewals against 12 issued of its own, driven by the assumed renewal price. Real costs depend on holders'
    prices; the point is that **the server must hold ongoing credit from every holder it asks to keep data**, which is a mutual
    economy and not a one-time purchase. When a holder's float runs out its copies go unchecked (counted as `unpaid`).
 7. **A per-identity request limit works as intended.** With honest peers making about 12 requests a minute in bursts of 3,
    limits from 600 down to 60 a minute refuse abusers (95 % to 99.5 %) and no honest request; 30 a minute starts to refuse honest
    bursts (0.2 %) and 12 a minute refuses 29 % of them. The limit must sit comfortably above the honest burst rate.
+
+Noise: with five seeds, differences of a few percent between neighbouring rows (for example the 1 hour and 6 hour check intervals)
+are not meaningful, and a result sitting on a threshold (10 copies at 98.9 % against 99 %) may flip between runs of different size.
 
 ## Chosen profile
 

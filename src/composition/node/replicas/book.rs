@@ -181,24 +181,31 @@ impl Book {
 
     /// Reserve the item most in need of a copy for `provider`: the one with the fewest confirmed plus
     /// reserved copies below `target`, oldest first, that the provider neither holds nor has reserved and
-    /// whose sealed bytes fit `maximum_bytes`. Returns the item identifier and its sealed bytes.
+    /// whose sealed bytes fit `maximum_bytes`. A copy whose retention ended at or before `now` counts for
+    /// nothing, even while it awaits removal. Returns the item identifier and its sealed bytes.
     pub fn take_for(
         &self,
         provider: IdentityId,
         target: usize,
         maximum_bytes: u64,
+        now: u64,
     ) -> Option<([u8; 16], Vec<u8>)> {
         tracing::trace!("Reserving an item for a contributing provider");
         let mut state = self.lock();
         let held = |item: &Item, reserved: &[([u8; 16], IdentityId)]| {
-            item.replicas.len() + reserved.iter().filter(|(id, _)| *id == item.id).count()
+            item.replicas.iter().filter(|r| r.expires_at > now).count()
+                + reserved.iter().filter(|(id, _)| *id == item.id).count()
         };
         let reserved = state.reserved.clone();
         let chosen = state
             .items
             .iter()
             .filter(|i| i.sealed_size <= maximum_bytes && held(i, &reserved) < target)
-            .filter(|i| !i.replicas.iter().any(|r| r.provider == provider))
+            .filter(|i| {
+                !i.replicas
+                    .iter()
+                    .any(|r| r.provider == provider && r.expires_at > now)
+            })
             .filter(|i| !reserved.contains(&(i.id, provider)))
             .min_by_key(|i| (held(i, &reserved), i.created_at, i.id))
             .map(|i| i.id)?;
@@ -225,16 +232,28 @@ impl Book {
             .iter()
             .position(|i| i.id == id)
             .ok_or(BookError::Unknown)?;
+        // A holder whose earlier copy has ended may hold the item again: the ended copy is replaced.
+        let ended = state.items[index]
+            .replicas
+            .iter()
+            .position(|r| r.provider == replica.provider && r.expires_at <= replica.confirmed_at);
+        let removed = ended.map(|at| state.items[index].replicas.remove(at));
         let item = &state.items[index];
         if item.replicas.len() >= MAXIMUM_REPLICAS
             || item.replicas.iter().any(|r| r.provider == replica.provider)
         {
+            if let (Some(at), Some(old)) = (ended, removed) {
+                state.items[index].replicas.insert(at, old);
+            }
             return Err(BookError::Conflict);
         }
         let provider = replica.provider;
         state.items[index].replicas.push(replica);
         if let Err(error) = self.persist(&state.items) {
             state.items[index].replicas.pop();
+            if let (Some(at), Some(old)) = (ended, removed) {
+                state.items[index].replicas.insert(at, old);
+            }
             return Err(error);
         }
         state.reserved.retain(|r| *r != (id, provider));
@@ -549,19 +568,19 @@ mod tests {
         book.add(item(1, 5), b"AAAAA").unwrap();
         book.add(item(2, 6), b"BBBBB").unwrap();
         let p = |n: u8| IdentityId([n; 32]);
-        let (first, bytes) = book.take_for(p(1), 2, 100).unwrap();
+        let (first, bytes) = book.take_for(p(1), 2, 100, 0).unwrap();
         assert_eq!((first, bytes), ([1; 16], b"AAAAA".to_vec()));
         // Item 2 has fewer copies in flight than item 1 now, and provider 1 may not hold item 1 twice.
-        assert_eq!(book.take_for(p(1), 2, 100).unwrap().0, [2; 16]);
-        assert!(book.take_for(p(1), 2, 100).is_none());
+        assert_eq!(book.take_for(p(1), 2, 100, 0).unwrap().0, [2; 16]);
+        assert!(book.take_for(p(1), 2, 100, 0).is_none());
         // A second provider gets the item with the fewest copies (a tie is broken by age).
-        assert_eq!(book.take_for(p(2), 2, 100).unwrap().0, [1; 16]);
+        assert_eq!(book.take_for(p(2), 2, 100, 0).unwrap().0, [1; 16]);
         book.confirm([1; 16], replica(1)).unwrap();
         book.confirm([1; 16], replica(2)).unwrap();
         // Item 1 is at its target of two; a third provider only gets item 2.
-        assert_eq!(book.take_for(p(3), 2, 100).unwrap().0, [2; 16]);
+        assert_eq!(book.take_for(p(3), 2, 100, 0).unwrap().0, [2; 16]);
         assert!(
-            book.take_for(p(4), 2, 100).is_none(),
+            book.take_for(p(4), 2, 100, 0).is_none(),
             "both items now have their copies confirmed or in flight"
         );
     }
@@ -573,16 +592,16 @@ mod tests {
         book.add(item(1, 5), b"AAAAA").unwrap();
         let p = IdentityId([1; 32]);
         assert!(
-            book.take_for(p, 1, 4).is_none(),
+            book.take_for(p, 1, 4, 0).is_none(),
             "the sealed size exceeds the bound"
         );
-        assert!(book.take_for(p, 1, 5).is_some());
+        assert!(book.take_for(p, 1, 5, 0).is_some());
         assert!(
-            book.take_for(IdentityId([2; 32]), 1, 5).is_none(),
+            book.take_for(IdentityId([2; 32]), 1, 5, 0).is_none(),
             "the target counts reservations"
         );
         book.release([1; 16], p);
-        assert!(book.take_for(IdentityId([2; 32]), 1, 5).is_some());
+        assert!(book.take_for(IdentityId([2; 32]), 1, 5, 0).is_some());
     }
 
     // A holder cannot be recorded twice, and an unknown item is refused.
@@ -692,7 +711,7 @@ mod tests {
             Err(BookError::Unknown)
         );
         // The dropped holder may offer a fresh copy again.
-        assert!(book.take_for(IdentityId([1; 32]), 2, 100).is_some());
+        assert!(book.take_for(IdentityId([1; 32]), 2, 100, 0).is_some());
     }
 
     // A volatile book behaves like a disk book but writes nothing and forgets everything when dropped.
@@ -703,10 +722,53 @@ mod tests {
         assert_eq!(book.sealed([1; 16]).unwrap(), b"AAAAA");
         assert_eq!(book.add(item(1, 6), b"BBBBB"), Err(BookError::Unknown));
         let p = IdentityId([1; 32]);
-        assert_eq!(book.take_for(p, 1, 100).unwrap().1, b"AAAAA");
+        assert_eq!(book.take_for(p, 1, 100, 0).unwrap().1, b"AAAAA");
         book.confirm([1; 16], replica(1)).unwrap();
         book.drop_replica([1; 16], p).unwrap();
         assert!(book.get([1; 16]).unwrap().replicas.is_empty());
+    }
+
+    // A copy whose retention ended counts for nothing even before it is dropped, and its holder may hold
+    // the item again: the ended copy is replaced by the new one.
+    #[test]
+    fn ended_copies_do_not_count_and_their_holders_may_return() {
+        let book = Book::volatile();
+        book.add(item(1, 5), b"AAAAA").unwrap();
+        let (p1, p2, p3) = (
+            IdentityId([1; 32]),
+            IdentityId([2; 32]),
+            IdentityId([3; 32]),
+        );
+        book.confirm([1; 16], replica(1)).unwrap();
+        book.confirm([1; 16], replica(2)).unwrap();
+        // Both copies expire at 100: at time 50 the target of two is met, at 100 it is not.
+        assert!(book.take_for(p3, 2, 100, 50).is_none());
+        assert_eq!(book.take_for(p3, 2, 100, 100).unwrap().0, [1; 16]);
+        book.release([1; 16], p3);
+        // A holder whose copy ended is offered the item again and can confirm a fresh copy.
+        assert_eq!(book.take_for(p1, 2, 100, 100).unwrap().0, [1; 16]);
+        let fresh = Replica {
+            confirmed_at: 100,
+            expires_at: 300,
+            ..replica(1)
+        };
+        book.confirm([1; 16], fresh.clone()).unwrap();
+        let held = book.get([1; 16]).unwrap().replicas;
+        assert_eq!(held.iter().filter(|r| r.provider == p1).count(), 1);
+        assert!(held.contains(&fresh) && held.contains(&replica(2)));
+        // A copy that has not ended still blocks a repeat.
+        assert_eq!(
+            book.confirm(
+                [1; 16],
+                Replica {
+                    confirmed_at: 150,
+                    ..replica(1)
+                }
+            ),
+            Err(BookError::Conflict)
+        );
+        assert_eq!(book.get([1; 16]).unwrap().replicas.len(), 2);
+        let _ = p2;
     }
 
     // Files are owner-only.

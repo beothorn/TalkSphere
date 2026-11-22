@@ -173,17 +173,18 @@ impl peer::wanted::Policy for Work {
             return Err(peer::Error::Limit);
         }
         // Hosted items that still need replicas come first; the manual queue serves the rest.
-        let (data, origin) =
-            match self
-                .book
-                .take_for(provider, self.target, self.terms.maximum_object_bytes)
-            {
-                Some((id, sealed)) => (sealed, Origin::Item(id)),
-                None => (
-                    state.backlog.pop_front().ok_or(peer::Error::Unavailable)?,
-                    Origin::Backlog,
-                ),
-            };
+        let (data, origin) = match self.book.take_for(
+            provider,
+            self.target,
+            self.terms.maximum_object_bytes,
+            super::owners::unix_seconds(),
+        ) {
+            Some((id, sealed)) => (sealed, Origin::Item(id)),
+            None => (
+                state.backlog.pop_front().ok_or(peer::Error::Unavailable)?,
+                Origin::Backlog,
+            ),
+        };
         let input = store_input(&data, self.terms.retention_seconds);
         state.inflight.push(InFlight {
             provider,

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-21 are complete.
+Status: in progress; steps 1-22 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -37,7 +37,7 @@ large simulations without touching protocol code.
 - [x] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
 - [x] **20.** Run parameter sweeps and record their results.
 - [x] **21.** Document policy parameters, defaults and help.
-- [ ] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
+- [x] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
 - [ ] **23.** Complete the policy acceptance evidence and handoff.
 
 ## Baseline, scope and review
@@ -302,6 +302,8 @@ Completed: [PARAMETERS.md](../../docs/policy/PARAMETERS.md) lists every paramete
 Run a server and several client-profile processes: clients connect outward,
 earn credits by wanted Storage, the server keeps replica sets at them, a client
 disappears and the server repairs. Assert exact balances and redundancy states.
+
+Completed: `a_server_keeps_a_replica_set_at_outbound_clients_and_repairs_it` in `tests/policy_process.rs` runs a server and three client-profile processes: the clients connect outward and offer over their own connections, two earn exactly 5 credits each and the set reaches `target satisfied`, the third is refused and earns nothing, maintenance is paid in the holders' credits, a holder crashes, its copy expires and the state falls to `not redundant`, and the next client's offer repairs the set. The test exposed a real defect fixed in the same change: a copy whose retention had ended still counted against the target and still blocked its holder until maintenance dropped it, so the repair was refused for up to a second; the book now takes the clock and counts only unexpired copies. The simulation figures were regenerated after that fix.
 
 ### 23. Complete the policy acceptance evidence and handoff
 

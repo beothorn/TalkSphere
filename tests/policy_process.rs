@@ -773,3 +773,114 @@ fn policy_show_and_explain_report_decisions_and_their_inputs() {
             .is_err()
     );
 }
+
+// The whole policy story between real processes: clients that only connect outward earn the server's
+// credits through the wanted offering, the server keeps a replica set at them and reports the CR2SE
+// states, maintains it over the clients' own connections, a client disappears, its copy expires and
+// the next client that offers repairs the set; balances are exact throughout.
+#[test]
+fn a_server_keeps_a_replica_set_at_outbound_clients_and_repairs_it() {
+    let dir = Dir::new("story");
+    let mut server = Node::init(&dir.0, "server", None);
+    let mut clients: Vec<Node> = ["c1", "c2", "c3"]
+        .iter()
+        .map(|n| Node::init(&dir.0, n, None))
+        .collect();
+    server.set_policy(
+        r#"{"version":1,
+            "quota":{"requestsPerMinute":600},
+            "credit":{"wanted":{"creditsPerObject":5,"maximumObjectBytes":1024,"retentionSeconds":12}},
+            "redundancy":{"target":2,"checkSeconds":3,"staggerPercent":0,"renewBeforeSeconds":6,"maxSpend":1000,"retrySeconds":1},
+            "trust":{"contribution":200000,"ceiling":600000}}"#,
+    );
+    let port = free_port();
+    server.start(Some(port));
+    let contact = server.contact(port);
+    // The server knows none of the clients: each connects outward and keeps its connection open.
+    for client in &mut clients {
+        client.start_args(None, &["--contact", &contact]);
+        client
+            .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+            .unwrap();
+    }
+    eventually(
+        "the clients never connected",
+        Duration::from_secs(20),
+        || number(&server.ctl(&["status"]).unwrap(), "connections") == 3,
+    );
+    let item = dir.0.join("item");
+    std::fs::write(&item, b"hosted by the story").unwrap();
+    server
+        .ctl(&["replica-add", "--file", item.to_str().unwrap()])
+        .unwrap();
+    let state = |server: &Node| server.ctl(&["replicas"]).unwrap()["items"][0].clone();
+    assert_eq!(state(&server)["state"], "not redundant");
+    // Two clients earn exactly the published credits, offering over their own connections (no address).
+    for client in &clients[..2] {
+        client.ctl(&["fulfil", "--contact", &server.id]).unwrap();
+        assert_eq!(number(&balance(client, &server), "owned"), 5);
+    }
+    eventually(
+        "the set never reached its target",
+        Duration::from_secs(10),
+        || state(&server)["state"] == "target satisfied",
+    );
+    assert_eq!(state(&server)["confirmed"], 2);
+    assert_eq!(number(&balance(&server, &clients[0]), "issued"), 5);
+    assert_eq!(number(&balance(&server, &clients[1]), "issued"), 5);
+    // The target is met, so the third client is refused and earns nothing.
+    assert!(
+        clients[2]
+            .ctl(&["fulfil", "--contact", &server.id])
+            .is_err()
+    );
+    assert_eq!(number(&balance(&clients[2], &server), "owned"), 0);
+    // The holders' own credits pay for maintenance over their connections.
+    fund(&clients[0], &server, 5000);
+    fund(&clients[1], &server, 5000);
+    eventually(
+        "the copies were never checked",
+        Duration::from_secs(20),
+        || {
+            state(&server)["replicas"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|r| !r["lastChecked"].is_null())
+        },
+    );
+    // The first holder disappears: it cannot be renewed, its copy expires and the set falls below target.
+    clients[0].crash();
+    eventually(
+        "the lost copy never stopped counting",
+        Duration::from_secs(40),
+        || state(&server)["confirmed"] == 1,
+    );
+    assert_eq!(state(&server)["state"], "not redundant");
+    assert_eq!(state(&server)["targetMet"], false);
+    // The next client that offers repairs the set; the survivor stays and exact credits are paid.
+    clients[2]
+        .ctl(&["fulfil", "--contact", &server.id])
+        .unwrap();
+    assert_eq!(number(&balance(&clients[2], &server), "owned"), 5);
+    eventually(
+        "the set was never repaired",
+        Duration::from_secs(10),
+        || state(&server)["state"] == "target satisfied",
+    );
+    let holders: Vec<String> = state(&server)["replicas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["provider"].as_str().unwrap().to_string())
+        .collect();
+    assert!(holders.contains(&clients[1].id) && holders.contains(&clients[2].id));
+    assert!(!holders.contains(&clients[0].id));
+    // Policy explains the history behind its decisions.
+    let explained = server
+        .ctl(&["policy-explain", "--peer", &clients[1].id])
+        .unwrap();
+    assert!(number(&explained["observations"], "contributions") >= 1);
+    assert!(number(&explained["observations"], "checksPassed") >= 1);
+    assert!(number(&explained, "trustMillionths") > 0);
+}

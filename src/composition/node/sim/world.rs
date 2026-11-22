@@ -291,7 +291,9 @@ impl<'a> World<'a> {
             if self.issued + wanted.credits_per_object > self.s.issuance_budget {
                 continue;
             }
-            let Some((item, _)) = self.book.take_for(id, target, wanted.maximum_object_bytes)
+            let Some((item, _)) = self
+                .book
+                .take_for(id, target, wanted.maximum_object_bytes, now)
             else {
                 continue;
             };
