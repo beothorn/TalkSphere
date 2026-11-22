@@ -525,6 +525,11 @@ fn a_hosted_item_is_replicated_to_distinct_clients_up_to_the_target() {
         Duration::from_secs(10),
         || confirmed(&server) == 1,
     );
+    // One copy is not redundancy, whatever the target: the state and the target are reported separately.
+    let listed = server.ctl(&["replicas"]).unwrap();
+    assert_eq!(listed["items"][0]["state"], "not redundant");
+    assert_eq!(listed["items"][0]["targetMet"], false);
+    assert_eq!(listed["items"][0]["target"], 2);
     // The same client cannot hold a second copy of the item.
     assert!(clients[0].ctl(&["fulfil", "--contact", &contact]).is_err());
     assert_eq!(confirmed(&server), 1);
@@ -534,6 +539,9 @@ fn a_hosted_item_is_replicated_to_distinct_clients_up_to_the_target() {
         Duration::from_secs(10),
         || confirmed(&server) == 2,
     );
+    let listed = server.ctl(&["replicas"]).unwrap();
+    assert_eq!(listed["items"][0]["state"], "target satisfied");
+    assert_eq!(listed["items"][0]["targetMet"], true);
     // The target is met: a third client is refused, nothing is paid and nothing is stored.
     assert!(clients[2].ctl(&["fulfil", "--contact", &contact]).is_err());
     assert_eq!(number(&balance(&clients[2], &server), "owned"), 0);

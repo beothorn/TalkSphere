@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-15 are complete.
+Status: in progress; steps 1-16 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -31,7 +31,7 @@ large simulations without touching protocol code.
 - [x] **13.** Adjust trust from verified contributions and failures by policy.
 - [x] **14.** Maintain replica sets at a policy target across independent peers.
 - [x] **15.** Schedule staggered checks, renewals and repairs by policy.
-- [ ] **16.** Report replica-set state using the CR2SE redundancy states.
+- [x] **16.** Report replica-set state using the CR2SE redundancy states.
 - [ ] **17.** Add local commands to inspect policy decisions and their inputs.
 - [ ] **18.** Add a deterministic multi-peer simulation harness using real modules.
 - [ ] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
@@ -253,6 +253,8 @@ Completed: [Maintenance](../../src/composition/node/replicas/maintain.md): a pur
 Report not redundant, under-replicated, target satisfied and at risk, with the
 target, confirmed count and stale observations shown separately. Test each
 state transition.
+
+Completed: [Report](../../src/composition/node/replicas/report.md) shown by `node-ctl replicas`: the state comes from unexpired confirmed copies only, the target and confirmed count are separate, a target of one is met without being redundant, and risk and stale observations are listed.
 
 ### 17. Add local commands to inspect policy decisions and their inputs
 

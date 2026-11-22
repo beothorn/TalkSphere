@@ -18,6 +18,7 @@ use crate::{
             owners::{BUDGET, Owners},
             replicas::{
                 book::{BookError, Item},
+                report::report,
                 sealer::{self, Sealer},
             },
             wanted::Refusal,
@@ -256,20 +257,30 @@ impl Handler {
         }))
     }
 
-    // Hosted items with their confirmed replicas.
+    // Hosted items with the CR2SE redundancy state, the local target and the unexpired confirmed agreements
+    // shown separately, plus which observations are stale and when each agreement expires.
     fn replicas(&self) -> Value {
         tracing::trace!("Listing hosted items");
+        let now = now();
+        let policy = self.owners.policy.redundancy.as_ref();
+        let check_seconds = self.owners.params.redundancy.check_seconds;
         json!({
-            "target": self.owners.policy.redundancy.target(),
-            "items": self.owners.replicas.list().iter().map(|item| json!({
-                "id": hex(&item.id), "size": item.size, "sealedBytes": item.sealed_size,
-                "createdAt": item.created_at, "confirmed": item.replicas.len(),
-                "replicas": item.replicas.iter().map(|r| json!({
-                    "provider": text::format(r.provider), "leaseId": hex(&r.lease),
-                    "expiresAt": r.expires_at, "confirmedAt": r.confirmed_at,
-                    "lastChecked": r.last_checked,
-                })).collect::<Vec<_>>(),
-            })).collect::<Vec<_>>(),
+            "target": policy.target(),
+            "items": self.owners.replicas.list().iter().map(|item| {
+                let r = report(item, now, policy, check_seconds);
+                json!({
+                    "id": hex(&item.id), "size": item.size, "sealedBytes": item.sealed_size,
+                    "createdAt": item.created_at, "target": r.target, "confirmed": r.confirmed,
+                    "state": r.state.name(), "targetMet": r.target_met, "atRisk": r.at_risk,
+                    "expiringSoon": r.expiring_soon, "staleObservations": r.stale_observations,
+                    "expired": r.expired,
+                    "replicas": item.replicas.iter().map(|rep| json!({
+                        "provider": text::format(rep.provider), "leaseId": hex(&rep.lease),
+                        "expiresAt": rep.expires_at, "confirmedAt": rep.confirmed_at,
+                        "lastChecked": rep.last_checked,
+                    })).collect::<Vec<_>>(),
+                })
+            }).collect::<Vec<_>>(),
         })
     }
 
