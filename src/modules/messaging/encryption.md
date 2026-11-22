@@ -13,3 +13,9 @@ this stored representation, the ciphertext, not the plaintext.
   derives the key and authenticates. Any failure is `Invalid` and returns no plaintext.
 
 Evidence: MS-14 against the independent PyNaCl vector in the Cryptography fixtures (identical payload bytes) plus a wrong key, changed metadata (each bound field), tampered tag or ciphertext, another version and truncation. This is not the generic identity envelope and is never substituted for it.
+
+## `PersistentAgreement`
+
+A holder of the recipient's persistent private key that agrees with a remote ephemeral key and returns only a protected shared
+secret. A directly held secret implements it for tests; [`IdentityAgreement`](identity.md) implements it over a protected Identity.
+`decrypt` now takes this holder instead of a raw secret; its checks and failures are unchanged.

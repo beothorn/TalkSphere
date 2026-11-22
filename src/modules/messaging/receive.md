@@ -8,3 +8,5 @@ Requester-side acceptance of a recovered message. The recipient authenticates fi
 - `accept(recipient, provider, output)`: verifies in order that the sender's key derives to the sender ID, the payload size and SHA-256 hash match and the sender's signature verifies; that the message is addressed to the recipient; and that the recovery receipt carries the recipient's authorization and the provider's signature for exactly this placement and message. Only then is the pair looked up: the same sender, ID and hash is `Duplicate` (a replica from another provider), the same pair with a different hash is `Conflict` (the sender signed two payloads under one ID; nothing is delivered). Encrypted payloads are decrypted last; opaque payloads are returned as received. A new message returns `New` with the content; it is remembered only after decryption succeeded.
 - Errors: `Invalid` for any failed check, with nothing remembered; `Conflict` as above; `Limit` when the inbox is full (duplicates are still recognized).
 - Message content is never printed.
+
+`Recipient.encryption_key` is now any `PersistentAgreement` holder, so a protected Identity can be used.

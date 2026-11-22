@@ -7,8 +7,12 @@ use super::{
     record::CredentialRecord,
 };
 use crate::modules::cryptography::{
-    api::DecryptRequest, config::ResourceLimits, envelope::decrypt, ports::Entropy,
-    primitives::signature,
+    api::DecryptRequest,
+    config::ResourceLimits,
+    envelope::decrypt,
+    ports::Entropy,
+    primitives::{agreement, signature},
+    secrets::{Secret, Shared},
 };
 
 /// Explicit local format choice; Identity never guesses an object's service semantics.
@@ -50,6 +54,29 @@ impl<S: KeyStore<Record = CredentialRecord>, E: Entropy> Identity<S, E> {
             private_key: handle.keys.encryption(),
             limits,
         })?))
+    }
+    /// Perform X25519 agreement between the loaded persistent encryption key and a remote public key, for a service-specific
+    /// construction (such as the Messaging payload) whose key derivation and authentication stay with the caller.
+    /// The private key never leaves Identity; only the protected shared secret is returned.
+    /// # Errors
+    /// Denies foreign handles or invalid `Decrypt` authority and rejects a low-order remote key.
+    pub fn agree(
+        &self,
+        handle: &IdentityHandle,
+        capability: &Capability<Decrypt>,
+        remote_public_key: &[u8; 32],
+    ) -> Result<Secret<Shared>, IdentityError> {
+        tracing::trace!("Agreeing a shared secret through scoped Identity authority");
+        self.check_handle(handle)?;
+        self.authority.check(
+            capability,
+            handle.public.identity.id(),
+            remote_public_key.len(),
+        )?;
+        Ok(agreement::persistent(
+            handle.keys.encryption(),
+            remote_public_key,
+        )?)
     }
     /// Sign the caller's exact protocol bytes using scoped local signing authority.
     /// The caller supplies domain separation, role, freshness and replay policy.

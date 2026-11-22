@@ -26,6 +26,7 @@
 | [Staging](staging.md) | Bounded reservations for incoming payloads |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |
+| [Identity agreement](identity.md) | Adapter letting a protected Identity decrypt payloads |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |
 | [Codec](codec.md) | Typed requests and responses over the Services value model |
 | [Terms](terms.md) | Validated offering economics and limits |

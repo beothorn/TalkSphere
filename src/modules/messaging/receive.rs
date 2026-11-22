@@ -17,19 +17,16 @@ use super::{
     signing,
     state::Encoding,
 };
-use crate::modules::{
-    cryptography::secrets::{Persistent, Secret},
-    identity::api::IdentityId,
-};
+use crate::modules::identity::api::IdentityId;
 use std::{collections::BTreeMap, sync::Mutex};
 use zeroize::Zeroizing;
 
-/// The recipient's own identity and X25519 decryption key.
+/// The recipient's own identity and its X25519 agreement holder.
 pub struct Recipient<'a> {
     /// The recipient identity the message must be addressed to.
     pub id: IdentityId,
-    /// The persistent private key matching the published `identityEncryption` credential.
-    pub encryption_key: &'a Secret<Persistent>,
+    /// The holder of the persistent private key matching the published `identityEncryption` credential.
+    pub encryption_key: &'a dyn encryption::PersistentAgreement,
     /// The matching X25519 public key.
     pub encryption_public_key: [u8; 32],
 }

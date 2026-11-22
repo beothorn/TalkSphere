@@ -29,3 +29,10 @@ Malformed, excessive, mismatched or tampered objects return typed errors with no
 provisional output. Decryption does not authenticate the sender or confer trust.
 Unavailable storage prevents loading a usable handle; loaded operations perform no
 storage lookup and do not reinterpret backend failures as successful empty plaintext.
+
+## `agree`
+
+Inputs: a handle, a `Decrypt` capability scoped to the handle's identity, and a remote 32-byte X25519 public key. Output: a
+protected shared secret (never raw bytes). Charges the capability budget 32 bytes. Fails with access denied for a foreign handle or
+wrong scope, a resource-limit error when the budget is below 32 bytes, and a crypto error for a low-order remote key. It exists for
+service-specific constructions, such as the Messaging payload, that derive and authenticate their own keys.

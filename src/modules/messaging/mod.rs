@@ -29,6 +29,8 @@ pub mod signing;
 pub mod receipt;
 
 pub mod encryption;
+/// Identity-backed payload agreement so recipients decrypt without releasing a private key.
+pub mod identity;
 
 pub mod credential;
 

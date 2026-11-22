@@ -1,5 +1,6 @@
 //! Tests for authenticating, deduplicating and decrypting recovered messages (MS-17 and the validation failures).
 use super::{encryption::x25519_public, *};
+use crate::modules::cryptography::secrets::{Persistent, Secret};
 use crate::modules::messaging::{
     ids::{PlacementId, RecoveryId},
     metadata::{Metadata, SignedMessage},

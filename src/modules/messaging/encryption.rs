@@ -11,7 +11,7 @@ use super::{error::Error, metadata::Metadata, ports::Entropy, state::MINIMUM_ENC
 use crate::modules::cryptography::{
     api::KeyPair,
     primitives::{aead, agreement, hash, kdf},
-    secrets::{Content, Ephemeral, Persistent, Secret},
+    secrets::{Content, Ephemeral, Persistent, Secret, Shared},
 };
 use zeroize::Zeroizing;
 
@@ -111,16 +111,33 @@ pub(super) fn x25519_public(seed: &[u8; 32]) -> [u8; 32] {
     x25519_dalek::PublicKey::from(&x25519_dalek::StaticSecret::from(*seed)).to_bytes()
 }
 
+/// A holder of the recipient's persistent X25519 private key that performs agreement without exposing the key.
+/// Identity implements it with a scoped `Decrypt` capability; a raw secret implements it for tests and fixtures.
+pub trait PersistentAgreement {
+    /// Agree with a remote ephemeral public key and return only the protected shared secret.
+    /// # Errors
+    /// `Invalid` for a malformed or low-order remote key, or when the holder denies the operation.
+    fn agree(&self, remote: &[u8; 32]) -> Result<Secret<Shared>, Error>;
+}
+
+impl PersistentAgreement for Secret<Persistent> {
+    /// Agree directly with the held secret.
+    fn agree(&self, remote: &[u8; 32]) -> Result<Secret<Shared>, Error> {
+        tracing::trace!("Agreeing with a directly held persistent key");
+        agreement::persistent(self, remote).map_err(|_| Error::Invalid)
+    }
+}
+
 /// Decrypt a stored payload as the recipient, after the caller verified the sender signature and payload hash.
-/// Checks the version, that the embedded recipient key is `own_public_key` (the key whose private half is held), then derives the
-/// message key and authenticates the ciphertext against the reconstructed metadata bytes.
+/// Checks the version, that the embedded recipient key is `own_public_key` (the key whose private half `own_key` holds), then derives
+/// the message key and authenticates the ciphertext against the reconstructed metadata bytes.
 /// # Errors
 /// `Invalid` for a short payload, another version, a different recipient key, a low-order ephemeral key, or any
 /// authentication failure (wrong key, changed metadata, tampered tag or ciphertext). No plaintext is returned on failure.
 pub fn decrypt(
     payload: &[u8],
     metadata: &Metadata,
-    own_key: &Secret<Persistent>,
+    own_key: &dyn PersistentAgreement,
     own_public_key: &[u8; 32],
 ) -> Result<Zeroizing<Vec<u8>>, Error> {
     tracing::trace!("Decrypting a recovered message payload");
@@ -130,10 +147,10 @@ pub fn decrypt(
     if payload[1..33] != own_public_key[..] {
         return Err(Error::Invalid);
     }
-    let ephemeral_public = &payload[33..65];
+    let ephemeral_public: [u8; 32] = payload[33..65].try_into().map_err(|_| Error::Invalid)?;
     let nonce = &payload[65..65 + NONCE_BYTES];
     let sealed = &payload[65 + NONCE_BYTES..];
-    let shared = agreement::persistent(own_key, ephemeral_public).map_err(|_| Error::Invalid)?;
+    let shared = own_key.agree(&ephemeral_public)?;
     let aad = metadata_bytes(metadata);
     let key = message_key(shared, &aad)?;
     aead::open(&key, nonce, sealed, &aad, MAXIMUM_BYTES)

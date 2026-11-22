@@ -575,3 +575,35 @@ fn lifecycle_releases_private_authority_on_abandonment_and_restore_failures() {
     });
     assert_eq!(released.load(Ordering::SeqCst), 0);
 }
+
+// Service-specific agreement uses only the scoped Decrypt authority of the loaded handle and rejects foreign scopes,
+// foreign providers, excessive budgets and low-order remote keys before returning any shared secret.
+#[test]
+fn agreement_requires_scoped_decrypt_authority_and_a_contributory_remote_key() {
+    use crate::modules::identity::authority::Decrypt;
+    let provider = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    let keys = IdentityKeys::import(vec![7; 32].into(), vec![6; 32].into()).unwrap();
+    let (handle, _) = provider.handle(keys).unwrap();
+    let cap = provider.grant::<Decrypt>(&true, &handle, 32).unwrap();
+    let remote = [9u8; 32];
+    assert!(provider.agree(&handle, &cap, &remote).is_ok());
+    assert!(provider.agree(&handle, &cap, &[0u8; 32]).is_err());
+    let small = provider.grant::<Decrypt>(&true, &handle, 31).unwrap();
+    assert_eq!(
+        provider.agree(&handle, &small, &remote).err(),
+        Some(IdentityError::ResourceLimit)
+    );
+    let wrong = provider
+        .authority
+        .grant::<Decrypt>(IdentityId([0; 32]), 32)
+        .unwrap();
+    assert_eq!(
+        provider.agree(&handle, &wrong, &remote).err(),
+        Some(IdentityError::AccessDenied)
+    );
+    let other = Identity::new(Store::default(), entropy(), limits(), 1).unwrap();
+    assert_eq!(
+        other.agree(&handle, &cap, &remote).err(),
+        Some(IdentityError::AccessDenied)
+    );
+}
