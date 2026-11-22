@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-7 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-8 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -17,7 +17,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **5.** Implement exact Messaging price calculations.
 - [x] **6.** Validate Messaging offering terms and advertised limits.
 - [x] **7.** Validate operation-specific inputs and outputs.
-- [ ] **8.** Build and verify the exact message signing bytes.
+- [x] **8.** Build and verify the exact message signing bytes.
 - [ ] **9.** Build and verify recovery request and receipt signatures.
 - [ ] **10.** Implement the encrypted Messaging payload format.
 - [ ] **11.** Publish and validate the Board identity encryption credential.
@@ -203,6 +203,8 @@ Build `CR2SE-MESSAGE-V1` signing bytes and verify sender key derivation,
 authenticated caller, size, hash and Ed25519 signature in the order upstream
 specifies. Test MS-01: the exact byte layout and that mutating any metadata
 field or payload byte fails verification.
+
+Completed: [signing](../../src/modules/messaging/signing.md); MS-01 passes against the independent Python vector (identical bytes and signature) and every single-field mutation is rejected.
 
 ### 9. Build and verify recovery request and receipt signatures
 

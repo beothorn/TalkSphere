@@ -23,3 +23,5 @@ pub mod pricing;
 pub mod terms;
 
 pub mod codec;
+
+pub mod signing;
