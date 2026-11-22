@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-12 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-13 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -22,7 +22,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **10.** Implement the encrypted Messaging payload format.
 - [x] **11.** Publish and validate the Board identity encryption credential.
 - [x] **12.** Persist bounded payload staging and placement records.
-- [ ] **13.** Implement placement states, expiration and per-placement serialization.
+- [x] **13.** Implement placement states, expiration and per-placement serialization.
 - [ ] **14.** Implement durable participant preparation, commit, abort and status queries.
 - [ ] **15.** Recover Messaging participants before admitting new work.
 - [ ] **16.** Assess store metadata before receiving the payload body.
@@ -249,6 +249,8 @@ Implement receiving, pending, recovered, removed and expired transitions against
 the provider clock, with one serialized writer per placement. An operation
 accepted while active completes under its terms. Test every allowed and refused
 transition and the expiry boundary.
+
+Completed: [lifecycle](../../src/modules/messaging/lifecycle.md); serialization is the store's atomic update, proven by threaded race tests.
 
 ### 14. Implement durable participant preparation, commit, abort and status queries
 

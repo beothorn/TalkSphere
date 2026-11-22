@@ -12,6 +12,7 @@
 | [Signing](signing.md) | Message signing bytes, sender signing and verification |
 | [Placement](placement.md) | A placement record and its payload |
 | [Store](store.md) | Durable bounded placement storage |
+| [Lifecycle](lifecycle.md) | Expiration, transitions and per-placement serialization |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |

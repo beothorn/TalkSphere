@@ -34,3 +34,5 @@ pub mod credential;
 
 pub mod placement;
 pub mod store;
+
+pub mod lifecycle;
