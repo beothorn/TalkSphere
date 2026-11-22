@@ -9,6 +9,8 @@
 | [Metadata](metadata.md) | Provider-visible metadata and the signed message |
 | [Operation](operation.md) | Inputs and outputs of the six operations and the check |
 | [Ports](ports.md) | Clock, entropy and signer supplied by composition |
+| [Standard](standard.md) | Pinned definition and Services recognition |
+| [Fixtures](fixtures/README.md) | Independently generated schema and byte vectors |
 | [Test doubles](test_support.md) | Deterministic clock, entropy and identities for tests |
 
 See the [module README](README.md) for purpose, status and relationships.

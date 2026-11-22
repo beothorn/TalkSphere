@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-3 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-4 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -13,7 +13,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **1.** Reconcile Messaging requirements with the existing module contracts.
 - [x] **2.** Define Messaging types and dependency ports.
 - [x] **3.** Add deterministic Messaging test helpers.
-- [ ] **4.** Import the pinned Messaging definition and independent fixtures.
+- [x] **4.** Import the pinned Messaging definition and independent fixtures.
 - [ ] **5.** Implement exact Messaging price calculations.
 - [ ] **6.** Validate Messaging offering terms and advertised limits.
 - [ ] **7.** Validate operation-specific inputs and outputs.
@@ -166,6 +166,8 @@ through Services schema validation. Add independently generated fixtures for
 signing bytes, recovery request and receipt bytes and the MS-01 example, with a
 generator script and README naming its source revision. Tests consume literal
 bytes, never Rust-generated expectations.
+
+Completed: [standard catalogue](../../src/modules/messaging/standard.md) over the pinned definition and [fixtures](../../src/modules/messaging/fixtures/README.md) generated with PyNaCl; tests show Rust derives the same identities and verifies, and reproduces byte for byte, the Python signatures for MS-01, MS-06 and MS-07.
 
 ### 5. Implement exact Messaging price calculations
 

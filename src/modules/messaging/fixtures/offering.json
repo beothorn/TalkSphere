@@ -1,0 +1,42 @@
+{
+  "id": "messaging-standard",
+  "service": "cr2se.messaging",
+  "serviceVersion": 1,
+  "description": "Retain signed messages until recipient recovery or expiration.",
+  "creditIssuer": "PROVIDER_ID",
+  "pricing": {
+    "model": "cr2se.messaging.v1",
+    "minimumPrice": 1,
+    "payloadByteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "payloadByteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "recoveryByteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "renewalByteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "discoverPrice": 1,
+    "statusPrice": 1,
+    "removePrice": 2
+  },
+  "checkPrice": 3,
+  "info": {
+    "maximumPayloadBytes": 100,
+    "minimumRetentionSeconds": 1,
+    "maximumRetentionSeconds": 100,
+    "maximumTotalRetentionSeconds": 200,
+    "maximumDiscoverResults": 100,
+    "checkResponseSeconds": 5
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}
