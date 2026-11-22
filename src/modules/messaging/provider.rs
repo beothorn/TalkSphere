@@ -203,6 +203,35 @@ impl Provider {
         message: SignedMessage,
     ) -> Result<PreparedStore, Error> {
         tracing::trace!("Preparing a store after its payload arrived");
+        let effect = self.plan_store(assessment, message)?;
+        let Effect::Store {
+            placement_id,
+            price,
+            ..
+        } = &effect
+        else {
+            return Err(Error::Conflict);
+        };
+        let (placement_id, price) = (*placement_id, *price);
+        let token = self.participant.prepare(key, &effect)?;
+        Ok(PreparedStore {
+            key,
+            token,
+            placement_id,
+            price,
+        })
+    }
+
+    /// Verify the received payload against the assessed header and return the store effect to prepare, with a fresh placement ID.
+    /// Nothing is recorded.
+    /// # Errors
+    /// `Invalid` when the message differs from the assessed header or fails verification; `Unavailable` without randomness.
+    pub fn plan_store(
+        &self,
+        assessment: &StoreAssessment,
+        message: SignedMessage,
+    ) -> Result<Effect, Error> {
+        tracing::trace!("Planning a store after its payload arrived");
         let expected = &assessment.header;
         if message.metadata != expected.metadata
             || message.sender_public_key != expected.sender_public_key
@@ -212,17 +241,10 @@ impl Provider {
         }
         signing::verify_message(&message, Some(assessment.caller))?;
         let placement_id = self.participant.new_placement_id()?;
-        let effect = Effect::Store {
+        Ok(Effect::Store {
             placement_id,
             message,
             retention_seconds: expected.retention_seconds,
-            price: assessment.price,
-        };
-        let token = self.participant.prepare(key, &effect)?;
-        Ok(PreparedStore {
-            key,
-            token,
-            placement_id,
             price: assessment.price,
         })
     }
@@ -322,6 +344,44 @@ impl Provider {
         input: RecoverInput,
     ) -> Result<(RecoverOutput, u64), Error> {
         tracing::trace!("Recovering a pending message for its recipient");
+        let effect = match self.plan_recover(caller, input)? {
+            RecoverPlan::Replay { output, price } => return Ok((*output, price)),
+            RecoverPlan::Fresh(effect) => *effect,
+        };
+        let token = self.participant.prepare(key, &effect)?;
+        let Outcome::Recovered {
+            placement_id,
+            receipt,
+            price,
+        } = self.participant.commit(key, &token)?
+        else {
+            return Err(Error::Conflict);
+        };
+        let placement = self
+            .participant
+            .store()
+            .get(placement_id)?
+            .ok_or(Error::NotAvailable)?;
+        Ok((
+            RecoverOutput {
+                placement_id,
+                message: placement.message(),
+                receipt,
+            },
+            price,
+        ))
+    }
+
+    /// Validate a recovery without changing anything: the request is verified and priced, and either an exact retry is recognized (the
+    /// recorded output and original price) or the effect to prepare is returned.
+    /// # Errors
+    /// As for [`Provider::recover`], before any preparation.
+    pub fn plan_recover(
+        &self,
+        caller: IdentityId,
+        input: RecoverInput,
+    ) -> Result<RecoverPlan, Error> {
+        tracing::trace!("Planning a recovery for its recipient");
         let now = self.clock.now()?;
         let record = self
             .participant
@@ -351,14 +411,14 @@ impl Provider {
                 .get(input.placement_id)?
                 .ok_or(Error::NotAvailable)?;
             let receipt = record.receipt.ok_or(Error::NotAvailable)?;
-            return Ok((
-                RecoverOutput {
+            return Ok(RecoverPlan::Replay {
+                output: Box::new(RecoverOutput {
                     placement_id: input.placement_id,
                     message: placement.message(),
                     receipt,
-                },
-                record.recovery_price,
-            ));
+                }),
+                price: record.recovery_price,
+            });
         }
         let t = &self.terms;
         let price = pricing::recover(
@@ -366,30 +426,25 @@ impl Provider {
             t.recovery_usage,
             t.minimum_price,
         )?;
-        let effect = Effect::Recover { input, price };
-        let token = self.participant.prepare(key, &effect)?;
-        let Outcome::Recovered {
-            placement_id,
-            receipt,
+        Ok(RecoverPlan::Fresh(Box::new(Effect::Recover {
+            input,
             price,
-        } = self.participant.commit(key, &token)?
-        else {
-            return Err(Error::Conflict);
-        };
-        let placement = self
-            .participant
-            .store()
-            .get(placement_id)?
-            .ok_or(Error::NotAvailable)?;
-        Ok((
-            RecoverOutput {
-                placement_id,
-                message: placement.message(),
-                receipt,
-            },
-            price,
-        ))
+        })))
     }
+}
+
+/// What a validated recovery needs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RecoverPlan {
+    /// An exact retry: the recorded output and the original price; nothing is applied or charged again.
+    Replay {
+        /// The recorded recovery output.
+        output: Box<RecoverOutput>,
+        /// The original recovery price.
+        price: u64,
+    },
+    /// A first recovery: the effect to prepare and commit.
+    Fresh(Box<Effect>),
 }
 
 impl Provider {
@@ -437,6 +492,29 @@ impl Provider {
         input: RenewInput,
     ) -> Result<RenewOutput, Error> {
         tracing::trace!("Renewing a placement for its sender");
+        let effect = self.plan_renew(caller, input)?;
+        let token = self.participant.prepare(key, &effect)?;
+        match self.participant.commit(key, &token)? {
+            Outcome::Renewed {
+                placement_id,
+                previous_expires_at,
+                expires_at,
+                price,
+            } => Ok(RenewOutput {
+                placement_id,
+                previous_expires_at,
+                expires_at,
+                price,
+            }),
+            _ => Err(Error::Conflict),
+        }
+    }
+
+    /// Validate a renewal without changing anything and return the effect to prepare.
+    /// # Errors
+    /// As for [`Provider::renew`], before any preparation.
+    pub fn plan_renew(&self, caller: IdentityId, input: RenewInput) -> Result<Effect, Error> {
+        tracing::trace!("Planning a renewal for its sender");
         let t = &self.terms;
         let seconds = input.additional_seconds;
         if seconds < t.minimum_retention_seconds || seconds > t.maximum_retention_seconds {
@@ -476,21 +554,7 @@ impl Provider {
             ceiling_expires_at,
             price,
         };
-        let token = self.participant.prepare(key, &effect)?;
-        match self.participant.commit(key, &token)? {
-            Outcome::Renewed {
-                placement_id,
-                previous_expires_at,
-                expires_at,
-                price,
-            } => Ok(RenewOutput {
-                placement_id,
-                previous_expires_at,
-                expires_at,
-                price,
-            }),
-            _ => Err(Error::Conflict),
-        }
+        Ok(effect)
     }
 }
 
@@ -622,14 +686,9 @@ impl Provider {
         input: RemoveInput,
     ) -> Result<RemoveOutput, Error> {
         tracing::trace!("Removing a pending placement for its sender");
-        if let Some(done) = self.recorded_removal(caller, &input) {
-            return Ok(done);
-        }
-        let quote = self.quote_removal(caller, &input)?;
-        let effect = Effect::Remove {
-            input,
-            release_credits: quote.release_credits,
-            price: quote.price,
+        let effect = match self.plan_remove(caller, input)? {
+            RemovePlan::Replay(done) => return Ok(done),
+            RemovePlan::Fresh(effect) => *effect,
         };
         let token = self.participant.prepare(key, &effect)?;
         match self.participant.commit(key, &token)? {
@@ -648,6 +707,32 @@ impl Provider {
             _ => Err(Error::Conflict),
         }
     }
+
+    /// Validate a removal without changing anything: an exact retry is answered from the record, otherwise the quote fixes the credits
+    /// and the effect to prepare is returned.
+    /// # Errors
+    /// Those of `quote_removal`, before any preparation.
+    pub fn plan_remove(&self, caller: IdentityId, input: RemoveInput) -> Result<RemovePlan, Error> {
+        tracing::trace!("Planning a removal for its sender");
+        if let Some(done) = self.recorded_removal(caller, &input) {
+            return Ok(RemovePlan::Replay(done));
+        }
+        let quote = self.quote_removal(caller, &input)?;
+        Ok(RemovePlan::Fresh(Box::new(Effect::Remove {
+            input,
+            release_credits: quote.release_credits,
+            price: quote.price,
+        })))
+    }
+}
+
+/// What a validated removal needs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RemovePlan {
+    /// An exact retry: the recorded result; nothing is applied or issued again.
+    Replay(RemoveOutput),
+    /// A first removal: the effect to prepare and commit.
+    Fresh(Box<Effect>),
 }
 
 /// The provider-visible description of one placement; the sender is only a hint until recovery verifies it.
