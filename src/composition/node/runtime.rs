@@ -12,7 +12,7 @@ use super::{
     link::{Command, Link},
     owners::{self, Owners},
 };
-use crate::composition::policy::{Kind, Rates, Verdict};
+use crate::composition::policy::{Event as PolicyEvent, Kind, Rates, Verdict};
 use crate::composition::server::{
     Stage,
     config::Config,
@@ -471,7 +471,7 @@ impl Limiter {
         let now = owners::unix_seconds();
         let limits = owners.policy.quota.limits(&owners.peer_view(peer, now));
         if failure {
-            owners.observations.record(peer, Kind::Failed, now);
+            owners.observe(peer, PolicyEvent::Failed);
             return self.failures.hit(peer, now, limits.failures_per_minute);
         }
         let allowed = self.requests.hit(peer, now, limits.requests_per_minute);

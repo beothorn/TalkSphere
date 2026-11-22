@@ -11,6 +11,7 @@ use crate::{
         control::protocol::{Code, ControlError, Request, hex},
         offering::{OFFERING_ID, WANTED_ID},
     },
+    composition::policy::Event,
     modules::{
         identity::{
             api::{Contact, IdentityId},
@@ -383,6 +384,12 @@ impl Handler {
             .runtime
             .check_outcome(&context, key, Some(&expectations))
             .map_err(service_error)?;
+        // Only a conclusive result is evidence about the provider; an inconclusive check proves nothing.
+        match outcome {
+            Check::Pass => self.owners.observe(provider, Event::CheckPassed),
+            Check::Fail => self.owners.observe(provider, Event::CheckFailed),
+            Check::Inconclusive => {}
+        }
         Ok(json!({
             "leaseId": hex(&entry.lease.id), "offset": offset,
             "outcome": match outcome { Check::Pass => "pass", Check::Fail => "fail", Check::Inconclusive => "inconclusive" },

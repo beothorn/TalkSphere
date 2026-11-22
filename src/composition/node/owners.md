@@ -28,3 +28,9 @@ Storage value budget is fixed (depth 12, 4096 nodes, 65536 bytes), which bounds 
 unreadable) and recorded observations for policy decisions.
 
 `bootstrap(peer, now)` applies the bootstrap credit policy to a newly authenticated peer: durable record first, then the finite grant and a trust raise.
+
+`observe(peer, event)` records a verified observation (`CheckPassed`, `CheckFailed`, `ContributionVerified`, `Failed`) and lets the
+[trust policy](../policy/contracts.md) adjust local trust: a new value is written to the Ledger only when the policy returns one,
+within the configured steps and ceiling. Events come only from local verification: a wanted contribution whose committed store
+validated, a conclusive paid check, or a stream the peer failed or cancelled. An inconclusive check, a claimed balance or any
+peer-supplied text changes nothing. Automatic trust is off unless `trust` steps are configured with a nonzero ceiling.

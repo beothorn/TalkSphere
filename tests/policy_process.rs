@@ -400,3 +400,75 @@ fn a_client_earns_credits_by_fulfilling_wanted_storage() {
         1
     );
 }
+
+// Trust moves only on verified observations and only within the configured steps: a verified
+// contribution raises it, a passed check raises it further up to the ceiling, a failed check lowers it,
+// and an operator's explicit trust is the baseline the steps start from.
+#[test]
+fn trust_follows_verified_contributions_and_checks() {
+    let dir = Dir::new("trust");
+    let mut server = Node::init(&dir.0, "server", None);
+    let mut client = Node::init(&dir.0, "client", None);
+    server.set_policy(
+        r#"{"version":1,
+            "credit":{"wanted":{"creditsPerObject":5,"maximumObjectBytes":1024,"retentionSeconds":300}},
+            "trust":{"contribution":300000,"checkPassed":200000,"checkFailed":250000,"ceiling":600000}}"#,
+    );
+    let port = free_port();
+    server.start(Some(port));
+    client.start(None);
+    let contact = server.contact(port);
+    let object = dir.0.join("object");
+    std::fs::write(&object, b"replica bytes").unwrap();
+    server
+        .ctl(&["wanted-add", "--file", object.to_str().unwrap()])
+        .unwrap();
+    client
+        .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+        .unwrap();
+    assert_eq!(number(&balance(&server, &client), "trust"), 0);
+    client.ctl(&["fulfil", "--contact", &contact]).unwrap();
+    let trust = |server: &Node| number(&balance(server, &client), "trust");
+    eventually(
+        "the verified contribution never raised trust",
+        Duration::from_secs(10),
+        || trust(&server) == 300_000,
+    );
+    // The server pays the client's own credits for checks, so it records and trusts them first.
+    fund(&client, &server, 100);
+    // fund() set the server's trust in the client to 1 millionth, the operator's explicit baseline.
+    let leases = server.ctl(&["leases"]).unwrap();
+    let lease = leases[0]["leaseId"].as_str().unwrap().to_string();
+    let check = |byte: &str| {
+        server
+            .ctl(&[
+                "check",
+                "--lease",
+                &lease,
+                "--max-spend",
+                "10",
+                "--offset",
+                "0",
+                "--expected-byte",
+                byte,
+            ])
+            .unwrap()["outcome"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
+    assert_eq!(check("72"), "pass");
+    assert_eq!(trust(&server), 200_001);
+    assert_eq!(check("72"), "pass");
+    assert_eq!(trust(&server), 400_001);
+    assert_eq!(check("72"), "pass");
+    assert_eq!(trust(&server), 600_000);
+    assert_eq!(check("72"), "pass");
+    assert_eq!(
+        trust(&server),
+        600_000,
+        "automatic raises stop at the ceiling"
+    );
+    assert_eq!(check("00"), "fail");
+    assert_eq!(trust(&server), 350_000);
+}

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-12 are complete.
+Status: in progress; steps 1-13 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -28,7 +28,7 @@ large simulations without touching protocol code.
 - [x] **10.** Keep client connections alive with pings and bounded reconnects.
 - [x] **11.** Grant finite bootstrap credits and trust by policy.
 - [x] **12.** Publish wanted Storage terms and issue earned credits by policy.
-- [ ] **13.** Adjust trust from verified contributions and failures by policy.
+- [x] **13.** Adjust trust from verified contributions and failures by policy.
 - [ ] **14.** Maintain replica sets at a policy target across independent peers.
 - [ ] **15.** Schedule staggered checks, renewals and repairs by policy.
 - [ ] **16.** Report replica-set state using the CR2SE redundancy states.
@@ -226,6 +226,8 @@ Raise or lower trust from verified observations only: passing and failing
 checks, completed contributions and refusals, within policy bounds. CR2SE
 allows assigning trust after checking a contribution. Test each adjustment,
 the bounds and that unverified claims change nothing.
+
+Completed: `Owners::observe` records the event and applies the policy's new trust. Verified wanted contributions, conclusive paid checks and peer-attributed failures feed it; an inconclusive check does not. A process test shows trust rising by contribution and passed-check steps to the ceiling, never above it, and falling after a failed check, starting from the operator's explicit value.
 
 ### 14. Maintain replica sets at a policy target across independent peers
 
