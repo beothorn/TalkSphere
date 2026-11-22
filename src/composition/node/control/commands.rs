@@ -209,6 +209,8 @@ impl Handler {
             "provider": self.owners.provider, "leases": entries.len(),
             "unknownOutcomes": self.journal.unknown().len(), "balances": balances,
             "stopping": self.signal.stopping(),
+            "connections": self.link.peers().count(),
+            "connectedPeers": self.link.peers().peers().into_iter().map(text::format).collect::<Vec<_>>(),
         }))
     }
 

@@ -5,7 +5,7 @@ same parameters repeats the reply; reuse with other parameters is refused; memor
 lifetime); `own` and `trust` set absolute values, so repeating them is safe; `balance` shows the
 issuer-separated view for one peer.
 
-Inspection: `status` (identity, address, role, leases, unknown outcomes, balances at known
+Inspection: `status` (identity, address, role, leases, unknown outcomes, live connection count and connected peer IDs, balances at known
 providers), `leases` and `outcomes` (optionally unknown only).
 
 Paid Storage, always under an explicit spending ceiling:

@@ -302,6 +302,15 @@ fn route(
     }
     match bridge.event(transport, event) {
         Ok(Some(Event::Authenticated(context))) => {
+            let handle = transport
+                .connection_handles()
+                .find(|h| h.id() == &context.connection)
+                .cloned();
+            if let Some(handle) = handle
+                && !link.peers().add(&context, handle)
+            {
+                tracing::warn!("The live peer registry is full; the connection is not tracked");
+            }
             if let Some(index) = pending
                 .iter()
                 .position(|(h, _)| h.id() == &context.connection)

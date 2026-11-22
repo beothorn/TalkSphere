@@ -3,6 +3,7 @@
 //! Callers: control command handlers. The loop owns Transport and the Peer Protocol
 //! bridge, so workers never touch them: they send a [`Command`] and block on a bounded
 //! reply. Every wait has a deadline, so a worker cannot hang the node on a lost reply.
+use super::peers::Peers;
 use crate::{
     composition::server::pump::Signal,
     modules::{
@@ -58,6 +59,7 @@ pub struct Link {
     commands: Sender<Command>,
     signal: Signal,
     sessions: Arc<Mutex<BTreeMap<IdentityId, Session>>>,
+    peers: Peers,
 }
 
 impl Link {
@@ -70,6 +72,7 @@ impl Link {
                 commands,
                 signal,
                 sessions: Arc::new(Mutex::new(BTreeMap::new())),
+                peers: Peers::new(),
             },
             receiver,
         )
@@ -139,9 +142,16 @@ impl Link {
         }
     }
 
-    /// Forget sessions whose connection closed; called only by the node loop.
+    /// The registry of authenticated live connections, whichever side opened them.
+    pub fn peers(&self) -> &Peers {
+        tracing::trace!("Reading the live peer registry");
+        &self.peers
+    }
+
+    /// Forget sessions and the live record of a closed connection; called only by the node loop.
     pub fn closed(&self, connection: &crate::modules::transport::handles::ConnectionId) {
         tracing::trace!("Dropping sessions of a closed connection");
+        self.peers.remove(connection);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.retain(|_, session| session.connection.id() != connection);
         }
@@ -251,5 +261,26 @@ mod tests {
         );
         link.closed(connection.id());
         assert!(link.session(IdentityId([1; 32])).is_none());
+    }
+
+    // Closing a connection also removes it from the live registry, even without a session.
+    #[test]
+    fn closed_connections_leave_the_live_registry() {
+        use crate::modules::transport::{
+            api::{ConnectionRole, PeerContext},
+            ports::identity::IdentityId as WireId,
+        };
+        let (link, _commands) = Link::new(Signal::default());
+        let connection = ConnectionHandle::new();
+        let context = PeerContext {
+            connection: connection.id().clone(),
+            role: ConnectionRole::Acceptor,
+            local_identity: WireId([9; 32]),
+            peer_identity: WireId([1; 32]),
+        };
+        assert!(link.peers().add(&context, connection.clone()));
+        assert_eq!(link.peers().count_for(IdentityId([1; 32])), 1);
+        link.closed(connection.id());
+        assert_eq!(link.peers().count(), 0);
     }
 }

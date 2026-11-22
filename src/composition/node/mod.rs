@@ -13,4 +13,5 @@ pub mod link;
 pub mod observation_store;
 pub mod offering;
 pub mod owners;
+pub mod peers;
 pub mod runtime;

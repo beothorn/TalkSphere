@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-4 are complete.
+Status: in progress; steps 1-4 and 8 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -23,7 +23,7 @@ large simulations without touching protocol code.
 - [ ] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
 - [ ] **6.** Apply per-identity quotas and rate limits before accepting work.
 - [ ] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
-- [ ] **8.** Track live peer connections by identity.
+- [x] **8.** Track live peer connections by identity.
 - [ ] **9.** Send requests to a peer over the connection that peer opened.
 - [ ] **10.** Keep client connections alive with pings and bounded reconnects.
 - [ ] **11.** Grant finite bootstrap credits and trust by policy.
@@ -176,6 +176,8 @@ Keep a bounded registry of authenticated live connections keyed by identity,
 updated on connect, close and GOAWAY. Test concurrent connections from one
 identity, replacement after reconnect and that the registry never outlives a
 closed connection.
+
+Completed: [Peers](../../src/composition/node/peers.md), wired through `Link` and reported by `node-ctl status`; a process test follows a connection until it closes. GOAWAY surfaces as a close observation. Done before step 5 because admission needs the counts.
 
 ### 9. Send requests to a peer over the connection that peer opened
 

@@ -13,6 +13,7 @@ It is Linux-only and does not change the ordinary `serve` composition.
 | [Owners](owners.md) | Open, create and recover every durable owner |
 | [Initialization](init.md) | Explicit creation and read-only inspection of a node root |
 | [Observation store](observation_store.md) | Durable bounded per-peer observations for peer policy |
+| [Peers](peers.md) | Registry of authenticated live connections by peer |
 | [Link](link.md) | Command queue between control workers and the node loop |
 | [Runtime](runtime.md) | Startup order, event loop and shutdown drain |
 | [Control](control/mod.md) | Owner-only local control socket and commands |
