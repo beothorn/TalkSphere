@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-29 and 32 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-29, 32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -43,7 +43,7 @@ needs it, and the hosted pages and feeds proposal
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
 - [x] **32.** Validate recovered messages and decrypt only after authentication.
 - [ ] **33.** Exercise crash recovery at every coordination boundary.
-- [ ] **34.** Verify races between recovery, removal, renewal and expiration.
+- [x] **34.** Verify races between recovery, removal, renewal and expiration.
 - [ ] **35.** Exercise Messaging between authenticated node processes with replicas.
 - [ ] **36.** Add a discoverable Messaging exercise and detailed help.
 - [ ] **37.** Complete the Messaging acceptance matrix.
@@ -423,6 +423,8 @@ release credits never apply twice (SV-09 with Messaging effects).
 Run concurrent recover against remove, recover near expiry, renew against
 remove and status against transitions. Test MS-16: exactly one transition
 succeeds and each reply reports a state that existed.
+
+Completed: provider-level MS-16 tests in `provider_tests.rs` (recover against remove, renew against remove, the exact expiry boundary of every operation, status against a recovery); the store-level races from step 13 remain. These run on the provider engine; races across Services coordination are covered when step 30 exists.
 
 ### 35. Exercise Messaging between authenticated node processes with replicas
 

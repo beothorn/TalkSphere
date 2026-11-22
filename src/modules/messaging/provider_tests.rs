@@ -1375,3 +1375,261 @@ fn unauthorized_and_unknown_placements_are_indistinguishable() {
         recover(h.sender.identity(), unknown)
     );
 }
+
+// A recovery request from the recipient with its own recovery ID for the stored `abc` message.
+fn recovery_with(h: &Harness, placement: PlacementId, recovery: u8) -> RecoverInput {
+    recovery_request(h, placement, recovery)
+}
+
+// MS-16: racing recoveries (distinct recovery IDs) and removals of one pending placement produce exactly one transition. Every loser is
+// refused as unavailable or conflicting, the final state is the winner's, release credits exist only if removal won, and discovery agrees.
+#[test]
+fn ms_16_recover_and_remove_race_has_one_winner() {
+    for round in 0..20u8 {
+        let h = Arc::new(harness());
+        let (provider, issuer) = removing(&h, 50);
+        let provider = Arc::new(provider);
+        let id = provider
+            .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+            .unwrap()
+            .placement_id;
+        let workers: Vec<_> = (0..8u8)
+            .map(|n| {
+                let (h, provider) = (h.clone(), provider.clone());
+                std::thread::spawn(move || {
+                    if n % 2 == 0 {
+                        provider
+                            .recover(
+                                key(10 + n),
+                                h.recipient.identity(),
+                                recovery_with(&h, id, n + 1),
+                            )
+                            .map(|_| "recovered")
+                    } else {
+                        let mut request = removal(id, 1010, 0);
+                        request.removal_id = super::super::ids::RemovalId([n; 32]);
+                        provider
+                            .remove(key(10 + n), h.sender.identity(), request)
+                            .map(|_| "removed")
+                    }
+                })
+            })
+            .collect();
+        let results: Vec<_> = workers.into_iter().map(|w| w.join().unwrap()).collect();
+        let winners: Vec<_> = results.iter().filter_map(|r| r.as_ref().ok()).collect();
+        assert_eq!(winners.len(), 1, "round {round}: {results:?}");
+        assert!(
+            results
+                .iter()
+                .filter_map(|r| r.as_ref().err())
+                .all(|e| matches!(e, Error::NotAvailable | Error::Conflict))
+        );
+        let state = h.store.record(id).unwrap().state;
+        match *winners[0] {
+            "recovered" => assert_eq!((state, issuer.issued().len()), (State::Recovered, 0)),
+            _ => assert_eq!((state, issuer.issued().len()), (State::Removed, 1)),
+        }
+        let listed = provider
+            .discover(
+                h.recipient.identity(),
+                DiscoverInput {
+                    cursor: None,
+                    limit: 5,
+                },
+            )
+            .unwrap()
+            .messages
+            .len();
+        assert_eq!(listed, 0);
+    }
+}
+
+// MS-16: a renewal and a removal naming the same expiry race to one winner; a renewal that wins makes the removal stale (it must be
+// asked again with the new expiry) and a removal that wins makes the renewal unavailable.
+#[test]
+fn ms_16_renew_and_remove_race_has_one_winner() {
+    for round in 0..20u8 {
+        let h = Arc::new(harness());
+        let (provider, _issuer) = removing(&h, 0);
+        let provider = Arc::new(provider);
+        let id = provider
+            .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+            .unwrap()
+            .placement_id;
+        let renew = {
+            let (h, provider) = (h.clone(), provider.clone());
+            std::thread::spawn(move || {
+                provider
+                    .renew(
+                        key(2),
+                        h.sender.identity(),
+                        RenewInput {
+                            placement_id: id,
+                            expected_expires_at: 1010,
+                            additional_seconds: 5,
+                        },
+                    )
+                    .map(|_| ())
+            })
+        };
+        let remove = {
+            let (h, provider) = (h.clone(), provider.clone());
+            std::thread::spawn(move || {
+                provider
+                    .remove(key(3), h.sender.identity(), removal(id, 1010, 0))
+                    .map(|_| ())
+            })
+        };
+        let (renewed, removed) = (renew.join().unwrap(), remove.join().unwrap());
+        assert!(
+            renewed.is_ok() != removed.is_ok(),
+            "round {round}: {renewed:?} {removed:?}"
+        );
+        let record = h.store.record(id).unwrap();
+        if renewed.is_ok() {
+            assert_eq!(
+                (record.state, record.expires_at, removed),
+                (State::Pending, 1015, Err(Error::Conflict))
+            );
+        } else {
+            // The renewal lost either to the finished removal (unavailable) or to its in-flight lock (conflict).
+            assert_eq!(record.state, State::Removed);
+            assert!(
+                matches!(renewed, Err(Error::NotAvailable | Error::Conflict)),
+                "{renewed:?}"
+            );
+        }
+    }
+}
+
+// MS-16: every operation is available one second before the expiry and unavailable exactly at it, so near-expiry callers see either
+// the whole operation or a clean refusal, never a half-applied state.
+#[test]
+fn ms_16_operations_end_exactly_at_the_expiry() {
+    let h = harness();
+    let (provider, _issuer) = removing(&h, 0);
+    let a = h.sender.identity();
+    let make = |n: u8| {
+        provider
+            .store(key(n), a, input(&h, b"abc", 10))
+            .unwrap()
+            .placement_id
+    };
+    let (r1, r2, r3, r4) = (make(1), make(2), make(3), make(4));
+    h.clock.set(1009);
+    assert!(provider.status(a, StatusInput { placement_id: r1 }).is_ok());
+    assert!(
+        provider
+            .check(
+                a,
+                CheckInput {
+                    placement_id: r1,
+                    offset: 0
+                }
+            )
+            .is_ok()
+    );
+    assert!(
+        provider
+            .renew(
+                key(5),
+                a,
+                RenewInput {
+                    placement_id: r2,
+                    expected_expires_at: 1010,
+                    additional_seconds: 1
+                }
+            )
+            .is_ok()
+    );
+    assert!(provider.remove(key(6), a, removal(r3, 1010, 0)).is_ok());
+    assert!(
+        provider
+            .recover(key(7), h.recipient.identity(), recovery_with(&h, r4, 7))
+            .is_ok()
+    );
+    h.clock.set(1010);
+    assert_eq!(
+        provider.status(a, StatusInput { placement_id: r1 }).err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider
+            .check(
+                a,
+                CheckInput {
+                    placement_id: r1,
+                    offset: 0
+                }
+            )
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider
+            .renew(
+                key(8),
+                a,
+                RenewInput {
+                    placement_id: r1,
+                    expected_expires_at: 1010,
+                    additional_seconds: 1
+                }
+            )
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider.remove(key(9), a, removal(r1, 1010, 0)).err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider
+            .recover(key(10), h.recipient.identity(), recovery_with(&h, r1, 8))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+}
+
+// MS-16: a sender polling status while the recipient recovers only ever sees a state that existed: pending without a receipt or
+// recovered with the complete receipt, never a mixture.
+#[test]
+fn ms_16_status_observes_only_whole_states() {
+    let h = Arc::new(harness());
+    let id = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap()
+        .placement_id;
+    let reader = {
+        let h = h.clone();
+        std::thread::spawn(move || {
+            let mut seen = Vec::new();
+            for _ in 0..200 {
+                let s = h
+                    .provider
+                    .status(h.sender.identity(), StatusInput { placement_id: id })
+                    .unwrap();
+                seen.push((s.state, s.receipt.is_some()));
+            }
+            seen
+        })
+    };
+    h.provider
+        .recover(key(2), h.recipient.identity(), recovery_with(&h, id, 7))
+        .unwrap();
+    let seen = reader.join().unwrap();
+    assert!(
+        seen.iter()
+            .all(|s| matches!(s, (State::Pending, false) | (State::Recovered, true))),
+        "{seen:?}"
+    );
+    let last = h
+        .provider
+        .status(h.sender.identity(), StatusInput { placement_id: id })
+        .unwrap();
+    assert_eq!(
+        (last.state, last.receipt.is_some()),
+        (State::Recovered, true)
+    );
+}
