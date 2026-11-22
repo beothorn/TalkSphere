@@ -100,6 +100,12 @@ impl Peers {
             .map(|l| l.connection.clone())
     }
 
+    /// Every live connection with its peer and local authority.
+    pub fn live(&self) -> Vec<Live> {
+        tracing::trace!("Listing live connections");
+        self.lock().clone()
+    }
+
     /// Distinct peers with at least one live connection, in first-connected order.
     pub fn peers(&self) -> Vec<IdentityId> {
         tracing::trace!("Listing connected peers");

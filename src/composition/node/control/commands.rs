@@ -593,7 +593,9 @@ mod tests {
                 "store",
                 json!({"contact": text::format(PEER), "data": "00", "retentionSeconds": 5, "maximum": 9})
             )),
-            Code::Invalid
+            // An ID alone is a valid contact for a peer with a live connection; with none the request is
+            // unavailable at once, not invalid.
+            Code::Unavailable
         );
         assert_eq!(
             code(run(

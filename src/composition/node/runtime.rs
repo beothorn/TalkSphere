@@ -5,6 +5,7 @@
 //! authenticated Transport, then listen. Nothing is reachable from the network before
 //! recovery finishes. The loop alone touches Transport; local control workers reach it
 //! only through the [`Link`] command queue.
+use super::upkeep::Upkeep;
 use super::{
     config::NodeConfig,
     layout::Layout,
@@ -84,6 +85,12 @@ pub fn run<G>(
     let local = IdentityId(credentials.local_id.0);
     let owners = Arc::new(owners::open(layout, config, local, false)?);
     owners.publish()?;
+    let contacts: Vec<(IdentityId, std::net::SocketAddr)> = server
+        .options()
+        .contacts
+        .iter()
+        .filter_map(|c| Some((IdentityId(c.expected_id.0), c.endpoint?)))
+        .collect();
     let mut transport =
         transport::compose(server, credentials).map_err(|e| format!("transport failed: {e:?}"))?;
     let limits = bridge_config(&transport);
@@ -98,13 +105,26 @@ pub fn run<G>(
         .listen()
         .map_err(|e| format!("listener failed: {e:?}"))?;
     report(Status::Ready(ready));
+    let begun = Instant::now();
+    let mut upkeep = Upkeep::new(&contacts, begun);
+    // The initial attempts come from Transport's one-shot contact start; upkeep takes over from here.
+    upkeep.due_connects(begun, |_| false);
+    let mut dials: Vec<(ConnectionId, IdentityId)> = Vec::new();
     for attempt in transport
         .connect_contacts()
         .map_err(|e| format!("contacts failed: {e:?}"))?
     {
-        if attempt.admitted.is_err() {
-            tracing::warn!("Configured contact was not admitted; the listener remains available");
-            report(Status::ContactFailed);
+        let peer = IdentityId(attempt.expected_id.0);
+        match attempt.admitted {
+            Ok(handle) => dials.push((handle.id().clone(), peer)),
+            Err(_) => {
+                tracing::warn!(
+                    "Configured contact was not admitted; the listener remains available"
+                );
+                report(Status::ContactFailed);
+                let delay = owners.policy.connection.reconnect_delay_seconds(0);
+                upkeep.failed(peer, begun, Duration::from_secs(delay));
+            }
         }
     }
     let guard = control(&Started {
@@ -117,8 +137,13 @@ pub fn run<G>(
     let result = drive(
         &mut transport,
         &mut bridge,
-        &link,
-        &owners,
+        Shared {
+            link: &link,
+            owners: &owners,
+            limiter: Limiter::default(),
+            upkeep,
+            dials,
+        },
         &commands,
         &signal,
         &mut report,
@@ -183,19 +208,14 @@ type Pending = Vec<(
 fn drive(
     transport: &mut Transport,
     bridge: &mut Bridge,
-    link: &Link,
-    owners: &Owners,
+    mut shared: Shared<'_>,
     commands: &Receiver<Command>,
     signal: &Signal,
     report: &mut impl FnMut(Status),
 ) -> Result<(), String> {
     tracing::trace!("Driving the node event loop");
+    let owners = shared.owners;
     let mut last_flush = Instant::now();
-    let mut shared = Shared {
-        link,
-        owners,
-        limiter: Limiter::default(),
-    };
     let waker = Waker::from(Arc::new(Notify(signal.clone())));
     let mut cx = Context::from_waker(&waker);
     let mut pending: Pending = Vec::new();
@@ -217,6 +237,9 @@ fn drive(
                 .observe(&event)
                 .map_err(|e| format!("transport failed: {e:?}"))?;
             route(transport, bridge, &mut shared, &mut pending, event, report);
+        }
+        if transport.stage == Stage::Ready {
+            maintain(transport, &mut shared);
         }
         if last_flush.elapsed() >= OBSERVATION_FLUSH {
             last_flush = Instant::now();
@@ -318,6 +341,9 @@ fn route(
         link,
         owners,
         limiter,
+        upkeep,
+        dials,
+        ..
     } = ctx;
     if !limiter.permit(owners, link, &event) {
         if let Some(connection) = connection_of(&event) {
@@ -331,7 +357,19 @@ fn route(
         Event::Authenticated(context) => Some(context.connection.clone()),
         _ => None,
     };
+    if let Event::PingFinished {
+        connection,
+        token,
+        result,
+    } = &event
+        && upkeep.ping_finished(connection, *token)
+        && result.is_err()
+    {
+        tracing::debug!("A ping was not answered in time and its connection is being closed");
+        close(transport, pending, connection);
+    }
     if let Event::ConnectionClosed { connection, .. } = &event {
+        schedule_reconnect(owners, link, upkeep, dials, connection);
         link.closed(connection);
         fail_closed(pending, connection);
         report(Status::ConnectionClosed);
@@ -341,6 +379,12 @@ fn route(
             if !admit(owners, link, &context) {
                 close(transport, pending, &context.connection);
                 return;
+            }
+            if let Some(index) = dials.iter().position(|(c, _)| c == &context.connection) {
+                dials.remove(index);
+            }
+            if upkeep.is_contact(IdentityId(context.peer_identity.0)) {
+                upkeep.connected(IdentityId(context.peer_identity.0));
             }
             let handle = transport
                 .connection_handles()
@@ -378,6 +422,9 @@ struct Shared<'a> {
     link: &'a Link,
     owners: &'a Owners,
     limiter: Limiter,
+    upkeep: Upkeep,
+    /// Connection attempts in flight to configured contacts.
+    dials: Vec<(ConnectionId, IdentityId)>,
 }
 
 /// Rolling-minute counters of requests the peers opened and of failures attributed to them.
@@ -435,6 +482,71 @@ fn connection_of(event: &Event) -> Option<ConnectionId> {
         Event::StreamOpened { context, .. } => Some(context.connection.clone()),
         Event::StreamClosed { stream, .. } => Some(stream.connection_id().clone()),
         _ => None,
+    }
+}
+
+// A closed connection to a configured contact (an attempt that never authenticated, or an established
+// one that was lost) is retried after the policy's bounded, growing delay.
+fn schedule_reconnect(
+    owners: &Owners,
+    link: &Link,
+    upkeep: &mut Upkeep,
+    dials: &mut Vec<(ConnectionId, IdentityId)>,
+    connection: &ConnectionId,
+) {
+    tracing::trace!("Scheduling a reconnect for a closed contact connection");
+    let peer = match dials.iter().position(|(c, _)| c == connection) {
+        Some(index) => dials.remove(index).1,
+        None => match link.peers().peer_of(connection) {
+            Some(peer) if upkeep.is_contact(peer) && link.peers().count_for(peer) <= 1 => peer,
+            _ => return,
+        },
+    };
+    let delay = owners
+        .policy
+        .connection
+        .reconnect_delay_seconds(upkeep.attempts(peer));
+    upkeep.failed(peer, Instant::now(), Duration::from_secs(delay));
+}
+
+// Start due reconnects and pings. Dial results arrive as events, so nothing here waits.
+fn maintain(transport: &mut Transport, shared: &mut Shared<'_>) {
+    tracing::trace!("Running connection upkeep");
+    let now = Instant::now();
+    let Shared {
+        link,
+        owners,
+        upkeep,
+        dials,
+        ..
+    } = shared;
+    for (peer, address) in upkeep.due_connects(now, |p| link.peers().count_for(p) > 0) {
+        let attempt = ConnectRequest::new(address, ExpectedPeer::Known(WireId(peer.0)))
+            .ok()
+            .and_then(|request| transport.submit(Request::Connect(request)).ok());
+        match attempt {
+            Some(Accepted::Connection(handle)) => dials.push((handle.id().clone(), peer)),
+            _ => {
+                let delay = owners
+                    .policy
+                    .connection
+                    .reconnect_delay_seconds(upkeep.attempts(peer));
+                upkeep.failed(peer, now, Duration::from_secs(delay));
+            }
+        }
+    }
+    let live = link.peers().live();
+    let ids: Vec<ConnectionId> = live.iter().map(|l| l.connection.id().clone()).collect();
+    let interval = Duration::from_secs(owners.policy.connection.ping_interval_seconds());
+    let timeout = Duration::from_secs(owners.policy.connection.ping_timeout_seconds());
+    for due in upkeep.due_pings(now, interval, &ids) {
+        if let Some(entry) = live.iter().find(|l| l.connection.id() == &due.connection) {
+            let _ = transport.submit(Request::Ping {
+                connection: entry.connection.clone(),
+                token: due.token,
+                timeout,
+            });
+        }
     }
 }
 

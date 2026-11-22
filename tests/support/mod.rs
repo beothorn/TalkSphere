@@ -91,6 +91,23 @@ impl Node {
 
     // Start serving with an optional RUST_LOG filter; diagnostics go to a file so a chatty node never blocks.
     pub fn start_with(&mut self, port: Option<u16>, filter: Option<&str>) {
+        self.start_full(port, filter, &[]);
+    }
+
+    // Start serving with extra `serve` arguments, for example `--contact` to keep a server connection.
+    pub fn start_args(&mut self, port: Option<u16>, extra: &[&str]) {
+        self.start_full(port, None, extra);
+    }
+
+    // Send a signal to the running process, for example STOP to freeze it without closing its sockets.
+    pub fn signal(&self, signal: rustix::process::Signal) {
+        let pid = self.child.as_ref().unwrap().id() as i32;
+        rustix::process::kill_process(rustix::process::Pid::from_raw(pid).unwrap(), signal)
+            .unwrap();
+    }
+
+    // Shared implementation of every start variant.
+    fn start_full(&mut self, port: Option<u16>, filter: Option<&str>, extra: &[&str]) {
         let listen = format!("127.0.0.1:{}", port.unwrap_or(0));
         let log = std::fs::OpenOptions::new()
             .create(true)
@@ -105,6 +122,7 @@ impl Node {
             "--listen",
             &listen,
         ]);
+        command.args(extra);
         if let Some(filter) = filter {
             command.env("RUST_LOG", filter);
         }

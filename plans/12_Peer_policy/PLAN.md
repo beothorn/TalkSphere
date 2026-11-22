@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-9 are complete.
+Status: in progress; steps 1-10 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -25,7 +25,7 @@ large simulations without touching protocol code.
 - [x] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
 - [x] **8.** Track live peer connections by identity.
 - [x] **9.** Send requests to a peer over the connection that peer opened.
-- [ ] **10.** Keep client connections alive with pings and bounded reconnects.
+- [x] **10.** Keep client connections alive with pings and bounded reconnects.
 - [ ] **11.** Grant finite bootstrap credits and trust by policy.
 - [ ] **12.** Publish wanted Storage terms and issue earned credits by policy.
 - [ ] **13.** Adjust trust from verified contributions and failures by policy.
@@ -199,6 +199,8 @@ Completed: sessions reuse the live connection whichever side opened it and conta
 Add a client profile that connects outward to configured servers, keeps each
 connection open with PING at a policy interval, and reconnects with bounded
 backoff after loss. Test ping timeout, reconnect and the backoff bound.
+
+Completed: [Upkeep](../../src/composition/node/upkeep.md) and the [client profile](../../src/composition/node/runtime.md): `serve --node-root --contact` keeps contacts connected with policy-bounded backoff and pings every connection. Process tests restart a crashed server and freeze one with SIGSTOP; the client detects the silent connection by ping timeout and reconnects.
 
 ### 11. Grant finite bootstrap credits and trust by policy
 

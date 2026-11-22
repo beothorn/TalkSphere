@@ -37,3 +37,11 @@ recorded, and refused events are not counted again. Simultaneous pending operati
 smaller of `capacity.perOwner` and `quota.pending` (one value for all peers, because the Storage gate takes
 one number); a request over it is refused before work with `resource_limit` and no charge. Defaults impose no
 rate limit.
+
+## Client profile
+
+`serve --node-root R --contact CONTACT` keeps each contact connected: the first attempt is Transport's one-shot start,
+and [upkeep](upkeep.md) retries failed or lost connections with the policy's bounded growing delay. Every live
+connection, whichever side opened it, is pinged at `connection.pingSeconds` and closed when a pong is late, so a
+silent peer is dropped and the registry never lists a dead connection for long. A contact that already connected to this
+node is not dialed again. A node with no `--contact` behaves as before.

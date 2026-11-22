@@ -173,3 +173,83 @@ fn server_calls_an_outbound_only_client_over_its_own_connection() {
     assert!(started.elapsed() < Duration::from_secs(5));
     assert_eq!(number(&balance(&server, &client), "owned"), 100 - price);
 }
+
+// Wait until `check` holds, failing the test with `message` after the timeout.
+fn eventually(message: &str, timeout: Duration, mut check: impl FnMut() -> bool) {
+    let deadline = std::time::Instant::now() + timeout;
+    while !check() {
+        assert!(std::time::Instant::now() < deadline, "{message}");
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+// A client started with a server contact reconnects by itself after the server crashes and restarts on
+// the same port, and the server sees the client again without any command to either node.
+#[test]
+fn a_client_reconnects_after_the_server_restarts() {
+    let dir = Dir::new("reconnect");
+    let (mut server, mut client) = (
+        Node::init(&dir.0, "server", None),
+        Node::init(&dir.0, "client", None),
+    );
+    let port = free_port();
+    server.start(Some(port));
+    client.start_args(None, &["--contact", &server.contact(port)]);
+    let sees_client = |server: &Node| {
+        server
+            .ctl(&["status"])
+            .is_ok_and(|s| s["connectedPeers"][0].as_str() == Some(client.id.as_str()))
+    };
+    eventually(
+        "the client never connected",
+        Duration::from_secs(20),
+        || sees_client(&server),
+    );
+    server.crash();
+    eventually(
+        "the client never noticed the loss",
+        Duration::from_secs(20),
+        || number(&client.ctl(&["status"]).unwrap(), "connections") == 0,
+    );
+    server.start(Some(port));
+    eventually(
+        "the client never reconnected",
+        Duration::from_secs(30),
+        || sees_client(&server),
+    );
+}
+
+// A server that stops answering without closing its socket is detected by the client's pings: the
+// connection is closed after the ping timeout, and the client reconnects once the server answers again.
+#[test]
+fn an_unanswered_ping_closes_the_connection_and_the_client_reconnects() {
+    let dir = Dir::new("ping");
+    let (mut server, mut client) = (
+        Node::init(&dir.0, "server", None),
+        Node::init(&dir.0, "client", None),
+    );
+    client.set_policy(
+        r#"{"version":1,"connection":{"pingSeconds":1,"pingTimeoutSeconds":1,"reconnectMaxSeconds":2}}"#,
+    );
+    let port = free_port();
+    server.start(Some(port));
+    client.start_args(None, &["--contact", &server.contact(port)]);
+    eventually(
+        "the client never connected",
+        Duration::from_secs(20),
+        || number(&client.ctl(&["status"]).unwrap(), "connections") == 1,
+    );
+    // Freeze the server: its sockets stay open but nothing is answered.
+    server.signal(rustix::process::Signal::STOP);
+    eventually(
+        "the silent connection was never closed",
+        Duration::from_secs(20),
+        || number(&client.ctl(&["status"]).unwrap(), "connections") == 0,
+    );
+    server.signal(rustix::process::Signal::CONT);
+    eventually(
+        "the client never reconnected",
+        Duration::from_secs(30),
+        || number(&client.ctl(&["status"]).unwrap(), "connections") == 1,
+    );
+}
