@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-6 and 8 are complete.
+Status: in progress; steps 1-8 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -22,7 +22,7 @@ large simulations without touching protocol code.
 - [x] **4.** Record per-peer observations durably and within fixed bounds.
 - [x] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
 - [x] **6.** Apply per-identity quotas and rate limits before accepting work.
-- [ ] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
+- [x] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
 - [x] **8.** Track live peer connections by identity.
 - [ ] **9.** Send requests to a peer over the connection that peer opened.
 - [ ] **10.** Keep client connections alive with pings and bounded reconnects.
@@ -173,6 +173,8 @@ choose providers well. Where a gap is confirmed, edit the CR2SE specification
 with a language-independent change and acceptance cases, search existing
 issues, file one and record it under [CR2SE bugs](../../CR2SE%20bugs/README.md).
 Adapt TalkSphere only after the change is accepted.
+
+Completed: [Review](../../docs/policy/QUOTA_REVIEW.md). Found two confirmed gaps (no retry guidance on `resource_limit`, no specified rate-limit refusal) and a third deferred until simulations; drafted the CR2SE change (optional `retryAfterSeconds`, case PP-09A) and committed it in the CR2SE checkout, unpushed. No upstream issue was filed because it is a design proposal, not a confirmed defect; TalkSphere is unchanged until it is accepted.
 
 ### 8. Track live peer connections by identity
 
