@@ -298,3 +298,7 @@ files are between 91 % and 100 %, except `src/composition/node/wanted.rs` (27 %)
 processes whose profiles abrupt-termination tests discard; process tests (`a_client_earns_credits_by_fulfilling_wanted_storage`,
 the replication and story tests) exercise it. Run only one coverage job at a time: overlapping jobs share `target/llvm-cov-target` and
 delete each other's test binaries, which fails the tests that spawn the current executable.
+
+Messaging (plan 11) keeps its tests in `*_tests.rs` files and `service/crash.rs` beside the source, so measure it with
+`--ignore-filename-regex '(/tests/|/tests.rs|/test_support/|/test_support\.rs|_tests\.rs|/crash\.rs)'`. That run measured
+**34114/36738 production lines (92.86%)**, **3948/4194 (94.13%)** inside `src/modules/messaging`.

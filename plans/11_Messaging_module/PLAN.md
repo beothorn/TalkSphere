@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-34 are complete; 35 and 36 are open (they need an Identity operation for Messaging payloads, see the handoff) and 37 and 38 are interim. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
