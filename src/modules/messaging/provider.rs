@@ -13,7 +13,8 @@ use super::{
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
     operation::{
-        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, StoreInput, StoreOutput,
+        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, StatusInput,
+        StatusOutput, StoreInput, StoreOutput,
     },
     participant::Participant,
     ports::Clock,
@@ -357,6 +358,36 @@ impl Provider {
             },
             price,
         ))
+    }
+}
+
+impl Provider {
+    /// Tell a placement's sender whether it is pending or recovered, with the exact recorded receipt when recovered and never the
+    /// payload. Read-only and charged the fixed status price.
+    /// # Errors
+    /// `NotAvailable` when the placement is unknown, removed, expired or belongs to another sender (concealed alike).
+    pub fn status(&self, caller: IdentityId, input: StatusInput) -> Result<StatusOutput, Error> {
+        tracing::trace!("Reporting a placement status to its sender");
+        let now = self.clock.now()?;
+        let record = self
+            .participant
+            .store()
+            .record(input.placement_id)
+            .ok_or(Error::NotAvailable)?;
+        if !record.active_at(now) || record.metadata.sender_id != caller {
+            return Err(Error::NotAvailable);
+        }
+        Ok(StatusOutput {
+            placement_id: record.id,
+            message_id: record.metadata.message_id,
+            sender_id: record.metadata.sender_id,
+            recipient_id: record.metadata.recipient_id,
+            payload_hash: record.metadata.payload_hash,
+            state: record.state,
+            expires_at: record.expires_at,
+            receipt: record.receipt,
+            price: self.terms.status_price,
+        })
     }
 }
 

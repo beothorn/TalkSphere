@@ -1,7 +1,7 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
 use crate::modules::messaging::{
-    operation::{Cursor, DiscoverInput, RecoverInput},
+    operation::{Cursor, DiscoverInput, RecoverInput, StatusInput},
     receipt,
 };
 use crate::modules::{
@@ -673,5 +673,67 @@ fn ms_08_an_exact_retry_returns_the_cached_output_and_original_price() {
     assert_eq!(
         h.provider.recover(key(6), c, other).err(),
         Some(Error::NotAvailable)
+    );
+}
+
+// MS-09 and the status part of MS-04: only the sender sees the status; it is pending before recovery and carries the exact recorded
+// receipt after it, never the payload, and the placement disappears from the sender's view when it expires or is unknown.
+#[test]
+fn ms_09_status_is_sender_only_and_shows_the_exact_receipt() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let a = h.sender.identity();
+    let ask = StatusInput {
+        placement_id: stored.placement_id,
+    };
+    let pending = h.provider.status(a, ask).unwrap();
+    assert_eq!(
+        (pending.state, pending.receipt, pending.expires_at),
+        (State::Pending, None, 1010)
+    );
+    assert_eq!(pending.price, h.provider.terms().status_price);
+    assert_eq!(
+        (pending.sender_id, pending.recipient_id),
+        (a, h.recipient.identity())
+    );
+    for stranger in [h.recipient.identity(), IdentityId([9; 32])] {
+        assert_eq!(
+            h.provider.status(stranger, ask).err(),
+            Some(Error::NotAvailable)
+        );
+    }
+    h.clock.set(1004);
+    let (recovered, _) = h
+        .provider
+        .recover(
+            key(2),
+            h.recipient.identity(),
+            recovery_request(&h, stored.placement_id, 7),
+        )
+        .unwrap();
+    let done = h.provider.status(a, ask).unwrap();
+    assert_eq!(
+        (done.state, done.receipt),
+        (State::Recovered, Some(recovered.receipt))
+    );
+    assert_eq!(
+        h.provider
+            .status(
+                a,
+                StatusInput {
+                    placement_id: PlacementId([8; 32])
+                }
+            )
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    h.clock.set(1010);
+    assert_eq!(
+        h.provider.status(a, ask).err(),
+        Some(Error::NotAvailable),
+        "expired"
     );
 }
