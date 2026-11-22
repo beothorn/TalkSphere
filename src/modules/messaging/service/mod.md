@@ -6,6 +6,7 @@ The layer between Services and the Messaging engine. Composition registers one `
 | --- | --- |
 | [Provider](provider.md) | Stage, prepare, finalize and commit through Services |
 | [Client](client.md) | Requester contract, exact pricing and check rules |
+| [Placements](placements.md) | Provider-side placement sizes for pricing |
 | [Release](release.md) | Release credit issuance through the Ledger |
 | [Recovery](recovery.md) | Resuming unfinished operations from the coordinator's record |
 

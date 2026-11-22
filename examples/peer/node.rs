@@ -60,6 +60,8 @@ pub(super) fn identity(path: &Path) -> Result<IdentityId, String> {
 }
 impl Node {
     // Load the already initialized protected credential and explicitly register this complete custom-service endpoint.
+    // Some examples that include this file build their node through `with_identity` instead.
+    #[allow(dead_code)]
     pub(super) fn new<
         P: services::persistence::Persistence + 'static,
         L: ledger::persistence::Persistence + 'static,
@@ -72,6 +74,7 @@ impl Node {
     }
 
     // Allow the test driver to supply an instrumented factory while Transport still authenticates the stream.
+    #[allow(dead_code)]
     pub(super) fn with_factory(
         path: &Path,
         factory: Arc<dyn peer::engine::bridge::Factory>,

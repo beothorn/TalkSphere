@@ -4,6 +4,8 @@ pub mod cryptography;
 
 pub mod identity;
 
+pub mod messaging;
+
 pub mod server;
 
 pub mod logging;

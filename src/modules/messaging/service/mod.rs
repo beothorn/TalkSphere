@@ -5,6 +5,7 @@
 //! Services' logical values, staged completions and decisions and the Messaging engine; it holds no protocol rules of its own.
 //! Dependencies: the provider engine, the participant, the codec and the Services handler contracts.
 pub mod client;
+pub mod placements;
 pub mod provider;
 pub mod recovery;
 pub mod release;

@@ -9,3 +9,5 @@ contracts; runtime composition is being implemented through the integration plan
 Importing these contracts performs no filesystem or network effects.
 
 [Peer composition](peer/mod.md) connects protected issuer claim dependencies to the opt-in endpoint.
+
+[Messaging node ports](messaging.md) adapt a shared protected identity, the system clock and system randomness to the Messaging module's ports.
