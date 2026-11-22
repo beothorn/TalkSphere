@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: planned for review; no step is implemented yet.
+Status: in progress; steps 1-2 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -16,8 +16,8 @@ large simulations without touching protocol code.
 
 ## Steps
 
-- [ ] **1.** Inventory every decision CR2SE leaves to local policy and where TalkSphere fixes it today.
-- [ ] **2.** Define policy contracts that decide only from recorded observations.
+- [x] **1.** Inventory every decision CR2SE leaves to local policy and where TalkSphere fixes it today.
+- [x] **2.** Define policy contracts that decide only from recorded observations.
 - [ ] **3.** Load policy parameters from a validated policy file.
 - [ ] **4.** Record per-peer observations durably and within fixed bounds.
 - [ ] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
@@ -115,6 +115,8 @@ cadence, repair, release-credit amounts, ping and reconnect timing. For each,
 record where TalkSphere decides it today (constant, `node.json`, `node-ctl` or
 absent). Write `docs/policy/INVENTORY.md`. No code changes.
 
+Completed: [Inventory](../../docs/policy/INVENTORY.md) with seventeen decisions mapped to six contracts.
+
 ### 2. Define policy contracts that decide only from recorded observations
 
 Define small contracts in `src/composition/policy/`: admission, quota, trust,
@@ -122,6 +124,8 @@ credit, redundancy and connection. Each takes an explicit observation snapshot
 and returns a typed decision with a reason. Provide conservative default
 implementations that reproduce today's behavior. Test that the defaults change
 nothing observable in the existing node tests.
+
+Completed: [Contracts](../../src/composition/policy/contracts.md) and [defaults](../../src/composition/policy/defaults.md) with unit tests; they are wired into the node from step 5.
 
 ### 3. Load policy parameters from a validated policy file
 
