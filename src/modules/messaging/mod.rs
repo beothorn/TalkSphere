@@ -17,3 +17,5 @@ pub mod standard;
 
 #[cfg(test)]
 mod fixture_tests;
+
+pub mod pricing;

@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-4 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-5 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -14,7 +14,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **2.** Define Messaging types and dependency ports.
 - [x] **3.** Add deterministic Messaging test helpers.
 - [x] **4.** Import the pinned Messaging definition and independent fixtures.
-- [ ] **5.** Implement exact Messaging price calculations.
+- [x] **5.** Implement exact Messaging price calculations.
 - [ ] **6.** Validate Messaging offering terms and advertised limits.
 - [ ] **7.** Validate operation-specific inputs and outputs.
 - [ ] **8.** Build and verify the exact message signing bytes.
@@ -176,6 +176,8 @@ one ceiling, the minimum price and the fixed discover, status, remove and check
 prices. Use overflow-safe arithmetic and reject results above `uint64`. Test the
 MS-02 price 17, the MS-03 half-factor case (1, not 2), zero denominators and
 maxima.
+
+Completed: [pricing](../../src/modules/messaging/pricing.md). The arithmetic is the same exact algorithm Storage uses, kept as Messaging's own file so the two modules stay independent; the acceptance values 17, 1, 2 and 6 and the overflow, zero and floor cases are tested.
 
 ### 6. Validate Messaging offering terms and advertised limits
 
