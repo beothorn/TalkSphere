@@ -12,7 +12,7 @@ use super::{
     error::Error,
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
-    operation::{StoreInput, StoreOutput},
+    operation::{DiscoverInput, DiscoverOutput, Entry, StoreInput, StoreOutput},
     participant::Participant,
     ports::Clock,
     pricing, signing,
@@ -235,6 +235,56 @@ impl Provider {
                 Err(error)
             }
         }
+    }
+}
+
+impl Provider {
+    /// List the authenticated recipient's pending, unexpired placements: at most `limit` entries ordered by
+    /// `(acceptedAt, placementId)` strictly after the optional cursor, with `more` set when another entry follows.
+    /// Discovery is read-only and charged the fixed discover price, an empty page included.
+    /// # Errors
+    /// `Invalid` when the limit is zero or above the offering's maximum. Nothing is charged on failure.
+    pub fn discover(
+        &self,
+        caller: IdentityId,
+        input: DiscoverInput,
+    ) -> Result<DiscoverOutput, Error> {
+        tracing::trace!("Discovering pending placements for the authenticated recipient");
+        if input.limit == 0 || input.limit > self.terms.maximum_discover_results {
+            return Err(Error::Invalid);
+        }
+        let now = self.clock.now()?;
+        let after = input
+            .cursor
+            .map(|c| (c.after_accepted_at, c.after_placement_id));
+        let wanted = input.limit as usize;
+        let mut found = self
+            .participant
+            .store()
+            .pending_for(caller, now, after, wanted + 1);
+        let more = found.len() > wanted;
+        found.truncate(wanted);
+        let messages = found.into_iter().map(entry).collect();
+        Ok(DiscoverOutput {
+            messages,
+            more,
+            price: self.terms.discover_price,
+        })
+    }
+}
+
+/// The provider-visible description of one placement; the sender is only a hint until recovery verifies it.
+fn entry(record: super::placement::Record) -> Entry {
+    Entry {
+        placement_id: record.id,
+        message_id: record.metadata.message_id,
+        sender_id: record.metadata.sender_id,
+        sender_created_at: record.metadata.sender_created_at,
+        encoding: record.metadata.encoding,
+        payload_size: record.metadata.payload_size,
+        payload_hash: record.metadata.payload_hash,
+        accepted_at: record.accepted_at,
+        expires_at: record.expires_at,
     }
 }
 

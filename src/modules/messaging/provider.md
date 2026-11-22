@@ -9,3 +9,4 @@ The provider engine for the store operation. It never charges or records anythin
 - `commit_store(prepared)`: commits and returns placement ID, message ID, acceptance time, expiry and price. The acceptance time is assigned at the durable commit.
 - `store(key, caller, input)`: the three steps in one call. Dropping the assessment releases the reservation.
 - Every failure before commit leaves no placement, no journal entry and no reservation.
+- `discover(caller, input)`: lists the caller's pending, unexpired placements ordered by `(acceptedAt, placementId)` strictly after the optional cursor, at most `limit` (1 to the offering maximum, else `Invalid`). `more` is true when another entry follows. Read-only; the price is the fixed discover price, an empty page included. Entries show the sender only as a hint.

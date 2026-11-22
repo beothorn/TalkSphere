@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-17 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-18 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -27,7 +27,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **15.** Recover Messaging participants before admitting new work.
 - [x] **16.** Assess store metadata before receiving the payload body.
 - [x] **17.** Commit validated stores as durable pending placements.
-- [ ] **18.** Implement recipient-only discovery with the exclusive cursor.
+- [x] **18.** Implement recipient-only discovery with the exclusive cursor.
 - [ ] **19.** Implement atomic recovery with a signed provider receipt.
 - [ ] **20.** Return cached recovery output for an exact retry without a new charge.
 - [ ] **21.** Implement sender-only status with the recorded receipt.
@@ -292,6 +292,8 @@ Return the authenticated recipient's pending placements ordered by
 `(acceptedAt, placementId)`, bounded by `limit`, with `more` and the exclusive
 cursor. An empty page is a charged success. Test MS-05 and the discovery part
 of MS-04.
+
+Completed: `Provider::discover` (see [provider](../../src/modules/messaging/provider.md)); the store's `pending_for` now also hides expired placements.
 
 ### 19. Implement atomic recovery with a signed provider receipt
 

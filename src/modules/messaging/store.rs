@@ -175,10 +175,12 @@ impl Store {
         Ok(after)
     }
 
-    /// Pending placements for `recipient` ordered by `(accepted_at, placement_id)`, strictly after `after`, at most `limit`.
+    /// Pending placements for `recipient` that have not expired at `now`, ordered by `(accepted_at, placement_id)`,
+    /// strictly after `after`, at most `limit`.
     pub fn pending_for(
         &self,
         recipient: IdentityId,
+        now: u64,
         after: Option<(u64, PlacementId)>,
         limit: usize,
     ) -> Vec<Record> {
@@ -187,7 +189,11 @@ impl Store {
             .lock()
             .index
             .values()
-            .filter(|r| r.state == State::Pending && r.metadata.recipient_id == recipient)
+            .filter(|r| {
+                r.active_at(now)
+                    && r.state == State::Pending
+                    && r.metadata.recipient_id == recipient
+            })
             .filter(|r| after.is_none_or(|key| (r.accepted_at, r.id) > key))
             .cloned()
             .collect();

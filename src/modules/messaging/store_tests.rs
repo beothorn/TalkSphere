@@ -172,7 +172,7 @@ fn pending_listing_orders_pages_and_isolates_recipients() {
         let c = IdentityId([3; 32]);
         let page = |after, limit| {
             store
-                .pending_for(c, after, limit)
+                .pending_for(c, 0, after, limit)
                 .iter()
                 .map(|r| r.id.0[0])
                 .collect::<Vec<_>>()
@@ -184,8 +184,12 @@ fn pending_listing_orders_pages_and_isolates_recipients() {
             page(Some((1001, PlacementId([3; 32]))), 2),
             Vec::<u8>::new()
         );
-        assert_eq!(store.pending_for(IdentityId([5; 32]), None, 10).len(), 1);
-        assert!(store.pending_for(IdentityId([9; 32]), None, 10).is_empty());
+        assert_eq!(store.pending_for(IdentityId([5; 32]), 0, None, 10).len(), 1);
+        assert!(
+            store
+                .pending_for(IdentityId([9; 32]), 0, None, 10)
+                .is_empty()
+        );
         store
             .update(PlacementId([1; 32]), &mut |r| {
                 r.state = State::Recovered;

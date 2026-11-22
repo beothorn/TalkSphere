@@ -6,7 +6,7 @@ with, per placement, `<id>.payload` and `<id>.json` (0600), each written to a pr
 - `insert(&Placement)`: never replaces (`Conflict` for an existing ID); `Limit` when the placement count or the active payload bytes would exceed the bounds; `Storage` on a failed write, with nothing recorded.
 - `update(id, change)`: applies the closure to the record under the store lock and persists atomically; a refusal by the closure or a failed write leaves the previous record. The placement ID, message metadata and signature never change. Unknown: `NotAvailable`.
 - `record(id)`, `get(id)` (record and payload; a missing or wrong-sized payload is `Storage`, never returned partly), `records()`.
-- `pending_for(recipient, after, limit)`: pending placements ordered by `(acceptedAt, placementId)`, strictly after an optional pair cursor. `pending_counts(sender, recipient)`: for placement quotas.
+- `pending_for(recipient, now, after, limit)`: pending, unexpired placements ordered by `(acceptedAt, placementId)`, strictly after an optional pair cursor. `pending_counts(sender, recipient)`: for placement quotas.
 - `release_payload(id)`: drop the payload bytes of a placement that no longer owes them; the record stays.
 - Opening rebuilds the index and refuses a corrupt, oversized (over 16 KiB), unknown-member or misnamed record, or an active placement whose payload is missing or the wrong size; nothing is repaired. An interrupted temporary file is discarded.
 

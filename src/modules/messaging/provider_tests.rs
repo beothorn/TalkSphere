@@ -1,5 +1,6 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
+use crate::modules::messaging::operation::{Cursor, DiscoverInput};
 use crate::modules::{
     board::{config::Limits as BoardLimits, offering::Board},
     messaging::{
@@ -311,4 +312,193 @@ fn a_full_store_refuses_new_placements() {
         Some(Error::Limit)
     );
     assert_eq!(h.staging.used(), (0, 0));
+}
+
+// Stores `count` messages from A to C one second apart and returns their placement IDs in acceptance order.
+fn store_many(h: &Harness, count: u8) -> Vec<PlacementId> {
+    (0..count)
+        .map(|n| {
+            h.clock.set(1000 + u64::from(n));
+            let message = signing::sign_message(
+                &h.sender,
+                h.recipient.identity(),
+                MessageId([n + 1; 32]),
+                1000,
+                Encoding::Opaque,
+                b"abc".to_vec(),
+            )
+            .unwrap();
+            h.provider
+                .store(
+                    key(n + 1),
+                    h.sender.identity(),
+                    StoreInput {
+                        message,
+                        retention_seconds: 50,
+                    },
+                )
+                .unwrap()
+                .placement_id
+        })
+        .collect()
+}
+
+// MS-05: discovery pages through the recipient's pending placements in order, with an exclusive cursor, `more` only when another
+// entry follows, and every page (including an empty one) charged the discover price.
+#[test]
+fn ms_05_discovery_pages_with_an_exclusive_cursor() {
+    let h = harness();
+    let ids = store_many(&h, 3);
+    let c = h.recipient.identity();
+    let first = h
+        .provider
+        .discover(
+            c,
+            DiscoverInput {
+                cursor: None,
+                limit: 2,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        first
+            .messages
+            .iter()
+            .map(|e| e.placement_id)
+            .collect::<Vec<_>>(),
+        ids[..2]
+    );
+    assert!(first.more);
+    assert_eq!(first.price, h.provider.terms().discover_price);
+    let last = first.messages.last().unwrap();
+    let cursor = Cursor {
+        after_accepted_at: last.accepted_at,
+        after_placement_id: last.placement_id,
+    };
+    let second = h
+        .provider
+        .discover(
+            c,
+            DiscoverInput {
+                cursor: Some(cursor),
+                limit: 2,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        second
+            .messages
+            .iter()
+            .map(|e| e.placement_id)
+            .collect::<Vec<_>>(),
+        ids[2..]
+    );
+    assert!(!second.more);
+    assert_eq!(second.messages[0].sender_id, h.sender.identity());
+    assert_eq!(
+        (
+            second.messages[0].payload_size,
+            second.messages[0].expires_at
+        ),
+        (3, 1052)
+    );
+    let empty = Cursor {
+        after_accepted_at: second.messages[0].accepted_at,
+        after_placement_id: second.messages[0].placement_id,
+    };
+    let done = h
+        .provider
+        .discover(
+            c,
+            DiscoverInput {
+                cursor: Some(empty),
+                limit: 2,
+            },
+        )
+        .unwrap();
+    assert!(done.messages.is_empty() && !done.more);
+    assert_eq!(
+        done.price,
+        h.provider.terms().discover_price,
+        "an empty page is a charged success"
+    );
+}
+
+// MS-05/MS-04: only the authenticated recipient sees placements; other identities see an empty page, and the limit is bounded.
+#[test]
+fn discovery_is_recipient_only_and_bounded() {
+    let h = harness();
+    store_many(&h, 1);
+    let other = h
+        .provider
+        .discover(
+            h.sender.identity(),
+            DiscoverInput {
+                cursor: None,
+                limit: 10,
+            },
+        )
+        .unwrap();
+    assert!(other.messages.is_empty());
+    let max = h.provider.terms().maximum_discover_results;
+    for limit in [0, max + 1] {
+        assert_eq!(
+            h.provider
+                .discover(
+                    h.recipient.identity(),
+                    DiscoverInput {
+                        cursor: None,
+                        limit
+                    }
+                )
+                .err(),
+            Some(Error::Invalid)
+        );
+    }
+    assert_eq!(
+        h.provider
+            .discover(
+                h.recipient.identity(),
+                DiscoverInput {
+                    cursor: None,
+                    limit: max
+                }
+            )
+            .unwrap()
+            .messages
+            .len(),
+        1
+    );
+}
+
+// Expired and non-pending placements are not listed: after the retention ends the recipient sees nothing.
+#[test]
+fn discovery_hides_expired_placements() {
+    let h = harness();
+    store_many(&h, 2);
+    // The placements expire at 1050 and 1051; a placement is expired from its expiry instant.
+    h.clock.set(1050);
+    let page = h
+        .provider
+        .discover(
+            h.recipient.identity(),
+            DiscoverInput {
+                cursor: None,
+                limit: 10,
+            },
+        )
+        .unwrap();
+    assert_eq!(page.messages.len(), 1);
+    h.clock.set(1051);
+    let page = h
+        .provider
+        .discover(
+            h.recipient.identity(),
+            DiscoverInput {
+                cursor: None,
+                limit: 10,
+            },
+        )
+        .unwrap();
+    assert!(page.messages.is_empty());
 }
