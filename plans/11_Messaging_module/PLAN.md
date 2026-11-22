@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-29 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-29 and 32 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -41,7 +41,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **29.** Bound placements per sender and per recipient through a module limits port.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
-- [ ] **32.** Validate recovered messages and decrypt only after authentication.
+- [x] **32.** Validate recovered messages and decrypt only after authentication.
 - [ ] **33.** Exercise crash recovery at every coordination boundary.
 - [ ] **34.** Verify races between recovery, removal, renewal and expiration.
 - [ ] **35.** Exercise Messaging between authenticated node processes with replicas.
@@ -408,6 +408,8 @@ volatile adapters.
 On the requester, verify sender key derivation, hash and signature, verify
 recovery and status receipts, deduplicate by `(senderId, messageId)` and decrypt
 only afterwards. Test MS-17 deduplication and each validation failure.
+
+Completed: [receive](../../src/modules/messaging/receive.md). The dedupe table is in memory; the client catalog that persists it is part of the client journey (plan 14, step 6).
 
 ### 33. Exercise crash recovery at every coordination boundary
 

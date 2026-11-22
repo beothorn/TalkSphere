@@ -107,7 +107,7 @@ pub fn encrypt(
 }
 
 // The X25519 public key of a private seed.
-fn x25519_public(seed: &[u8; 32]) -> [u8; 32] {
+pub(super) fn x25519_public(seed: &[u8; 32]) -> [u8; 32] {
     x25519_dalek::PublicKey::from(&x25519_dalek::StaticSecret::from(*seed)).to_bytes()
 }
 
