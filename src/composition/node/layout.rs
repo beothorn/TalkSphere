@@ -70,6 +70,11 @@ impl Layout {
         tracing::trace!("Reading the node operations journal path");
         self.root.join("operations.json")
     }
+    /// Durable per-peer observations read by peer policy.
+    pub fn observations(&self) -> PathBuf {
+        tracing::trace!("Reading the node observations path");
+        self.root.join("observations.json")
+    }
     /// Local control socket path.
     pub fn control(&self) -> PathBuf {
         tracing::trace!("Reading the node control socket path");
@@ -86,6 +91,7 @@ mod tests {
         let paths = [
             layout.config(),
             layout.policy(),
+            layout.observations(),
             layout.public_id(),
             layout.identity(),
             layout.board(),

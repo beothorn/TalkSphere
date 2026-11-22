@@ -10,6 +10,7 @@ pub mod control;
 pub mod init;
 pub mod layout;
 pub mod link;
+pub mod observation_store;
 pub mod offering;
 pub mod owners;
 pub mod runtime;

@@ -8,6 +8,7 @@ them from real usage or simulation without touching protocol code.
 | --- | --- |
 | [Contracts](contracts.md) | The six decision traits, their inputs and outputs |
 | [Parameters](params.md) | Validated `policy.json` with finite ranges and conservative defaults |
+| [Observations](observations.md) | Bounded per-peer facts that decisions read |
 | [Configured](configured.md) | Implementation of every contract from one parameter set |
 
 Callers: node composition (admission, quotas, credits, connections) and the replica manager.

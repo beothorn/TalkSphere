@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-3 are complete.
+Status: in progress; steps 1-4 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -19,7 +19,7 @@ large simulations without touching protocol code.
 - [x] **1.** Inventory every decision CR2SE leaves to local policy and where TalkSphere fixes it today.
 - [x] **2.** Define policy contracts that decide only from recorded observations.
 - [x] **3.** Load policy parameters from a validated policy file.
-- [ ] **4.** Record per-peer observations durably and within fixed bounds.
+- [x] **4.** Record per-peer observations durably and within fixed bounds.
 - [ ] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
 - [ ] **6.** Apply per-identity quotas and rate limits before accepting work.
 - [ ] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
@@ -142,6 +142,8 @@ Persist bounded per-identity observations: first seen, connection history,
 contributions, check outcomes, refusals and failures. Old entries age out by a
 fixed rule; peer-supplied values are bounded and never logged as trusted facts.
 Test reopen, the bounds, ageing and corrupt records.
+
+Completed: [Observations](../../src/composition/policy/observations.md) and the [durable store](../../src/composition/node/observation_store.md). Grants are written immediately; other events flush periodically. The runtime starts recording in step 5.
 
 ### 5. Admit unconfigured authenticated peers under finite per-identity limits
 
