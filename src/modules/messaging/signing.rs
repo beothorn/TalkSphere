@@ -174,7 +174,8 @@ mod tests {
     #[test]
     fn ms_01_every_mutation_is_rejected() {
         let good = fixture_message();
-        let mutations: Vec<(&str, fn(&mut SignedMessage))> = vec![
+        type Mutation = (&'static str, fn(&mut SignedMessage));
+        let mutations: Vec<Mutation> = vec![
             ("messageId", |m| m.metadata.message_id.0[0] ^= 1),
             ("senderId", |m| m.metadata.sender_id.0[0] ^= 1),
             ("recipientId", |m| m.metadata.recipient_id.0[0] ^= 1),
