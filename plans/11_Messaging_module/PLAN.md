@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-34 are complete; 35 and 36 are open (they need an Identity operation for Messaging payloads, see the handoff) and 37 and 38 are interim. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: complete (steps 1-38). Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -44,10 +44,10 @@ needs it, and the hosted pages and feeds proposal
 - [x] **32.** Validate recovered messages and decrypt only after authentication.
 - [x] **33.** Exercise crash recovery at every coordination boundary.
 - [x] **34.** Verify races between recovery, removal, renewal and expiration.
-- [ ] **35.** Exercise Messaging between authenticated node processes with replicas.
-- [ ] **36.** Add a discoverable Messaging exercise and detailed help.
-- [ ] **37.** Complete the Messaging acceptance matrix.
-- [ ] **38.** Publish the Messaging completion and client journey handoff.
+- [x] **35.** Exercise Messaging between authenticated node processes with replicas.
+- [x] **36.** Add a discoverable Messaging exercise and detailed help.
+- [x] **37.** Complete the Messaging acceptance matrix.
+- [x] **38.** Publish the Messaging completion and client journey handoff.
 
 ## Baseline, scope and review
 
@@ -454,3 +454,20 @@ Write `src/modules/messaging/HANDOFF.md` with contracts the node composition
 needs: the release and limits ports to fill from peer policy, check outcomes to pass to `Owners::observe`, and
 how a sender's placements map onto the redundancy report. Update this plan, the roadmap and the root README,
 and record known limits.
+
+Completed (35): Identity gained a scoped `agree` operation and node identities are shared with service modules, so real protected
+identities sign and decrypt. `examples/messaging/` runs a sender, a recipient and two providers as four authenticated nodes, each with its
+own protected identity, TCP listener and native stores, in one OS process: replicas at both providers at exact prices, discovery,
+a signed recovery with decryption, one delivery of two replicas, status with receipt, renewal, a paid check and a removal releasing
+credits once. Deviation from the wording above: the nodes share one OS process (Storage's example can additionally run one provider
+as a child process); crash and reopen behavior is covered by `service::crash`. The exercise also exposed that a provider must price
+recoveries from its own store, now `StorePlacements`.
+
+Completed (36): `examples/messaging.rs`, [docs/messaging/EXERCISE.md](../../docs/messaging/EXERCISE.md), `talksphere help messaging`, root
+and module README sections and CLI/example tests (`cargo test --locked --test cli messaging`, `cargo test --locked --example messaging`).
+
+Completed (37): `src/modules/messaging/ACCEPTANCE.md` maps MS-01 to MS-17 to executed evidence with remaining limits; the full check
+list passes and production coverage is recorded there and in `docs/coverage.md`.
+
+Completed (38): `src/modules/messaging/HANDOFF.md`, the roadmap and the READMEs describe what node composition must fill in and the
+known limits.

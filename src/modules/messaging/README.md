@@ -4,18 +4,19 @@ Paid retention of signed messages for one recipient: CR2SE module [Messaging](ht
 service `cr2se.messaging` version 1, pricing model `cr2se.messaging.v1`. Optional in CR2SE's minimum profile, required by TalkSphere
 (see the [plan](../../../plans/11_Messaging_module/PLAN.md)).
 
-**Status:** in progress (plan steps 1-32 and 34 done). Implemented and tested: validation, pricing, the durable participant with
-recovery, every operation (store, discover, recover with receipt and cached retry, status, renew, remove with once-only release
-credits, paid byte checks), per-identity limits, reclaim, the Services provider adapter and requester client with Ledger release
-issuance ([service](service/mod.md)), the Peer Protocol requester intents ([wire](wire.md)) and the recipient's
-authenticate/deduplicate/decrypt step. Real-endpoint tests run every operation at its exact price. Not yet implemented: crash recovery
-across Services and Ledger files at every boundary (33), authenticated multi-process exercises with replicas (35) and the exercise
-guide (36). Nothing is advertised on a Board by default: a node installs the handler and publishes the offering only through its
-composition (client journey, plan 14 step 2).
+**Status:** complete for the planned module scope (plan steps 1-38). Implemented and tested: validation, pricing, the durable
+participant with recovery, every operation (store, discover, recover with receipt and cached retry, status, renew, remove with
+once-only release credits, paid byte checks), per-identity limits, reclaim, the Services provider adapter and requester client with
+Ledger release issuance ([service](service/mod.md)), crash recovery across independent Services, Ledger and Messaging files, the Peer
+Protocol requester intents ([wire](wire.md)), the recipient's authenticate/deduplicate/decrypt step, Identity-backed payload
+decryption ([identity](identity.md)) and an authenticated four-node exercise with replicas ([guide](../../../docs/messaging/EXERCISE.md)).
+Nothing is advertised on a Board by default: a node installs the handler and publishes the offering only through its composition
+(client journey, plan 14 step 2).
 See [ACCEPTANCE.md](ACCEPTANCE.md) for the interim evidence per case and [REQUIREMENTS.md](REQUIREMENTS.md) for the reconciliation.
 
 Build and test from the repository root with `cargo test --locked --lib modules::messaging` (and `modules::ledger` for the release
-credit support); the real-endpoint tests are `cargo test --locked --lib endpoint::tests::messaging`.
+credit support); the real-endpoint tests are `cargo test --locked --lib endpoint::tests::messaging`. The authenticated exercise is
+`cargo run --locked --example messaging -- run` (`cargo test --locked --example messaging`; see `cargo run --locked -- help messaging`).
 
 A message is a signed association of metadata and one immutable payload. A sender stores it at a provider for one recipient; the
 recipient discovers and recovers it with a signed request and gets a provider-signed receipt; the sender can check status, renew,

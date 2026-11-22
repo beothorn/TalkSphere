@@ -114,9 +114,9 @@ These modules are optional in CR2SE's minimum profile but required by
 TalkSphere, whose clients (for example a messenger app) use messages, profile
 pages and feeds through TalkSphere servers over CR2SE only.
 
-- [ ] **13. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
+- [x] **13. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
   discovery/recovery, receipts, renewal, release/removal, status, checks and
-  retries with durable replay guards. Planned in 38 steps (revised after peer policy); in progress: steps 1-34 are done (engine, Services adapter and requester client, Peer Protocol requester intents, crash recovery across Services/Ledger/Messaging files). Open: the authenticated multi-process exercise (35) and the runnable example and guide (36), which need an Identity operation for Messaging payloads; the final acceptance and handoff are written as interim.
+  retries with durable replay guards. Completed in 38 steps (revised after peer policy): engine, Services adapter and requester client, Peer Protocol requester intents, crash recovery across Services/Ledger/Messaging files, Identity-backed decryption and an authenticated four-node exercise with replicas (one OS process).
 - [ ] **14. [Hosted pages and feeds in CR2SE](13_Hosted_publications/PLAN.md).** Specification work in
   CR2SE: let any provider host publisher-signed pages and feed posts, public or
   encrypted for chosen readers, reusing Messaging placements, so publishers

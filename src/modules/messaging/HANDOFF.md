@@ -39,11 +39,14 @@ participant recovered, and the Board refuses the offering while no handler is re
 
 - `wire::Remote` builds the endpoint plans with exact ceilings; `receive::Inbox` authenticates, deduplicates by `(senderId, messageId)`
   and decrypts (its table is in memory: the client catalog must persist it, plan 14 step 6).
-- **Identity gap.** The Identity module can sign and can decrypt its generic envelope, but it exposes no operation for the
-  `cr2se.identity-encrypted.v1` payload (X25519 agreement with the persistent key, then HKDF/XChaCha20-Poly1305). Real node identities
-  therefore cannot yet decrypt Messaging payloads: Identity needs a scoped service-specific agreement operation (guarded by its
-  `Decrypt` capability) and `messaging::encryption::decrypt` must take that instead of a raw secret. Until then payloads are tested with
-  exercise-held keys and the Board `identityEncryption` credential check is only tested against the independent vectors.
+- **Identity.** Identity gained a scoped `agree` operation (guarded by `Decrypt`) and `messaging::encryption::decrypt` now takes a
+  `PersistentAgreement` holder; [`IdentityAgreement`](identity.md) adapts a loaded Identity, and
+  [`composition::messaging::NodeIdentity`](../../composition/messaging.md) adapts a node's shared protected identity (the same one
+  Transport authenticates with) as signer and agreement holder, with `SystemClock` and `SystemRandom` for the other ports. The
+  Board `identityEncryption` credential is checked against the independent vectors; publishing it is the client journey's job.
+- **Placements port, both roles.** A requester's `Placements` is its own catalog; a provider installs
+  [`StorePlacements`](service/placements.md) so its own `Client` re-prices recoveries and renewals from its durable records and
+  discloses sizes only to a placement's sender or recipient.
 
 ## Known limits
 
@@ -51,6 +54,7 @@ participant recovered, and the Board refuses the offering while no handler is re
 - Incomplete uploads are held in memory under a bounded reservation and are not durable; the staging reservation taken while assessing a
   store is released at once because the body has not arrived (execution re-validates in full).
 - A read-only operation (`discover`, `status`) whose staged result is lost is produced again after a restart rather than replayed.
-- The authenticated multi-process exercise with replicas (plan step 35) and the runnable example and guide (step 36) are not
-  implemented: they need real protected Identity keys for signing and for payload decryption (the gap above) and a four-node
-  loopback harness.
+- The exercise ([guide](../../../docs/messaging/EXERCISE.md)) runs four authenticated nodes in one process, each with its own
+  protected identity, listener and native stores, over real loopback TCP. It does not restart a provider or run one in a separate
+  process (Storage's example does); crash and reopen are covered by `service::crash` instead. Its offering widens the pinned
+  fixture's 100-byte payload bound, which is smaller than an encrypted payload.

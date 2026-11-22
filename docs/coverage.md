@@ -302,3 +302,7 @@ delete each other's test binaries, which fails the tests that spawn the current 
 Messaging (plan 11) keeps its tests in `*_tests.rs` files and `service/crash.rs` beside the source, so measure it with
 `--ignore-filename-regex '(/tests/|/tests.rs|/test_support/|/test_support\.rs|_tests\.rs|/crash\.rs)'`. That run measured
 **34114/36738 production lines (92.86%)**, **3948/4194 (94.13%)** inside `src/modules/messaging`.
+
+Messaging completion (steps 35-38, with the Identity agreement, shared node identity and four-node exercise) measured
+**34358/36989 production lines (92.89%)** for the repository and **4038/4283 (94.28%)** inside `src/modules/messaging`, with the same
+exclusion regex; the instrumented run exited 0.

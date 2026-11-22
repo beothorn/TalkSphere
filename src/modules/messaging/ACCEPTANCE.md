@@ -1,10 +1,9 @@
-# Messaging acceptance evidence (interim)
+# Messaging acceptance evidence
 
-Status: the engine, the Services provider adapter and requester client, the Peer Protocol requester intents and crash recovery across
-independent Services, Ledger and Messaging files are implemented and tested (plan steps 1-34). **Not done:** the authenticated
-multi-process exercise with replicas (step 35) and the runnable example and guide (step 36); both need real protected Identity keys
-for signing and for payload decryption, which Identity does not provide yet (see [HANDOFF.md](HANDOFF.md)). The module is therefore not
-marked complete, and nothing is advertised on a Board by default. See the [plan](../../../plans/11_Messaging_module/PLAN.md).
+Status: complete for the planned module scope (plan steps 1-38): the engine, the Services provider adapter and requester client, the
+Peer Protocol requester intents, crash recovery across independent Services, Ledger and Messaging files, Identity-backed payload
+decryption and the authenticated four-node exercise with replicas. Nothing is advertised on a Board by default. See the
+[plan](../../../plans/11_Messaging_module/PLAN.md) and [HANDOFF.md](HANDOFF.md).
 
 Behavior uses [CR2SE 73edf2d](https://github.com/beothorn/CR2SE/tree/73edf2dc230bccb0f27f2ea6e06e938fff738862); byte-exact
 vectors were generated independently with PyNaCl (`fixtures/generate.py`), not by TalkSphere.
@@ -25,11 +24,16 @@ vectors were generated independently with PyNaCl (`fixtures/generate.py`), not b
 | MS-12 | `provider::ms_12_*`, participant removal tests: retry returns the recorded result after expiry and restart. | |
 | MS-13 | `provider::ms_13_*`, `check` tests and the endpoint test `a_paid_check_is_judged_with_the_senders_private_expectation` (real endpoints, exact charge, pass/fail/inconclusive). | |
 | MS-14 | `encryption::ms_14_*` reproduces the independent payload byte for byte. | |
-| MS-15 | `credential` tests validate the Board `identityEncryption` credential. | Publication by a node (client journey step 3) and Identity's agreement operation. |
-| MS-16 | `lifecycle` and `provider::ms_16_*`: recover/remove, renew/remove, exact expiry boundary, status observation. | Races driven through the Services coordinator rather than the engine directly. |
-| MS-17 | `receive::replicas_of_one_message_are_delivered_once` and the validation-failure test. | Replicas over real authenticated providers (step 35). |
+| MS-15 | `credential` tests validate the Board `identityEncryption` credential. | Publication by a node (client journey step 3). Identity's agreement operation exists (`identity::operations::agree`, `messaging::identity`). |
+| MS-16 | `lifecycle` and `provider::ms_16_*`: recover/remove, renew/remove, exact expiry boundary, status observation. | Concurrent races are tested on the engine; the coordinator serializes per operation, and `service::crash` covers decisions at every boundary. |
+| MS-17 | `receive::replicas_of_one_message_are_delivered_once` and the validation-failure test; `cargo test --locked --example messaging` recovers one message from two real authenticated providers, decrypts it with the recipient's protected identity and delivers it once. | |
 
 ## Added evidence
+
+- `cargo test --locked --example messaging` (and `cargo run --locked --example messaging -- run`) runs a sender, a recipient and two
+  providers with protected identities over authenticated loopback TCP and native stores: replicas at both providers at exact prices,
+  discovery, a signed recovery, decryption through the recipient's protected identity, one delivery of two replicas, status with
+  receipt, renewal, a paid byte check and a removal releasing credits once. `cargo test --locked --test cli messaging` checks the help topic.
 
 - `service::tests` runs every operation through the real Services coordinator, Board and Ledger with exact charges and decision-time
   fields; `peer_protocol::engine::endpoint::tests::messaging` runs the real family over three independent module stacks and real
@@ -47,12 +51,12 @@ vectors were generated independently with PyNaCl (`fixtures/generate.py`), not b
 - The recipient's dedupe table is in memory; the persistent client catalog belongs to the client journey.
 - Incomplete uploads are held in memory under a bounded reservation and are not durable.
 - Nothing is advertised on a Board by default; a node installs the handler and publishes the offering through its composition.
-- Steps 35 and 36 are open (see above).
+- The authenticated exercise runs four nodes in one process (no provider restart or separate provider process); see the guide.
 
 ## Checks and coverage
 
 `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo build --locked` and `cargo run --locked -- --help`
 pass, and the instrumented full test run (every unit, integration and process suite) exits 0. Production line coverage, measured with the
 [coverage procedure](../../../docs/coverage.md) with the exclusion regex extended to `/test_support\.rs`, `_tests\.rs` and `/crash\.rs`
-(Messaging keeps its test files beside the source), is **34114/36738 lines (92.86%) for the repository and 3948/4194 (94.13%) for
+(Messaging keeps its test files beside the source), is **34358/36989 lines (92.89%) for the repository and 4038/4283 (94.28%) for
 `src/modules/messaging`**.
