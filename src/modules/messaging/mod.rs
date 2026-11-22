@@ -9,3 +9,6 @@ pub mod ports;
 pub mod state;
 
 pub use error::Error;
+
+#[cfg(test)]
+pub(crate) mod test_support;

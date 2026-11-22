@@ -9,5 +9,6 @@
 | [Metadata](metadata.md) | Provider-visible metadata and the signed message |
 | [Operation](operation.md) | Inputs and outputs of the six operations and the check |
 | [Ports](ports.md) | Clock, entropy and signer supplied by composition |
+| [Test doubles](test_support.md) | Deterministic clock, entropy and identities for tests |
 
 See the [module README](README.md) for purpose, status and relationships.

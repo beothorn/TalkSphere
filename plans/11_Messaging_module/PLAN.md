@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-2 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-3 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -12,7 +12,7 @@ needs it, and the hosted pages and feeds proposal
 
 - [x] **1.** Reconcile Messaging requirements with the existing module contracts.
 - [x] **2.** Define Messaging types and dependency ports.
-- [ ] **3.** Add deterministic Messaging test helpers.
+- [x] **3.** Add deterministic Messaging test helpers.
 - [ ] **4.** Import the pinned Messaging definition and independent fixtures.
 - [ ] **5.** Implement exact Messaging price calculations.
 - [ ] **6.** Validate Messaging offering terms and advertised limits.
@@ -156,6 +156,8 @@ Add test-only clock, entropy, identities and in-memory placement storage with
 injectable failures, mirroring Storage's `test_support`. They are never exposed
 to production code. Test that the helpers are deterministic and that injected
 failures surface as typed errors.
+
+Completed: [test doubles](../../src/modules/messaging/test_support.md) for the clock, entropy and identities with real Ed25519 keys, each with injected failures. The in-memory placement store double is built with the store port in step 12, where that port is defined.
 
 ### 4. Import the pinned Messaging definition and independent fixtures
 
