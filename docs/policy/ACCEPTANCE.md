@@ -39,7 +39,7 @@ with warnings denied, and the production coverage procedure in [coverage.md](../
 
 1. **Rate and failure limits close the connection.** CR2SE has no specified refusal for a rate limit, so the node closes the
    offending connection, which turns the outcome of anything else on it into unknown. An upstream proposal (optional
-   `retryAfterSeconds` on `resource_limit`) is committed in the local CR2SE checkout, unpushed and with no issue filed; see
+   `retryAfterSeconds` on `resource_limit`) is pushed and reported as [CR2SE#13](https://github.com/beothorn/CR2SE/issues/13); see
    [the quota review](QUOTA_REVIEW.md). The pending-operation quota is one value for all peers because the Storage gate takes one number.
 2. **Bootstrap does not price identities.** A new identity gets its own grant while the budget lasts. CR2SE cannot prevent this;
    the budget bounds the loss.

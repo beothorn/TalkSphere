@@ -38,10 +38,9 @@ committed in the CR2SE repository (commit `73edf2d` of the local checkout, not p
 
 ## Status
 
-- CR2SE change: committed locally, **not pushed and no upstream issue filed**. It is a design proposal rather
-  than a confirmed defect, so the standing authorization to file protocol defect reports does not clearly
-  cover it; it waits for the owner's decision. No upstream issue covers it (checked 2026-11-22 against all
-  nine existing issues).
-- TalkSphere: unchanged. It will adopt the failure message, a requester back-off and rate refusals instead of
-  connection close only after the change is accepted; until then its documented behavior is the connection close
-  described in [the runtime guide](../../src/composition/node/runtime.md).
+- CR2SE change: pushed as [73edf2d](https://github.com/beothorn/CR2SE/commit/73edf2dc230bccb0f27f2ea6e06e938fff738862) and reported as
+  [beothorn/CR2SE#13](https://github.com/beothorn/CR2SE/issues/13) on 2026-11-22. It is a design proposal rather than a confirmed
+  defect; no earlier issue covered it (all nine existing issues were checked).
+- TalkSphere: unchanged. It will adopt the failure message, a requester back-off and rate refusals instead of connection close only after
+  the change is accepted; until then its documented behavior is the connection close described in
+  [the runtime guide](../../src/composition/node/runtime.md).

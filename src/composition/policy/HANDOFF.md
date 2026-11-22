@@ -35,5 +35,5 @@ Peer policy is complete for the finite Linux Storage profile. Evidence: [accepta
 
 1. Recovery of an item from replicas (retrieve, open, verify the plaintext hash) when the node's own sealed copy is lost.
 2. A placement rule that excludes or deprioritizes holders that failed checks.
-3. An upstream decision on the `retryAfterSeconds` proposal, then rate refusals instead of connection close and requester back-off.
+3. An upstream decision on the `retryAfterSeconds` proposal ([CR2SE#13](https://github.com/beothorn/CR2SE/issues/13)), then rate refusals instead of connection close and requester back-off.
 4. Automatic acquisition of the holders' credits that maintenance spends.

@@ -174,7 +174,7 @@ with a language-independent change and acceptance cases, search existing
 issues, file one and record it under [CR2SE bugs](../../CR2SE%20bugs/README.md).
 Adapt TalkSphere only after the change is accepted.
 
-Completed: [Review](../../docs/policy/QUOTA_REVIEW.md). Found two confirmed gaps (no retry guidance on `resource_limit`, no specified rate-limit refusal) and a third deferred until simulations; drafted the CR2SE change (optional `retryAfterSeconds`, case PP-09A) and committed it in the CR2SE checkout, unpushed. No upstream issue was filed because it is a design proposal, not a confirmed defect; TalkSphere is unchanged until it is accepted.
+Completed: [Review](../../docs/policy/QUOTA_REVIEW.md). Found two confirmed gaps (no retry guidance on `resource_limit`, no specified rate-limit refusal) and a third deferred until simulations; drafted the CR2SE change (optional `retryAfterSeconds`, case PP-09A) and committed it in CR2SE (73edf2d) and reported it as [CR2SE#13](https://github.com/beothorn/CR2SE/issues/13); it is a design proposal, not a confirmed defect, so TalkSphere is unchanged until it is accepted.
 
 ### 8. Track live peer connections by identity
 
