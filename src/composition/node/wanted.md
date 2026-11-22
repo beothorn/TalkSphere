@@ -7,7 +7,8 @@ provider.
 - **Terms**: `creditsPerObject` is both the published minimum price and the exact spending bound for one object;
   `maximumObjectBytes` and `retentionSeconds` bound the object. The description matches the provided offering because it is
   part of the contract identity the installed Storage family recognizes.
-- **Work source**: `Work` is the publisher policy. `wanted-add` queues objects (at most 64, nonempty, within the terms). When a
+- **Work source**: `Work` is the publisher policy. Hosted items from the [replica book](replicas/mod.md) that still need copies
+  are offered first, then `wanted-add` queues objects (at most 64, nonempty, within the terms). When a
   client offers to fulfil the terms, `Work` chooses the next queued object and the spending bound; the client's invitation
   selects neither. A client has at most one object in flight; work that never completes is dropped after two minutes as
   lost and is not re-queued.

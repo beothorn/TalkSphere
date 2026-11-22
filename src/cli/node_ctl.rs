@@ -18,6 +18,8 @@ const ACTIONS: &[(&str, &[&str], &[&str])] = &[
     ("fetch", &["--contact"], &[]),
     ("fulfil", &["--contact"], &[]),
     ("wanted-add", &["--file"], &[]),
+    ("replica-add", &["--file"], &[]),
+    ("replicas", &[], &[]),
     (
         "store",
         &["--contact", "--file", "--retention-seconds", "--max-spend"],
@@ -294,6 +296,10 @@ mod tests {
         // The wanted-Storage actions take exactly their one required option.
         assert!(parse(&words("--node-root r fulfil --contact c")).is_ok());
         assert!(parse(&words("--node-root r wanted-add --file f")).is_ok());
+        assert!(parse(&words("--node-root r replica-add --file f")).is_ok());
+        assert!(parse(&words("--node-root r replicas")).is_ok());
+        assert!(parse(&words("--node-root r replica-add")).is_err());
+        assert!(parse(&words("--node-root r replicas --file f")).is_err());
         assert!(parse(&words("--node-root r fulfil")).is_err());
         assert!(parse(&words("--node-root r wanted-add")).is_err());
         assert!(parse(&words("--node-root r wanted-add --file f --max-spend 1")).is_err());

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-13 are complete.
+Status: in progress; steps 1-14 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -29,7 +29,7 @@ large simulations without touching protocol code.
 - [x] **11.** Grant finite bootstrap credits and trust by policy.
 - [x] **12.** Publish wanted Storage terms and issue earned credits by policy.
 - [x] **13.** Adjust trust from verified contributions and failures by policy.
-- [ ] **14.** Maintain replica sets at a policy target across independent peers.
+- [x] **14.** Maintain replica sets at a policy target across independent peers.
 - [ ] **15.** Schedule staggered checks, renewals and repairs by policy.
 - [ ] **16.** Report replica-set state using the CR2SE redundancy states.
 - [ ] **17.** Add local commands to inspect policy decisions and their inputs.
@@ -236,6 +236,8 @@ server's key, place Storage leases at distinct client identities up to the
 policy target, and count a copy only after its complete successful result, as
 CR2SE Redundancy requires. Test reaching the target, provider independence and
 refusal to count unconfirmed copies.
+
+Completed: [Replicas](../../src/composition/node/replicas/mod.md). Items are sealed with a node data key (XChaCha20-Poly1305; the key must be backed up with the identity) rather than the generic identity envelope, because the running node does not expose its identity's decryption authority; the sealer is a separate file so the envelope can replace it. Placement goes through the wanted offering because a provider must offer in CR2SE: the node does not push stores to clients, and phone-issued credits are not needed to place. Checks, renewals and retrieval, which are charged in the holder's credits, are step 15. A process test shows distinct clients receiving an item until the target, a repeat client and a third client refused without payment, sealed bytes only at the clients, and state kept across a restart.
 
 ### 15. Schedule staggered checks, renewals and repairs by policy
 

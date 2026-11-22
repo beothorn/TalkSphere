@@ -12,6 +12,7 @@ use super::{
     layout::Layout,
     observation_store::FileObservations,
     offering::{self, Prepared},
+    replicas::book::Book,
     wanted,
 };
 use crate::composition::policy::{Configured, Event, Kind, Params, PeerView, Policy};
@@ -75,6 +76,10 @@ pub struct Owners {
     pub policy: Policy,
     /// Durable per-peer observations that policy decisions read.
     pub observations: Arc<FileObservations>,
+    /// Hosted items and the replicas protecting them.
+    pub replicas: Arc<Book>,
+    /// Path of the owner-only key that seals hosted items.
+    pub replica_key: std::path::PathBuf,
     /// Wanted Storage work source, present when policy publishes wanted terms.
     pub wanted: Option<Arc<wanted::Work>>,
     /// Receiver of wanted-work completions, taken once by the runtime's completion handler.
@@ -263,10 +268,17 @@ pub fn open(
         peer::admission::LedgerGate::new(local, account.clone(), read, policy)
             .map_err(stage("Ledger admission"))?,
     );
-    let work = params
-        .credit
-        .wanted
-        .map(|terms| Arc::new(wanted::Work::new(terms)));
+    let replicas = Arc::new(
+        Book::open(&layout.replicas())
+            .map_err(|e| format!("opening the replica book failed: {e:?}"))?,
+    );
+    let work = params.credit.wanted.map(|terms| {
+        Arc::new(wanted::Work::new(
+            terms,
+            replicas.clone(),
+            peer_policy.redundancy.target(),
+        ))
+    });
     let (completed, completions) = std::sync::mpsc::sync_channel(64);
     let publisher = work
         .as_ref()
@@ -309,6 +321,8 @@ pub fn open(
         policy: peer_policy,
         params,
         observations,
+        replicas,
+        replica_key: layout.replica_key(),
         wanted: work,
         wanted_completions: Mutex::new(work_receiver(completions, params.credit.wanted.is_some())),
         config,

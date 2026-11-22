@@ -8,6 +8,7 @@
 use super::{
     catalog::FileCatalog,
     owners::{BUDGET, Owners},
+    replicas::book::{Book, Replica},
 };
 use crate::{
     composition::policy::{Event, Kind, Wanted},
@@ -24,7 +25,7 @@ use crate::{
 };
 use std::{
     collections::VecDeque,
-    sync::{Mutex, mpsc::Receiver},
+    sync::{Arc, Mutex, mpsc::Receiver},
     time::{Duration, Instant},
 };
 
@@ -46,10 +47,20 @@ pub enum Refusal {
     Full,
 }
 
+// Where a chosen object came from, so a result can be confirmed or returned to the right place.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Origin {
+    /// The operator's manual queue.
+    Backlog,
+    /// A hosted item that needs more replicas.
+    Item([u8; 16]),
+}
+
 struct InFlight {
     provider: IdentityId,
     data: Vec<u8>,
     input: Value,
+    origin: Origin,
     since: Instant,
 }
 
@@ -62,15 +73,20 @@ struct State {
 /// The wanted work source and publisher policy.
 pub struct Work {
     terms: Wanted,
+    book: Arc<Book>,
+    target: usize,
     state: Mutex<State>,
 }
 
 impl Work {
-    /// A source for these wanted terms, with nothing queued.
-    pub fn new(terms: Wanted) -> Self {
+    /// A source for these wanted terms, serving hosted items from `book` until each has `target`
+    /// replicas and then the manual queue, with nothing queued.
+    pub fn new(terms: Wanted, book: Arc<Book>, target: usize) -> Self {
         tracing::trace!("Creating the wanted work source");
         Self {
             terms,
+            book,
+            target,
             state: Mutex::new(State::default()),
         }
     }
@@ -107,16 +123,19 @@ impl Work {
         &self.terms
     }
 
-    // End the in-flight work of `provider`; a definite failure returns the object to the front of the
-    // backlog, an unknown or successful outcome never does, so nothing is stored twice by mistake.
-    fn finish(&self, provider: IdentityId, requeue: bool) -> Option<Value> {
+    // End the in-flight work of `provider`. A manual object that failed definitely returns to the front of
+    // the backlog; a hosted item's reservation is always released (a confirmed replica is recorded
+    // separately), so an unknown outcome never counts as a copy and nothing is stored twice by mistake.
+    fn finish(&self, provider: IdentityId, requeue: bool) -> Option<(Value, Origin)> {
         let mut state = self.lock();
         let index = state.inflight.iter().position(|w| w.provider == provider)?;
         let work = state.inflight.remove(index);
-        if requeue {
-            state.backlog.push_front(work.data);
+        match work.origin {
+            Origin::Backlog if requeue => state.backlog.push_front(work.data),
+            Origin::Backlog => {}
+            Origin::Item(_) => {}
         }
-        Some(work.input)
+        Some((work.input, work.origin))
     }
 
     // A poisoned lock still holds consistent queues because every update is one push or remove.
@@ -139,19 +158,38 @@ impl peer::wanted::Policy for Work {
         }
         let mut state = self.lock();
         let now = Instant::now();
-        // Work that never completed is treated as lost: its outcome is unknown, so it is not re-queued.
-        state
-            .inflight
-            .retain(|w| now.duration_since(w.since) < INFLIGHT_LIFETIME);
+        // Work that never completed is treated as lost: its outcome is unknown, so it is not re-queued,
+        // and a hosted item's reservation is given back.
+        let (lost, kept): (Vec<_>, Vec<_>) = std::mem::take(&mut state.inflight)
+            .into_iter()
+            .partition(|w| now.duration_since(w.since) >= INFLIGHT_LIFETIME);
+        state.inflight = kept;
+        for work in lost {
+            if let Origin::Item(id) = work.origin {
+                self.book.release(id, work.provider);
+            }
+        }
         if state.inflight.iter().any(|w| w.provider == provider) {
             return Err(peer::Error::Limit);
         }
-        let data = state.backlog.pop_front().ok_or(peer::Error::Unavailable)?;
+        // Hosted items that still need replicas come first; the manual queue serves the rest.
+        let (data, origin) =
+            match self
+                .book
+                .take_for(provider, self.target, self.terms.maximum_object_bytes)
+            {
+                Some((id, sealed)) => (sealed, Origin::Item(id)),
+                None => (
+                    state.backlog.pop_front().ok_or(peer::Error::Unavailable)?,
+                    Origin::Backlog,
+                ),
+            };
         let input = store_input(&data, self.terms.retention_seconds);
         state.inflight.push(InFlight {
             provider,
             data,
             input: input.clone(),
+            origin,
             since: now,
         });
         Ok(peer::wanted::Work {
@@ -193,20 +231,35 @@ pub fn drain(owners: &Owners, completions: &Receiver<Completion>, stop: impl Fn(
         let provider = completion.scope.peer;
         match completion.result {
             Ok(Reply::Work(key)) => {
-                let input = work.finish(provider, false);
-                let outcome = input
-                    .ok_or("no input was recorded for the contribution")
-                    .and_then(|input| {
-                        validate_and_catalog(owners, key, &input, provider)
-                            .map_err(|_| "the committed store did not validate")
-                    });
-                match outcome {
-                    Ok(()) => owners.observe(provider, Event::ContributionVerified),
-                    Err(reason) => {
+                let Some((input, origin)) = work.finish(provider, false) else {
+                    tracing::warn!("A wanted contribution completed with no recorded input");
+                    continue;
+                };
+                match validate_and_catalog(owners, key, &input, provider) {
+                    Ok(lease) => {
+                        if let Origin::Item(id) = origin {
+                            let replica = Replica {
+                                provider,
+                                lease: lease.id,
+                                expires_at: lease.expires_at,
+                                confirmed_at: super::owners::unix_seconds(),
+                                last_checked: None,
+                            };
+                            if owners.replicas.confirm(id, replica).is_err() {
+                                tracing::warn!(
+                                    "A validated replica could not be recorded in the book"
+                                );
+                            }
+                        }
+                        owners.observe(provider, Event::ContributionVerified);
+                    }
+                    Err(()) => {
                         tracing::warn!(
-                            reason,
                             "A wanted contribution was committed but could not be validated"
                         );
+                        if let Origin::Item(id) = origin {
+                            owners.replicas.release(id, provider);
+                        }
                         owners.observations.record(
                             provider,
                             Kind::Failed,
@@ -219,16 +272,21 @@ pub fn drain(owners: &Owners, completions: &Receiver<Completion>, stop: impl Fn(
                 tracing::warn!(
                     "A wanted contribution ended with an unknown outcome and will not be retried"
                 );
-                work.finish(provider, false);
+                release_item(owners, work.finish(provider, false), provider);
             }
             Err(error) => {
                 tracing::debug!(?error, "A wanted contribution failed before any effect");
-                work.finish(provider, true);
+                release_item(owners, work.finish(provider, true), provider);
             }
-            Ok(_) => {
-                work.finish(provider, false);
-            }
+            Ok(_) => release_item(owners, work.finish(provider, false), provider),
         }
+    }
+}
+
+// Give back the reservation of a hosted item whose contribution did not produce a confirmed replica.
+fn release_item(owners: &Owners, finished: Option<(Value, Origin)>, provider: IdentityId) {
+    if let Some((_, Origin::Item(id))) = finished {
+        owners.replicas.release(id, provider);
     }
 }
 
@@ -238,7 +296,7 @@ fn validate_and_catalog(
     key: services::contract::OperationKey,
     input: &Value,
     provider: IdentityId,
-) -> Result<(), ()> {
+) -> Result<crate::modules::storage::contract::Lease, ()> {
     tracing::trace!("Validating a wanted contribution");
     let grant = owners
         .services
@@ -272,12 +330,27 @@ fn validate_and_catalog(
     owners
         .catalog
         .put(&lease, &text::format(provider))
-        .map_err(|_| ())
+        .map_err(|_| ())?;
+    Ok(lease)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // An empty replica book in a fresh directory.
+    fn book() -> Arc<Book> {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static NEXT: AtomicU32 = AtomicU32::new(0);
+        Arc::new(
+            Book::open(&std::env::temp_dir().join(format!(
+                "ts-work-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            )))
+            .unwrap(),
+        )
+    }
 
     // Terms for tests: 7 credits per object of at most 8 bytes.
     fn terms() -> Wanted {
@@ -291,7 +364,7 @@ mod tests {
     // Objects are queued in order within bounds; empty, oversized and excess objects are refused.
     #[test]
     fn the_backlog_is_bounded_and_validated() {
-        let work = Work::new(terms());
+        let work = Work::new(terms(), book(), 2);
         assert_eq!(work.enqueue(vec![]), Err(Refusal::Empty));
         assert_eq!(work.enqueue(vec![0; 9]), Err(Refusal::TooLarge));
         assert_eq!(work.enqueue(vec![1; 8]), Ok(1));
@@ -305,7 +378,7 @@ mod tests {
     // A definite failure puts the object back first; success and unknown outcomes never do.
     #[test]
     fn only_definite_failures_requeue() {
-        let work = Work::new(terms());
+        let work = Work::new(terms(), book(), 2);
         work.enqueue(vec![1]).unwrap();
         work.enqueue(vec![2]).unwrap();
         let state = |work: &Work| {
@@ -315,6 +388,7 @@ mod tests {
                 provider: IdentityId([1; 32]),
                 data: data.clone(),
                 input: store_input(&data, 60),
+                origin: Origin::Backlog,
                 since: Instant::now(),
             });
         };

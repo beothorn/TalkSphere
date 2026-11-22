@@ -16,6 +16,10 @@ use crate::{
             catalog::Entry,
             link::Link,
             owners::{BUDGET, Owners},
+            replicas::{
+                book::{BookError, Item},
+                sealer::{self, Sealer},
+            },
             wanted::Refusal,
         },
         server::pump::Signal,
@@ -194,6 +198,80 @@ impl Handler {
         Ok(json!({"queued": queued}))
     }
 
+    // Seal one hosted item with the node's data key and add it to the replica book; contributing clients
+    // then each receive it until the redundancy target is met. Replicas are placed through the wanted
+    // offering, so a node that publishes none cannot place them.
+    fn replica_add(&self, request: &Request) -> Result<Value, ControlError> {
+        tracing::trace!("Adding a hosted item for replication");
+        let work = self.owners.wanted.as_ref().ok_or_else(|| {
+            ControlError::new(
+                Code::Refused,
+                "this node publishes no wanted Storage offering, so replicas cannot be placed",
+            )
+        })?;
+        let data = request.bytes(
+            "data",
+            crate::composition::node::config::MAXIMUM_OBJECT_BYTES as usize - sealer::OVERHEAD,
+        )?;
+        if data.is_empty() {
+            return Err(ControlError::new(Code::Invalid, "data must not be empty"));
+        }
+        let mut id = [0u8; 16];
+        getrandom::fill(&mut id).map_err(|_| unavailable("randomness"))?;
+        let sealer = Sealer::open_or_create(&self.owners.replica_key)
+            .map_err(|_| unavailable("the replica data key"))?;
+        let sealed = sealer
+            .seal(&data, &id)
+            .map_err(|_| ControlError::new(Code::Limit, "the item could not be sealed"))?;
+        if sealed.len() as u64 > work.terms().maximum_object_bytes {
+            return Err(ControlError::new(
+                Code::Limit,
+                "the sealed item exceeds the wanted terms",
+            ));
+        }
+        let plaintext_hash =
+            crate::modules::cryptography::primitives::hash::sha256(&data, data.len())
+                .map_err(|_| ControlError::new(Code::Limit, "the item could not be hashed"))?;
+        self.owners
+            .replicas
+            .add(
+                Item {
+                    id,
+                    size: data.len() as u64,
+                    sealed_size: sealed.len() as u64,
+                    plaintext_hash,
+                    created_at: now(),
+                    replicas: Vec::new(),
+                },
+                &sealed,
+            )
+            .map_err(|e| match e {
+                BookError::Full => ControlError::new(Code::Limit, "the replica book is full"),
+                _ => unavailable("the replica book"),
+            })?;
+        Ok(json!({
+            "id": hex(&id), "size": data.len(), "sealedBytes": sealed.len(),
+            "target": self.owners.policy.redundancy.target(),
+        }))
+    }
+
+    // Hosted items with their confirmed replicas.
+    fn replicas(&self) -> Value {
+        tracing::trace!("Listing hosted items");
+        json!({
+            "target": self.owners.policy.redundancy.target(),
+            "items": self.owners.replicas.list().iter().map(|item| json!({
+                "id": hex(&item.id), "size": item.size, "sealedBytes": item.sealed_size,
+                "createdAt": item.created_at, "confirmed": item.replicas.len(),
+                "replicas": item.replicas.iter().map(|r| json!({
+                    "provider": text::format(r.provider), "leaseId": hex(&r.lease),
+                    "expiresAt": r.expires_at, "confirmedAt": r.confirmed_at,
+                    "lastChecked": r.last_checked,
+                })).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+        })
+    }
+
     // Issuer-separated local view for one peer.
     fn balance_of(&self, peer: IdentityId) -> Result<Value, ControlError> {
         tracing::trace!("Reading a peer balance view");
@@ -303,6 +381,8 @@ impl Execute for Handler {
             "leases" => Ok(self.leases()),
             "outcomes" => self.outcomes(request),
             "wanted-add" => self.wanted_add(request),
+            "replica-add" => self.replica_add(request),
+            "replicas" => Ok(self.replicas()),
             "fetch" | "fulfil" | "store" | "retrieve" | "renew" | "check" | "remove" => {
                 self.peer_operation(request)
             }

@@ -14,6 +14,7 @@ pub mod observation_store;
 pub mod offering;
 pub mod owners;
 pub mod peers;
+pub mod replicas;
 pub mod runtime;
 pub mod upkeep;
 pub mod wanted;

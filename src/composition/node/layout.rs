@@ -75,6 +75,16 @@ impl Layout {
         tracing::trace!("Reading the node observations path");
         self.root.join("observations.json")
     }
+    /// Directory of the replica book and the sealed bytes of hosted items.
+    pub fn replicas(&self) -> PathBuf {
+        tracing::trace!("Reading the node replicas path");
+        self.root.join("replicas")
+    }
+    /// Owner-only data key that seals hosted items before they are replicated.
+    pub fn replica_key(&self) -> PathBuf {
+        tracing::trace!("Reading the node replica key path");
+        self.root.join("replica.key")
+    }
     /// Local control socket path.
     pub fn control(&self) -> PathBuf {
         tracing::trace!("Reading the node control socket path");
@@ -92,6 +102,8 @@ mod tests {
             layout.config(),
             layout.policy(),
             layout.observations(),
+            layout.replicas(),
+            layout.replica_key(),
             layout.public_id(),
             layout.identity(),
             layout.board(),

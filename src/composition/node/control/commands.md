@@ -25,3 +25,4 @@ acceptance and is reported as `insufficient`. Only Storage operations exist; oth
 return `unsupported`.
 
 `wanted-add` queues one object for the next client that fulfils this node's [wanted offering](../wanted.md); `fulfil` offers to fulfil a peer's wanted terms. `status` also reports the wanted queue.
+`replica-add` seals a hosted item and adds it to the [replica book](../replicas/mod.md); `replicas` lists items, the target and confirmed replicas.

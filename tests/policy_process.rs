@@ -472,3 +472,88 @@ fn trust_follows_verified_contributions_and_checks() {
     assert_eq!(check("00"), "fail");
     assert_eq!(trust(&server), 350_000);
 }
+
+// Whether any file below `dir` contains `needle`.
+fn tree_contains(dir: &std::path::Path, needle: &[u8]) -> bool {
+    std::fs::read_dir(dir).unwrap().flatten().any(|entry| {
+        let path = entry.path();
+        if path.is_dir() {
+            tree_contains(&path, needle)
+        } else {
+            std::fs::read(&path).is_ok_and(|bytes| bytes.windows(needle.len()).any(|w| w == needle))
+        }
+    })
+}
+
+// A hosted item is sealed once and placed through the wanted offering at distinct clients until the
+// redundancy target is met: a client never receives the same item twice, once the target is reached
+// further offers do nothing and cost nothing, and the clients hold only sealed bytes.
+#[test]
+fn a_hosted_item_is_replicated_to_distinct_clients_up_to_the_target() {
+    let dir = Dir::new("replicas");
+    let mut server = Node::init(&dir.0, "server", None);
+    let mut clients: Vec<Node> = ["c1", "c2", "c3"]
+        .iter()
+        .map(|n| Node::init(&dir.0, n, None))
+        .collect();
+    server.set_policy(
+        r#"{"version":1,"credit":{"wanted":{"creditsPerObject":5,"maximumObjectBytes":1024,"retentionSeconds":300}},"redundancy":{"target":2}}"#,
+    );
+    let port = free_port();
+    server.start(Some(port));
+    let contact = server.contact(port);
+    let secret = b"TOP-SECRET-HOSTED-DATA";
+    let item = dir.0.join("item");
+    std::fs::write(&item, secret).unwrap();
+    // Without a wanted offering nothing can be placed.
+    let added = server
+        .ctl(&["replica-add", "--file", item.to_str().unwrap()])
+        .unwrap();
+    assert_eq!(number(&added, "sealedBytes"), secret.len() as u64 + 41);
+    assert_eq!(number(&added, "target"), 2);
+    for client in &mut clients {
+        client.start(None);
+        client
+            .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+            .unwrap();
+    }
+    let confirmed =
+        |server: &Node| number(&server.ctl(&["replicas"]).unwrap()["items"][0], "confirmed");
+    clients[0].ctl(&["fulfil", "--contact", &contact]).unwrap();
+    eventually(
+        "the first replica was never confirmed",
+        Duration::from_secs(10),
+        || confirmed(&server) == 1,
+    );
+    // The same client cannot hold a second copy of the item.
+    assert!(clients[0].ctl(&["fulfil", "--contact", &contact]).is_err());
+    assert_eq!(confirmed(&server), 1);
+    clients[1].ctl(&["fulfil", "--contact", &contact]).unwrap();
+    eventually(
+        "the second replica was never confirmed",
+        Duration::from_secs(10),
+        || confirmed(&server) == 2,
+    );
+    // The target is met: a third client is refused, nothing is paid and nothing is stored.
+    assert!(clients[2].ctl(&["fulfil", "--contact", &contact]).is_err());
+    assert_eq!(number(&balance(&clients[2], &server), "owned"), 0);
+    assert_eq!(confirmed(&server), 2);
+    let listed = server.ctl(&["replicas"]).unwrap();
+    let holders: Vec<&str> = listed["items"][0]["replicas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["provider"].as_str().unwrap())
+        .collect();
+    assert_eq!(holders.len(), 2);
+    assert_ne!(holders[0], holders[1]);
+    assert!(holders.contains(&clients[0].id.as_str()) && holders.contains(&clients[1].id.as_str()));
+    // Replicas hold sealed bytes only; the plaintext is nowhere at the clients or in the server's book.
+    assert!(!tree_contains(&clients[0].root, secret));
+    assert!(!tree_contains(&clients[1].root, secret));
+    assert!(!tree_contains(&server.root.join("replicas"), secret));
+    // Everything survives a server restart.
+    server.crash();
+    server.start(Some(port));
+    assert_eq!(confirmed(&server), 2);
+}
