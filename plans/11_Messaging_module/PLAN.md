@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: planned for review; no step is implemented yet.
+Status: planned for review; no step is implemented yet. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -38,7 +38,7 @@ needs it, and the hosted pages and feeds proposal
 - [ ] **26.** Implement authorized paid byte evidence for pending placements.
 - [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
-- [ ] **29.** Apply peer policy quotas and rate-limit failed probing.
+- [ ] **29.** Bound placements per sender and per recipient through a module limits port.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
 - [ ] **32.** Validate recovered messages and decrypt only after authentication.
@@ -51,9 +51,12 @@ needs it, and the hosted pages and feeds proposal
 
 ## Baseline, scope and review
 
-Planned on 2026-11-22. Upstream main is
+Planned on 2026-11-22 against
 [CR2SE bc53df4](https://github.com/beothorn/CR2SE/tree/bc53df4041da9e62d9fb0c31bf9c6ff165e72d16).
-Recheck it before step 1 and record any newer change.
+Rechecked the same day: upstream main is now
+[73edf2d](https://github.com/beothorn/CR2SE/commit/73edf2dc230bccb0f27f2ea6e06e938fff738862), which changes only the Peer
+Protocol `resource_limit` text (proposal [#13](https://github.com/beothorn/CR2SE/issues/13), still open) and nothing in
+Messaging. Recheck again before step 1 and record any newer change.
 
 - [Messaging specification, including the definition and price formulas](https://github.com/beothorn/CR2SE/blob/bc53df4041da9e62d9fb0c31bf9c6ff165e72d16/modules/messaging/README.md).
 - [Input contract](https://github.com/beothorn/CR2SE/blob/bc53df4041da9e62d9fb0c31bf9c6ff165e72d16/modules/messaging/inputs/README.md).
@@ -74,6 +77,11 @@ Existing local support to reuse rather than duplicate:
   the X25519, HKDF and XChaCha20-Poly1305 primitives.
 - Storage is the structural model: provider participant, durable records,
   recovery, requester client and acceptance matrix under `src/modules/storage/`.
+- Peer policy (milestone 12, [handoff](../../src/composition/policy/HANDOFF.md)) already provides, in node
+  composition: per-identity request and failure rates for every stream a peer opens (so probing of placement
+  IDs is already rate-limited without Messaging code), `Credit::release` for the early-release amount,
+  `Owners::observe` for verified check outcomes, the live connection registry that lets a provider answer an
+  outbound-only recipient, and the redundancy rules and report a sender can apply to its placements.
 
 In scope: the complete version 1 provider and requester under
 `src/modules/messaging/`, the Board `identityEncryption` field, the encrypted
@@ -90,8 +98,14 @@ but are not extracted into a shared module yet. Hosted pages and feeds will be
 the second user; the extraction happens in their plan, once the accepted
 specification shows exactly what is shared.
 
-Policy: quotas, rate limits and the early-release amount are decided through
-the peer policy contracts, not constants in the module.
+Policy: the module never depends on node composition. It exposes small ports for the decisions CR2SE leaves
+local (the early-release amount, per-sender and per-recipient placement limits) and the node composition fills
+them from the peer policy contracts when the client journey installs Messaging. Module tests use fixed port
+implementations.
+
+Deployment fit: senders and recipients are typically phones that only connect outward. Every Messaging
+operation is initiated by the sender or the recipient, so a provider never has to reach a phone; recipients
+poll with `discover`, which is charged, so how often a client polls is client policy, not module behavior.
 
 Messaging persistence is local and independent of the paid Storage service, as
 upstream requires (MS-17). Payload size is bounded by finite configuration and
@@ -200,7 +214,8 @@ offerings staying usable and opaque messages working without a credential.
 ### 12. Persist bounded payload staging and placement records
 
 Persist incomplete uploads in bounded staging and accepted placements with all
-fields upstream lists, atomically and owner-only. Reject placement ID reuse and
+fields upstream lists, atomically and owner-only. Placement persistence is the module's own local store, not
+paid Storage and not the node's replica book. Reject placement ID reuse and
 never replace a record. Test reopen, corrupt records, write failure and the
 staging bound.
 
@@ -272,8 +287,8 @@ expected value succeeds. Test MS-10.
 
 ### 23. Quote early-release credits before removal
 
-Compute one exact `releaseCredits` through the peer policy contract, bounded by the minimum
-requested and the cumulative store and renewal payments. Bind it in the quote
+Compute one exact `releaseCredits` through the module's release port (filled by `Credit::release` in the
+node), bounded by the minimum requested and the cumulative store and renewal payments. Bind it in the quote
 before any change. Test the quote rules of MS-11 and MS-12, including that
 discover, recover, status, remove and check prices never enlarge the ceiling.
 
@@ -309,12 +324,13 @@ Release payload bytes and staging when obligations end while keeping receipts,
 recovery caches until expiry and removal tombstones as required. Test that
 reclaim never removes data still owed to a retry or status query.
 
-### 29. Apply peer policy quotas and rate-limit failed probing
+### 29. Bound placements per sender and per recipient through a module limits port
 
-Apply per-sender and per-recipient placement quotas from the peer policy
-contracts and bound failed identity proof, discovery and identifier probing. Unauthorized replies never
-reveal whether a placement exists. Test quota refusal before work and the
-indistinguishability required by MS-04.
+Refuse a store before any body or charge with `resource_limit` when the sender or the recipient already holds
+the most pending placements the limits port allows, so unsolicited messaging stays bounded at each provider.
+Request and failure rates are already applied node-wide by peer policy; this step only keeps unauthorized and
+unknown placements indistinguishable in replies. Test both limits at their boundary, refusal without charge,
+and the indistinguishability required by MS-04.
 
 ### 30. Register Messaging handlers and publish usable offerings
 
@@ -369,5 +385,6 @@ fixtures and remaining limits. Run the full check list and record coverage.
 ### 38. Publish the Messaging completion and client journey handoff
 
 Write `src/modules/messaging/HANDOFF.md` with contracts the node composition
-needs, update this plan, the roadmap and the root README, and record known
-limits.
+needs: the release and limits ports to fill from peer policy, check outcomes to pass to `Owners::observe`, and
+how a sender's placements map onto the redundancy report. Update this plan, the roadmap and the root README,
+and record known limits.
