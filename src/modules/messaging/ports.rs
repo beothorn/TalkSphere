@@ -3,7 +3,7 @@
 //! Callers: the provider and requester engines. Production composition supplies platform
 //! implementations; tests supply deterministic ones. Nothing here may block indefinitely or log secrets.
 use super::{error::Error, ids::Signature};
-use crate::modules::identity::api::IdentityId;
+use crate::modules::{identity::api::IdentityId, services::contract::OperationKey};
 
 /// Provider wall-clock time in whole Unix seconds.
 pub trait Clock: Send + Sync {
@@ -49,4 +49,14 @@ impl ReleasePolicy for NoRelease {
     fn release(&self, _cumulative_payments: u64, _minimum: u64) -> u64 {
         0
     }
+}
+
+/// Issues early-release credits to a sender, once per Services operation.
+pub trait ReleaseIssuer: Send + Sync {
+    /// Issue `credits` to `recipient` for the operation `key`. Repeating the exact call must succeed without issuing again, so a
+    /// recovered removal can finish a settlement that crashed between its records.
+    /// # Errors
+    /// `Insufficient` or `Limit` when the issuer cannot issue them, `Conflict` when `key` issued something different, `Storage` or
+    /// `Unknown` when the record may or may not be durable.
+    fn issue(&self, key: OperationKey, recipient: IdentityId, credits: u64) -> Result<(), Error>;
 }

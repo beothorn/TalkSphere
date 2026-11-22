@@ -12,7 +12,7 @@ use crate::modules::{
         ports::Signer,
         state::State,
         store::{Limits, Store},
-        test_support::{FixedClock, SequenceEntropy, TestIdentity},
+        test_support::{FixedClock, RecordingIssuer, SequenceEntropy, TestIdentity},
     },
 };
 use serde_json::Value;
@@ -1008,4 +1008,110 @@ fn quote_removal_refuses_unauthorized_or_stale_requests() {
         Some(Error::NotAvailable),
         "expired"
     );
+}
+
+// A provider whose participant releases credits through a recording issuer that behaves like the Ledger (once per operation key).
+fn removing(h: &Harness, percent: u64) -> (Provider, Arc<RecordingIssuer>) {
+    let issuer = Arc::new(RecordingIssuer::default());
+    let participant = Arc::new(
+        Participant::new(
+            h.store.clone(),
+            Journal::volatile(64),
+            Arc::new(SequenceEntropy::new(50)),
+            h.clock.clone(),
+            h.provider_identity.clone(),
+        )
+        .with_release_issuer(issuer.clone()),
+    );
+    participant.recover(&NoDecisions).unwrap();
+    let provider = Provider::new(terms(), participant, h.clock.clone(), h.staging.clone())
+        .with_release_policy(Arc::new(Percent(percent)));
+    (provider, issuer)
+}
+
+// MS-11: a removal records the removal, releases the payload and issues the quoted credits to the sender exactly once, charging the
+// removal price; the placement leaves discovery, status and recovery.
+#[test]
+fn ms_11_removal_issues_the_quoted_credits_once() {
+    let h = harness();
+    let (provider, issuer) = removing(&h, 50);
+    let stored = provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let p = stored.placement_id;
+    let out = provider
+        .remove(key(2), h.sender.identity(), removal(p, 1010, 4))
+        .unwrap();
+    assert_eq!(
+        (out.removed, out.release_credits, out.price),
+        (true, 8, provider.terms().remove_price)
+    );
+    assert_eq!(issuer.issued(), vec![(key(2), h.sender.identity(), 8)]);
+    let record = h.store.record(p).unwrap();
+    assert_eq!(record.state, State::Removed);
+    assert!(h.store.get(p).is_err(), "the payload is released");
+    assert!(
+        provider
+            .discover(
+                h.recipient.identity(),
+                DiscoverInput {
+                    cursor: None,
+                    limit: 5
+                }
+            )
+            .unwrap()
+            .messages
+            .is_empty()
+    );
+    assert_eq!(
+        provider
+            .status(h.sender.identity(), StatusInput { placement_id: p })
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider
+            .recover(key(3), h.recipient.identity(), recovery_request(&h, p, 7))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+}
+
+// MS-12 refusals: removal by a stranger, with a stale expiry, with a minimum above the payments or after recovery issues nothing and
+// leaves the placement pending (or recovered); an exhausted issuer leaves the placement pending for a later retry.
+#[test]
+fn removal_refusals_issue_nothing() {
+    let h = harness();
+    let (provider, issuer) = removing(&h, 50);
+    let stored = provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let p = stored.placement_id;
+    assert_eq!(
+        provider
+            .remove(key(2), h.recipient.identity(), removal(p, 1010, 0))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        provider
+            .remove(key(3), h.sender.identity(), removal(p, 1009, 0))
+            .err(),
+        Some(Error::Conflict)
+    );
+    assert_eq!(
+        provider
+            .remove(key(4), h.sender.identity(), removal(p, 1010, 18))
+            .err(),
+        Some(Error::Invalid)
+    );
+    issuer.fail_with(Some(Error::Insufficient));
+    assert_eq!(
+        provider
+            .remove(key(5), h.sender.identity(), removal(p, 1010, 0))
+            .err(),
+        Some(Error::Insufficient)
+    );
+    assert_eq!(h.store.record(p).unwrap().state, State::Pending);
+    assert!(issuer.issued().is_empty());
 }

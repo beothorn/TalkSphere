@@ -6,7 +6,7 @@
 use super::{
     error::Error,
     ids::Signature,
-    ports::{Clock, Entropy, Signer},
+    ports::{Clock, Entropy, ReleaseIssuer, Signer},
 };
 use crate::modules::{
     cryptography::{
@@ -15,6 +15,7 @@ use crate::modules::{
         secrets::{Secret, Signing},
     },
     identity::api::IdentityId,
+    services::contract::OperationKey,
 };
 use std::sync::Mutex;
 use zeroize::Zeroizing;
@@ -176,5 +177,39 @@ mod tests {
         assert_eq!(a.identity().0, credential::identity_id(&a.key()).unwrap());
         a.break_signing();
         assert_eq!(a.sign(b"x"), Err(Error::Unavailable));
+    }
+}
+
+/// An issuer that records what it issued, once per operation key like the Ledger, with injectable failure.
+#[derive(Default)]
+pub struct RecordingIssuer {
+    issued: Mutex<std::collections::BTreeMap<OperationKey, (IdentityId, u64)>>,
+    failure: Mutex<Option<Error>>,
+}
+impl RecordingIssuer {
+    /// Everything issued so far.
+    pub fn issued(&self) -> Vec<(OperationKey, IdentityId, u64)> {
+        let map = self.issued.lock().unwrap();
+        map.iter().map(|(k, (p, a))| (*k, *p, *a)).collect()
+    }
+    /// Make every later issuance fail with `error` (or succeed again with `None`).
+    pub fn fail_with(&self, error: Option<Error>) {
+        *self.failure.lock().unwrap() = error;
+    }
+}
+impl ReleaseIssuer for RecordingIssuer {
+    fn issue(&self, key: OperationKey, recipient: IdentityId, credits: u64) -> Result<(), Error> {
+        if let Some(error) = *self.failure.lock().unwrap() {
+            return Err(error);
+        }
+        let mut map = self.issued.lock().unwrap();
+        match map.get(&key) {
+            Some(done) if *done == (recipient, credits) => Ok(()),
+            Some(_) => Err(Error::Conflict),
+            None => {
+                map.insert(key, (recipient, credits));
+                Ok(())
+            }
+        }
     }
 }

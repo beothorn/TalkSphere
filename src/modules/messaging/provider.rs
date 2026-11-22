@@ -13,8 +13,8 @@ use super::{
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
     operation::{
-        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RemoveInput, RenewInput,
-        RenewOutput, StatusInput, StatusOutput, StoreInput, StoreOutput,
+        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RemoveInput,
+        RemoveOutput, RenewInput, RenewOutput, StatusInput, StatusOutput, StoreInput, StoreOutput,
     },
     participant::Participant,
     ports::{Clock, NoRelease, ReleasePolicy},
@@ -525,6 +525,45 @@ impl Provider {
             release_credits,
             price: self.terms.remove_price,
         })
+    }
+}
+
+impl Provider {
+    /// End a pending placement early for its sender: the quote fixes the exact release credits and removal price, then the
+    /// participant records the removal and issues the credits exactly once under this operation's key, so recovery can finish an
+    /// interrupted settlement without issuing them twice.
+    /// # Errors
+    /// Those of `quote_removal`, plus `Insufficient`/`Limit` when the credits cannot be issued and `Unsupported` when no issuer is
+    /// installed for a positive amount. A refusal before the record changes leaves the placement pending.
+    pub fn remove(
+        &self,
+        key: OperationKey,
+        caller: IdentityId,
+        input: RemoveInput,
+    ) -> Result<RemoveOutput, Error> {
+        tracing::trace!("Removing a pending placement for its sender");
+        let quote = self.quote_removal(caller, &input)?;
+        let effect = Effect::Remove {
+            input,
+            release_credits: quote.release_credits,
+            price: quote.price,
+        };
+        let token = self.participant.prepare(key, &effect)?;
+        match self.participant.commit(key, &token)? {
+            Outcome::Removed {
+                placement_id,
+                removal_id,
+                release_credits,
+                price,
+            } => Ok(RemoveOutput {
+                placement_id,
+                removal_id,
+                removed: true,
+                release_credits,
+                price,
+            }),
+            _ => Err(Error::Conflict),
+        }
     }
 }
 

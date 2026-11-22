@@ -14,7 +14,7 @@ use super::{
     journal::{Entry, Journal},
     lifecycle,
     placement::{Placement, Record, Removal},
-    ports::{Clock, Entropy, Signer},
+    ports::{Clock, Entropy, ReleaseIssuer, Signer},
     receipt::{self, Binding},
     state::State,
     store::Store,
@@ -48,6 +48,8 @@ pub struct Participant {
     entropy: Arc<dyn Entropy>,
     clock: Arc<dyn Clock>,
     signer: Arc<dyn Signer>,
+    /// Issues early-release credits for removals; absent when the node offers none.
+    issuer: Option<Arc<dyn ReleaseIssuer>>,
     /// Placements locked by a prepared effect, and which operation holds each.
     locks: Mutex<BTreeMap<PlacementId, OperationKey>>,
     ready: AtomicBool,
@@ -69,6 +71,7 @@ impl Participant {
             entropy,
             clock,
             signer,
+            issuer: None,
             locks: Mutex::new(BTreeMap::new()),
             ready: AtomicBool::new(false),
         };
@@ -92,6 +95,14 @@ impl Participant {
     pub(super) fn set_ready(&self) {
         tracing::trace!("Admitting new Messaging work after recovery");
         self.ready.store(true, Ordering::SeqCst);
+    }
+
+    /// Install the issuer that releases credits when removals commit; without one a removal that releases credits is `Unsupported`.
+    #[must_use]
+    pub fn with_release_issuer(mut self, issuer: Arc<dyn ReleaseIssuer>) -> Self {
+        tracing::trace!("Installing the release credit issuer");
+        self.issuer = Some(issuer);
+        self
     }
 
     /// The identity this provider signs receipts as.
@@ -177,7 +188,7 @@ impl Participant {
                 token: expected, ..
             }) if expected != *token => Err(Error::NotAvailable),
             Some(Entry::Prepared { effect, .. }) => {
-                let outcome = self.apply(&effect)?;
+                let outcome = self.apply(key, &effect)?;
                 self.journal.put(key, Entry::Committed(outcome.clone()))?;
                 if let Some(id) = effect.placement() {
                     self.locks().remove(&id);
@@ -288,7 +299,7 @@ impl Participant {
     }
 
     // Apply an effect idempotently: an effect already visible in the store is recognized and its outcome rebuilt.
-    fn apply(&self, effect: &Effect) -> Result<Outcome, Error> {
+    fn apply(&self, key: OperationKey, effect: &Effect) -> Result<Outcome, Error> {
         let now = self.clock.now()?;
         match effect {
             Effect::Query => Ok(Outcome::Query),
@@ -420,9 +431,12 @@ impl Participant {
                     .store
                     .record(input.placement_id)
                     .ok_or(Error::NotAvailable)?;
+                let sender = record.metadata.sender_id;
                 if let (State::Removed, Some(done)) = (record.state, record.removal)
                     && done.removal_id == input.removal_id
                 {
+                    // Issuing is idempotent, so a recovered removal finishes a settlement that crashed after recording the removal.
+                    self.issue_release(key, sender, done.release_credits)?;
                     return Ok(Self::removed(input.placement_id, done));
                 }
                 let removal = Removal {
@@ -430,6 +444,15 @@ impl Participant {
                     release_credits: *release_credits,
                     price: *price,
                 };
+                // The placement is locked and `now` is fixed for this call, so once these checks pass recording the removal cannot
+                // be refused for state or time: the credits are never issued for a removal that then fails.
+                if record.state != State::Pending || now >= record.expires_at {
+                    return Err(Error::NotAvailable);
+                }
+                if record.expires_at != input.expected_expires_at {
+                    return Err(Error::Conflict);
+                }
+                self.issue_release(key, sender, *release_credits)?;
                 lifecycle::mark_removed(
                     &self.store,
                     input.placement_id,
@@ -442,6 +465,23 @@ impl Participant {
                 Ok(Self::removed(input.placement_id, removal))
             }
         }
+    }
+
+    // Issue the early-release credits of a removal once; none are issued for zero credits, and a positive amount without an issuer is
+    // refused because the capability is not installed.
+    fn issue_release(
+        &self,
+        key: OperationKey,
+        sender: IdentityId,
+        credits: u64,
+    ) -> Result<(), Error> {
+        if credits == 0 {
+            return Ok(());
+        }
+        self.issuer
+            .as_ref()
+            .ok_or(Error::Unsupported)?
+            .issue(key, sender, credits)
     }
 
     fn removed(placement_id: PlacementId, removal: Removal) -> Outcome {

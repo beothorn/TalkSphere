@@ -40,8 +40,8 @@ nodes, 65536 bytes), so a payload is at most **16384 bytes** in this profile, th
 
 1. **Release credits are not one decision.** Removal charges `removePrice` and issues `releaseCredits` as two Ledger records that must apply
    once together. Services settles a charge through its coordinator; the issuance is only `Ledger::grant`, an administrative call that is
-   not idempotent. Step 24 designs the recoverable pairing (a durable intent that recovery completes exactly once) and adds the missing
-   support in the owning module with its own tests.
+   not idempotent. Step 24 resolved this: the Ledger now has `issue_release`, idempotent per operation key, and the participant issues the credits when
+   the removal commits, so recovery completes an interrupted settlement exactly once.
 2. **The Board has no `identityEncryption` field**; step 11 adds it as an optional, independently validated top-level field.
 3. **No Messaging standard definition is recognized** by Services: step 4 imports the pinned definition and a catalogue like Storage's.
 4. **The provider needs its own signing key** for recovery receipts; Identity exposes signing only through scoped capabilities, so the

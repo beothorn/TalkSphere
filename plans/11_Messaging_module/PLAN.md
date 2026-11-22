@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-23 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-24 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -33,7 +33,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **21.** Implement sender-only status with the recorded receipt.
 - [x] **22.** Implement guarded renewal for pending and recovered placements.
 - [x] **23.** Quote early-release credits before removal.
-- [ ] **24.** Settle the removal charge and release credits once in one recoverable decision.
+- [x] **24.** Settle the removal charge and release credits once in one recoverable decision.
 - [ ] **25.** Retain removal replay results for the lifetime of the ledger.
 - [ ] **26.** Implement authorized paid byte evidence for pending placements.
 - [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
@@ -345,6 +345,8 @@ records in one Services decision, with no underflow or overflow. Add the
 missing Services or Ledger support found in step 1 in its owning module, with
 its own tests and companion documentation. Test MS-11 and the refusal cases of
 MS-12.
+
+Completed: Ledger `issue_release` ([release](../../src/modules/ledger/release.md), its own commit and tests) and `Provider::remove` with the participant's `ReleaseIssuer` port. The node binds the port to the Ledger and the removal charge to the Services decision in step 30.
 
 ### 25. Retain removal replay results for the lifetime of the ledger
 

@@ -8,3 +8,7 @@ not block indefinitely or log secrets.
 ## ReleasePolicy
 
 `release(cumulativePayments, minimum)` returns the early-release credits the node's policy offers for removing a placement. The module bounds the answer by the payments itself. `NoRelease` always answers zero.
+
+## ReleaseIssuer
+
+`issue(key, recipient, credits)` issues early-release credits to the sender once per Services operation key. Repeating the exact call succeeds without issuing again; the same key with different values is `Conflict`. `Insufficient`/`Limit` mean the issuer cannot issue them; `Storage`/`Unknown` mean the record may or may not be durable.

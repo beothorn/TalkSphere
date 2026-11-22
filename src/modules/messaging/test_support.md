@@ -4,3 +4,7 @@ Test-only (`cfg(test)`), never part of the library. `FixedClock` shows, advances
 deterministic, never repeating byte sequence and can be made to fail; `TestIdentity` has a real Ed25519 key derived from one seed byte, implements
 the `Signer` port and can lose its signing ability. Different seeds give different identities. The in-memory placement store double is added
 with the store port (step 12).
+
+## RecordingIssuer
+
+A release issuer that records what it issued once per operation key, like the Ledger, with `issued()` to inspect and `fail_with(error)` to inject failures.

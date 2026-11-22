@@ -8,7 +8,7 @@ use crate::modules::{
         signing,
         state::Encoding,
         store::Limits,
-        test_support::{FixedClock, SequenceEntropy, TestIdentity},
+        test_support::{FixedClock, RecordingIssuer, SequenceEntropy, TestIdentity},
     },
 };
 
@@ -17,6 +17,7 @@ struct Fixture {
     clock: Arc<FixedClock>,
     store: Arc<Store>,
     provider: Arc<TestIdentity>,
+    issuer: Arc<RecordingIssuer>,
 }
 
 // A ready participant over volatile state with the clock at 1000.
@@ -27,19 +28,22 @@ fn fixture() -> Fixture {
         payload_bytes: 1000,
     }));
     let provider = Arc::new(TestIdentity::new(2));
+    let issuer = Arc::new(RecordingIssuer::default());
     let participant = Participant::new(
         store.clone(),
         Journal::volatile(64),
         Arc::new(SequenceEntropy::new(1)),
         clock.clone(),
         provider.clone(),
-    );
+    )
+    .with_release_issuer(issuer.clone());
     participant.set_ready();
     Fixture {
         participant,
         clock,
         store,
         provider,
+        issuer,
     }
 }
 fn key(n: u8) -> OperationKey {
@@ -322,6 +326,125 @@ fn renewal_and_removal_apply_once() {
     );
     assert_eq!(f.store.record(id).unwrap().state, State::Removed);
     assert!(f.store.get(id).is_err(), "the payload is released");
+    assert_eq!(
+        f.issuer.issued(),
+        vec![(key(3), f.store.record(id).unwrap().metadata.sender_id, 5)],
+        "the release credits went to the sender once"
+    );
+}
+
+// A removal that releases credits and one that cannot issue them: without an issuer it is Unsupported, with a failing issuer the
+// placement stays pending and prepared, and committing again after the issuer recovers removes it and issues the credits once.
+#[test]
+fn removal_settles_release_credits_once_and_recoverably() {
+    let f = fixture();
+    let id = stored(&f);
+    let remove = Effect::Remove {
+        input: RemoveInput {
+            placement_id: id,
+            removal_id: RemovalId([4; 32]),
+            expected_expires_at: 1010,
+            minimum_release_credits: 4,
+        },
+        release_credits: 5,
+        price: 2,
+    };
+    let token = f.participant.prepare(key(3), &remove).unwrap();
+    f.issuer.fail_with(Some(Error::Insufficient));
+    assert_eq!(
+        f.participant.commit(key(3), &token),
+        Err(Error::Insufficient)
+    );
+    assert_eq!(f.store.record(id).unwrap().state, State::Pending);
+    assert!(f.issuer.issued().is_empty());
+    // The issuer recovers, but the record cannot be written: the credits are issued, the removal is not recorded.
+    f.issuer.fail_with(None);
+    f.store.fail_writes(true);
+    assert!(f.participant.commit(key(3), &token).is_err());
+    assert_eq!(f.issuer.issued().len(), 1);
+    assert_eq!(f.store.record(id).unwrap().state, State::Pending);
+    // Committing again finishes the same removal; the credits are not issued a second time.
+    f.store.fail_writes(false);
+    assert!(matches!(
+        f.participant.commit(key(3), &token),
+        Ok(Outcome::Removed {
+            release_credits: 5,
+            ..
+        })
+    ));
+    assert_eq!(
+        f.issuer.issued(),
+        vec![(key(3), f.store.record(id).unwrap().metadata.sender_id, 5)]
+    );
+    // Applying again (crash repair after the record was written but before the journal was) does not issue twice either.
+    assert!(f.participant.apply(key(3), &remove).is_ok());
+    assert_eq!(f.issuer.issued().len(), 1);
+}
+
+// Credits are never issued for a removal that is refused at commit: an expired placement releases nothing.
+#[test]
+fn an_expired_removal_issues_nothing() {
+    let f = fixture();
+    let id = stored(&f);
+    let remove = Effect::Remove {
+        input: RemoveInput {
+            placement_id: id,
+            removal_id: RemovalId([4; 32]),
+            expected_expires_at: 1010,
+            minimum_release_credits: 4,
+        },
+        release_credits: 5,
+        price: 2,
+    };
+    let token = f.participant.prepare(key(3), &remove).unwrap();
+    f.clock.advance(10);
+    assert_eq!(
+        f.participant.commit(key(3), &token),
+        Err(Error::NotAvailable)
+    );
+    assert!(f.issuer.issued().is_empty());
+}
+
+// Without an issuer installed, a removal that releases credits is refused as unsupported and changes nothing.
+#[test]
+fn removal_without_an_issuer_is_unsupported() {
+    let clock = Arc::new(FixedClock::at(1000));
+    let store = Arc::new(Store::volatile(Limits {
+        placements: 8,
+        payload_bytes: 1000,
+    }));
+    let participant = Participant::new(
+        store.clone(),
+        Journal::volatile(8),
+        Arc::new(SequenceEntropy::new(1)),
+        clock.clone(),
+        Arc::new(TestIdentity::new(2)),
+    );
+    participant.set_ready();
+    let f = Fixture {
+        participant,
+        clock,
+        store,
+        provider: Arc::new(TestIdentity::new(2)),
+        issuer: Arc::new(RecordingIssuer::default()),
+    };
+    let id = stored(&f);
+    let remove = Effect::Remove {
+        input: RemoveInput {
+            placement_id: id,
+            removal_id: RemovalId([4; 32]),
+            expected_expires_at: 1010,
+            minimum_release_credits: 4,
+        },
+        release_credits: 5,
+        price: 2,
+    };
+    let token = f.participant.prepare(key(3), &remove).unwrap();
+    assert_eq!(
+        f.participant.commit(key(3), &token),
+        Err(Error::Unsupported)
+    );
+    assert_eq!(f.store.record(id).unwrap().state, State::Pending);
 }
 
 // Preconditions are checked at prepare: unknown, expired or finished placements, stale expectations and a full store are refused
@@ -452,7 +575,7 @@ fn dependency_failures_refuse_work_and_recovery_applies_once() {
     let token = f.participant.prepare(key(2), &effect).unwrap();
     let first = f.participant.commit(key(2), &token).unwrap();
     // Re-applying the same recovery (as crash repair would) returns the recorded receipt and does not sign again.
-    assert_eq!(f.participant.apply(&effect), Ok(first));
+    assert_eq!(f.participant.apply(key(2), &effect), Ok(first));
     f.clock.fail();
     assert_eq!(
         f.participant.prepare(key(3), &Effect::Query),
