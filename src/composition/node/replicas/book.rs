@@ -78,9 +78,17 @@ struct State {
     reserved: Vec<([u8; 16], IdentityId)>,
 }
 
-/// The replica book in one directory.
+// Where the book and the sealed bytes live.
+enum Backing {
+    /// An owner-only directory.
+    Disk(PathBuf),
+    /// Nothing is written; sealed bytes are kept in memory. For simulations only.
+    Memory(Mutex<std::collections::BTreeMap<[u8; 16], Vec<u8>>>),
+}
+
+/// The replica book in one directory, or entirely in memory for simulations.
 pub struct Book {
-    dir: PathBuf,
+    backing: Backing,
     state: Mutex<State>,
 }
 
@@ -103,12 +111,24 @@ impl Book {
             Err(_) => return Err(BookError::Corrupt),
         };
         Ok(Self {
-            dir: dir.to_path_buf(),
+            backing: Backing::Disk(dir.to_path_buf()),
             state: Mutex::new(State {
                 items,
                 reserved: Vec::new(),
             }),
         })
+    }
+
+    /// A book that writes nothing and forgets everything when dropped, for simulations.
+    pub fn volatile() -> Self {
+        tracing::trace!("Creating a volatile replica book");
+        Self {
+            backing: Backing::Memory(Mutex::new(std::collections::BTreeMap::new())),
+            state: Mutex::new(State {
+                items: Vec::new(),
+                reserved: Vec::new(),
+            }),
+        }
     }
 
     /// Add an item with its sealed bytes; the bytes are written before the item is recorded.
@@ -123,12 +143,12 @@ impl Book {
         if state.items.iter().any(|i| i.id == item.id) {
             return Err(BookError::Unknown);
         }
-        write_private(&self.sealed_path(&item.id), sealed)?;
+        self.write_sealed(&item.id, sealed)?;
         state.items.push(item);
         if let Err(error) = self.persist(&state.items) {
             let removed = state.items.pop().map(|i| i.id);
             if let Some(id) = removed {
-                let _ = std::fs::remove_file(self.sealed_path(&id));
+                self.remove_sealed(&id);
             }
             return Err(error);
         }
@@ -141,7 +161,7 @@ impl Book {
     pub fn sealed(&self, id: [u8; 16]) -> Result<Vec<u8>, BookError> {
         tracing::trace!("Reading the sealed bytes of an item");
         let size = self.get(id).ok_or(BookError::Unknown)?.sealed_size;
-        let bytes = std::fs::read(self.sealed_path(&id)).map_err(|_| BookError::Corrupt)?;
+        let bytes = self.read_sealed(&id).ok_or(BookError::Corrupt)?;
         (bytes.len() as u64 == size)
             .then_some(bytes)
             .ok_or(BookError::Corrupt)
@@ -182,7 +202,7 @@ impl Book {
             .filter(|i| !reserved.contains(&(i.id, provider)))
             .min_by_key(|i| (held(i, &reserved), i.created_at, i.id))
             .map(|i| i.id)?;
-        let bytes = std::fs::read(self.sealed_path(&chosen)).ok()?;
+        let bytes = self.read_sealed(&chosen)?;
         state.reserved.push((chosen, provider));
         Some((chosen, bytes))
     }
@@ -263,17 +283,52 @@ impl Book {
         Ok(())
     }
 
-    // Path of an item's sealed bytes.
-    fn sealed_path(&self, id: &[u8; 16]) -> PathBuf {
-        self.dir.join(format!("{}.sealed", hex(id)))
+    // Store an item's sealed bytes.
+    fn write_sealed(&self, id: &[u8; 16], sealed: &[u8]) -> Result<(), BookError> {
+        match &self.backing {
+            Backing::Disk(dir) => write_private(&dir.join(format!("{}.sealed", hex(id))), sealed),
+            Backing::Memory(map) => {
+                map.lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .insert(*id, sealed.to_vec());
+                Ok(())
+            }
+        }
     }
 
-    // Replace the book file atomically.
+    // Read an item's sealed bytes, if present.
+    fn read_sealed(&self, id: &[u8; 16]) -> Option<Vec<u8>> {
+        match &self.backing {
+            Backing::Disk(dir) => std::fs::read(dir.join(format!("{}.sealed", hex(id)))).ok(),
+            Backing::Memory(map) => map
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .get(id)
+                .cloned(),
+        }
+    }
+
+    // Remove an item's sealed bytes after a failed add.
+    fn remove_sealed(&self, id: &[u8; 16]) {
+        match &self.backing {
+            Backing::Disk(dir) => {
+                let _ = std::fs::remove_file(dir.join(format!("{}.sealed", hex(id))));
+            }
+            Backing::Memory(map) => {
+                map.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
+            }
+        }
+    }
+
+    // Replace the book file atomically; a volatile book has nothing to write.
     fn persist(&self, items: &[Item]) -> Result<(), BookError> {
+        let Backing::Disk(dir) = &self.backing else {
+            return Ok(());
+        };
         let document =
             json!({"version": 1, "items": items.iter().map(item_json).collect::<Vec<_>>()});
         let bytes = serde_json::to_vec(&document).map_err(|_| BookError::Write)?;
-        let file = self.dir.join(BOOK_FILE);
+        let file = dir.join(BOOK_FILE);
         let temporary = file.with_extension("tmp");
         write_private(&temporary, &bytes)?;
         std::fs::rename(&temporary, &file).map_err(|_| BookError::Write)
@@ -638,6 +693,20 @@ mod tests {
         );
         // The dropped holder may offer a fresh copy again.
         assert!(book.take_for(IdentityId([1; 32]), 2, 100).is_some());
+    }
+
+    // A volatile book behaves like a disk book but writes nothing and forgets everything when dropped.
+    #[test]
+    fn a_volatile_book_behaves_like_a_disk_book() {
+        let book = Book::volatile();
+        book.add(item(1, 5), b"AAAAA").unwrap();
+        assert_eq!(book.sealed([1; 16]).unwrap(), b"AAAAA");
+        assert_eq!(book.add(item(1, 6), b"BBBBB"), Err(BookError::Unknown));
+        let p = IdentityId([1; 32]);
+        assert_eq!(book.take_for(p, 1, 100).unwrap().1, b"AAAAA");
+        book.confirm([1; 16], replica(1)).unwrap();
+        book.drop_replica([1; 16], p).unwrap();
+        assert!(book.get([1; 16]).unwrap().replicas.is_empty());
     }
 
     // Files are owner-only.

@@ -16,5 +16,6 @@ pub mod owners;
 pub mod peers;
 pub mod replicas;
 pub mod runtime;
+pub mod sim;
 pub mod upkeep;
 pub mod wanted;

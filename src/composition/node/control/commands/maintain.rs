@@ -10,7 +10,7 @@ use super::{Handler, hex, now};
 use crate::{
     composition::node::{
         control::protocol::Request,
-        replicas::maintain::{Action, Attempts, plan},
+        replicas::maintain::{Action, Attempts, MAXIMUM_PAID_ACTIONS, plan},
     },
     modules::{cryptography::random::SystemEntropy, storage::requester::sampling},
 };
@@ -28,9 +28,13 @@ impl Handler {
         let policy = self.owners.policy.redundancy.clone();
         let retry = Duration::from_secs(policy.retry_seconds());
         let started = Instant::now();
-        let actions = plan(&items, now(), policy.as_ref(), &|item, provider| {
-            attempts.recent(item, provider, started, retry)
-        });
+        let actions = plan(
+            &items,
+            now(),
+            policy.as_ref(),
+            &|item, provider| attempts.recent(item, provider, started, retry),
+            MAXIMUM_PAID_ACTIONS,
+        );
         for action in actions {
             match action {
                 Action::Expire { item, provider } => {

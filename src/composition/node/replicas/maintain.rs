@@ -46,14 +46,15 @@ pub enum Action {
     },
 }
 
-/// Plan the work due at Unix time `now`: every expiry, then at most [`MAXIMUM_PAID_ACTIONS`] renewals
-/// (soonest expiry first) and checks (longest overdue first). `recently` says whether an operation on
-/// that replica was attempted so recently that it must wait.
+/// Plan the work due at Unix time `now`: every expiry, then at most `paid_limit` renewals (soonest
+/// expiry first) and checks (longest overdue first); the running node passes [`MAXIMUM_PAID_ACTIONS`].
+/// `recently` says whether an operation on that replica was attempted so recently that it must wait.
 pub fn plan(
     items: &[Item],
     now: u64,
     policy: &dyn Redundancy,
     recently: &dyn Fn([u8; 16], IdentityId) -> bool,
+    paid_limit: usize,
 ) -> Vec<Action> {
     tracing::trace!("Planning replica maintenance");
     let mut expiries = Vec::new();
@@ -105,7 +106,7 @@ pub fn plan(
             .into_iter()
             .map(|(_, a)| a)
             .chain(checks.into_iter().map(|(_, a)| a))
-            .take(MAXIMUM_PAID_ACTIONS),
+            .take(paid_limit),
     );
     actions
 }
@@ -239,7 +240,7 @@ mod tests {
             1,
             &[(1, 500, 0, None), (2, 1050, 0, None), (3, 5000, 0, None)],
         )];
-        let actions = plan(&items, 1000, &policy(), &never);
+        let actions = plan(&items, 1000, &policy(), &never, MAXIMUM_PAID_ACTIONS);
         assert_eq!(
             actions[0],
             Action::Expire {
@@ -258,11 +259,11 @@ mod tests {
         // Replica 3 was confirmed at 0, so its check came due at 1000 plus its stagger.
         let due = policy().next_check(0, 2);
         assert!(
-            plan(&items, due - 1, &policy(), &never)
+            plan(&items, due - 1, &policy(), &never, MAXIMUM_PAID_ACTIONS)
                 .iter()
                 .all(|a| !matches!(a, Action::Check { .. }))
         );
-        assert!(plan(&items, due, &policy(), &never).iter().any(
+        assert!(plan(&items, due, &policy(), &never, MAXIMUM_PAID_ACTIONS).iter().any(
             |a| matches!(a, Action::Check { provider, .. } if *provider == IdentityId([3; 32]))
         ));
     }
@@ -274,7 +275,7 @@ mod tests {
         let replicas: Vec<(u8, u64, u64, Option<u64>)> =
             (1..=6).map(|p| (p, 100_000, 0, None)).collect();
         let items = [item(1, &replicas)];
-        let due_at = |now| plan(&items, now, &policy(), &never).len();
+        let due_at = |now| plan(&items, now, &policy(), &never, MAXIMUM_PAID_ACTIONS).len();
         let counts: Vec<usize> = [999, 1000, 1050, 1100, 1150, 1200]
             .iter()
             .map(|now| due_at(*now))
@@ -295,7 +296,7 @@ mod tests {
             .map(|p| (p, 1000 + u64::from(p), 0, None))
             .collect();
         let items = [item(1, &replicas)];
-        let actions = plan(&items, 950, &policy(), &never);
+        let actions = plan(&items, 950, &policy(), &never, MAXIMUM_PAID_ACTIONS);
         assert_eq!(actions.len(), MAXIMUM_PAID_ACTIONS);
         let providers: Vec<u8> = actions
             .iter()
@@ -312,13 +313,28 @@ mod tests {
     #[test]
     fn recent_attempts_wait_and_checks_use_the_last_check() {
         let items = [item(1, &[(1, 100_000, 0, Some(9000))])];
-        assert!(plan(&items, 9500, &policy(), &never).is_empty());
-        assert_eq!(plan(&items, 11_000, &policy(), &never).len(), 1);
-        assert!(plan(&items, 11_000, &policy(), &|_, _| true).is_empty());
-        assert!(plan(&[], 11_000, &policy(), &never).is_empty());
+        assert!(plan(&items, 9500, &policy(), &never, MAXIMUM_PAID_ACTIONS).is_empty());
+        assert_eq!(
+            plan(&items, 11_000, &policy(), &never, MAXIMUM_PAID_ACTIONS).len(),
+            1
+        );
+        assert!(
+            plan(
+                &items,
+                11_000,
+                &policy(),
+                &|_, _| true,
+                MAXIMUM_PAID_ACTIONS
+            )
+            .is_empty()
+        );
+        assert!(plan(&[], 11_000, &policy(), &never, MAXIMUM_PAID_ACTIONS).is_empty());
         // An expiry is never postponed by a recent attempt: the retention has ended either way.
         let expired = [item(2, &[(1, 10, 0, None)])];
-        assert_eq!(plan(&expired, 11, &policy(), &|_, _| true).len(), 1);
+        assert_eq!(
+            plan(&expired, 11, &policy(), &|_, _| true, MAXIMUM_PAID_ACTIONS).len(),
+            1
+        );
     }
 
     // The loop runs passes until dropped and stops promptly, even in the middle of its sleep.

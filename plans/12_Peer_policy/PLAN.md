@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-17 are complete.
+Status: in progress; steps 1-18 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -33,7 +33,7 @@ large simulations without touching protocol code.
 - [x] **15.** Schedule staggered checks, renewals and repairs by policy.
 - [x] **16.** Report replica-set state using the CR2SE redundancy states.
 - [x] **17.** Add local commands to inspect policy decisions and their inputs.
-- [ ] **18.** Add a deterministic multi-peer simulation harness using real modules.
+- [x] **18.** Add a deterministic multi-peer simulation harness using real modules.
 - [ ] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
 - [ ] **20.** Run parameter sweeps and record their results.
 - [ ] **21.** Document policy parameters, defaults and help.
@@ -270,6 +270,8 @@ Add a test-only harness that runs many in-process TalkSphere peers with
 in-memory adapters, a shared controlled clock and a simulated network. A run is
 reproducible from a seed and produces a machine-readable report. Test that two
 runs with one seed match exactly.
+
+Completed: [Simulation](../../src/composition/node/sim/mod.md). It runs the real policy, observation table, replica book (volatile backing), maintenance planner and redundancy report against a modelled network, Storage and prices; the wire protocol is not exercised there. Runs are reproducible from a seed and report machine-readable measurements including retrievability.
 
 ### 19. Model peer churn, unreliable peers and abusive peers in simulations
 
