@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-5 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-6 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -15,7 +15,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **3.** Add deterministic Messaging test helpers.
 - [x] **4.** Import the pinned Messaging definition and independent fixtures.
 - [x] **5.** Implement exact Messaging price calculations.
-- [ ] **6.** Validate Messaging offering terms and advertised limits.
+- [x] **6.** Validate Messaging offering terms and advertised limits.
 - [ ] **7.** Validate operation-specific inputs and outputs.
 - [ ] **8.** Build and verify the exact message signing bytes.
 - [ ] **9.** Build and verify recovery request and receipt signatures.
@@ -185,6 +185,8 @@ Parse a complete offering: every pricing and `info` field, the
 `cr2se.identity` precondition, `pricing` instead of `price`, issuer equal to the
 publisher, and the duration ordering rules. Test each missing, duplicate,
 inconsistent and overflowing field.
+
+Completed: [terms](../../src/modules/messaging/terms.md) with tests for every member, rate, consistency rule, unsupported model and overflowing maximum. The finite-profile payload cap (16384 bytes) is enforced where the provider is configured, not in generic term validation.
 
 ### 7. Validate operation-specific inputs and outputs
 

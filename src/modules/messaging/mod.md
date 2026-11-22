@@ -9,6 +9,7 @@
 | [Metadata](metadata.md) | Provider-visible metadata and the signed message |
 | [Operation](operation.md) | Inputs and outputs of the six operations and the check |
 | [Ports](ports.md) | Clock, entropy and signer supplied by composition |
+| [Terms](terms.md) | Validated offering economics and limits |
 | [Pricing](pricing.md) | Exact rational store, recover and renew prices |
 | [Standard](standard.md) | Pinned definition and Services recognition |
 | [Fixtures](fixtures/README.md) | Independently generated schema and byte vectors |

@@ -19,3 +19,5 @@ pub mod standard;
 mod fixture_tests;
 
 pub mod pricing;
+
+pub mod terms;
