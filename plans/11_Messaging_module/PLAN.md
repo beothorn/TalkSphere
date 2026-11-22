@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-21 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-22 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -31,7 +31,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **19.** Implement atomic recovery with a signed provider receipt.
 - [x] **20.** Return cached recovery output for an exact retry without a new charge.
 - [x] **21.** Implement sender-only status with the recorded receipt.
-- [ ] **22.** Implement guarded renewal for pending and recovered placements.
+- [x] **22.** Implement guarded renewal for pending and recovered placements.
 - [ ] **23.** Quote early-release credits before removal.
 - [ ] **24.** Settle the removal charge and release credits once in one recoverable decision.
 - [ ] **25.** Retain removal replay results for the lifetime of the ledger.
@@ -326,6 +326,8 @@ Completed: `Provider::status` (see [provider](../../src/modules/messaging/provid
 Renew only with the exact expected expiration, within the current duration and
 total limits, without changing state. At most one concurrent renewal per
 expected value succeeds. Test MS-10.
+
+Completed: `Provider::renew` (see [provider](../../src/modules/messaging/provider.md)); the total-retention ceiling is checked before preparing so a refusal never holds the placement lock.
 
 ### 23. Quote early-release credits before removal
 

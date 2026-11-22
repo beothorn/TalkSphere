@@ -13,8 +13,8 @@ use super::{
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
     operation::{
-        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, StatusInput,
-        StatusOutput, StoreInput, StoreOutput,
+        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RenewInput, RenewOutput,
+        StatusInput, StatusOutput, StoreInput, StoreOutput,
     },
     participant::Participant,
     ports::Clock,
@@ -388,6 +388,78 @@ impl Provider {
             receipt: record.receipt,
             price: self.terms.status_price,
         })
+    }
+}
+
+impl Provider {
+    /// Extend a pending or recovered placement for its sender. The sender must name the expiry it saw; the added duration must be
+    /// within the offering's renewal bounds and the new expiry within the total retention allowed from acceptance. The state does
+    /// not change and the exact renewal price is charged once.
+    /// # Errors
+    /// `Invalid` for a duration outside the offering; `NotAvailable` for an unknown, removed, expired or foreign placement;
+    /// `Conflict` when the expiry the sender saw is no longer current (a concurrent renewal won); `Limit` when the total retention
+    /// or a price would overflow. Nothing changes or is charged on failure.
+    pub fn renew(
+        &self,
+        key: OperationKey,
+        caller: IdentityId,
+        input: RenewInput,
+    ) -> Result<RenewOutput, Error> {
+        tracing::trace!("Renewing a placement for its sender");
+        let t = &self.terms;
+        let seconds = input.additional_seconds;
+        if seconds < t.minimum_retention_seconds || seconds > t.maximum_retention_seconds {
+            return Err(Error::Invalid);
+        }
+        let now = self.clock.now()?;
+        let record = self
+            .participant
+            .store()
+            .record(input.placement_id)
+            .ok_or(Error::NotAvailable)?;
+        if !record.active_at(now) || record.metadata.sender_id != caller {
+            return Err(Error::NotAvailable);
+        }
+        let ceiling_expires_at = record
+            .accepted_at
+            .checked_add(t.maximum_total_retention_seconds)
+            .ok_or(Error::Limit)?;
+        // Checked before preparing so a refusal never leaves a prepared effect holding the placement lock.
+        let target = input
+            .expected_expires_at
+            .checked_add(seconds)
+            .ok_or(Error::Limit)?;
+        if target > ceiling_expires_at {
+            return Err(Error::Limit);
+        }
+        let price = pricing::renew(
+            record.metadata.payload_size,
+            seconds,
+            t.renewal_storage,
+            t.minimum_price,
+        )?;
+        let effect = Effect::Renew {
+            placement_id: input.placement_id,
+            expected_expires_at: input.expected_expires_at,
+            additional_seconds: seconds,
+            ceiling_expires_at,
+            price,
+        };
+        let token = self.participant.prepare(key, &effect)?;
+        match self.participant.commit(key, &token)? {
+            Outcome::Renewed {
+                placement_id,
+                previous_expires_at,
+                expires_at,
+                price,
+            } => Ok(RenewOutput {
+                placement_id,
+                previous_expires_at,
+                expires_at,
+                price,
+            }),
+            _ => Err(Error::Conflict),
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
 use crate::modules::messaging::{
-    operation::{Cursor, DiscoverInput, RecoverInput, StatusInput},
+    operation::{Cursor, DiscoverInput, RecoverInput, RenewInput, StatusInput},
     receipt,
 };
 use crate::modules::{
@@ -735,5 +735,100 @@ fn ms_09_status_is_sender_only_and_shows_the_exact_receipt() {
         h.provider.status(a, ask).err(),
         Some(Error::NotAvailable),
         "expired"
+    );
+}
+
+// MS-10: a renewal needs the exact expiry the sender saw; it extends a pending placement without changing its state, charges the
+// exact price, and a stale expectation, a foreign sender, a bad duration or the total limit are refused without any change.
+#[test]
+fn ms_10_renewal_is_guarded_by_the_expected_expiry() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let a = h.sender.identity();
+    let p = stored.placement_id;
+    let ask = |expected: u64, seconds: u64| RenewInput {
+        placement_id: p,
+        expected_expires_at: expected,
+        additional_seconds: seconds,
+    };
+    let out = h.provider.renew(key(2), a, ask(1010, 10)).unwrap();
+    assert_eq!(
+        (out.previous_expires_at, out.expires_at, out.price),
+        (1010, 1020, 15)
+    );
+    let record = h.store.record(p).unwrap();
+    assert_eq!(
+        (record.state, record.expires_at, record.payments),
+        (State::Pending, 1020, 17 + 15)
+    );
+    assert_eq!(
+        h.provider.renew(key(3), a, ask(1010, 10)).err(),
+        Some(Error::Conflict),
+        "stale expectation"
+    );
+    assert_eq!(
+        h.provider
+            .renew(key(4), h.recipient.identity(), ask(1020, 10))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    for seconds in [0, 101] {
+        assert_eq!(
+            h.provider.renew(key(5), a, ask(1020, seconds)).err(),
+            Some(Error::Invalid),
+            "{seconds}"
+        );
+    }
+    assert_eq!(h.store.record(p).unwrap().expires_at, 1020);
+    // The total retention from acceptance (1000 + 200) is a hard ceiling.
+    h.provider.renew(key(6), a, ask(1020, 100)).unwrap();
+    assert_eq!(
+        h.provider.renew(key(7), a, ask(1120, 100)).err(),
+        Some(Error::Limit)
+    );
+    assert_eq!(h.store.record(p).unwrap().expires_at, 1120);
+    assert_eq!(
+        h.provider.participant().status(key(7)),
+        super::super::participant::Status::Absent
+    );
+}
+
+// MS-10: many concurrent renewals naming the same expected expiry produce exactly one winner; everyone else gets a conflict and pays nothing.
+#[test]
+fn ms_10_concurrent_renewals_have_one_winner() {
+    let h = Arc::new(harness());
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let results: Vec<_> = (0..8u8)
+        .map(|n| {
+            let h = h.clone();
+            std::thread::spawn(move || {
+                let ask = RenewInput {
+                    placement_id: stored.placement_id,
+                    expected_expires_at: 1010,
+                    additional_seconds: 10,
+                };
+                h.provider.renew(key(10 + n), h.sender.identity(), ask)
+            })
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .map(|t| t.join().unwrap())
+        .collect();
+    assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+    assert!(
+        results
+            .iter()
+            .filter_map(|r| r.as_ref().err())
+            .all(|e| *e == Error::Conflict)
+    );
+    assert_eq!(
+        h.store.record(stored.placement_id).unwrap().expires_at,
+        1020
     );
 }
