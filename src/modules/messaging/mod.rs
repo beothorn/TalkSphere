@@ -29,3 +29,5 @@ pub mod signing;
 pub mod receipt;
 
 pub mod encryption;
+
+pub mod credential;

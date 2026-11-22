@@ -109,6 +109,10 @@ impl TestIdentity {
     pub fn key(&self) -> [u8; 32] {
         self.public_key
     }
+    /// The identity's binding signature for a persistent X25519 key, as a Board credential publishes it.
+    pub fn bind_encryption_key(&self, x25519_public_key: &[u8; 32]) -> [u8; 64] {
+        credential::bind(&self.secret, x25519_public_key).unwrap()
+    }
 }
 impl Signer for TestIdentity {
     fn identity(&self) -> IdentityId {

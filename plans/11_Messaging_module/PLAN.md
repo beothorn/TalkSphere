@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-10 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-11 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -20,7 +20,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **8.** Build and verify the exact message signing bytes.
 - [x] **9.** Build and verify recovery request and receipt signatures.
 - [x] **10.** Implement the encrypted Messaging payload format.
-- [ ] **11.** Publish and validate the Board identity encryption credential.
+- [x] **11.** Publish and validate the Board identity encryption credential.
 - [ ] **12.** Persist bounded payload staging and placement records.
 - [ ] **13.** Implement placement states, expiration and per-placement serialization.
 - [ ] **14.** Implement durable participant preparation, commit, abort and status queries.
@@ -230,6 +230,8 @@ Add the optional top-level `identityEncryption` Board field with strict Base32
 decoding, publisher ID derivation, binding signature and X25519 validation. An
 invalid field makes only the key unusable. Test MS-15, including unrelated
 offerings staying usable and opaque messages working without a credential.
+
+Completed: [credential](../../src/modules/messaging/credential.md): strict Base32, ID derivation, binding and contributory-key checks, and publishing the member. The node publishes its own member in the client journey (step 4 there).
 
 ### 12. Persist bounded payload staging and placement records
 
