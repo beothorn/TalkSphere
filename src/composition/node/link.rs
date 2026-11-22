@@ -78,19 +78,33 @@ impl Link {
         )
     }
 
-    /// Return a live session for `peer`, connecting and authenticating when none exists.
+    /// Return a live session for `peer`: an existing one, else the newest live authenticated connection
+    /// to that peer whichever side opened it (so an outbound-only client can be called), else a new
+    /// connection to `address` when one is given.
     /// # Errors
-    /// The node is stopping, the connection fails or does not authenticate within `timeout`.
+    /// The peer has no live connection and no address, the node is stopping, or the connection fails or
+    /// does not authenticate within `timeout`.
     pub fn connect(
         &self,
         peer: IdentityId,
-        address: SocketAddr,
+        address: Option<SocketAddr>,
         timeout: Duration,
     ) -> Result<Session, String> {
-        tracing::trace!("Resolving a session to a configured peer");
+        tracing::trace!("Resolving a session to a peer");
         if let Some(session) = self.session(peer) {
             return Ok(session);
         }
+        if let Some(connection) = self.peers.connection_to(peer) {
+            return Ok(self.remember(
+                peer,
+                Session {
+                    connection,
+                    cache: None,
+                },
+            ));
+        }
+        let address =
+            address.ok_or_else(|| "the peer has no live connection or address".to_string())?;
         let (reply, receiver) = sync_channel(1);
         self.send(Command::Connect {
             address,
@@ -100,15 +114,13 @@ impl Link {
         let connection = receiver
             .recv_timeout(timeout)
             .map_err(|_| "connection did not authenticate in time".to_string())??;
-        let session = Session {
-            connection,
-            cache: None,
-        };
-        self.sessions
-            .lock()
-            .map_err(|_| "session table is unavailable".to_string())?
-            .insert(peer, session.clone());
-        Ok(session)
+        Ok(self.remember(
+            peer,
+            Session {
+                connection,
+                cache: None,
+            },
+        ))
     }
 
     /// Open an exchange for a prepared plan on `connection`.
@@ -163,6 +175,14 @@ impl Link {
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&peer);
         }
+    }
+
+    // Store a session for reuse and return it; a poisoned table still serves the caller this session.
+    fn remember(&self, peer: IdentityId, session: Session) -> Session {
+        if let Ok(mut sessions) = self.sessions.lock() {
+            sessions.insert(peer, session.clone());
+        }
+        session
     }
 
     // Read one stored session without holding the lock across a wait.
@@ -230,12 +250,12 @@ mod tests {
         let peer = IdentityId([1; 32]);
         let address: SocketAddr = "127.0.0.1:9".parse().unwrap();
         assert!(
-            link.connect(peer, address, Duration::from_millis(50))
+            link.connect(peer, Some(address), Duration::from_millis(50))
                 .is_err()
         );
         signal.shutdown();
         assert_eq!(
-            link.connect(peer, address, Duration::from_millis(50))
+            link.connect(peer, Some(address), Duration::from_millis(50))
                 .err()
                 .unwrap(),
             "the node is stopping"
@@ -243,7 +263,7 @@ mod tests {
         let (link, commands) = Link::new(Signal::default());
         drop(commands);
         assert!(
-            link.connect(peer, address, Duration::from_millis(50))
+            link.connect(peer, Some(address), Duration::from_millis(50))
                 .is_err()
         );
     }

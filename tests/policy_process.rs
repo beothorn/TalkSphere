@@ -2,6 +2,7 @@
 //! decisions that depend on them.
 #![cfg(target_os = "linux")]
 mod support;
+use std::time::Duration;
 use support::*;
 
 // An authenticated peer nobody configured can read the free Board metadata, but a provider that has
@@ -96,4 +97,79 @@ fn request_rate_limit_closes_only_the_noisy_peer() {
     // Another identity has its own allowance.
     assert!(c.ctl(&["fetch", "--contact", &contact]).is_ok());
     assert_eq!(number(&balance(&b, &a), "issued"), 0);
+}
+
+// Both peers initiate requests on one connection: a client that only connects outward (the server has
+// no address for it) is bought from over the connection the client opened, with exact accounting, and
+// once the client disconnects the server fails promptly instead of waiting or guessing an address.
+#[test]
+fn server_calls_an_outbound_only_client_over_its_own_connection() {
+    let dir = Dir::new("reverse");
+    let (mut server, mut client) = (
+        Node::init(&dir.0, "server", None),
+        Node::init(&dir.0, "client", None),
+    );
+    server.start(None);
+    client.start(None);
+    // The client connects outward; the server learns of it only through that connection.
+    let server_contact = server.contact(server.port);
+    client
+        .ctl(&["fetch", "--contact", &server_contact])
+        .unwrap();
+    assert_eq!(
+        server.ctl(&["status"]).unwrap()["connectedPeers"][0]
+            .as_str()
+            .unwrap(),
+        client.id
+    );
+    // The client sells storage to the server; the server pays in the client's credits.
+    fund(&client, &server, 100);
+    let object = dir.0.join("object");
+    std::fs::write(&object, b"abc").unwrap();
+    let id_only = client.id.clone();
+    let stored = server
+        .ctl(&[
+            "store",
+            "--contact",
+            &id_only,
+            "--file",
+            object.to_str().unwrap(),
+            "--retention-seconds",
+            "60",
+            "--max-spend",
+            "100",
+        ])
+        .unwrap();
+    let price = number(&stored, "price");
+    assert!(price > 0);
+    assert_eq!(number(&balance(&server, &client), "owned"), 100 - price);
+    // The issuer sees the same remaining credits the holder owns.
+    assert_eq!(number(&balance(&client, &server), "issued"), 100 - price);
+    // The client disappears; the server reports an unavailable peer promptly.
+    client.stop();
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while number(&server.ctl(&["status"]).unwrap(), "connections") != 0 {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the closed connection was never forgotten"
+        );
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    let started = std::time::Instant::now();
+    let error = server
+        .ctl(&[
+            "store",
+            "--contact",
+            &id_only,
+            "--file",
+            object.to_str().unwrap(),
+            "--retention-seconds",
+            "60",
+            "--max-spend",
+            "100",
+        ])
+        .unwrap_err();
+    assert!(error.contains("no live connection"), "{error}");
+    assert!(started.elapsed() < Duration::from_secs(5));
+    assert_eq!(number(&balance(&server, &client), "owned"), 100 - price);
 }

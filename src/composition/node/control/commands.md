@@ -9,7 +9,8 @@ Inspection: `status` (identity, address, role, leases, unknown outcomes, live co
 providers), `leases` and `outcomes` (optionally unknown only).
 
 Paid Storage, always under an explicit spending ceiling:
-- `fetch` authenticates a contact and returns its provided offerings.
+- `fetch` authenticates a contact and returns its provided offerings. A contact may be an ID alone: the request then uses
+  the peer's live authenticated connection, whichever side opened it, and fails at once without charge when there is none.
 - `store` sends a nonempty object (at most 16384 bytes); the lease is cataloged only after the result
   is validated.
 - `retrieve`, `renew`, `remove` and `check` use the cataloged lease and provider. These have exact

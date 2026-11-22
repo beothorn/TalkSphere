@@ -15,3 +15,7 @@ through a `Link`: a command queue plus a wake signal.
 
 Every wait has a deadline, so a lost reply can never hang the node. A session is a connection this
 node opened; incoming connections are served by the provider handler, not through the link.
+
+`connect(peer, address, timeout)` returns the peer's existing session, else its newest live authenticated connection
+(an outbound-only client is reached over the connection it opened), else connects to `address` when one is given; with
+neither it fails immediately.

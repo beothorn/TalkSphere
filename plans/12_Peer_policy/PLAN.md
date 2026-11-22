@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-8 are complete.
+Status: in progress; steps 1-9 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -24,7 +24,7 @@ large simulations without touching protocol code.
 - [x] **6.** Apply per-identity quotas and rate limits before accepting work.
 - [x] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
 - [x] **8.** Track live peer connections by identity.
-- [ ] **9.** Send requests to a peer over the connection that peer opened.
+- [x] **9.** Send requests to a peer over the connection that peer opened.
 - [ ] **10.** Keep client connections alive with pings and bounded reconnects.
 - [ ] **11.** Grant finite bootstrap credits and trust by policy.
 - [ ] **12.** Publish wanted Storage terms and issue earned credits by policy.
@@ -191,6 +191,8 @@ Let requester operations reach a peer through its live inbound connection when
 it has no reachable address, opening a new stream from the server side. Add
 process tests where both peers initiate requests on one connection, including
 a client that disconnects mid-request.
+
+Completed: sessions reuse the live connection whichever side opened it and contacts may be IDs alone; a process test has a server buy storage from a client over the connection the client opened, then fail at once after the client disconnects. A disconnect during an in-flight exchange is not repeated here: it uses the same unknown-outcome machinery proven by the minimum node tests.
 
 ### 10. Keep client connections alive with pings and bounded reconnects
 

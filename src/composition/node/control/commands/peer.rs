@@ -70,9 +70,7 @@ impl Handler {
         tracing::trace!("Fetching a peer Board");
         let contact = parse_contact(request.text("contact")?)?;
         let peer_id = contact.expected_id;
-        let address = contact
-            .endpoint
-            .ok_or_else(|| ControlError::new(Code::Invalid, "contact needs an address"))?;
+        let address = contact.endpoint;
         self.link
             .connect(peer_id, address, self.remaining(start)?)
             .map_err(|m| ControlError::new(Code::Unavailable, m))?;
@@ -384,9 +382,7 @@ impl Handler {
         refresh: bool,
     ) -> Result<(IdentityId, Arc<PeerCache>), ControlError> {
         tracing::trace!("Ensuring a peer session and metadata cache");
-        let address = contact
-            .endpoint
-            .ok_or_else(|| ControlError::new(Code::Invalid, "contact needs an address"))?;
+        let address = contact.endpoint;
         let peer = contact.expected_id;
         let remaining = self.remaining(start)?;
         let session = self
@@ -428,9 +424,7 @@ impl Handler {
         paid: bool,
     ) -> Result<Reply, ControlError> {
         tracing::trace!("Running one peer exchange");
-        let address = contact
-            .endpoint
-            .ok_or_else(|| ControlError::new(Code::Invalid, "contact needs an address"))?;
+        let address = contact.endpoint;
         let remaining = self.remaining(start)?;
         let session = self
             .link
@@ -573,21 +567,15 @@ impl Handler {
     }
 }
 
-// Parse and require an endpoint-bearing contact.
+// Parse a contact; the address is optional because a peer with a live connection needs none.
 fn parse_contact(text_value: &str) -> Result<Contact, ControlError> {
     tracing::trace!("Parsing a peer contact");
     let contact = contact::parse(text_value, CONTACT_BYTES).map_err(|_| {
         ControlError::new(
             Code::Invalid,
-            "contact must be a canonical ID with address and port",
+            "contact must be a canonical ID, optionally with address and port",
         )
     })?;
-    if contact.endpoint.is_none() {
-        return Err(ControlError::new(
-            Code::Invalid,
-            "contact must include an address and port",
-        ));
-    }
     Ok(contact)
 }
 
