@@ -19,6 +19,7 @@
 | [Recovery](recovery.md) | Resolving prepared operations before admitting work |
 | [Check](check.md) | Requester judgement of byte checks from private expectations |
 | [Provider](provider.md) | Store assessment before the body and durable commit |
+| [Reclaim](reclaim.md) | Freeing finished placements without losing what is owed |
 | [Staging](staging.md) | Bounded reservations for incoming payloads |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |

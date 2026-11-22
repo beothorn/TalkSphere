@@ -96,7 +96,7 @@ pub(crate) fn message(h: &Harness, payload: &[u8], encoding: Encoding) -> Signed
     )
     .unwrap()
 }
-fn input(h: &Harness, payload: &[u8], retention: u64) -> StoreInput {
+pub(crate) fn input(h: &Harness, payload: &[u8], retention: u64) -> StoreInput {
     StoreInput {
         message: message(h, payload, Encoding::Opaque),
         retention_seconds: retention,
@@ -509,7 +509,7 @@ fn discovery_hides_expired_placements() {
 }
 
 // Builds a request from the recipient for `placement` of the stored `abc` message with the given recovery ID.
-fn recovery_request(h: &Harness, placement: PlacementId, recovery: u8) -> RecoverInput {
+pub(crate) fn recovery_request(h: &Harness, placement: PlacementId, recovery: u8) -> RecoverInput {
     let message = message(h, b"abc", Encoding::Opaque);
     receipt::sign_request(
         &h.recipient,
@@ -845,7 +845,7 @@ impl super::super::ports::ReleasePolicy for Percent {
 }
 
 // A provider over the harness's participant that offers `percent` of the payments as release credits.
-fn releasing(h: &Harness, percent: u64) -> Provider {
+pub(crate) fn releasing(h: &Harness, percent: u64) -> Provider {
     Provider::new(
         terms(),
         h.provider.participant().clone(),

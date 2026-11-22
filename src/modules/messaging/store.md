@@ -11,3 +11,4 @@ with, per placement, `<id>.payload` and `<id>.json` (0600), each written to a pr
 - Opening rebuilds the index and refuses a corrupt, oversized (over 16 KiB), unknown-member or misnamed record, or an active placement whose payload is missing or the wrong size; nothing is repaired. An interrupted temporary file is discarded.
 
 Incomplete uploads create no obligation: a store request holds its payload in memory under a bounded reservation (step 16) and a placement is written only at commit, so there is no durable `receiving` state to recover.
+- `discard(id)`: forgets a placement and its payload (payload first, so a crash leaves a valid record without payload); unknown placements are a no-op; `Storage` when the record cannot be removed.

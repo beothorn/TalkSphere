@@ -242,6 +242,22 @@ impl Store {
         Ok(())
     }
 
+    /// Forget a placement that no longer owes anything: its payload first, then its record, so a crash in between leaves a valid
+    /// record that simply has no payload. Discarding an unknown placement is a no-op.
+    /// # Errors
+    /// `Storage` when the record cannot be removed (the placement then stays recorded).
+    pub fn discard(&self, id: PlacementId) -> Result<(), Error> {
+        tracing::trace!("Discarding a placement");
+        let mut state = self.lock();
+        if !state.index.contains_key(&id) {
+            return Ok(());
+        }
+        discard_payload(&mut state.backing, id);
+        remove_record(&mut state.backing, id)?;
+        state.index.remove(&id);
+        Ok(())
+    }
+
     // Payload bytes of placements that still owe them.
     fn active_bytes(&self, state: &State_) -> u64 {
         state
@@ -288,6 +304,23 @@ fn write_record(backing: &mut Backing, record: &Record) -> Result<(), Error> {
             let bytes = serde_json::to_vec(&record_json(record)).map_err(|_| Error::Storage)?;
             native::write_atomic(&native::record_path(dir, record.id), &bytes)
         }
+    }
+}
+
+// Remove a record: nothing in memory, the owner-only file on disk. A missing file is already removed.
+fn remove_record(backing: &mut Backing, id: PlacementId) -> Result<(), Error> {
+    match backing {
+        Backing::Memory { fail_writes, .. } => {
+            if *fail_writes {
+                return Err(Error::Storage);
+            }
+            Ok(())
+        }
+        Backing::Disk(dir) => match std::fs::remove_file(native::record_path(dir, id)) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(_) => Err(Error::Storage),
+        },
     }
 }
 

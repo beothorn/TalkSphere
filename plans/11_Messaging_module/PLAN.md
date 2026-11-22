@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-27 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-28 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -37,7 +37,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **25.** Retain removal replay results for the lifetime of the ledger.
 - [x] **26.** Implement authorized paid byte evidence for pending placements.
 - [x] **27.** Verify Messaging checks using private expectations and trusted timing.
-- [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
+- [x] **28.** Reclaim expired, recovered and removed placement resources safely.
 - [ ] **29.** Bound placements per sender and per recipient through a module limits port.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
@@ -377,6 +377,8 @@ Completed: [check](../../src/modules/messaging/check.md). Services trusted timin
 Release payload bytes and staging when obligations end while keeping receipts,
 recovery caches until expiry and removal tombstones as required. Test that
 reclaim never removes data still owed to a retry or status query.
+
+Completed: [reclaim](../../src/modules/messaging/reclaim.md) and `Store::discard`. Known limit: removal tombstones are kept for the ledger's lifetime and count toward the placement bound, so a provider that removes very many placements eventually needs a larger bound (recorded for the handoff).
 
 ### 29. Bound placements per sender and per recipient through a module limits port
 

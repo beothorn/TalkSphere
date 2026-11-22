@@ -647,4 +647,4 @@ fn entry(record: super::placement::Record) -> Entry {
 
 #[cfg(test)]
 #[path = "provider_tests.rs"]
-mod tests;
+pub(super) mod tests;

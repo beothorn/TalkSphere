@@ -115,6 +115,11 @@ impl Participant {
         &self.store
     }
 
+    /// The current time from the injected clock.
+    pub(super) fn now(&self) -> Result<u64, Error> {
+        self.clock.now()
+    }
+
     /// A fresh provider-chosen placement identifier from secure entropy.
     /// # Errors
     /// `Unavailable` when randomness is missing.
@@ -493,7 +498,7 @@ impl Participant {
         }
     }
 
-    fn locks(&self) -> std::sync::MutexGuard<'_, BTreeMap<PlacementId, OperationKey>> {
+    pub(super) fn locks(&self) -> std::sync::MutexGuard<'_, BTreeMap<PlacementId, OperationKey>> {
         self.locks.lock().unwrap_or_else(|e| e.into_inner())
     }
 }

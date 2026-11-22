@@ -328,3 +328,30 @@ fn debug_never_prints_the_payload() {
     let text = format!("{:?}", placement(1, 3, 1000, 3));
     assert!(text.contains("3 bytes") && !text.contains("[1, 1, 1]"));
 }
+
+// Discarding forgets a placement and its payload on every backing (also after a reopen), is a no-op for an unknown placement, and a
+// failed removal leaves the placement recorded.
+#[test]
+fn discard_forgets_a_placement_everywhere() {
+    for store in stores() {
+        let p = placement(1, 3, 1000, 3);
+        store.insert(&p).unwrap();
+        store.discard(PlacementId([9; 32])).unwrap();
+        store.discard(p.record.id).unwrap();
+        assert!(store.record(p.record.id).is_none());
+        assert_eq!(store.records().len(), 0);
+        store.insert(&p).unwrap();
+    }
+    let path = dir();
+    let store = Store::open(&path, LIMITS).unwrap();
+    let p = placement(1, 3, 1000, 3);
+    store.insert(&p).unwrap();
+    store.discard(p.record.id).unwrap();
+    assert_eq!(std::fs::read_dir(&path).unwrap().count(), 0);
+    assert_eq!(Store::open(&path, LIMITS).unwrap().records().len(), 0);
+    let volatile = Store::volatile(LIMITS);
+    volatile.insert(&p).unwrap();
+    volatile.fail_writes(true);
+    assert_eq!(volatile.discard(p.record.id), Err(Error::Storage));
+    assert!(volatile.record(p.record.id).is_some());
+}
