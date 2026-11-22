@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-25 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-26 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -35,7 +35,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **23.** Quote early-release credits before removal.
 - [x] **24.** Settle the removal charge and release credits once in one recoverable decision.
 - [x] **25.** Retain removal replay results for the lifetime of the ledger.
-- [ ] **26.** Implement authorized paid byte evidence for pending placements.
+- [x] **26.** Implement authorized paid byte evidence for pending placements.
 - [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
 - [ ] **29.** Bound placements per sender and per recipient through a module limits port.
@@ -361,6 +361,8 @@ Completed: `Provider::remove` answers a repeat with the recorded removal (the re
 Serve one payload byte for a sender's pending placement under the common
 Services check rules. Refuse invalid offsets, inactive placements and wrong
 callers without charge. Test the provider side of MS-13.
+
+Completed: `Provider::check`; the Services `Rules` binding that charges `checkPrice` only for a complete valid response is composed in step 30.
 
 ### 27. Verify Messaging checks using private expectations and trusted timing
 

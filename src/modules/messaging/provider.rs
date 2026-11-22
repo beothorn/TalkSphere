@@ -13,8 +13,9 @@ use super::{
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
     operation::{
-        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RemoveInput,
-        RemoveOutput, RenewInput, RenewOutput, StatusInput, StatusOutput, StoreInput, StoreOutput,
+        CheckInput, CheckOutput, DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput,
+        RemoveInput, RemoveOutput, RenewInput, RenewOutput, StatusInput, StatusOutput, StoreInput,
+        StoreOutput,
     },
     participant::Participant,
     ports::{Clock, NoRelease, ReleasePolicy},
@@ -470,6 +471,44 @@ impl Provider {
             }),
             _ => Err(Error::Conflict),
         }
+    }
+}
+
+impl Provider {
+    /// Serve one payload byte of a pending placement to its sender as paid evidence that the provider still holds the message.
+    /// Read-only; the check price is charged by the Services layer only for a complete valid response.
+    /// # Errors
+    /// `NotAvailable` for an unknown, inactive (not pending, expired) or foreign placement, concealed alike; `Invalid` for an offset at
+    /// or beyond the payload size. Nothing is charged on failure.
+    pub fn check(&self, caller: IdentityId, input: CheckInput) -> Result<CheckOutput, Error> {
+        tracing::trace!("Serving one payload byte of evidence to the sender");
+        let now = self.clock.now()?;
+        let record = self
+            .participant
+            .store()
+            .record(input.placement_id)
+            .ok_or(Error::NotAvailable)?;
+        if record.state != State::Pending
+            || !record.active_at(now)
+            || record.metadata.sender_id != caller
+        {
+            return Err(Error::NotAvailable);
+        }
+        if input.offset >= record.metadata.payload_size {
+            return Err(Error::Invalid);
+        }
+        let placement = self
+            .participant
+            .store()
+            .get(input.placement_id)?
+            .ok_or(Error::NotAvailable)?;
+        let index = usize::try_from(input.offset).map_err(|_| Error::Invalid)?;
+        let value = *placement.payload.get(index).ok_or(Error::Invalid)?;
+        Ok(CheckOutput {
+            placement_id: input.placement_id,
+            offset: input.offset,
+            value,
+        })
     }
 }
 

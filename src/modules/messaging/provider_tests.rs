@@ -1,7 +1,9 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
 use crate::modules::messaging::{
-    operation::{Cursor, DiscoverInput, RecoverInput, RemoveInput, RenewInput, StatusInput},
+    operation::{
+        CheckInput, Cursor, DiscoverInput, RecoverInput, RemoveInput, RenewInput, StatusInput,
+    },
     receipt,
 };
 use crate::modules::{
@@ -1169,5 +1171,71 @@ fn ms_12_an_exact_removal_retry_returns_the_recorded_result() {
             .remove(key(7), h.recipient.identity(), removal(p, 1010, 4))
             .err(),
         Some(Error::NotAvailable)
+    );
+}
+
+// MS-13 provider side: the sender gets exactly the payload byte at the offset of its pending placement; invalid offsets, other callers,
+// unknown, expired, recovered and removed placements are refused, and a check changes nothing.
+#[test]
+fn ms_13_the_provider_serves_one_exact_byte_to_the_sender() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let (a, p) = (h.sender.identity(), stored.placement_id);
+    let ask = |offset: u64| CheckInput {
+        placement_id: p,
+        offset,
+    };
+    for (offset, byte) in [(0, b'a'), (1, b'b'), (2, b'c')] {
+        let out = h.provider.check(a, ask(offset)).unwrap();
+        assert_eq!((out.placement_id, out.offset, out.value), (p, offset, byte));
+    }
+    assert_eq!(h.provider.check(a, ask(3)).err(), Some(Error::Invalid));
+    assert_eq!(
+        h.provider.check(a, ask(u64::MAX)).err(),
+        Some(Error::Invalid)
+    );
+    assert_eq!(
+        h.provider.check(h.recipient.identity(), ask(0)).err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        h.provider
+            .check(
+                a,
+                CheckInput {
+                    placement_id: PlacementId([8; 32]),
+                    offset: 0
+                }
+            )
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(h.store.record(p).unwrap().state, State::Pending);
+    h.clock.set(1004);
+    h.provider
+        .recover(key(2), h.recipient.identity(), recovery_request(&h, p, 7))
+        .unwrap();
+    assert_eq!(
+        h.provider.check(a, ask(0)).err(),
+        Some(Error::NotAvailable),
+        "recovered"
+    );
+    let second = h.provider.store(key(3), a, input(&h, b"abc", 10)).unwrap();
+    h.clock.set(1020);
+    assert_eq!(
+        h.provider
+            .check(
+                a,
+                CheckInput {
+                    placement_id: second.placement_id,
+                    offset: 0
+                }
+            )
+            .err(),
+        Some(Error::NotAvailable),
+        "expired"
     );
 }
