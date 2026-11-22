@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-30, 32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -40,7 +40,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **28.** Reclaim expired, recovered and removed placement resources safely.
 - [x] **29.** Bound placements per sender and per recipient through a module limits port.
 - [x] **30.** Register Messaging handlers and publish usable offerings.
-- [ ] **31.** Bind Messaging requester operations to Peer Protocol.
+- [x] **31.** Bind Messaging requester operations to Peer Protocol.
 - [x] **32.** Validate recovered messages and decrypt only after authentication.
 - [ ] **33.** Exercise crash recovery at every coordination boundary.
 - [x] **34.** Verify races between recovery, removal, renewal and expiration.

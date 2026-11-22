@@ -138,6 +138,7 @@ fn call(
 
 mod incoming;
 mod invitations;
+mod messaging;
 mod outgoing;
 mod retries;
 

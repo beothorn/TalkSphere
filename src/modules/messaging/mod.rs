@@ -58,3 +58,5 @@ pub mod reclaim;
 pub mod receive;
 
 pub mod service;
+
+pub mod wire;

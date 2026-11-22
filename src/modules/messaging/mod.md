@@ -20,6 +20,7 @@
 | [Check](check.md) | Requester judgement of byte checks from private expectations |
 | [Provider](provider.md) | Store assessment before the body and durable commit |
 | [Receive](receive.md) | Authenticating, deduplicating and decrypting recovered messages |
+| [Wire](wire.md) | Requester intents for the Peer Protocol endpoint with exact ceilings |
 | [Service](service/mod.md) | Services provider adapter, requester client and Ledger release issuer |
 | [Reclaim](reclaim.md) | Freeing finished placements without losing what is owed |
 | [Staging](staging.md) | Bounded reservations for incoming payloads |
