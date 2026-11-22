@@ -200,6 +200,9 @@ mod tests {
     };
     use serde_json::Value;
 
+    // A named single-value mutation of a test value.
+    type Edit<T> = (&'static str, fn(&mut T));
+
     fn vectors() -> Value {
         serde_json::from_str(include_str!("fixtures/vectors.json")).unwrap()
     }
@@ -283,7 +286,7 @@ mod tests {
     fn mutated_requests_are_rejected() {
         let (b, recovery, _) = binding();
         let good = signed(&b, recovery);
-        let cases: [(&str, fn(&mut RecoverInput)); 5] = [
+        let cases: [Edit<RecoverInput>; 5] = [
             ("placement", |i| i.placement_id.0[0] ^= 1),
             ("message", |i| i.message_id.0[0] ^= 1),
             ("hash", |i| i.payload_hash.0[0] ^= 1),
@@ -291,7 +294,7 @@ mod tests {
             ("signature", |i| i.recipient_signature.0[5] ^= 1),
         ];
         for (name, mutate) in cases {
-            let mut input = good.clone();
+            let mut input = good;
             mutate(&mut input);
             assert_eq!(
                 verify_request(&input, b.provider_id, b.recipient_id),
@@ -318,7 +321,7 @@ mod tests {
             verify_request(&intruder, b.provider_id, b.recipient_id),
             Err(Error::NotAvailable)
         );
-        let mut swapped = good.clone();
+        let mut swapped = good;
         swapped.recipient_public_key = TestIdentity::new(5).key();
         assert_eq!(
             verify_request(&swapped, b.provider_id, b.recipient_id),
@@ -340,14 +343,14 @@ mod tests {
             provider_signature: sign_receipt(&provider, &b, recovery, at).unwrap(),
         };
         assert_eq!(verify_receipt(&good, &b, &provider.key()), Ok(()));
-        let receipt_cases: [(&str, fn(&mut Receipt)); 4] = [
+        let receipt_cases: [Edit<Receipt>; 4] = [
             ("time", |r| r.recovered_at += 1),
             ("recovery", |r| r.recovery_id.0[0] ^= 1),
             ("provider signature", |r| r.provider_signature.0[0] ^= 1),
             ("recipient signature", |r| r.recipient_signature.0[0] ^= 1),
         ];
         for (name, mutate) in receipt_cases {
-            let mut receipt = good.clone();
+            let mut receipt = good;
             mutate(&mut receipt);
             assert_eq!(
                 verify_receipt(&receipt, &b, &provider.key()),
@@ -355,7 +358,7 @@ mod tests {
                 "{name}"
             );
         }
-        let binding_cases: [(&str, fn(&mut Binding)); 4] = [
+        let binding_cases: [Edit<Binding>; 4] = [
             ("sender", |b| b.sender_id.0[0] ^= 1),
             ("placement", |b| b.placement_id.0[0] ^= 1),
             ("hash", |b| b.payload_hash.0[0] ^= 1),
