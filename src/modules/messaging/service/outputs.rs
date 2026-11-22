@@ -6,7 +6,7 @@
 //! the outcome the participant recorded.
 use crate::modules::{
     messaging::{
-        codec::{self, Response},
+        codec::{self, Request, Response},
         effect::{Effect, Outcome},
         error::Error,
         ids::Signature,
@@ -180,4 +180,105 @@ pub(super) fn completion(
         price,
         effect: Blob::new(effect.encode(), maximum_bytes)?,
     })
+}
+
+/// Whether an effect is the effect of exactly this request.
+pub(super) fn belongs(request: &Request, effect: &Effect) -> bool {
+    tracing::trace!("Checking that an effect belongs to its request");
+    match (request, effect) {
+        (
+            Request::Store(r),
+            Effect::Store {
+                message,
+                retention_seconds,
+                ..
+            },
+        ) => *message == r.message && *retention_seconds == r.retention_seconds,
+        (Request::Recover(r), Effect::Recover { input, .. }) => input == r,
+        (
+            Request::Renew(r),
+            Effect::Renew {
+                placement_id,
+                expected_expires_at,
+                additional_seconds,
+                ..
+            },
+        ) => {
+            *placement_id == r.placement_id
+                && *expected_expires_at == r.expected_expires_at
+                && *additional_seconds == r.additional_seconds
+        }
+        (Request::Remove(r), Effect::Remove { input, .. }) => input == r,
+        _ => false,
+    }
+}
+
+/// Whether `response` is exactly the staged template an effect promises at `price`, without reading any live state.
+pub(super) fn has_template_shape(effect: &Effect, response: &Response, price: u64) -> bool {
+    tracing::trace!("Checking the shape of a staged template");
+    match (effect, response) {
+        (
+            Effect::Store {
+                placement_id,
+                message,
+                price: promised,
+                ..
+            },
+            Response::Store(o),
+        ) => {
+            *promised == price
+                && o.placement_id == *placement_id
+                && o.message_id == message.metadata.message_id
+                && (o.accepted_at, o.expires_at, o.price) == (0, 0, price)
+        }
+        (
+            Effect::Recover {
+                input,
+                price: promised,
+            },
+            Response::Recover(o),
+        ) => {
+            *promised == price
+                && o.placement_id == input.placement_id
+                && o.message.metadata.message_id == input.message_id
+                && o.message.metadata.payload_hash == input.payload_hash
+                && o.receipt.recovery_id == input.recovery_id
+                && o.receipt.recovered_at == 0
+                && o.receipt.provider_signature.0 == [0; 64]
+                && o.receipt.recipient_public_key == input.recipient_public_key
+                && o.receipt.recipient_signature == input.recipient_signature
+        }
+        (
+            Effect::Renew {
+                placement_id,
+                expected_expires_at,
+                additional_seconds,
+                price: promised,
+                ..
+            },
+            Response::Renew(o),
+        ) => {
+            *promised == price
+                && o.placement_id == *placement_id
+                && o.previous_expires_at == *expected_expires_at
+                && expected_expires_at.checked_add(*additional_seconds) == Some(o.expires_at)
+                && o.price == price
+        }
+        (
+            Effect::Remove {
+                input,
+                release_credits,
+                price: promised,
+            },
+            Response::Remove(o),
+        ) => {
+            *promised == price
+                && o.placement_id == input.placement_id
+                && o.removal_id == input.removal_id
+                && o.removed
+                && o.release_credits == *release_credits
+                && o.price == price
+        }
+        _ => false,
+    }
 }

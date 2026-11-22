@@ -418,20 +418,22 @@ impl services::handler::Provider for ServiceProvider {
         matches!(project::operation(input), Ok("store" | "recover"))
     }
 
-    // A template is valid only when it is exactly the staged one.
+    // A template is valid when its effect belongs to this request and its output has exactly the promised shape. This reads no live
+    // state, so it also holds after the placement's payload has been reclaimed and when the coordinator reopens its records.
     fn validate_template(
         &self,
-        invocation: &Invocation,
-        _input: &Value,
+        _invocation: &Invocation,
+        input: &Value,
         template: &Completion,
     ) -> Result<(), Error> {
-        tracing::trace!("Checking a Messaging template against the staged one");
-        let effect = self.prepared(invocation.key)?;
-        let original = self.completion_of(invocation.key, &effect)?;
-        if original.output != template.output
-            || original.result != template.result
-            || original.price != template.price
-            || original.effect != template.effect
+        tracing::trace!("Checking a Messaging template against its request");
+        let request = codec::parse_request(input).map_err(project::map)?;
+        let effect = Effect::decode(template.effect.bytes()).map_err(project::map)?;
+        let response = codec::parse_response(&template.output).map_err(project::map)?;
+        if !outputs::belongs(&request, &effect)
+            || !outputs::has_template_shape(&effect, &response, template.price)
+            || template.result.bytes()
+                != services::codec::encode(&template.output, self.budget, self.maximum_bytes)?
         {
             return Err(Error::Invalid);
         }

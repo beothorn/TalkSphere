@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -42,7 +42,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **30.** Register Messaging handlers and publish usable offerings.
 - [x] **31.** Bind Messaging requester operations to Peer Protocol.
 - [x] **32.** Validate recovered messages and decrypt only after authentication.
-- [ ] **33.** Exercise crash recovery at every coordination boundary.
+- [x] **33.** Exercise crash recovery at every coordination boundary.
 - [x] **34.** Verify races between recovery, removal, renewal and expiration.
 - [ ] **35.** Exercise Messaging between authenticated node processes with replicas.
 - [ ] **36.** Add a discoverable Messaging exercise and detailed help.
@@ -419,6 +419,8 @@ Reopen independent Services, Ledger and Messaging files at each boundary for
 store, recover and remove, including after lost durability replies. Test that
 balances never underflow, receipts never exist without matching accounting and
 release credits never apply twice (SV-09 with Messaging effects).
+
+Completed: [recovery](../../src/modules/messaging/service/recovery.md) and `service/crash.rs`. Independent Services, Ledger and Messaging files are reopened after each boundary (lost reservation, staged, lost preparation, prepared, decided, lost or refused commit, lost Ledger acknowledgement inside the commit, abort) for a store, a recovery and a removal; balances, placements, receipts and release credits are exact and a second recovery pass changes nothing. Writing it exposed that template validation could not read live state when the coordinator reopens, so it is now stateless. Faults inside the Messaging files themselves are covered by the earlier participant and journal crash-window tests.
 
 ### 34. Verify races between recovery, removal, renewal and expiration
 

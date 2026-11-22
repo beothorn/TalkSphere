@@ -6,10 +6,13 @@
 //! Dependencies: the provider engine, the participant, the codec and the Services handler contracts.
 pub mod client;
 pub mod provider;
+pub mod recovery;
 pub mod release;
 
 mod outputs;
 mod project;
 
+#[cfg(test)]
+mod crash;
 #[cfg(test)]
 mod tests;
