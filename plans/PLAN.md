@@ -99,33 +99,35 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   All 25 detailed steps are complete for the finite Linux minimum profile: two separately operated
   `serve --node-root` processes demonstrate AT-E01 and its failure cases. See the
   [node handoff](../src/composition/node/HANDOFF.md) and [acceptance evidence](../docs/minimum-node/ACCEPTANCE.md).
-- [ ] **12. Full client journey.** Create a full client journey where two clients
-  shares storages, get credits and are able to send messages. The server is able to
-  save and retrieve a file.
+- [ ] **12. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
+  discovery/recovery, receipts, renewal, release/removal, status, checks and
+  retries with durable replay guards. Optional in CR2SE's minimum profile, but
+  moved ahead of the other optional modules because the client journey needs it.
+  Planned in 38 steps; not started.
+- [ ] **13. [Full client journey](12_Client_journey/PLAN.md).** Create a full client journey where two clients
+  share storage, get credits and are able to send messages. Each node is able to
+  save and retrieve a file. Planned in 20 steps after Messaging; not started.
 
 ## Optional CR2SE modules and full-feature PoC
 
 These modules are planned for TalkSphere but are optional in CR2SE's minimum
 profile. Implement each independently and register only complete capabilities.
 
-- [ ] **12. Node API module.** Add authenticated local client access, versioned
+- [ ] **14. Node API module.** Add authenticated local client access, versioned
   JSON-line messages, bounded blobs, session-scoped handles, cancellation and
   explicit spending/issuer authority. Test isolation and out-of-order replies.
-- [ ] **13. Messaging module.** Add signed/encrypted placement, recipient
-  discovery/recovery, receipts, renewal, release/removal, status, checks and
-  retries with durable replay guards.
-- [ ] **14. Discovery module.** Add signed records, paid atomic indexing, bounded
+- [ ] **15. Discovery module.** Add signed records, paid atomic indexing, bounded
   iterative lookup, cursors, retention checks and equivocation handling.
-- [ ] **15. Public File Sharing module.** Add canonical manifests, signed
+- [ ] **16. Public File Sharing module.** Add canonical manifests, signed
   catalogs, paid ranges, resumable multi-host retrieval, safe paths and
   piece/file verification; reuse Discovery record formats through contracts.
-- [ ] **16. Public Feeds module.** Add signed publication, attachments, bounded
+- [ ] **17. Public Feeds module.** Add signed publication, attachments, bounded
   paid reads, exclusive cursors and local feed merging.
-- [ ] **17. Static Pages module.** Add authorized local publication, path/media
+- [ ] **18. Static Pages module.** Add authorized local publication, path/media
   validation, fixed-price bounded retrieval and immutable response snapshots.
-- [ ] **18. Computation module.** Add an explicitly authorized, bounded runtime,
+- [ ] **19. Computation module.** Add an explicitly authorized, bounded runtime,
   exact metered pricing/reservations, timeout/error results and local checking.
-- [ ] **19. Full-feature PoC and portability.** Complete the upstream feature
+- [ ] **20. Full-feature PoC and portability.** Complete the upstream feature
   matrix with three identities, independent encrypted replicas, retained keys
   and recovery catalog, recovery on replacement hardware with a provider
   offline, crash injection and uncertain-delivery tests. Cross-check canonical

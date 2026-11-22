@@ -177,7 +177,7 @@ establish interoperability with an independent implementation. Paid Storage is c
 [38-step plan](plans/9_Storage_module/PLAN.md); the [Storage guide](src/modules/storage/README.md)
 and [handoff](src/modules/storage/HANDOFF.md) record scope and the next milestone. See the
 [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
-The minimum useful node is complete (see below); the full client journey and optional standard families remain later work.
+The minimum useful node is complete (see below); the [Messaging module](plans/11_Messaging_module/PLAN.md) and the [full client journey](plans/12_Client_journey/PLAN.md) are planned next, and the other optional standard families remain later work.
 
 ## Board document tools
 

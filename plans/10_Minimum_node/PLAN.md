@@ -57,7 +57,7 @@ In scope: the eight required modules composed in `serve`, operator configuration
 authorized local control, configured contacts, finite grants and trust, and
 two-process acceptance on Linux. Out of scope: the CR2SE Node API, Discovery,
 the six optional families, wanted Storage through local control, and the full
-client journey (milestone 12). A minimum node is not the full-feature PoC, and
+client journey (now milestone 13, after Messaging). A minimum node is not the full-feature PoC, and
 two TalkSphere processes do not establish interoperability with another
 implementation.
 
@@ -315,8 +315,8 @@ Completed: [Acceptance evidence](../../docs/minimum-node/ACCEPTANCE.md), with th
 ### 25. Publish the minimum node handoff for the full client journey
 
 Write the supported platform, durability, limits, recovery and operator steps,
-plus the contracts milestone 12 will build on (local control, lease catalog,
-Ledger policy). Update the root README and roadmap. Keep milestone 12 and the
+plus the contracts the client journey will build on (local control, lease catalog,
+Ledger policy). Update the root README and roadmap. Keep the client journey and the
 optional modules unchecked and do not expand their plans.
 
 Completed: [Handoff](../../src/composition/node/HANDOFF.md); the root README and roadmap are updated.
