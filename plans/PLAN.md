@@ -120,7 +120,8 @@ pages and feeds through TalkSphere servers over CR2SE only.
 - [ ] **14. [Hosted pages and feeds in CR2SE](13_Hosted_publications/PLAN.md).** Specification work in
   CR2SE: let any provider host publisher-signed pages and feed posts, public or
   encrypted for chosen readers, reusing Messaging placements, so publishers
-  that cannot accept connections (phones) can publish. Planned in 16 steps; not started.
+  that cannot accept connections (phones) can publish. Steps 1-15 (specification drafted and committed in a CR2SE checkout,
+  unpushed) are done; step 16 (file upstream) is blocked on the project owner.
 - [ ] **15. Static Pages module.** Implement hosted pages and the existing
   publisher-served pages as accepted in milestone 14, reusing the Messaging
   placement implementation. Planned after milestone 14.

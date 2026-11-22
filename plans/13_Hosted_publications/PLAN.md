@@ -1,6 +1,7 @@
 # Hosted pages and feeds specification plan
 
-Status: planned for review; no step is implemented yet.
+Status: specification drafted and committed in a CR2SE checkout (steps 1-15 complete); step 16, filing upstream, is blocked on
+the project owner (see [PROPOSAL.md](PROPOSAL.md)).
 
 This is roadmap milestone 14 and planning folder 13. It is CR2SE specification
 work, not TalkSphere code. The TalkSphere Static Pages and Public Feeds modules
@@ -21,21 +22,21 @@ TalkSphere implementation should reuse the Messaging implementation.
 
 ## Steps
 
-- [ ] **1.** Inventory what Messaging, Static Pages and Public Feeds specify about ownership, hosting, signing and encryption.
-- [ ] **2.** Write the problem statement and requirements for publishers that cannot accept connections.
-- [ ] **3.** Define a publisher-signed publication that any provider can host and any reader can verify.
-- [ ] **4.** Define public and reader-restricted visibility with layered encryption.
-- [ ] **5.** Define hosted placement, retention, renewal and removal by reusing Messaging placement rules.
-- [ ] **6.** Define reader listing, retrieval and cursors for hosted publications.
-- [ ] **7.** Define a hosted page as a publication carrying a static page snapshot.
-- [ ] **8.** Define a hosted feed as an ordered series of publications.
-- [ ] **9.** Define updates, replacement and the latest version across several providers.
-- [ ] **10.** Define pricing, Board offerings and service definitions.
-- [ ] **11.** Decide how the change is versioned against existing Pages and Feeds.
-- [ ] **12.** Add pseudocode, input and output contracts and acceptance tests.
-- [ ] **13.** Add independently generated fixed vectors for the new signing and encryption bytes.
-- [ ] **14.** Update Redundancy, ModuleContracts, Glossary and PoC.
-- [ ] **15.** Review the change for consistency, privacy and abuse.
+- [x] **1.** Inventory what Messaging, Static Pages and Public Feeds specify about ownership, hosting, signing and encryption.
+- [x] **2.** Write the problem statement and requirements for publishers that cannot accept connections.
+- [x] **3.** Define a publisher-signed publication that any provider can host and any reader can verify.
+- [x] **4.** Define public and reader-restricted visibility with layered encryption.
+- [x] **5.** Define hosted placement, retention, renewal and removal by reusing Messaging placement rules.
+- [x] **6.** Define reader listing, retrieval and cursors for hosted publications.
+- [x] **7.** Define a hosted page as a publication carrying a static page snapshot.
+- [x] **8.** Define a hosted feed as an ordered series of publications.
+- [x] **9.** Define updates, replacement and the latest version across several providers.
+- [x] **10.** Define pricing, Board offerings and service definitions.
+- [x] **11.** Decide how the change is versioned against existing Pages and Feeds.
+- [x] **12.** Add pseudocode, input and output contracts and acceptance tests.
+- [x] **13.** Add independently generated fixed vectors for the new signing and encryption bytes.
+- [x] **14.** Update Redundancy, ModuleContracts, Glossary and PoC.
+- [x] **15.** Review the change for consistency, privacy and abuse.
 - [ ] **16.** File the proposal upstream and record it locally.
 
 ## Baseline, scope and review
@@ -154,3 +155,20 @@ metadata leakage, unbounded listing and spam costs. Fix findings before filing.
 Search open and closed CR2SE issues, file the proposal with links to the
 changed documents, and record it under [CR2SE bugs](../../CR2SE%20bugs/README.md)
 or a design note as appropriate. Report the URL; never claim filing without it.
+
+## Completed
+
+Steps 1-15 are complete in the CR2SE checkout as three local commits on top of
+[CR2SE 73edf2d](https://github.com/beothorn/CR2SE/commit/73edf2d) (upstream main when the work began; the baseline above,
+bc53df4, differs only in Peer Protocol text): the new
+`modules/hosted-publications/` (specification, inputs, outputs, pseudocode, diagrams, acceptance tests HP-01..HP-15 and
+independently generated vectors), plus index, glossary, redundancy, PoC, acceptance and decision-log updates. The proposal
+summary, the commit list and the drafted upstream issue are in [PROPOSAL.md](PROPOSAL.md). Decisions made: a new service
+`cr2se.hosted-publication` v1 (not a mode of Pages or Feeds); one publisher-signed publication format for pages, resources and
+feed posts; page snapshots as a signed manifest plus separately hosted resource publications; audience-encrypted visibility
+with a per-publication content key wrapped per reader; Messaging's placement, pricing, renewal, release-credit and check
+rules reused by reference; publisher-assigned sequence numbers, with equivocation detected by readers.
+
+Step 16 is not complete: the commits are local and unpushed, and the upstream issue is a feature proposal rather than the
+protocol-defect report AGENTS.md pre-authorizes, so it has not been filed. Milestones 15 and 16 proceed against the local
+proposal and must be revisited if upstream review changes it.
