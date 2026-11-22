@@ -338,6 +338,53 @@ impl Owners {
         }
     }
 
+    /// Apply the bootstrap credit policy to a peer that just authenticated: at most one finite grant
+    /// per identity within the policy's total budget. The grant is recorded durably before the Ledger
+    /// changes, so a crash between the two can only lose a grant (the operator can grant by hand),
+    /// never repeat one. Trust is only raised, never lowered below what the operator set.
+    /// Returns whether a grant was applied.
+    /// # Errors
+    /// The observation file or the Ledger refused; nothing further is applied.
+    pub fn bootstrap(&self, peer: IdentityId, now: u64) -> Result<bool, String> {
+        tracing::trace!("Applying the bootstrap credit policy");
+        let view = self.peer_view(peer, now);
+        let Some(grant) = self
+            .policy
+            .credit
+            .bootstrap(&view, self.observations.bootstrap_total())
+        else {
+            return Ok(false);
+        };
+        self.observations
+            .record_bootstrap(peer, grant.credits, now)
+            .map_err(|e| format!("recording the bootstrap grant failed: {e:?}"))?;
+        let ledger_grant = self
+            .ledger_authority
+            .grant(
+                self.local,
+                ledger::authority::Action::Administer,
+                GRANT_BYTES,
+            )
+            .map_err(stage("bootstrap grant authority"))?;
+        let context = ledger::contract::Context {
+            version: 1,
+            grant: &ledger_grant,
+            deadline: Instant::now() + Duration::from_secs(5),
+            cancelled: false,
+        };
+        self.account
+            .grant(&context, peer, grant.credits)
+            .map_err(|e| format!("issuing the bootstrap credits failed: {e:?}"))?;
+        if view.trust_millionths < grant.trust_millionths {
+            let trust = ledger::accounting::Trust::new(grant.trust_millionths)
+                .map_err(|e| format!("bootstrap trust is invalid: {e:?}"))?;
+            self.account
+                .set_trust(&context, peer, trust)
+                .map_err(|e| format!("setting the bootstrap trust failed: {e:?}"))?;
+        }
+        Ok(true)
+    }
+
     /// Publish the configured Board and definition, replacing any earlier publication.
     /// Call only after `open` succeeded, so no offering is visible before recovery.
     /// A requester-only node publishes an empty Board, which withdraws an earlier offering.

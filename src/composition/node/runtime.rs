@@ -573,6 +573,15 @@ fn admit(owners: &Owners, link: &Link, context: &PeerContext) -> bool {
         }
     }
     owners.observations.record(peer, Kind::Connected, now);
+    if context.role == ConnectionRole::Acceptor {
+        match owners.bootstrap(peer, now) {
+            Ok(true) => tracing::info!("A finite bootstrap grant was issued to a new peer"),
+            Ok(false) => {}
+            Err(error) => {
+                tracing::warn!(%error, "The bootstrap grant for a new peer was not applied");
+            }
+        }
+    }
     true
 }
 

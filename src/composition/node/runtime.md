@@ -45,3 +45,12 @@ and [upkeep](upkeep.md) retries failed or lost connections with the policy's bou
 connection, whichever side opened it, is pinged at `connection.pingSeconds` and closed when a pong is late, so a
 silent peer is dropped and the registry never lists a dead connection for long. A contact that already connected to this
 node is not dialed again. A node with no `--contact` behaves as before.
+
+## Bootstrap credits
+
+When a peer opens a connection and authenticates, the [credit policy](../policy/contracts.md) may give it one finite
+first grant (`credit.bootstrapCredits` with `credit.bootstrapTrust`), once per identity and within the total
+`credit.bootstrapBudget`; the Ledger's own issuance budget (`credits.issuance`) still bounds everything. The grant is
+recorded durably in the observation store before the Ledger changes, so a crash can lose a grant but never repeat one,
+and a restarted node never grants twice. Trust is only raised, never lowered below what the operator set. The peer must
+still record the credits it holds and trust the issuer on its own side. Bootstrap is off unless the policy sets credits.

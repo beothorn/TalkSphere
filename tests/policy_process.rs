@@ -253,3 +253,73 @@ fn an_unanswered_ping_closes_the_connection_and_the_client_reconnects() {
         || number(&client.ctl(&["status"]).unwrap(), "connections") == 1,
     );
 }
+
+// A provider with a bootstrap policy gives each new identity one finite grant, within a total budget:
+// two peers get credits, the third finds the budget used up, a restarted provider never repeats a
+// grant, and the granted peer can spend them once it records the credits it holds.
+#[test]
+fn bootstrap_policy_grants_once_per_identity_within_the_budget() {
+    let dir = Dir::new("bootstrap");
+    let mut provider = Node::init(&dir.0, "provider", None);
+    let mut peers: Vec<Node> = ["a", "b", "c"]
+        .iter()
+        .map(|n| Node::init(&dir.0, n, None))
+        .collect();
+    provider.set_policy(
+        r#"{"version":1,"credit":{"bootstrapCredits":150,"bootstrapTrust":1,"bootstrapBudget":300}}"#,
+    );
+    let port = free_port();
+    provider.start(Some(port));
+    let contact = provider.contact(port);
+    for peer in &mut peers {
+        peer.start(None);
+        peer.ctl(&["fetch", "--contact", &contact]).unwrap();
+    }
+    let issued = |provider: &Node, peer: &Node| number(&balance(provider, peer), "issued");
+    let trusted = |provider: &Node, peer: &Node| number(&balance(provider, peer), "trust");
+    assert_eq!(
+        (issued(&provider, &peers[0]), trusted(&provider, &peers[0])),
+        (150, 1)
+    );
+    assert_eq!(
+        (issued(&provider, &peers[1]), trusted(&provider, &peers[1])),
+        (150, 1)
+    );
+    assert_eq!(
+        (issued(&provider, &peers[2]), trusted(&provider, &peers[2])),
+        (0, 0)
+    );
+    // The first peer records what it holds and spends part of it.
+    let a = &peers[0];
+    a.ctl(&["own", "--peer", &provider.id, "--amount", "150"])
+        .unwrap();
+    a.ctl(&["trust", "--peer", &provider.id, "--millionths", "1"])
+        .unwrap();
+    let object = dir.0.join("object");
+    std::fs::write(&object, b"abc").unwrap();
+    let stored = a
+        .ctl(&[
+            "store",
+            "--contact",
+            &contact,
+            "--file",
+            object.to_str().unwrap(),
+            "--retention-seconds",
+            "60",
+            "--max-spend",
+            "150",
+        ])
+        .unwrap();
+    let remaining = 150 - number(&stored, "price");
+    assert_eq!(issued(&provider, a), remaining);
+    // A restarted provider remembers its grants: reconnecting changes nothing, and the third peer
+    // still gets nothing because the budget stays used up.
+    provider.crash();
+    provider.start(Some(port));
+    for peer in &peers {
+        peer.ctl(&["fetch", "--contact", &contact]).unwrap();
+    }
+    assert_eq!(issued(&provider, &peers[0]), remaining);
+    assert_eq!(issued(&provider, &peers[1]), 150);
+    assert_eq!(issued(&provider, &peers[2]), 0);
+}

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-10 are complete.
+Status: in progress; steps 1-11 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -26,7 +26,7 @@ large simulations without touching protocol code.
 - [x] **8.** Track live peer connections by identity.
 - [x] **9.** Send requests to a peer over the connection that peer opened.
 - [x] **10.** Keep client connections alive with pings and bounded reconnects.
-- [ ] **11.** Grant finite bootstrap credits and trust by policy.
+- [x] **11.** Grant finite bootstrap credits and trust by policy.
 - [ ] **12.** Publish wanted Storage terms and issue earned credits by policy.
 - [ ] **13.** Adjust trust from verified contributions and failures by policy.
 - [ ] **14.** Maintain replica sets at a policy target across independent peers.
@@ -208,6 +208,8 @@ Replace hand-run grants for new identities with an optional credit policy: a
 finite first grant and finite trust per new identity, within a total issuance
 budget. Off by default. Test the per-identity and total limits, restart, and
 that a second identity for the same peer cannot reuse a grant it never earned.
+
+Completed: `Owners::bootstrap` (record first, then Ledger grant and trust raise) applied when a peer-opened connection authenticates; a process test shows two peers granted, the third refused when the budget is used up, spending, and no repeat after a provider crash and restart. A second identity is a new identity and gets its own grant while the budget lasts: identity-cost limits are a policy choice documented in the parameters, not something CR2SE can prevent.
 
 ### 12. Publish wanted Storage terms and issue earned credits by policy
 

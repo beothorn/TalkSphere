@@ -26,3 +26,5 @@ Storage value budget is fixed (depth 12, 4096 nodes, 65536 bytes), which bounds 
 `open` also reads the optional [policy file](../policy/params.md) (`Owners::params`, `Owners::policy`) and opens the
 [observation store](observation_store.md). `peer_view(peer, now)` returns the peer's current local trust (zero when
 unreadable) and recorded observations for policy decisions.
+
+`bootstrap(peer, now)` applies the bootstrap credit policy to a newly authenticated peer: durable record first, then the finite grant and a trust raise.
