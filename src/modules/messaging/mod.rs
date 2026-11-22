@@ -46,3 +46,7 @@ pub mod journal;
 pub mod participant;
 
 pub mod recovery;
+
+pub mod staging;
+
+pub mod provider;

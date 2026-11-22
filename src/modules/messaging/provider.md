@@ -1,0 +1,11 @@
+# Provider
+
+The provider engine for the store operation. It never charges or records anything before the final commit.
+
+- `StoreHeader`: the signed metadata, sender key, sender signature and requested retention, i.e. everything except the payload bytes. `StoreInput.header()` extracts it.
+- `Provider(terms, participant, clock, staging)`.
+- `assess_store(caller, header)`: before the body is received, checks that the sender is the authenticated caller and derives from the supplied key, the payload size is between 1 and the offering maximum (at least 105 for the encrypted encoding), retention is within the offering bounds, the expiry does not overflow, and calculates the exact price. Reserves staging space. Returns an assessment holding the price and reservation, or `Invalid`/`Limit` with nothing reserved.
+- `prepare_store(key, assessment, message)`: requires the message to equal the assessed header, verifies size, hash and signature (the signature covers the payload, so this can only happen now), then prepares the effect durably with a new placement ID.
+- `commit_store(prepared)`: commits and returns placement ID, message ID, acceptance time, expiry and price. The acceptance time is assigned at the durable commit.
+- `store(key, caller, input)`: the three steps in one call. Dropping the assessment releases the reservation.
+- Every failure before commit leaves no placement, no journal entry and no reservation.

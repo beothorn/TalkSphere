@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-15 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-17 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -25,8 +25,8 @@ needs it, and the hosted pages and feeds proposal
 - [x] **13.** Implement placement states, expiration and per-placement serialization.
 - [x] **14.** Implement durable participant preparation, commit, abort and status queries.
 - [x] **15.** Recover Messaging participants before admitting new work.
-- [ ] **16.** Assess store metadata before receiving the payload body.
-- [ ] **17.** Commit validated stores as durable pending placements.
+- [x] **16.** Assess store metadata before receiving the payload body.
+- [x] **17.** Commit validated stores as durable pending placements.
 - [ ] **18.** Implement recipient-only discovery with the exclusive cursor.
 - [ ] **19.** Implement atomic recovery with a signed provider receipt.
 - [ ] **20.** Return cached recovery output for an exact retry without a new charge.
@@ -275,12 +275,16 @@ the payload body is accepted, and reserve bounded capacity. Test MS-03 cases
 that can be refused before the body, with no charge and no reservation left
 behind.
 
+Completed: [staging](../../src/modules/messaging/staging.md) and [provider](../../src/modules/messaging/provider.md). Signature verification needs the payload, so it runs when the body has arrived; everything else is refused beforehand.
+
 ### 17. Commit validated stores as durable pending placements
 
 Stream the payload into staging, verify size, hash and signature, then commit
 the placement and return `placementId`, `acceptedAt`, `expiresAt` and `price`.
 Test MS-02: durable before success, restart, and a second store of the same
 message creating a separate placement.
+
+Completed: `Provider::store` (assess, prepare, commit) with MS-02 and MS-03 tests in `provider_tests.rs`; streaming from the network is wired in step 30.
 
 ### 18. Implement recipient-only discovery with the exclusive cursor
 

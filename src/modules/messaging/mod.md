@@ -17,6 +17,8 @@
 | [Journal](journal.md) | Durable participant journal |
 | [Participant](participant.md) | Prepare, commit, abort and status of effects |
 | [Recovery](recovery.md) | Resolving prepared operations before admitting work |
+| [Provider](provider.md) | Store assessment before the body and durable commit |
+| [Staging](staging.md) | Bounded reservations for incoming payloads |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |
