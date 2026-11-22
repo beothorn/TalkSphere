@@ -12,12 +12,14 @@ use super::{
     error::Error,
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
-    operation::{DiscoverInput, DiscoverOutput, Entry, StoreInput, StoreOutput},
+    operation::{
+        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, StoreInput, StoreOutput,
+    },
     participant::Participant,
     ports::Clock,
-    pricing, signing,
+    pricing, receipt, signing,
     staging::{Reservation, Staging},
-    state::{Encoding, MINIMUM_ENCRYPTED_BYTES},
+    state::{Encoding, MINIMUM_ENCRYPTED_BYTES, State},
     terms::Terms,
 };
 use crate::modules::{
@@ -270,6 +272,74 @@ impl Provider {
             more,
             price: self.terms.discover_price,
         })
+    }
+}
+
+impl Provider {
+    /// Return one pending message to its authenticated recipient. The recovery request is verified (the recipient key derives to the
+    /// placement's recipient and its signature covers this provider, placement, message, hash and recovery ID), the exact price is
+    /// calculated from the payload size, and the participant atomically records the signed receipt and moves the placement to
+    /// recovered. The output carries the original signed message and the receipt, with no price field of its own.
+    /// # Errors
+    /// `NotAvailable` for an unknown, expired, non-pending or foreign placement and for a message or hash that does not match
+    /// (concealed alike so the caller learns nothing); `Invalid` for a bad signature. Nothing is changed or charged on failure.
+    pub fn recover(
+        &self,
+        key: OperationKey,
+        caller: IdentityId,
+        input: RecoverInput,
+    ) -> Result<(RecoverOutput, u64), Error> {
+        tracing::trace!("Recovering a pending message for its recipient");
+        let now = self.clock.now()?;
+        let record = self
+            .participant
+            .store()
+            .record(input.placement_id)
+            .ok_or(Error::NotAvailable)?;
+        let replayed = record
+            .receipt
+            .is_some_and(|r| r.recovery_id == input.recovery_id);
+        let usable = record.active_at(now) && (record.state == State::Pending || replayed);
+        let matches = record.metadata.recipient_id == caller
+            && record.metadata.message_id == input.message_id
+            && record.metadata.payload_hash == input.payload_hash;
+        if !usable || !matches {
+            return Err(Error::NotAvailable);
+        }
+        receipt::verify_request(
+            &input,
+            self.participant.provider_id(),
+            record.metadata.recipient_id,
+        )?;
+        let t = &self.terms;
+        let price = pricing::recover(
+            record.metadata.payload_size,
+            t.recovery_usage,
+            t.minimum_price,
+        )?;
+        let effect = Effect::Recover { input, price };
+        let token = self.participant.prepare(key, &effect)?;
+        let Outcome::Recovered {
+            placement_id,
+            receipt,
+            price,
+        } = self.participant.commit(key, &token)?
+        else {
+            return Err(Error::Conflict);
+        };
+        let placement = self
+            .participant
+            .store()
+            .get(placement_id)?
+            .ok_or(Error::NotAvailable)?;
+        Ok((
+            RecoverOutput {
+                placement_id,
+                message: placement.message(),
+                receipt,
+            },
+            price,
+        ))
     }
 }
 

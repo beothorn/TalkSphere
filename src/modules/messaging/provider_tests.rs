@@ -1,6 +1,9 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
-use crate::modules::messaging::operation::{Cursor, DiscoverInput};
+use crate::modules::messaging::{
+    operation::{Cursor, DiscoverInput, RecoverInput},
+    receipt,
+};
 use crate::modules::{
     board::{config::Limits as BoardLimits, offering::Board},
     messaging::{
@@ -501,4 +504,129 @@ fn discovery_hides_expired_placements() {
         )
         .unwrap();
     assert!(page.messages.is_empty());
+}
+
+// Builds a request from the recipient for `placement` of the stored `abc` message with the given recovery ID.
+fn recovery_request(h: &Harness, placement: PlacementId, recovery: u8) -> RecoverInput {
+    let message = message(h, b"abc", Encoding::Opaque);
+    receipt::sign_request(
+        &h.recipient,
+        h.provider_identity.identity(),
+        placement,
+        message.metadata.message_id,
+        message.metadata.payload_hash,
+        super::super::ids::RecoveryId([recovery; 32]),
+    )
+    .unwrap()
+}
+
+// MS-07: recovery returns the original metadata and payload with a receipt that verifies under both keys, moves the placement to
+// recovered so discovery excludes it, and the result has no price field of its own.
+#[test]
+fn ms_07_recovery_returns_the_message_and_a_verifiable_receipt() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    h.clock.set(1004);
+    let request = recovery_request(&h, stored.placement_id, 7);
+    let (out, price) = h
+        .provider
+        .recover(key(2), h.recipient.identity(), request)
+        .unwrap();
+    assert_eq!(out.message, message(&h, b"abc", Encoding::Opaque));
+    assert_eq!(out.receipt.recovered_at, 1004);
+    assert_eq!(price, 2, "ceil(3 bytes * 1/2) rounded once");
+    let binding = receipt::Binding {
+        provider_id: h.provider_identity.identity(),
+        placement_id: stored.placement_id,
+        message_id: out.message.metadata.message_id,
+        sender_id: h.sender.identity(),
+        recipient_id: h.recipient.identity(),
+        payload_hash: out.message.metadata.payload_hash,
+    };
+    receipt::verify_receipt(&out.receipt, &binding, &h.provider_identity.public_key()).unwrap();
+    let record = h.store.record(stored.placement_id).unwrap();
+    assert_eq!(
+        (record.state, record.receipt),
+        (State::Recovered, Some(out.receipt))
+    );
+    let page = h
+        .provider
+        .discover(
+            h.recipient.identity(),
+            DiscoverInput {
+                cursor: None,
+                limit: 10,
+            },
+        )
+        .unwrap();
+    assert!(page.messages.is_empty());
+}
+
+// Recovery is concealed and uncharged when the caller is not the recipient, the key does not match, the message or hash differs,
+// the signature is bad, the placement is unknown or expired, or it was already recovered with another recovery ID.
+#[test]
+fn recovery_refusals_change_nothing() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let p = stored.placement_id;
+    let c = h.recipient.identity();
+    let good = recovery_request(&h, p, 7);
+    let mut bad_signature = good;
+    bad_signature.recipient_signature.0[0] ^= 1;
+    let mut wrong_message = good;
+    wrong_message.message_id = MessageId([9; 32]);
+    let mut wrong_hash = good;
+    wrong_hash.payload_hash.0[0] ^= 1;
+    let mut foreign_key = good;
+    foreign_key.recipient_public_key = TestIdentity::new(5).public_key();
+    let unknown = RecoverInput {
+        placement_id: PlacementId([8; 32]),
+        ..good
+    };
+    let cases = [
+        (
+            "caller is not the recipient",
+            h.sender.identity(),
+            good,
+            Error::NotAvailable,
+        ),
+        ("bad signature", c, bad_signature, Error::Invalid),
+        ("wrong message id", c, wrong_message, Error::NotAvailable),
+        ("wrong hash", c, wrong_hash, Error::NotAvailable),
+        (
+            "key of another identity",
+            c,
+            foreign_key,
+            Error::NotAvailable,
+        ),
+        ("unknown placement", c, unknown, Error::NotAvailable),
+    ];
+    for (name, caller, request, expected) in cases {
+        assert_eq!(
+            h.provider.recover(key(2), caller, request).err(),
+            Some(expected),
+            "{name}"
+        );
+        assert_eq!(h.store.record(p).unwrap().state, State::Pending, "{name}");
+    }
+    h.clock.set(1010);
+    assert_eq!(
+        h.provider.recover(key(2), c, good).err(),
+        Some(Error::NotAvailable),
+        "expired"
+    );
+    h.clock.set(1004);
+    h.provider.recover(key(3), c, good).unwrap();
+    let again = recovery_request(&h, p, 8);
+    assert_eq!(
+        h.provider.recover(key(4), c, again).err(),
+        Some(Error::NotAvailable),
+        "already recovered by another recovery id"
+    );
 }

@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-18 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-19 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -28,7 +28,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **16.** Assess store metadata before receiving the payload body.
 - [x] **17.** Commit validated stores as durable pending placements.
 - [x] **18.** Implement recipient-only discovery with the exclusive cursor.
-- [ ] **19.** Implement atomic recovery with a signed provider receipt.
+- [x] **19.** Implement atomic recovery with a signed provider receipt.
 - [ ] **20.** Return cached recovery output for an exact retry without a new charge.
 - [ ] **21.** Implement sender-only status with the recorded receipt.
 - [ ] **22.** Implement guarded renewal for pending and recovered placements.
@@ -301,6 +301,8 @@ Verify the recovery request, then atomically move the placement to recovered,
 record the receipt and cache the complete output. Test MS-07: original metadata
 and payload returned, receipt verifies, discovery excludes the placement and the
 output has no invented price field.
+
+Completed: `Provider::recover` (see [provider](../../src/modules/messaging/provider.md)); it returns the output and the charged price separately because the wire output has no price field.
 
 ### 20. Return cached recovery output for an exact retry without a new charge
 

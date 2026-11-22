@@ -19,7 +19,7 @@ use super::{
     state::State,
     store::Store,
 };
-use crate::modules::services::contract::OperationKey;
+use crate::modules::{identity::api::IdentityId, services::contract::OperationKey};
 use std::{
     collections::BTreeMap,
     sync::{
@@ -94,7 +94,12 @@ impl Participant {
         self.ready.store(true, Ordering::SeqCst);
     }
 
-    /// The store this participant applies effects to.
+    /// The identity this provider signs receipts as.
+    pub fn provider_id(&self) -> IdentityId {
+        self.signer.identity()
+    }
+
+    /// The store, for read-only queries by the provider engine.
     pub fn store(&self) -> &Arc<Store> {
         &self.store
     }
