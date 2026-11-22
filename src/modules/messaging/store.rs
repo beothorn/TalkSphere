@@ -321,7 +321,7 @@ fn record_json(r: &Record) -> Value {
         "payloadSize": m.payload_size, "payloadHash": hex(&m.payload_hash.0),
         "senderPublicKey": hex(&r.sender_public_key), "senderSignature": hex(&r.sender_signature.0),
         "acceptedAt": r.accepted_at, "expiresAt": r.expires_at,
-        "state": state_name(r.state), "payments": r.payments,
+        "state": state_name(r.state), "payments": r.payments, "recoveryPrice": r.recovery_price,
         "receipt": r.receipt.as_ref().map(|x| json!({
             "recoveryId": hex(&x.recovery_id.0), "recoveredAt": x.recovered_at,
             "recipientPublicKey": hex(&x.recipient_public_key),
@@ -347,7 +347,7 @@ fn state_name(state: State) -> &'static str {
 // Parse a stored record strictly; any deviation is corruption.
 fn parse_record(value: &Value) -> Option<Record> {
     let o = value.as_object()?;
-    if o.len() != 17 || o.get("version")?.as_u64() != Some(1) {
+    if o.len() != 18 || o.get("version")?.as_u64() != Some(1) {
         return None;
     }
     let text_of = |name: &str| o.get(name)?.as_str();
@@ -401,6 +401,7 @@ fn parse_record(value: &Value) -> Option<Record> {
         expires_at: number("expiresAt")?,
         state,
         payments: number("payments")?,
+        recovery_price: number("recoveryPrice")?,
         receipt,
         removal,
     })

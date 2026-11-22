@@ -250,6 +250,7 @@ mod tests {
                     expires_at: 1010,
                     state: State::Pending,
                     payments: 17,
+                    recovery_price: 0,
                     receipt: None,
                     removal: None,
                 },

@@ -630,3 +630,48 @@ fn recovery_refusals_change_nothing() {
         "already recovered by another recovery id"
     );
 }
+
+// MS-08: an exact retry by the recipient (same recovery ID, a new operation) returns the identical output and the original price with
+// no new effect, even after the offering price changed and after a renewal of the recovered placement; a different recovery ID is refused.
+#[test]
+fn ms_08_an_exact_retry_returns_the_cached_output_and_original_price() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let c = h.recipient.identity();
+    h.clock.set(1004);
+    let request = recovery_request(&h, stored.placement_id, 7);
+    let (first, price) = h.provider.recover(key(2), c, request).unwrap();
+    let journal_before = h.provider.participant().status(key(3));
+    let (retry, retry_price) = h.provider.recover(key(3), c, request).unwrap();
+    assert_eq!((retry, retry_price), (first.clone(), price));
+    assert_eq!(
+        h.provider.participant().status(key(3)),
+        journal_before,
+        "a retry prepares nothing new"
+    );
+    // A repriced offering does not change the answer to the retry.
+    let mut repriced = terms();
+    repriced.recovery_usage = pricing::Rate {
+        numerator: 9,
+        denominator: 1,
+    };
+    let provider = Provider::new(
+        repriced,
+        h.provider.participant().clone(),
+        h.clock.clone(),
+        h.staging.clone(),
+    );
+    assert_eq!(provider.recover(key(4), c, request).unwrap().1, price);
+    // Renewing the recovered placement leaves the cached output untouched.
+    super::super::lifecycle::extend(&h.store, stored.placement_id, 1005, 1010, 5, 2000, 1).unwrap();
+    let (after, after_price) = h.provider.recover(key(5), c, request).unwrap();
+    assert_eq!((after, after_price), (first, price));
+    let other = recovery_request(&h, stored.placement_id, 8);
+    assert_eq!(
+        h.provider.recover(key(6), c, other).err(),
+        Some(Error::NotAvailable)
+    );
+}

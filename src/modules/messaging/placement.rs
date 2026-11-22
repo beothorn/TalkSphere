@@ -40,6 +40,8 @@ pub struct Record {
     pub state: State,
     /// Sum of the prices charged for the store and every renewal (the ceiling of any release credit).
     pub payments: u64,
+    /// The price charged for the recovery, kept so an exact retry reports the original price; zero until recovered.
+    pub recovery_price: u64,
     /// The recorded receipt once recovered.
     pub receipt: Option<Receipt>,
     /// The recorded removal once removed.

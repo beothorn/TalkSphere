@@ -322,6 +322,7 @@ impl Participant {
                         expires_at: expires,
                         state: State::Pending,
                         payments: *price,
+                        recovery_price: 0,
                         receipt: None,
                         removal: None,
                     },
@@ -366,7 +367,7 @@ impl Participant {
                     recipient_signature: input.recipient_signature,
                     provider_signature,
                 };
-                lifecycle::mark_recovered(&self.store, input.placement_id, now, receipt)?;
+                lifecycle::mark_recovered(&self.store, input.placement_id, now, receipt, *price)?;
                 Ok(Outcome::Recovered {
                     placement_id: input.placement_id,
                     receipt,

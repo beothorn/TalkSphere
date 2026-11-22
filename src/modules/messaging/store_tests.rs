@@ -26,6 +26,7 @@ fn placement(id: u8, recipient: u8, accepted_at: u64, size: usize) -> Placement 
             expires_at: accepted_at + 10,
             state: State::Pending,
             payments: 17,
+            recovery_price: 0,
             receipt: None,
             removal: None,
         },
@@ -222,6 +223,7 @@ fn native_stores_persist_everything_across_reopen() {
         .update(p.record.id, &mut |r| {
             r.state = State::Recovered;
             r.receipt = Some(receipt);
+            r.recovery_price = 9;
             Ok(())
         })
         .unwrap();
@@ -242,8 +244,13 @@ fn native_stores_persist_everything_across_reopen() {
     let reopened = Store::open(&path, LIMITS).unwrap();
     let first = reopened.get(p.record.id).unwrap().unwrap();
     assert_eq!(
-        (first.record.state, first.record.receipt, first.payload),
-        (State::Recovered, Some(receipt), p.payload)
+        (
+            first.record.state,
+            first.record.receipt,
+            first.record.recovery_price,
+            first.payload
+        ),
+        (State::Recovered, Some(receipt), 9, p.payload)
     );
     let second = reopened.record(PlacementId([2; 32])).unwrap();
     assert_eq!(

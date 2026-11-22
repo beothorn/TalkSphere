@@ -41,12 +41,14 @@ pub fn mark_recovered(
     id: PlacementId,
     now: u64,
     receipt: Receipt,
+    price: u64,
 ) -> Result<Record, Error> {
     tracing::trace!("Recording a recovery");
     store.update(id, &mut |r| {
         require_pending(r, now)?;
         move_to(r, State::Recovered)?;
         r.receipt = Some(receipt);
+        r.recovery_price = price;
         Ok(())
     })
 }
@@ -164,6 +166,7 @@ mod tests {
                     expires_at: 1010,
                     state: State::Pending,
                     payments: 17,
+                    recovery_price: 0,
                     receipt: None,
                     removal: None,
                 },
@@ -208,17 +211,17 @@ mod tests {
     fn recover_and_remove_are_exclusive_and_final() {
         let s = store();
         assert_eq!(
-            mark_recovered(&s, ID, 1010, receipt()).err(),
+            mark_recovered(&s, ID, 1010, receipt(), 2).err(),
             Some(Error::NotAvailable),
             "expired at the boundary"
         );
-        let recovered = mark_recovered(&s, ID, 1005, receipt()).unwrap();
+        let recovered = mark_recovered(&s, ID, 1005, receipt(), 2).unwrap();
         assert_eq!(
             (recovered.state, recovered.receipt),
             (State::Recovered, Some(receipt()))
         );
         assert_eq!(
-            mark_recovered(&s, ID, 1006, receipt()).err(),
+            mark_recovered(&s, ID, 1006, receipt(), 2).err(),
             Some(Error::NotAvailable)
         );
         assert_eq!(
@@ -233,7 +236,7 @@ mod tests {
             (State::Removed, Some(removal()))
         );
         assert_eq!(
-            mark_recovered(&s, ID, 1006, receipt()).err(),
+            mark_recovered(&s, ID, 1006, receipt(), 2).err(),
             Some(Error::NotAvailable)
         );
         assert_eq!(
@@ -280,7 +283,7 @@ mod tests {
         );
         // A recovered placement can still be extended; its state does not change.
         let s = store();
-        mark_recovered(&s, ID, 1005, receipt()).unwrap();
+        mark_recovered(&s, ID, 1005, receipt(), 2).unwrap();
         assert_eq!(
             extend(&s, ID, 1006, 1010, 4, 1200, 6).unwrap().state,
             State::Recovered
@@ -315,7 +318,7 @@ mod tests {
                         let s = s.clone();
                         scope.spawn(move || {
                             if n % 2 == 0 {
-                                mark_recovered(&s, ID, 1005, receipt()).is_ok()
+                                mark_recovered(&s, ID, 1005, receipt(), 2).is_ok()
                             } else {
                                 mark_removed(&s, ID, 1005, 1010, removal()).is_ok()
                             }
@@ -355,10 +358,10 @@ mod tests {
     #[test]
     fn operations_use_their_acceptance_time() {
         let s = store();
-        assert!(mark_recovered(&s, ID, 1009, receipt()).is_ok());
+        assert!(mark_recovered(&s, ID, 1009, receipt(), 2).is_ok());
         let s = store();
         assert_eq!(
-            mark_recovered(&s, ID, 1010, receipt()).err(),
+            mark_recovered(&s, ID, 1010, receipt(), 2).err(),
             Some(Error::NotAvailable)
         );
     }

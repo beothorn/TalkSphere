@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-19 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-20 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -29,7 +29,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **17.** Commit validated stores as durable pending placements.
 - [x] **18.** Implement recipient-only discovery with the exclusive cursor.
 - [x] **19.** Implement atomic recovery with a signed provider receipt.
-- [ ] **20.** Return cached recovery output for an exact retry without a new charge.
+- [x] **20.** Return cached recovery output for an exact retry without a new charge.
 - [ ] **21.** Implement sender-only status with the recorded receipt.
 - [ ] **22.** Implement guarded renewal for pending and recovered placements.
 - [ ] **23.** Quote early-release credits before removal.
@@ -310,6 +310,8 @@ Use the Services replay contract so an exact retry by the same recipient
 returns the byte-identical cached output and original price, even after restart
 or a price change. A different recovery ID fails without charge. Test MS-08,
 including the cache surviving a renewal of a recovered placement.
+
+Completed: the placement record now keeps `recoveryPrice`, and `Provider::recover` answers an exact retry from the record. Wire-level replay of the Services cache is wired in step 30.
 
 ### 21. Implement sender-only status with the recorded receipt
 

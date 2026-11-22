@@ -311,6 +311,23 @@ impl Provider {
             self.participant.provider_id(),
             record.metadata.recipient_id,
         )?;
+        if replayed {
+            // An exact retry of the recorded recovery: answer from the record with the original price, charge and effect unchanged.
+            let placement = self
+                .participant
+                .store()
+                .get(input.placement_id)?
+                .ok_or(Error::NotAvailable)?;
+            let receipt = record.receipt.ok_or(Error::NotAvailable)?;
+            return Ok((
+                RecoverOutput {
+                    placement_id: input.placement_id,
+                    message: placement.message(),
+                    receipt,
+                },
+                record.recovery_price,
+            ));
+        }
         let t = &self.terms;
         let price = pricing::recover(
             record.metadata.payload_size,
