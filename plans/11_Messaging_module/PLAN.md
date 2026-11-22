@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-26 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-27 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -36,7 +36,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **24.** Settle the removal charge and release credits once in one recoverable decision.
 - [x] **25.** Retain removal replay results for the lifetime of the ledger.
 - [x] **26.** Implement authorized paid byte evidence for pending placements.
-- [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
+- [x] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
 - [ ] **29.** Bound placements per sender and per recipient through a module limits port.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
@@ -369,6 +369,8 @@ Completed: `Provider::check`; the Services `Rules` binding that charges `checkPr
 Derive pass, fail or inconclusive on the requester from the private expected
 byte and `checkResponseSeconds`, posting no charge without valid evidence. Reuse
 Storage's sampling and timing approach. Test the requester side of MS-13.
+
+Completed: [check](../../src/modules/messaging/check.md). Services trusted timing and the charge decision are bound in step 30; this module supplies the verdict and the evidence-validity rule.
 
 ### 28. Reclaim expired, recovered and removed placement resources safely
 

@@ -50,3 +50,5 @@ pub mod recovery;
 pub mod staging;
 
 pub mod provider;
+
+pub mod check;

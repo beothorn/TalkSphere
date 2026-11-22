@@ -17,6 +17,7 @@
 | [Journal](journal.md) | Durable participant journal |
 | [Participant](participant.md) | Prepare, commit, abort and status of effects |
 | [Recovery](recovery.md) | Resolving prepared operations before admitting work |
+| [Check](check.md) | Requester judgement of byte checks from private expectations |
 | [Provider](provider.md) | Store assessment before the body and durable commit |
 | [Staging](staging.md) | Bounded reservations for incoming payloads |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
