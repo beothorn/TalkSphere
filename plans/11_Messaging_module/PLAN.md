@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-24 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-25 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -34,7 +34,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **22.** Implement guarded renewal for pending and recovered placements.
 - [x] **23.** Quote early-release credits before removal.
 - [x] **24.** Settle the removal charge and release credits once in one recoverable decision.
-- [ ] **25.** Retain removal replay results for the lifetime of the ledger.
+- [x] **25.** Retain removal replay results for the lifetime of the ledger.
 - [ ] **26.** Implement authorized paid byte evidence for pending placements.
 - [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
@@ -353,6 +353,8 @@ Completed: Ledger `issue_release` ([release](../../src/modules/ledger/release.md
 Persist removal results so an exact retry after a lost reply or restart returns
 the identical output without applying either ledger change again, beyond the
 placement's expiry. Test the replay part of MS-12.
+
+Completed: `Provider::remove` answers a repeat with the recorded removal (the record already persists the removal ID, credits and price, which step 28 must keep as a tombstone).
 
 ### 26. Implement authorized paid byte evidence for pending placements
 

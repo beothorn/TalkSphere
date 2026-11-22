@@ -1115,3 +1115,59 @@ fn removal_refusals_issue_nothing() {
     assert_eq!(h.store.record(p).unwrap().state, State::Pending);
     assert!(issuer.issued().is_empty());
 }
+
+// MS-12 replay: an exact retry of a completed removal (same removal ID, a new operation, after the placement's expiry, and after a
+// restart onto the same durable store) returns the identical output and issues nothing again; another removal ID or sender gets nothing.
+#[test]
+fn ms_12_an_exact_removal_retry_returns_the_recorded_result() {
+    let h = harness();
+    let (provider, issuer) = removing(&h, 50);
+    let stored = provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let p = stored.placement_id;
+    let first = provider
+        .remove(key(2), h.sender.identity(), removal(p, 1010, 4))
+        .unwrap();
+    let retry = provider
+        .remove(key(3), h.sender.identity(), removal(p, 1010, 4))
+        .unwrap();
+    assert_eq!(retry, first);
+    assert_eq!(
+        provider.participant().status(key(3)),
+        super::super::participant::Status::Absent,
+        "nothing was prepared"
+    );
+    h.clock.set(5000);
+    assert_eq!(
+        provider
+            .remove(key(4), h.sender.identity(), removal(p, 1010, 4))
+            .unwrap(),
+        first,
+        "beyond the expiry"
+    );
+    // A restarted participant over the same store (and a fresh issuer that remembers nothing) answers from the record alone.
+    let (restarted, fresh) = removing(&h, 50);
+    assert_eq!(
+        restarted
+            .remove(key(5), h.sender.identity(), removal(p, 1010, 4))
+            .unwrap(),
+        first
+    );
+    assert!(fresh.issued().is_empty());
+    assert_eq!(issuer.issued().len(), 1);
+    let mut other_id = removal(p, 1010, 4);
+    other_id.removal_id = super::super::ids::RemovalId([9; 32]);
+    assert_eq!(
+        restarted
+            .remove(key(6), h.sender.identity(), other_id)
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        restarted
+            .remove(key(7), h.recipient.identity(), removal(p, 1010, 4))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+}

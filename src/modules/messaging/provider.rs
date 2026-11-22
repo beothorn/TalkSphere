@@ -529,6 +529,27 @@ impl Provider {
 }
 
 impl Provider {
+    // The recorded result of this exact removal, if the sender repeats it: the placement is removed with the same removal ID. It is
+    // answered from the durable record, with nothing applied again and no expiry check, so a lost reply can be recovered for as
+    // long as the record is kept. A different removal ID gets no answer here and falls through to the normal refusal.
+    fn recorded_removal(&self, caller: IdentityId, input: &RemoveInput) -> Option<RemoveOutput> {
+        let record = self.participant.store().record(input.placement_id)?;
+        let removal = record.removal?;
+        if record.state != State::Removed
+            || record.metadata.sender_id != caller
+            || removal.removal_id != input.removal_id
+        {
+            return None;
+        }
+        Some(RemoveOutput {
+            placement_id: record.id,
+            removal_id: removal.removal_id,
+            removed: true,
+            release_credits: removal.release_credits,
+            price: removal.price,
+        })
+    }
+
     /// End a pending placement early for its sender: the quote fixes the exact release credits and removal price, then the
     /// participant records the removal and issues the credits exactly once under this operation's key, so recovery can finish an
     /// interrupted settlement without issuing them twice.
@@ -542,6 +563,9 @@ impl Provider {
         input: RemoveInput,
     ) -> Result<RemoveOutput, Error> {
         tracing::trace!("Removing a pending placement for its sender");
+        if let Some(done) = self.recorded_removal(caller, &input) {
+            return Ok(done);
+        }
         let quote = self.quote_removal(caller, &input)?;
         let effect = Effect::Remove {
             input,
