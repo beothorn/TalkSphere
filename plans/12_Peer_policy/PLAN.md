@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-11 are complete.
+Status: in progress; steps 1-12 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -27,7 +27,7 @@ large simulations without touching protocol code.
 - [x] **9.** Send requests to a peer over the connection that peer opened.
 - [x] **10.** Keep client connections alive with pings and bounded reconnects.
 - [x] **11.** Grant finite bootstrap credits and trust by policy.
-- [ ] **12.** Publish wanted Storage terms and issue earned credits by policy.
+- [x] **12.** Publish wanted Storage terms and issue earned credits by policy.
 - [ ] **13.** Adjust trust from verified contributions and failures by policy.
 - [ ] **14.** Maintain replica sets at a policy target across independent peers.
 - [ ] **15.** Schedule staggered checks, renewals and repairs by policy.
@@ -217,6 +217,8 @@ Publish wanted Storage terms from policy and accept clients' offers to fulfil
 them over their own connections, issuing the agreed credits once the store
 succeeds. Uses the existing library support for wanted Storage. Test issuance
 exactly once, budget exhaustion and a restart during issuance.
+
+Completed: [Wanted](../../src/composition/node/wanted.md): the Board publishes `storage-wanted` from `credit.wanted`, `Work` is the publisher policy and a completion thread validates and catalogs each contribution. A process test shows a client earning exactly the published credits, the server keeping the lease, a second contribution refused by the finite issuance budget without charge, and state surviving a restart. A crash in the middle of issuance relies on the library's coordinator recovery tests; it is not repeated at process level. The client journey plan's `storage fulfil` is the `fulfil` command added here.
 
 ### 13. Adjust trust from verified contributions and failures by policy
 

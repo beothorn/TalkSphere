@@ -16,6 +16,7 @@ use crate::{
             catalog::Entry,
             link::Link,
             owners::{BUDGET, Owners},
+            wanted::Refusal,
         },
         server::pump::Signal,
     },
@@ -170,6 +171,29 @@ impl Handler {
         Ok(json!({"trust": millionths, "peer": text::format(peer)}))
     }
 
+    // Queue one object for the next client that fulfils this node's wanted Storage terms.
+    fn wanted_add(&self, request: &Request) -> Result<Value, ControlError> {
+        tracing::trace!("Queueing wanted work");
+        let work = self.owners.wanted.as_ref().ok_or_else(|| {
+            ControlError::new(
+                Code::Refused,
+                "this node publishes no wanted Storage offering",
+            )
+        })?;
+        let data = request.bytes(
+            "data",
+            crate::composition::node::config::MAXIMUM_OBJECT_BYTES as usize,
+        )?;
+        let queued = work.enqueue(data).map_err(|refusal| match refusal {
+            Refusal::Empty => ControlError::new(Code::Invalid, "data must not be empty"),
+            Refusal::TooLarge => {
+                ControlError::new(Code::Limit, "the object exceeds the wanted terms")
+            }
+            Refusal::Full => ControlError::new(Code::Limit, "the wanted backlog is full"),
+        })?;
+        Ok(json!({"queued": queued}))
+    }
+
     // Issuer-separated local view for one peer.
     fn balance_of(&self, peer: IdentityId) -> Result<Value, ControlError> {
         tracing::trace!("Reading a peer balance view");
@@ -209,6 +233,10 @@ impl Handler {
             "provider": self.owners.provider, "leases": entries.len(),
             "unknownOutcomes": self.journal.unknown().len(), "balances": balances,
             "stopping": self.signal.stopping(),
+            "wanted": self.owners.wanted.as_ref().map(|w| {
+                let (queued, in_flight) = w.counts();
+                json!({"queued": queued, "inFlight": in_flight})
+            }),
             "connections": self.link.peers().count(),
             "connectedPeers": self.link.peers().peers().into_iter().map(text::format).collect::<Vec<_>>(),
         }))
@@ -274,7 +302,8 @@ impl Execute for Handler {
             "balance" => self.balance(request),
             "leases" => Ok(self.leases()),
             "outcomes" => self.outcomes(request),
-            "fetch" | "store" | "retrieve" | "renew" | "check" | "remove" => {
+            "wanted-add" => self.wanted_add(request),
+            "fetch" | "fulfil" | "store" | "retrieve" | "renew" | "check" | "remove" => {
                 self.peer_operation(request)
             }
             _ => Err(ControlError::new(

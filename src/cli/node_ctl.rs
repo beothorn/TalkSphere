@@ -16,6 +16,8 @@ const ACTIONS: &[(&str, &[&str], &[&str])] = &[
     ("trust", &["--peer", "--millionths"], &[]),
     ("balance", &["--peer"], &[]),
     ("fetch", &["--contact"], &[]),
+    ("fulfil", &["--contact"], &[]),
+    ("wanted-add", &["--file"], &[]),
     (
         "store",
         &["--contact", "--file", "--retention-seconds", "--max-spend"],
@@ -289,6 +291,12 @@ mod tests {
         assert_eq!(ok.action, "store");
         assert_eq!(ok.options["--max-spend"], "9");
         assert!(parse(&words("--node-root r status")).is_ok());
+        // The wanted-Storage actions take exactly their one required option.
+        assert!(parse(&words("--node-root r fulfil --contact c")).is_ok());
+        assert!(parse(&words("--node-root r wanted-add --file f")).is_ok());
+        assert!(parse(&words("--node-root r fulfil")).is_err());
+        assert!(parse(&words("--node-root r wanted-add")).is_err());
+        assert!(parse(&words("--node-root r wanted-add --file f --max-spend 1")).is_err());
         assert!(parse(&words("--node-root r outcomes --unknown")).is_ok());
         for bad in [
             "",

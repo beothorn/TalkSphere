@@ -9,7 +9,7 @@ use crate::{
     composition::node::{
         catalog::Entry,
         control::protocol::{Code, ControlError, Request, hex},
-        offering::OFFERING_ID,
+        offering::{OFFERING_ID, WANTED_ID},
     },
     modules::{
         identity::{
@@ -21,6 +21,7 @@ use crate::{
             engine::endpoint::{
                 cache::PeerCache,
                 requests::{Ceiling, Challenge, Invocation, Plan, Reply},
+                wanted::Invitation,
             },
         },
         services::{
@@ -54,6 +55,7 @@ impl Handler {
         let mut lease = None;
         let result = match request.op.as_str() {
             "fetch" => self.fetch(request, start),
+            "fulfil" => self.fulfil(request, start),
             "store" => self.store(request, start, &mut lease),
             "retrieve" => self.retrieve(request, start, &mut lease),
             "renew" => self.renew(request, start, &mut lease),
@@ -94,6 +96,54 @@ impl Handler {
             self.link.retain_cache(peer_id, cache);
         }
         Ok(json!({"publisher": text::format(peer_id), "provided": provided}))
+    }
+
+    // Offer to fulfil the peer's wanted Storage terms over a fresh authenticated session: the peer, as
+    // requester, chooses the object and pays in its own credits, which this node records only after the
+    // provider-side commit. Nothing is spent here; the reply shows the resulting balances.
+    fn fulfil(&self, request: &Request, start: Instant) -> Result<Value, ControlError> {
+        tracing::trace!("Offering to fulfil wanted Storage terms");
+        let contact = parse_contact(request.text("contact")?)?;
+        let peer_id = contact.expected_id;
+        self.link
+            .connect(peer_id, contact.endpoint, self.remaining(start)?)
+            .map_err(|m| ControlError::new(Code::Unavailable, m))?;
+        let cache = self.fresh_cache()?;
+        let reply = self.exchange(&contact, peer_id, Plan::Board(cache.clone()), start, false)?;
+        let Reply::Metadata(remote) = reply else {
+            return Err(ControlError::new(Code::Refused, "the peer sent no Board"));
+        };
+        let board: Value = serde_json::from_slice(remote.bytes())
+            .map_err(|_| ControlError::new(Code::Refused, "the peer Board is not valid JSON"))?;
+        let wanted = board["wantedServices"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        if !wanted.iter().any(|o| o["id"] == WANTED_ID) {
+            return Err(ControlError::new(
+                Code::Refused,
+                "the peer publishes no wanted Storage offering",
+            ));
+        }
+        let plan = Plan::Definition {
+            cache: cache.clone(),
+            offering: WANTED_ID.into(),
+        };
+        self.exchange(&contact, peer_id, plan, start, false)?;
+        let selection = cache
+            .selection(peer_id, WANTED_ID, "cr2se.storage", 1)
+            .map_err(|_| ControlError::new(Code::Refused, "the wanted offering is not current"))?;
+        let plan = Plan::Offer(Box::new(Invitation { selection, cache }));
+        let Reply::Work(_) = self.exchange(&contact, peer_id, plan, start, true)? else {
+            return Err(ControlError::new(
+                Code::Refused,
+                "the peer returned no work result",
+            ));
+        };
+        Ok(json!({
+            "publisher": text::format(peer_id), "fulfilled": true,
+            "balance": self.balance_of(peer_id)?,
+        }))
     }
 
     // Store a local object within an explicit spending bound and catalog the validated lease.

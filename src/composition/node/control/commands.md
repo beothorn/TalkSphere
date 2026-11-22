@@ -23,3 +23,5 @@ An exchange that was opened and then lost is reported as `unknown_outcome`, reco
 never retried or replaced by another store. A local spending refusal at the quote is raised before
 acceptance and is reported as `insufficient`. Only Storage operations exist; other optional families
 return `unsupported`.
+
+`wanted-add` queues one object for the next client that fulfils this node's [wanted offering](../wanted.md); `fulfil` offers to fulfil a peer's wanted terms. `status` also reports the wanted queue.

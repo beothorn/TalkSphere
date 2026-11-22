@@ -134,6 +134,21 @@ pub fn run<G>(
         listen: ready.address,
     })?;
     owners.observations.age_out(owners::unix_seconds());
+    // Completions of wanted work are handled on their own thread, until the loop has drained.
+    let finished = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let completions = owners
+        .wanted_completions
+        .lock()
+        .ok()
+        .and_then(|mut r| r.take());
+    let drainer = completions.map(|receiver| {
+        let (owners, finished) = (owners.clone(), finished.clone());
+        std::thread::spawn(move || {
+            super::wanted::drain(&owners, &receiver, || {
+                finished.load(std::sync::atomic::Ordering::SeqCst)
+            });
+        })
+    });
     let result = drive(
         &mut transport,
         &mut bridge,
@@ -148,6 +163,10 @@ pub fn run<G>(
         &signal,
         &mut report,
     );
+    finished.store(true, std::sync::atomic::Ordering::SeqCst);
+    if let Some(drainer) = drainer {
+        let _ = drainer.join();
+    }
     if owners.observations.flush().is_err() {
         tracing::warn!(
             "Peer observations could not be written at shutdown; recent events are lost"

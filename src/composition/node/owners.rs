@@ -12,8 +12,9 @@ use super::{
     layout::Layout,
     observation_store::FileObservations,
     offering::{self, Prepared},
+    wanted,
 };
-use crate::composition::policy::{Configured, Params, PeerView, Policy};
+use crate::composition::policy::{Configured, Event, Kind, Params, PeerView, Policy};
 use crate::modules::{
     board,
     identity::api::IdentityId,
@@ -24,7 +25,7 @@ use crate::modules::{
 };
 use std::{
     collections::BTreeMap,
-    sync::Arc,
+    sync::{Arc, Mutex, mpsc::Receiver},
     time::{Duration, Instant},
 };
 
@@ -74,6 +75,10 @@ pub struct Owners {
     pub policy: Policy,
     /// Durable per-peer observations that policy decisions read.
     pub observations: Arc<FileObservations>,
+    /// Wanted Storage work source, present when policy publishes wanted terms.
+    pub wanted: Option<Arc<wanted::Work>>,
+    /// Receiver of wanted-work completions, taken once by the runtime's completion handler.
+    pub wanted_completions: Mutex<Option<Receiver<peer::engine::endpoint::requests::Completion>>>,
     board: Arc<board::state::Provider>,
     board_authority: Arc<board::authority::Authority>,
     prepared: Prepared,
@@ -127,7 +132,12 @@ pub fn open(
         .map_err(stage("Services registry"))?,
     );
     let clock = Arc::new(NativeClock::new()?);
-    let prepared = offering::prepare(local, config.offering.as_ref(), &catalogue)?;
+    let prepared = offering::prepare(
+        local,
+        config.offering.as_ref(),
+        params.credit.wanted.as_ref(),
+        &catalogue,
+    )?;
     let catalog = Arc::new(
         if create {
             FileCatalog::create(&layout.catalog(), local)
@@ -253,6 +263,20 @@ pub fn open(
         peer::admission::LedgerGate::new(local, account.clone(), read, policy)
             .map_err(stage("Ledger admission"))?,
     );
+    let work = params
+        .credit
+        .wanted
+        .map(|terms| Arc::new(wanted::Work::new(terms)));
+    let (completed, completions) = std::sync::mpsc::sync_channel(64);
+    let publisher = work
+        .as_ref()
+        .map(|work| peer::engine::endpoint::wanted::Publisher {
+            policy: work.clone(),
+            consent: Arc::new(peer::engine::endpoint::requests::Ceiling(
+                work.terms().credits_per_object,
+            )),
+            completed,
+        });
     let endpoint = Endpoint::new(peer::engine::endpoint::Config {
         local,
         authority: Arc::new(peer::authority::Authority::new()),
@@ -266,7 +290,7 @@ pub fn open(
         gate: admission,
         transfer_policy: Arc::new(peer::ledger_control::transfer::Fixed(config.credits.fee)),
         claims: None,
-        wanted: None,
+        wanted: publisher,
         resources: Default::default(),
         limits: peer::contract::Limits {
             exchanges: 8,
@@ -285,6 +309,8 @@ pub fn open(
         policy: peer_policy,
         params,
         observations,
+        wanted: work,
+        wanted_completions: Mutex::new(work_receiver(completions, params.credit.wanted.is_some())),
         config,
         endpoint,
         registry,
@@ -297,6 +323,14 @@ pub fn open(
         board_authority,
         prepared,
     })
+}
+
+// Keep the completion receiver only when wanted work exists; otherwise nothing will ever arrive.
+fn work_receiver(
+    completions: Receiver<peer::engine::endpoint::requests::Completion>,
+    wanted: bool,
+) -> Option<Receiver<peer::engine::endpoint::requests::Completion>> {
+    wanted.then_some(completions)
 }
 
 /// Current Unix time in whole seconds, or zero when the system clock is before the epoch.
@@ -335,6 +369,55 @@ impl Owners {
             trust_millionths: trust,
             summary: self.observations.summary(peer),
             now_seconds: now,
+        }
+    }
+
+    /// Record a verified observation about `peer` and let the trust policy adjust local trust from it.
+    /// Trust only changes when the policy returns a new value; failures to apply are logged, never raised,
+    /// because the observation itself already happened.
+    pub fn observe(&self, peer: IdentityId, event: Event) {
+        tracing::trace!("Recording a verified peer observation");
+        let now = unix_seconds();
+        let kind = match event {
+            Event::CheckPassed => Kind::CheckPassed,
+            Event::CheckFailed => Kind::CheckFailed,
+            Event::ContributionVerified => Kind::ContributionVerified,
+            Event::Failed => Kind::Failed,
+        };
+        self.observations.record(peer, kind, now);
+        let view = self.peer_view(peer, now);
+        let Some(millionths) = self.policy.trust.adjust(&view, event) else {
+            return;
+        };
+        let applied = ledger::accounting::Trust::new(millionths)
+            .map_err(|e| format!("{e:?}"))
+            .and_then(|trust| {
+                let grant = self
+                    .ledger_authority
+                    .grant(
+                        self.local,
+                        ledger::authority::Action::Administer,
+                        GRANT_BYTES,
+                    )
+                    .map_err(|e| format!("{e:?}"))?;
+                self.account
+                    .set_trust(
+                        &ledger::contract::Context {
+                            version: 1,
+                            grant: &grant,
+                            deadline: Instant::now() + Duration::from_secs(5),
+                            cancelled: false,
+                        },
+                        peer,
+                        trust,
+                    )
+                    .map_err(|e| format!("{e:?}"))
+            });
+        if let Err(error) = applied {
+            tracing::warn!(
+                error,
+                "A trust adjustment decided by policy could not be applied"
+            );
         }
     }
 
@@ -404,6 +487,10 @@ impl Owners {
         } else {
             BTreeMap::new()
         };
+        let mut definitions = definitions;
+        if let Some(bytes) = &self.prepared.wanted_definition_bytes {
+            definitions.insert(offering::WANTED_ID.to_string(), bytes.clone());
+        }
         let candidate = board::prepared::Prepared::new(
             self.local,
             &self.prepared.board,

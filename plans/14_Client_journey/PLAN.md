@@ -104,7 +104,7 @@ contact with an invalid or missing credential.
 ### 4. Let client nodes earn server credits by providing Storage over their own connections
 
 Configure the server's wanted Storage through peer policy and let a client
-fulfil it over its outbound connection, receiving server-issued credits once.
+fulfil it over its outbound connection (`node-ctl fulfil`, added by peer policy step 12), receiving server-issued credits once.
 Test earning, budget exhaustion and a client disconnecting mid-store.
 
 ### 5. Back up server-hosted data as replica sets at connected clients

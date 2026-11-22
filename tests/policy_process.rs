@@ -323,3 +323,80 @@ fn bootstrap_policy_grants_once_per_identity_within_the_budget() {
     assert_eq!(issued(&provider, &peers[1]), 150);
     assert_eq!(issued(&provider, &peers[2]), 0);
 }
+
+// A server that wants Storage pays a client in its own credits for holding one queued object: the client
+// fulfils the wanted offering over its own connection and earns exactly the published credits, the server
+// keeps the lease as one of its replicas, a second offer with nothing queued does nothing, and a finite
+// issuance budget stops further contributions without charge. Everything survives a server restart.
+#[test]
+fn a_client_earns_credits_by_fulfilling_wanted_storage() {
+    let dir = Dir::new("wanted");
+    let mut server = Node::init(
+        &dir.0,
+        "server",
+        Some(r#"{"version":1,"credits":{"issuance":8}}"#),
+    );
+    let mut client = Node::init(&dir.0, "client", None);
+    server.set_policy(
+        r#"{"version":1,"credit":{"wanted":{"creditsPerObject":5,"maximumObjectBytes":1024,"retentionSeconds":300}}}"#,
+    );
+    let port = free_port();
+    server.start(Some(port));
+    client.start(None);
+    let contact = server.contact(port);
+    let (first, second) = (dir.0.join("first"), dir.0.join("second"));
+    std::fs::write(&first, b"replica one").unwrap();
+    std::fs::write(&second, b"replica two").unwrap();
+    // Without a wanted offering a node refuses to queue work.
+    assert!(
+        client
+            .ctl(&["wanted-add", "--file", first.to_str().unwrap()])
+            .is_err()
+    );
+    assert_eq!(server.ctl(&["status"]).unwrap()["wanted"]["queued"], 0);
+    server
+        .ctl(&["wanted-add", "--file", first.to_str().unwrap()])
+        .unwrap();
+    server
+        .ctl(&["wanted-add", "--file", second.to_str().unwrap()])
+        .unwrap();
+    // The provider of the contribution must trust the publisher whose credits it will hold.
+    client
+        .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+        .unwrap();
+    let fulfilled = client.ctl(&["fulfil", "--contact", &contact]).unwrap();
+    assert_eq!(fulfilled["fulfilled"], true);
+    assert_eq!(number(&balance(&client, &server), "owned"), 5);
+    // The server settles and catalogs the replica after the client's exchange ends.
+    eventually(
+        "the server never settled and cataloged the replica",
+        Duration::from_secs(10),
+        || {
+            let status = server.ctl(&["status"]).unwrap();
+            status["wanted"]["inFlight"] == 0
+                && server
+                    .ctl(&["leases"])
+                    .unwrap()
+                    .as_array()
+                    .is_some_and(|l| l.len() == 1)
+        },
+    );
+    assert_eq!(number(&balance(&server, &client), "issued"), 5);
+    let leases = server.ctl(&["leases"]).unwrap();
+    assert_eq!(leases[0]["provider"].as_str().unwrap(), client.id);
+    assert_eq!(number(&leases[0], "storePrice"), 5);
+    assert_eq!(server.ctl(&["status"]).unwrap()["wanted"]["queued"], 1);
+    // The finite issuance budget (8) cannot cover a second contribution of 5: nothing is charged.
+    let refused = client.ctl(&["fulfil", "--contact", &contact]).unwrap_err();
+    assert!(!refused.is_empty());
+    assert_eq!(number(&balance(&client, &server), "owned"), 5);
+    assert_eq!(number(&balance(&server, &client), "issued"), 5);
+    // State survives a server restart.
+    server.crash();
+    server.start(Some(port));
+    assert_eq!(number(&balance(&server, &client), "issued"), 5);
+    assert_eq!(
+        server.ctl(&["leases"]).unwrap().as_array().unwrap().len(),
+        1
+    );
+}

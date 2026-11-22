@@ -15,6 +15,7 @@ It is Linux-only and does not change the ordinary `serve` composition.
 | [Observation store](observation_store.md) | Durable bounded per-peer observations for peer policy |
 | [Peers](peers.md) | Registry of authenticated live connections by peer |
 | [Link](link.md) | Command queue between control workers and the node loop |
+| [Wanted](wanted.md) | Wanted Storage offering, work source and completion handling |
 | [Upkeep](upkeep.md) | Reconnect and ping schedule for the client profile |
 | [Runtime](runtime.md) | Startup order, event loop and shutdown drain |
 | [Control](control/mod.md) | Owner-only local control socket and commands |
