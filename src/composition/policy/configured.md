@@ -14,5 +14,5 @@
   so the caller refuses).
 - **Redundancy**: target as configured; holders chosen among connected non-holders by fewest recorded failures,
   then highest trust, then input order; the next check is one interval after the last plus an offset of
-  `staggerPercent` of the interval times the replica index modulo ten, divided by ten. Saturates at `u64::MAX`.
+  `staggerPercent` of the interval times the replica index modulo ten, divided by ten. Saturates at `u64::MAX`. The renewal lead time, the maintenance spending bound and the retry delay are the configured values.
 - **Connection**: ping interval and timeout as configured; reconnect delay doubles from one second to the cap.

@@ -557,3 +557,143 @@ fn a_hosted_item_is_replicated_to_distinct_clients_up_to_the_target() {
     server.start(Some(port));
     assert_eq!(confirmed(&server), 2);
 }
+
+// The server's policy for the maintenance tests: a short retention, fast checks and early renewal.
+const MAINTENANCE_POLICY: &str = r#"{"version":1,
+    "credit":{"wanted":{"creditsPerObject":5,"maximumObjectBytes":1024,"retentionSeconds":12}},
+    "redundancy":{"target":1,"checkSeconds":3,"staggerPercent":0,"renewBeforeSeconds":6,"maxSpend":1000,"retrySeconds":1},
+    "trust":{"checkFailed":300000,"checkPassed":100000,"ceiling":900000}}"#;
+
+// The first replica of the first hosted item, as the server lists it.
+fn first_replica(server: &Node) -> Option<serde_json::Value> {
+    server.ctl(&["replicas"]).ok()?["items"][0]["replicas"]
+        .get(0)
+        .cloned()
+}
+
+// Place one hosted item at `client` and give the server the holder's credits to pay for maintenance.
+fn host_one_item(dir: &Dir, server: &Node, client: &Node, contact: &str) {
+    let item = dir.0.join("item");
+    std::fs::write(&item, b"maintained replica bytes").unwrap();
+    server
+        .ctl(&["replica-add", "--file", item.to_str().unwrap()])
+        .unwrap();
+    client
+        .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+        .unwrap();
+    client.ctl(&["fulfil", "--contact", contact]).unwrap();
+    eventually(
+        "the replica was never confirmed",
+        Duration::from_secs(10),
+        || first_replica(server).is_some(),
+    );
+    // The holder's own credits pay for its checks and renewals; the operator funds them explicitly.
+    fund(client, server, 5000);
+}
+
+// Due checks and renewals are performed over the holder's own connection and paid in its credits: a
+// passed check records the time, a renewal extends the retention before it ends, and the replica stays
+// counted throughout.
+#[test]
+fn replicas_are_checked_and_renewed_before_they_expire() {
+    let dir = Dir::new("maintain");
+    let mut server = Node::init(&dir.0, "server", None);
+    let mut client = Node::init(&dir.0, "client", None);
+    server.set_policy(MAINTENANCE_POLICY);
+    let port = free_port();
+    server.start(Some(port));
+    client.start(None);
+    host_one_item(&dir, &server, &client, &server.contact(port));
+    let confirmed = first_replica(&server).unwrap();
+    let first_expiry = number(&confirmed, "expiresAt");
+    eventually(
+        "the replica was never checked",
+        Duration::from_secs(20),
+        || first_replica(&server).is_some_and(|r| !r["lastChecked"].is_null()),
+    );
+    eventually(
+        "the replica was never renewed",
+        Duration::from_secs(30),
+        || first_replica(&server).is_some_and(|r| number(&r, "expiresAt") >= first_expiry + 12),
+    );
+    // Maintenance was paid for in the holder's credits, never for free.
+    assert!(number(&balance(&server, &client), "owned") < 5000);
+    assert_eq!(
+        server.ctl(&["replicas"]).unwrap()["items"][0]["confirmed"],
+        1
+    );
+}
+
+// A replica whose holder never answers is not renewed and reaches the end of its retention: it stops
+// counting, the item needs another copy, and the next client that offers receives it.
+#[test]
+fn an_unreachable_holder_expires_and_the_item_is_replicated_again() {
+    let dir = Dir::new("expire");
+    let mut server = Node::init(&dir.0, "server", None);
+    let (mut gone, mut other) = (
+        Node::init(&dir.0, "gone", None),
+        Node::init(&dir.0, "other", None),
+    );
+    server.set_policy(MAINTENANCE_POLICY);
+    let port = free_port();
+    server.start(Some(port));
+    gone.start(None);
+    other.start(None);
+    let contact = server.contact(port);
+    host_one_item(&dir, &server, &gone, &contact);
+    other
+        .ctl(&["trust", "--peer", &server.id, "--millionths", "1"])
+        .unwrap();
+    // The only copy is at a holder that disappears: it cannot be renewed or checked.
+    gone.crash();
+    eventually(
+        "the unreachable replica never expired",
+        Duration::from_secs(40),
+        || first_replica(&server).is_none(),
+    );
+    assert_eq!(
+        server.ctl(&["replicas"]).unwrap()["items"][0]["confirmed"],
+        0
+    );
+    // The item needs a copy again and goes to the next client that offers.
+    other.ctl(&["fulfil", "--contact", &contact]).unwrap();
+    eventually(
+        "the replacement was never confirmed",
+        Duration::from_secs(10),
+        || {
+            first_replica(&server)
+                .is_some_and(|r| r["provider"].as_str() == Some(other.id.as_str()))
+        },
+    );
+}
+
+// A replica that fails a conclusive check stops counting and lowers the holder's trust by the policy
+// step; the failure is produced by changing the bytes the server expects, so the holder's copy no
+// longer matches.
+#[test]
+fn a_failed_check_removes_the_replica_and_lowers_trust() {
+    let dir = Dir::new("failcheck");
+    let mut server = Node::init(&dir.0, "server", None);
+    let mut client = Node::init(&dir.0, "client", None);
+    server.set_policy(MAINTENANCE_POLICY);
+    let port = free_port();
+    server.start(Some(port));
+    client.start(None);
+    host_one_item(&dir, &server, &client, &server.contact(port));
+    let id = server.ctl(&["replicas"]).unwrap()["items"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    // Corrupt the server's local sealed bytes, keeping their length, before the next check samples them.
+    let sealed = server.root.join("replicas").join(format!("{id}.sealed"));
+    let bytes: Vec<u8> = std::fs::read(&sealed).unwrap().iter().map(|b| !b).collect();
+    std::fs::write(&sealed, bytes).unwrap();
+    eventually(
+        "the failed check never removed the replica",
+        Duration::from_secs(30),
+        || first_replica(&server).is_none(),
+    );
+    // The failed check is evidence about the holder: its trust fell by the configured step (from the explicit
+    // trust the operator set when funding, floored at zero).
+    assert_eq!(number(&balance(&server, &client), "trust"), 0);
+}

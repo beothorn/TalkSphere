@@ -161,6 +161,12 @@ pub trait Redundancy: Send + Sync {
     -> Vec<IdentityId>;
     /// Unix time of the next check for the `index`-th replica after `last_checked`.
     fn next_check(&self, last_checked: u64, index: usize) -> u64;
+    /// Remaining retention, in seconds, at or below which a replica is renewed.
+    fn renew_before_seconds(&self) -> u64;
+    /// Most credits one check or renewal may cost.
+    fn max_spend(&self) -> u64;
+    /// Seconds to wait before retrying a check or renewal that could not be completed.
+    fn retry_seconds(&self) -> u64;
 }
 
 /// Chooses connection upkeep.

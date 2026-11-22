@@ -54,3 +54,7 @@ first grant (`credit.bootstrapCredits` with `credit.bootstrapTrust`), once per i
 recorded durably in the observation store before the Ledger changes, so a crash can lose a grant but never repeat one,
 and a restarted node never grants twice. Trust is only raised, never lowered below what the operator set. The peer must
 still record the credits it holds and trust the issuer on its own side. Bootstrap is off unless the policy sets credits.
+
+## Replica maintenance
+
+Starting local control also starts the [replica maintenance loop](replicas/maintain.md); dropping the control guard stops it before peer work drains.

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-14 are complete.
+Status: in progress; steps 1-15 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -30,7 +30,7 @@ large simulations without touching protocol code.
 - [x] **12.** Publish wanted Storage terms and issue earned credits by policy.
 - [x] **13.** Adjust trust from verified contributions and failures by policy.
 - [x] **14.** Maintain replica sets at a policy target across independent peers.
-- [ ] **15.** Schedule staggered checks, renewals and repairs by policy.
+- [x] **15.** Schedule staggered checks, renewals and repairs by policy.
 - [ ] **16.** Report replica-set state using the CR2SE redundancy states.
 - [ ] **17.** Add local commands to inspect policy decisions and their inputs.
 - [ ] **18.** Add a deterministic multi-peer simulation harness using real modules.
@@ -245,6 +245,8 @@ Schedule paid checks, renewals and replacement copies so they never fall due
 together, calling clients over their live connections. An inconclusive check
 never counts as proof of another copy. Test staggering, repair below target and
 behavior when no client is connected.
+
+Completed: [Maintenance](../../src/composition/node/replicas/maintain.md): a pure planner and a one-second loop perform due checks and renewals over the holders' live connections, paid in their credits within `redundancy.maxSpend`, with expiry and conclusive failures dropping the replica. New redundancy parameters: `renewBeforeSeconds`, `maxSpend`, `retrySeconds`; `checkSeconds` may now be as low as one second so it can be exercised. The server cannot push a replacement to a client: repair means the dropped item is offered to the next client that fulfils the wanted offering. Process tests cover check and renewal, an unreachable holder expiring and the item being replicated again, and a failed check removing the replica and lowering trust.
 
 ### 16. Report replica-set state using the CR2SE redundancy states
 

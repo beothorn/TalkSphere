@@ -11,5 +11,6 @@ owner-only, the directory 0700).
   (oldest first) that the provider neither holds nor has reserved and whose sealed size fits; returns its ID and sealed bytes.
 - `release(id, provider)`: gives a reservation back. `confirm(id, replica)`: records a validated replica and ends the
   reservation; refused for an unknown item, a repeated holder or the replica bound.
+- `drop_replica(id, provider)`: forget a replica (expired or failed a check) so the item needs another copy; `update_replica(id, provider, change)`: change its expiry or last check (the holder and lease never change).
 - `sealed(id)`, `get(id)`, `list()`: reads; a missing or wrong-sized sealed file is `Corrupt`, never returned.
 - A corrupt, duplicated, oversized (over 4 MiB) or unknown-member book file is refused and left untouched.

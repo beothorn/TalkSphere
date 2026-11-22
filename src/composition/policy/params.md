@@ -24,8 +24,11 @@ invalid file. Changes take effect at the next start.
 | `credit.wanted` | wanted Storage terms (`creditsPerObject`, `maximumObjectBytes`, `retentionSeconds`, all positive) or `null` | `null` | |
 | `credit.releasePercent` | early-release share of cumulative payments | 0 | 0..100 |
 | `redundancy.target` | independent confirmed copies wanted | 2 | 1..64 |
-| `redundancy.checkSeconds` | seconds between checks of one replica | 3600 | 60..31536000 |
+| `redundancy.checkSeconds` | seconds between checks of one replica | 3600 | 1..31536000 |
 | `redundancy.staggerPercent` | per-replica offset as a share of the interval | 10 | 0..90 |
+| `redundancy.renewBeforeSeconds` | a replica is renewed once this much retention is left | 600 | 1..31536000 |
+| `redundancy.maxSpend` | most credits one check or renewal may cost, in the holder's credits | 100 | 1..2^64-1 |
+| `redundancy.retrySeconds` | wait before retrying a check or renewal that could not be completed | 60 | 1..86400 |
 | `connection.pingSeconds` | idle ping interval | 30 | 1..3600 |
 | `connection.pingTimeoutSeconds` | wait for a pong; at most `pingSeconds` | 10 | 1..3600 |
 | `connection.reconnectMaxSeconds` | largest reconnect delay | 60 | 1..3600 |

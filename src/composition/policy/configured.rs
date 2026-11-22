@@ -161,6 +161,18 @@ impl Redundancy for Configured {
             .saturating_add(r.check_seconds)
             .saturating_add(stagger)
     }
+    fn renew_before_seconds(&self) -> u64 {
+        tracing::trace!("Reading the renewal lead time");
+        self.params.redundancy.renew_before_seconds
+    }
+    fn max_spend(&self) -> u64 {
+        tracing::trace!("Reading the maintenance spending bound");
+        self.params.redundancy.max_spend
+    }
+    fn retry_seconds(&self) -> u64 {
+        tracing::trace!("Reading the maintenance retry delay");
+        self.params.redundancy.retry_seconds
+    }
 }
 
 impl Connection for Configured {

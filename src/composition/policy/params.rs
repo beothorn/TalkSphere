@@ -90,6 +90,12 @@ pub struct RedundancyParams {
     pub check_seconds: u64,
     /// Offset per replica index, in percent of the check interval, up to 90.
     pub stagger_percent: u32,
+    /// A replica is renewed once it has this many seconds of retention left.
+    pub renew_before_seconds: u64,
+    /// Most credits one check or renewal may cost, in the holder's credits.
+    pub max_spend: u64,
+    /// Seconds to wait before trying a check or renewal again after it could not be completed.
+    pub retry_seconds: u64,
 }
 /// Connection upkeep.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -151,6 +157,9 @@ impl Default for Params {
                 target: 2,
                 check_seconds: 3600,
                 stagger_percent: 10,
+                renew_before_seconds: 600,
+                max_spend: 100,
+                retry_seconds: 60,
             },
             connection: ConnectionParams {
                 ping_seconds: 30,
@@ -266,8 +275,39 @@ impl Params {
         if let Some(s) = section(&root, "redundancy")? {
             names(
                 s,
-                &["target", "checkSeconds", "staggerPercent"],
+                &[
+                    "target",
+                    "checkSeconds",
+                    "staggerPercent",
+                    "renewBeforeSeconds",
+                    "maxSpend",
+                    "retrySeconds",
+                ],
                 "redundancy",
+            )?;
+            set(
+                &mut p.redundancy.renew_before_seconds,
+                s,
+                "redundancy",
+                "renewBeforeSeconds",
+                1,
+                31_536_000,
+            )?;
+            set(
+                &mut p.redundancy.max_spend,
+                s,
+                "redundancy",
+                "maxSpend",
+                1,
+                u64::MAX,
+            )?;
+            set(
+                &mut p.redundancy.retry_seconds,
+                s,
+                "redundancy",
+                "retrySeconds",
+                1,
+                86_400,
             )?;
             set(
                 &mut p.redundancy.target,
@@ -282,7 +322,7 @@ impl Params {
                 s,
                 "redundancy",
                 "checkSeconds",
-                60,
+                1,
                 31_536_000,
             )?;
             set(
@@ -415,6 +455,9 @@ impl Params {
                 "target": self.redundancy.target,
                 "checkSeconds": self.redundancy.check_seconds,
                 "staggerPercent": self.redundancy.stagger_percent,
+                "renewBeforeSeconds": self.redundancy.renew_before_seconds,
+                "maxSpend": self.redundancy.max_spend,
+                "retrySeconds": self.redundancy.retry_seconds,
             },
             "connection": {
                 "pingSeconds": self.connection.ping_seconds,
@@ -643,8 +686,20 @@ mod tests {
                 "redundancy.target",
             ),
             (
-                r#"{"version":1,"redundancy":{"checkSeconds":59}}"#,
+                r#"{"version":1,"redundancy":{"checkSeconds":0}}"#,
                 "redundancy.checkSeconds",
+            ),
+            (
+                r#"{"version":1,"redundancy":{"renewBeforeSeconds":0}}"#,
+                "redundancy.renewBeforeSeconds",
+            ),
+            (
+                r#"{"version":1,"redundancy":{"maxSpend":0}}"#,
+                "redundancy.maxSpend",
+            ),
+            (
+                r#"{"version":1,"redundancy":{"retrySeconds":86401}}"#,
+                "redundancy.retrySeconds",
             ),
             (
                 r#"{"version":1,"redundancy":{"staggerPercent":91}}"#,

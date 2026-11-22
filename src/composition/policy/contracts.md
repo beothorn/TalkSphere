@@ -23,7 +23,7 @@ Every contract is a pure function of a **peer view**: the peer identity, its tru
 | Quota | What finite limits apply to this peer? | Limits |
 | Trust | Does this verified event change the peer's trust? | New trust, or none |
 | Credit | Which first grant, wanted terms and release amount? | Grant, Wanted, credits |
-| Redundancy | How many independent copies, which holders, when to check next? | Target, holders, time |
+| Redundancy | How many independent copies, which holders, when to check next, when to renew, what may maintenance cost, when to retry? | Target, holders, time, seconds, credits |
 | Connection | Ping interval and timeout, reconnect delay for attempt n | Seconds |
 
 A **Policy** bundles one implementation of each. Implementations must be deterministic for equal

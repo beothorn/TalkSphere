@@ -10,25 +10,38 @@ pub mod protocol;
 pub mod commands;
 pub mod socket;
 
-use crate::composition::node::{layout::Layout, runtime::Started};
+use crate::composition::node::{layout::Layout, replicas::maintain::Maintenance, runtime::Started};
 use std::sync::Arc;
+
+/// Everything the control channel keeps running; dropping it stops both parts.
+pub struct Running {
+    /// The local control socket.
+    pub server: socket::Server,
+    /// Replica checks and renewals.
+    pub maintenance: Maintenance,
+}
 
 /// Start the control channel for a ready node.
 /// # Errors
 /// The operations journal is malformed or the socket cannot be bound safely.
-pub fn start(layout: &Layout, started: &Started) -> Result<socket::Server, String> {
+pub fn start(layout: &Layout, started: &Started) -> Result<Running, String> {
     tracing::trace!("Starting local control for a ready node");
-    let handler = commands::Handler::new(
+    let handler = Arc::new(commands::Handler::new(
         started.owners.clone(),
         started.link.clone(),
         started.signal.clone(),
         started.listen,
         &layout.operations(),
-    )?;
-    socket::start(
+    )?);
+    let server = socket::start(
         layout,
         started.owners.config.control,
         started.signal.clone(),
-        Arc::new(handler),
-    )
+        handler.clone(),
+    )?;
+    let maintenance = Maintenance::start(move |attempts| handler.maintain_once(attempts));
+    Ok(Running {
+        server,
+        maintenance,
+    })
 }

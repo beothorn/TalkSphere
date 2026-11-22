@@ -9,6 +9,7 @@ complete successful Storage result and it validated, and confirmed copies are at
 | --- | --- |
 | [Sealer](sealer.md) | Authenticated encryption of an item with the node's data key |
 | [Book](book.md) | Durable items, reservations and confirmed replicas |
+| [Maintenance](maintain.md) | Staggered checks, renewals and expiry of confirmed replicas |
 
 Flow: `node-ctl replica-add --file F` seals the item and adds it to the book (the sealed bytes stay on the node so a repair
 never depends on the replicas). Each client that offers to fulfil the wanted terms is given the item that most needs a

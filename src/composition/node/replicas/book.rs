@@ -221,6 +221,48 @@ impl Book {
         Ok(())
     }
 
+    /// Forget the replica held by `provider`, for example because it expired or failed a check; the item
+    /// then needs another copy.
+    /// # Errors
+    /// `Unknown` when the item or replica is absent, `Write` when the book cannot be written (the replica
+    /// is then kept).
+    pub fn drop_replica(&self, id: [u8; 16], provider: IdentityId) -> Result<(), BookError> {
+        tracing::trace!("Dropping a replica from the book");
+        let mut state = self.lock();
+        let (index, at) = locate(&state.items, id, provider)?;
+        let removed = state.items[index].replicas.remove(at);
+        if let Err(error) = self.persist(&state.items) {
+            state.items[index].replicas.insert(at, removed);
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Change one replica's recorded expiry or last check.
+    /// # Errors
+    /// `Unknown` when the item or replica is absent, `Write` when the book cannot be written (the change is
+    /// then undone).
+    pub fn update_replica(
+        &self,
+        id: [u8; 16],
+        provider: IdentityId,
+        change: impl FnOnce(&mut Replica),
+    ) -> Result<(), BookError> {
+        tracing::trace!("Updating a replica in the book");
+        let mut state = self.lock();
+        let (index, at) = locate(&state.items, id, provider)?;
+        let before = state.items[index].replicas[at].clone();
+        change(&mut state.items[index].replicas[at]);
+        // The holder and lease identify the copy and never change.
+        state.items[index].replicas[at].provider = before.provider;
+        state.items[index].replicas[at].lease = before.lease;
+        if let Err(error) = self.persist(&state.items) {
+            state.items[index].replicas[at] = before;
+            return Err(error);
+        }
+        Ok(())
+    }
+
     // Path of an item's sealed bytes.
     fn sealed_path(&self, id: &[u8; 16]) -> PathBuf {
         self.dir.join(format!("{}.sealed", hex(id)))
@@ -241,6 +283,20 @@ impl Book {
     fn lock(&self) -> std::sync::MutexGuard<'_, State> {
         self.state.lock().unwrap_or_else(|e| e.into_inner())
     }
+}
+
+// The positions of one item and of one holder's replica within it.
+fn locate(items: &[Item], id: [u8; 16], provider: IdentityId) -> Result<(usize, usize), BookError> {
+    let index = items
+        .iter()
+        .position(|i| i.id == id)
+        .ok_or(BookError::Unknown)?;
+    let at = items[index]
+        .replicas
+        .iter()
+        .position(|r| r.provider == provider)
+        .ok_or(BookError::Unknown)?;
+    Ok((index, at))
 }
 
 // Write a new or replaced file with owner-only permissions and flush it.
@@ -540,6 +596,48 @@ mod tests {
         assert_eq!(Book::open(&path).err(), Some(BookError::Corrupt));
         std::fs::write(&file, vec![b' '; MAXIMUM_FILE_BYTES as usize + 1]).unwrap();
         assert_eq!(Book::open(&path).err(), Some(BookError::Corrupt));
+    }
+
+    // A replica can be dropped (so the item needs another copy) or updated, but never re-pointed at another
+    // holder or lease; unknown items and holders are refused; changes persist.
+    #[test]
+    fn replicas_can_be_dropped_and_updated() {
+        let path = dir();
+        let book = Book::open(&path).unwrap();
+        book.add(item(1, 5), b"AAAAA").unwrap();
+        book.confirm([1; 16], replica(1)).unwrap();
+        book.confirm([1; 16], replica(2)).unwrap();
+        book.update_replica([1; 16], IdentityId([1; 32]), |r| {
+            r.expires_at = 500;
+            r.last_checked = Some(40);
+            r.provider = IdentityId([9; 32]);
+            r.lease = [9; 32];
+        })
+        .unwrap();
+        let reopened = Book::open(&path).unwrap();
+        let held = &reopened.get([1; 16]).unwrap().replicas[0];
+        assert_eq!((held.expires_at, held.last_checked), (500, Some(40)));
+        assert_eq!((held.provider, held.lease), (IdentityId([1; 32]), [1; 32]));
+        book.drop_replica([1; 16], IdentityId([1; 32])).unwrap();
+        assert_eq!(
+            Book::open(&path)
+                .unwrap()
+                .get([1; 16])
+                .unwrap()
+                .replicas
+                .len(),
+            1
+        );
+        assert_eq!(
+            book.drop_replica([1; 16], IdentityId([1; 32])),
+            Err(BookError::Unknown)
+        );
+        assert_eq!(
+            book.drop_replica([8; 16], IdentityId([2; 32])),
+            Err(BookError::Unknown)
+        );
+        // The dropped holder may offer a fresh copy again.
+        assert!(book.take_for(IdentityId([1; 32]), 2, 100).is_some());
     }
 
     // Files are owner-only.
