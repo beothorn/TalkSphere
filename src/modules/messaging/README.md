@@ -4,9 +4,16 @@ Paid retention of signed messages for one recipient: CR2SE module [Messaging](ht
 service `cr2se.messaging` version 1, pricing model `cr2se.messaging.v1`. Optional in CR2SE's minimum profile, required by TalkSphere
 (see the [plan](../../../plans/11_Messaging_module/PLAN.md)).
 
-**Status:** in progress. Completed so far: the requirements reconciliation ([REQUIREMENTS.md](REQUIREMENTS.md)) and the types, errors
-and ports below. Nothing is registered with Services or advertised on a Board until the provider is complete, so a node never
-offers an unfinished capability.
+**Status:** in progress (plan steps 1-29, 32 and 34 done). The provider engine is implemented and tested: validation, pricing,
+the durable participant with recovery, store, discover, recover (with receipt and cached retry), status, renew, remove (with
+once-only release credits), paid byte checks, per-identity limits, reclaim, and the recipient's authenticate/deduplicate/decrypt
+step. Not yet implemented: the Services provider adapter and registration (step 30), the Peer Protocol requester (31), crash
+recovery across Services and Ledger files (33), authenticated multi-process exercises (35) and the exercise guide (36). Nothing is
+registered with Services or advertised on a Board until the provider is complete, so a node never offers an unfinished capability.
+See [ACCEPTANCE.md](ACCEPTANCE.md) for the interim evidence per case and [REQUIREMENTS.md](REQUIREMENTS.md) for the reconciliation.
+
+Build and test from the repository root with `cargo test --locked --lib modules::messaging` (and `modules::ledger` for the release
+credit support).
 
 A message is a signed association of metadata and one immutable payload. A sender stores it at a provider for one recipient; the
 recipient discovers and recovers it with a signed request and gets a provider-signed receipt; the sender can check status, renew,
