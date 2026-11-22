@@ -1,0 +1,11 @@
+//! Messaging: paid retention of signed messages for one recipient (CR2SE version 1).
+//!
+//! Callers: node composition and Services registration. See [the module guide](mod.md).
+pub mod error;
+pub mod ids;
+pub mod metadata;
+pub mod operation;
+pub mod ports;
+pub mod state;
+
+pub use error::Error;

@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; step 1 is complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-2 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -11,7 +11,7 @@ needs it, and the hosted pages and feeds proposal
 ## Steps
 
 - [x] **1.** Reconcile Messaging requirements with the existing module contracts.
-- [ ] **2.** Define Messaging types and dependency ports.
+- [x] **2.** Define Messaging types and dependency ports.
 - [ ] **3.** Add deterministic Messaging test helpers.
 - [ ] **4.** Import the pinned Messaging definition and independent fixtures.
 - [ ] **5.** Implement exact Messaging price calculations.
@@ -147,6 +147,8 @@ removal), metadata, encodings, placement states, operation inputs and outputs,
 and errors. Define ports for clock, entropy, durable placement storage, signing
 and verification. Add the module README and companion contract documents. Test
 fixed lengths, encoding codes and error mapping.
+
+Completed: [module guide](../../src/modules/messaging/mod.md) with identifiers, errors, states, metadata, operation types and the clock, entropy and signer ports. The durable placement store port arrives with step 12, where its shape is known.
 
 ### 3. Add deterministic Messaging test helpers
 

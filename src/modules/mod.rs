@@ -8,6 +8,8 @@ pub mod transport;
 
 pub mod ledger;
 
+pub mod messaging;
+
 pub mod peer_protocol;
 
 pub mod storage;
