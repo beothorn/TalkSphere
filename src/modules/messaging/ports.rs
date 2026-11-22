@@ -60,3 +60,41 @@ pub trait ReleaseIssuer: Send + Sync {
     /// `Unknown` when the record may or may not be durable.
     fn issue(&self, key: OperationKey, recipient: IdentityId, credits: u64) -> Result<(), Error>;
 }
+
+/// Bounds on pending placements so unsolicited messaging stays finite at each provider.
+pub trait PendingLimits: Send + Sync {
+    /// Most pending placements one sender may hold at this provider.
+    fn per_sender(&self, sender: IdentityId) -> usize;
+    /// Most pending placements one recipient may have waiting at this provider.
+    fn per_recipient(&self, recipient: IdentityId) -> usize;
+}
+
+/// The same finite bounds for every identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FixedLimits {
+    /// Most pending placements per sender.
+    pub per_sender: usize,
+    /// Most pending placements per recipient.
+    pub per_recipient: usize,
+}
+
+impl Default for FixedLimits {
+    /// 1024 per sender and per recipient.
+    fn default() -> Self {
+        Self {
+            per_sender: 1024,
+            per_recipient: 1024,
+        }
+    }
+}
+
+impl PendingLimits for FixedLimits {
+    /// The configured per-sender bound.
+    fn per_sender(&self, _sender: IdentityId) -> usize {
+        self.per_sender
+    }
+    /// The configured per-recipient bound.
+    fn per_recipient(&self, _recipient: IdentityId) -> usize {
+        self.per_recipient
+    }
+}

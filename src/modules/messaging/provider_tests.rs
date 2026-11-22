@@ -1239,3 +1239,139 @@ fn ms_13_the_provider_serves_one_exact_byte_to_the_sender() {
         "expired"
     );
 }
+
+// Limits of one pending placement per sender or per recipient.
+struct Tight(usize, usize);
+impl super::super::ports::PendingLimits for Tight {
+    fn per_sender(&self, _: IdentityId) -> usize {
+        self.0
+    }
+    fn per_recipient(&self, _: IdentityId) -> usize {
+        self.1
+    }
+}
+
+// A provider over the harness's participant with the given pending limits.
+fn limited(h: &Harness, sender: usize, recipient: usize) -> Provider {
+    Provider::new(
+        terms(),
+        h.provider.participant().clone(),
+        h.clock.clone(),
+        h.staging.clone(),
+    )
+    .with_pending_limits(Arc::new(Tight(sender, recipient)))
+}
+
+// Sends one `abc` message from `from` to `to` through `provider`.
+fn send(
+    provider: &Provider,
+    n: u8,
+    from: &TestIdentity,
+    to: IdentityId,
+) -> Result<StoreOutput, Error> {
+    let message = signing::sign_message(
+        from,
+        to,
+        MessageId([n; 32]),
+        1000,
+        Encoding::Opaque,
+        b"abc".to_vec(),
+    )
+    .unwrap();
+    provider.store(
+        key(n),
+        from.identity(),
+        StoreInput {
+            message,
+            retention_seconds: 10,
+        },
+    )
+}
+
+// MS-04 limits: a store is refused before any body or charge with Limit exactly when the sender or the recipient already holds the
+// most pending placements allowed; other identities are unaffected, and finishing a placement frees its slot.
+#[test]
+fn pending_limits_bound_each_sender_and_recipient() {
+    let h = harness();
+    let provider = limited(&h, 2, 3);
+    let other = TestIdentity::new(5);
+    let c = h.recipient.identity();
+    let first = send(&provider, 1, &h.sender, c).unwrap().placement_id;
+    send(&provider, 2, &h.sender, c).unwrap();
+    assert_eq!(
+        send(&provider, 3, &h.sender, c).err(),
+        Some(Error::Limit),
+        "sender at its bound"
+    );
+    assert_eq!(h.staging.used(), (0, 0));
+    assert_eq!(h.store.records().len(), 2);
+    send(&provider, 4, &other, c).unwrap();
+    assert_eq!(
+        send(&provider, 5, &TestIdentity::new(6), c).err(),
+        Some(Error::Limit),
+        "recipient at its bound"
+    );
+    send(&provider, 6, &other, h.sender.identity()).unwrap();
+    // A recovery ends a pending placement and frees a slot for its sender and its recipient.
+    h.clock.set(1004);
+    provider
+        .recover(key(7), c, recovery_request(&h, first, 7))
+        .unwrap();
+    assert_eq!(send(&provider, 8, &h.sender, c).map(|_| ()), Ok(()));
+}
+
+// MS-04 indistinguishability: for every operation an unknown placement and another identity's placement produce exactly the same error,
+// so a caller learns nothing about placements it does not own.
+#[test]
+fn unauthorized_and_unknown_placements_are_indistinguishable() {
+    let h = harness();
+    let (provider, _issuer) = removing(&h, 50);
+    let stored = provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let real = stored.placement_id;
+    let unknown = PlacementId([8; 32]);
+    let stranger = IdentityId([9; 32]);
+    for who in [stranger, h.recipient.identity()] {
+        let status = |p| provider.status(who, StatusInput { placement_id: p }).err();
+        assert_eq!(status(real), status(unknown));
+        let check = |p| {
+            provider
+                .check(
+                    who,
+                    CheckInput {
+                        placement_id: p,
+                        offset: 0,
+                    },
+                )
+                .err()
+        };
+        assert_eq!(check(real), check(unknown));
+        let renew = |p| {
+            provider
+                .renew(
+                    key(20),
+                    who,
+                    RenewInput {
+                        placement_id: p,
+                        expected_expires_at: 1010,
+                        additional_seconds: 5,
+                    },
+                )
+                .err()
+        };
+        assert_eq!(renew(real), renew(unknown));
+        let remove = |p| provider.remove(key(21), who, removal(p, 1010, 0)).err();
+        assert_eq!(remove(real), remove(unknown));
+    }
+    let recover = |caller, p| {
+        provider
+            .recover(key(22), caller, recovery_request(&h, p, 7))
+            .err()
+    };
+    assert_eq!(recover(stranger, real), recover(stranger, unknown));
+    assert_eq!(
+        recover(h.sender.identity(), real),
+        recover(h.sender.identity(), unknown)
+    );
+}

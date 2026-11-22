@@ -18,7 +18,7 @@ use super::{
         StoreOutput,
     },
     participant::Participant,
-    ports::{Clock, NoRelease, ReleasePolicy},
+    ports::{Clock, FixedLimits, NoRelease, PendingLimits, ReleasePolicy},
     pricing, receipt, signing,
     staging::{Reservation, Staging},
     state::{Encoding, MINIMUM_ENCRYPTED_BYTES, State},
@@ -84,6 +84,7 @@ pub struct Provider {
     clock: Arc<dyn Clock>,
     staging: Staging,
     release: Arc<dyn ReleasePolicy>,
+    limits: Arc<dyn PendingLimits>,
 }
 
 impl Provider {
@@ -101,7 +102,16 @@ impl Provider {
             clock,
             staging,
             release: Arc::new(NoRelease),
+            limits: Arc::new(FixedLimits::default()),
         }
+    }
+
+    /// Bound pending placements per sender and per recipient with `limits`; the default is 1024 each.
+    #[must_use]
+    pub fn with_pending_limits(mut self, limits: Arc<dyn PendingLimits>) -> Self {
+        tracing::trace!("Installing the pending placement limits");
+        self.limits = limits;
+        self
     }
 
     /// Use `policy` to choose early-release credits when removals are quoted; without it none are offered.
@@ -125,7 +135,7 @@ impl Provider {
     /// Assess a store from its header, before the payload body is received.
     /// # Errors
     /// `Invalid` when the sender is not the authenticated caller or does not derive from the key, a size, encoding or retention is outside
-    /// the offering or the expiry would overflow; `Limit` when the staging budget is full or a price would overflow. Nothing is reserved on failure.
+    /// the offering or the expiry would overflow; `Limit` when the sender or the recipient already holds the most pending placements allowed, the staging budget is full or a price would overflow. Nothing is reserved on failure.
     pub fn assess_store(
         &self,
         caller: IdentityId,
@@ -156,6 +166,16 @@ impl Provider {
         }
         let now = self.clock.now()?;
         now.checked_add(retention).ok_or(Error::Invalid)?;
+        // Per-identity bounds are judged before any body is accepted or any price is quoted, so a refusal costs nothing.
+        let (by_sender, for_recipient) = self
+            .participant
+            .store()
+            .pending_counts(m.sender_id, m.recipient_id);
+        if by_sender >= self.limits.per_sender(m.sender_id)
+            || for_recipient >= self.limits.per_recipient(m.recipient_id)
+        {
+            return Err(Error::Limit);
+        }
         let price = pricing::store(
             m.payload_size,
             retention,

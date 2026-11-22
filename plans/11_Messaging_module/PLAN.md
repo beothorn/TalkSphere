@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-28 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-29 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -38,7 +38,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **26.** Implement authorized paid byte evidence for pending placements.
 - [x] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [x] **28.** Reclaim expired, recovered and removed placement resources safely.
-- [ ] **29.** Bound placements per sender and per recipient through a module limits port.
+- [x] **29.** Bound placements per sender and per recipient through a module limits port.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
 - [ ] **32.** Validate recovered messages and decrypt only after authentication.
@@ -387,6 +387,8 @@ the most pending placements the limits port allows, so unsolicited messaging sta
 Request and failure rates are already applied node-wide by peer policy; this step only keeps unauthorized and
 unknown placements indistinguishable in replies. Test both limits at their boundary, refusal without charge,
 and the indistinguishability required by MS-04.
+
+Completed: the `PendingLimits` port (with `FixedLimits`, default 1024 each) checked in `Provider::assess_store`, and an all-operations test that unknown and foreign placements give identical errors.
 
 ### 30. Register Messaging handlers and publish usable offerings
 
