@@ -7,7 +7,8 @@ them from real usage or simulation without touching protocol code.
 | Contract | Responsibility |
 | --- | --- |
 | [Contracts](contracts.md) | The six decision traits, their inputs and outputs |
-| [Defaults](defaults.md) | Conservative implementation that reproduces the minimum node |
+| [Parameters](params.md) | Validated `policy.json` with finite ranges and conservative defaults |
+| [Configured](configured.md) | Implementation of every contract from one parameter set |
 
 Callers: node composition (admission, quotas, credits, connections) and the replica manager.
 Dependencies: identities and plain numbers only. A policy never reads peer-supplied text as an

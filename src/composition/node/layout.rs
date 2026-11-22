@@ -25,6 +25,11 @@ impl Layout {
         tracing::trace!("Reading the node configuration path");
         self.root.join("node.json")
     }
+    /// Operator policy document; optional, defaults reproduce the minimum node.
+    pub fn policy(&self) -> PathBuf {
+        tracing::trace!("Reading the node policy path");
+        self.root.join("policy.json")
+    }
     /// Public identity text written at initialization so inspection never needs the store lock.
     pub fn public_id(&self) -> PathBuf {
         tracing::trace!("Reading the node public identity path");
@@ -80,6 +85,7 @@ mod tests {
         let layout = Layout::new("/n");
         let paths = [
             layout.config(),
+            layout.policy(),
             layout.public_id(),
             layout.identity(),
             layout.board(),

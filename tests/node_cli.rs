@@ -78,3 +78,41 @@ fn node_help_covers_commands_and_options() {
             .contains("node-init | node-show")
     );
 }
+// An absent policy file reports defaults, a valid one is accepted, and an invalid one is reported by
+// node-show and stops `serve --node-root` with status 1 before the node listens.
+#[test]
+fn policy_file_is_validated_at_inspection_and_startup() {
+    let dir = std::env::temp_dir().join(format!("talksphere-node-policy-{}", std::process::id()));
+    std::fs::create_dir(&dir).unwrap();
+    let root = dir.join("node");
+    let path = root.to_str().unwrap();
+    assert!(run(&["node-init", "--node-root", path]).status.success());
+    let shown = |expect: &str| {
+        let out = run(&["node-show", "--node-root", path]);
+        assert!(
+            String::from_utf8(out.stdout).unwrap().contains(expect),
+            "{expect}"
+        );
+    };
+    shown("policy: defaults (no policy.json)");
+    std::fs::write(
+        root.join("policy.json"),
+        br#"{"version":1,"redundancy":{"target":10}}"#,
+    )
+    .unwrap();
+    shown("policy: policy.json valid");
+    std::fs::write(
+        root.join("policy.json"),
+        br#"{"version":1,"quota":{"pending":0}}"#,
+    )
+    .unwrap();
+    shown("policy: policy.json invalid");
+    let served = run(&["serve", "--node-root", path, "--listen", "127.0.0.1:0"]);
+    assert_eq!(served.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&served.stderr);
+    assert!(
+        stderr.contains("quota.pending") && !stderr.contains("ready"),
+        "{stderr}"
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+}

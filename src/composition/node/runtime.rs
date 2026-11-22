@@ -11,6 +11,7 @@ use super::{
     link::{Command, Link},
     owners::{self, Owners},
 };
+use crate::composition::policy::Params;
 use crate::composition::server::{
     Stage,
     config::Config,
@@ -73,6 +74,8 @@ pub fn run<G>(
 ) -> Result<(), String> {
     tracing::trace!("Starting the node runtime");
     let config = read_config(layout)?;
+    let policy = Params::load(&layout.policy()).map_err(|e| e.to_string())?;
+    tracing::debug!(?policy, "Loaded the peer policy parameters");
     let credentials =
         credentials::load(&server, false).map_err(|e| format!("identity failed: {e:?}"))?;
     let local = IdentityId(credentials.local_id.0);

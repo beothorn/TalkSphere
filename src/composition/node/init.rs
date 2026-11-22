@@ -8,6 +8,7 @@ use super::{
     layout::Layout,
     owners,
 };
+use crate::composition::policy::Params;
 use crate::modules::{
     cryptography::random::SystemEntropy,
     identity::{
@@ -97,6 +98,11 @@ pub fn describe(root: &Path) -> Result<String, String> {
         }
         None => lines.push("configuration: missing or invalid".into()),
     }
+    lines.push(match Params::load(&layout.policy()) {
+        Ok(_) if layout.policy().exists() => "policy: policy.json valid".to_string(),
+        Ok(_) => "policy: defaults (no policy.json)".to_string(),
+        Err(_) => "policy: policy.json invalid".to_string(),
+    });
     let missing: Vec<&str> = [
         ("identity", layout.identity()),
         ("board", layout.board()),

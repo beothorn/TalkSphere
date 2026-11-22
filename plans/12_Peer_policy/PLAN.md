@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-2 are complete.
+Status: in progress; steps 1-3 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -18,7 +18,7 @@ large simulations without touching protocol code.
 
 - [x] **1.** Inventory every decision CR2SE leaves to local policy and where TalkSphere fixes it today.
 - [x] **2.** Define policy contracts that decide only from recorded observations.
-- [ ] **3.** Load policy parameters from a validated policy file.
+- [x] **3.** Load policy parameters from a validated policy file.
 - [ ] **4.** Record per-peer observations durably and within fixed bounds.
 - [ ] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
 - [ ] **6.** Apply per-identity quotas and rate limits before accepting work.
@@ -133,6 +133,8 @@ Add a versioned `policy.json` beside `node.json`, validated before any effect,
 with finite bounds on every parameter and documented defaults. Unknown members
 and inconsistent values are refused. Test missing, oversized and inconsistent
 parameters and a policy file absent entirely.
+
+Completed: [Parameters](../../src/composition/policy/params.md) and [configured policy](../../src/composition/policy/configured.md); the node refuses an invalid `policy.json` at startup and `node-show` reports its state. `Defaults` was replaced by `Params::default()`.
 
 ### 4. Record per-peer observations durably and within fixed bounds
 

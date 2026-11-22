@@ -2,11 +2,13 @@
 //!
 //! Callers: node composition. See [the module guide](mod.md) and the
 //! [peer policy plan](../../../plans/12_Peer_policy/PLAN.md).
+pub mod configured;
 pub mod contracts;
-pub mod defaults;
+pub mod params;
 
+pub use configured::Configured;
 pub use contracts::{
     Admission, Candidate, Connection, Credit, Event, Grant, Limits, PeerView, Policy, Quota,
     Reason, Redundancy, Summary, Trust, Verdict, Wanted,
 };
-pub use defaults::Defaults;
+pub use params::{Params, ParamsError};
