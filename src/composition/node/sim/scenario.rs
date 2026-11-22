@@ -20,6 +20,13 @@ pub struct Honest {
     pub wipe_per_day: f64,
     /// Probability that a connected client fails to answer a check in time.
     pub unresponsive: f64,
+    /// Share of the clients that are slow: they miss checks with `slow_unresponsive` instead.
+    pub slow_fraction: f64,
+    /// Probability that a slow client fails to answer a check in time.
+    pub slow_unresponsive: f64,
+    /// Share of the clients that accept placements and are paid for them but keep nothing, so every check
+    /// of their copies fails.
+    pub dishonest_fraction: f64,
 }
 
 /// The whole scenario.
@@ -77,6 +84,9 @@ impl Default for Scenario {
                 offer_every_seconds: 1800.0,
                 wipe_per_day: 0.01,
                 unresponsive: 0.05,
+                slow_fraction: 0.0,
+                slow_unresponsive: 0.8,
+                dishonest_fraction: 0.0,
             },
             issuance_budget: 1_000_000,
             float_per_holder: 10_000,
@@ -100,8 +110,17 @@ impl Scenario {
         if self.step_seconds == 0 || self.step_seconds > self.horizon_seconds {
             return Err("the step must be positive and within the horizon".into());
         }
-        if !probability(h.wipe_per_day) || !probability(h.unresponsive) {
-            return Err("probabilities must be within 0 and 1".into());
+        let all = [
+            h.wipe_per_day,
+            h.unresponsive,
+            h.slow_fraction,
+            h.slow_unresponsive,
+            h.dishonest_fraction,
+        ];
+        if !all.into_iter().all(probability) || h.slow_fraction + h.dishonest_fraction > 1.0 {
+            return Err(
+                "probabilities must be within 0 and 1 and the client kinds must fit".into(),
+            );
         }
         let positive = |x: f64| x.is_finite() && x > 0.0;
         if !(positive(h.mean_online_seconds)
@@ -136,6 +155,11 @@ mod tests {
         assert!(bad(|s| s.step_seconds = s.horizon_seconds + 1));
         assert!(bad(|s| s.honest.wipe_per_day = 1.5));
         assert!(bad(|s| s.honest.unresponsive = -0.1));
+        assert!(bad(|s| {
+            s.honest.slow_fraction = 0.7;
+            s.honest.dishonest_fraction = 0.6;
+        }));
+        assert!(bad(|s| s.honest.dishonest_fraction = 1.2));
         assert!(bad(|s| s.honest.mean_online_seconds = 0.0));
         assert!(bad(|s| s.honest.offer_every_seconds = f64::NAN));
         assert!(bad(|s| s.params.credit.wanted = None));

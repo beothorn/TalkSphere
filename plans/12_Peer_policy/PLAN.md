@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-18 are complete.
+Status: in progress; steps 1-19 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -34,7 +34,7 @@ large simulations without touching protocol code.
 - [x] **16.** Report replica-set state using the CR2SE redundancy states.
 - [x] **17.** Add local commands to inspect policy decisions and their inputs.
 - [x] **18.** Add a deterministic multi-peer simulation harness using real modules.
-- [ ] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
+- [x] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
 - [ ] **20.** Run parameter sweeps and record their results.
 - [ ] **21.** Document policy parameters, defaults and help.
 - [ ] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
@@ -277,6 +277,8 @@ Completed: [Simulation](../../src/composition/node/sim/mod.md). It runs the real
 
 Add models for connection churn, storage loss, slow peers, peers that fail
 checks and peers that probe or flood. Test each model in isolation.
+
+Completed: churn, storage loss, slow peers and dishonest peers in the [world](../../src/composition/node/sim/world.md), flooding in the [abuse experiment](../../src/composition/node/sim/abuse.md), each with an isolated test. Dishonest peers are not excluded from placements by any policy yet; the reported credits they receive is the evidence step 20 weighs before one is added.
 
 ### 20. Run parameter sweeps and record their results
 

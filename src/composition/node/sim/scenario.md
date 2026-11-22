@@ -10,3 +10,7 @@ client does not answer a check in time. The defaults describe a deliberately unr
 
 `validate` refuses zero sizes, a step longer than the horizon, probabilities outside `[0, 1]`, nonpositive durations, a policy
 without wanted terms (replicas are placed through them) and invalid parameters.
+
+Client kinds: `slowFraction` of the clients are slow and miss checks with `slowUnresponsive` instead of `unresponsive`;
+`dishonestFraction` accept placements and the credits for them but keep nothing, so every check of their copies fails. The first
+clients are dishonest, the next slow, the rest normal, so the kinds are deterministic and nested.

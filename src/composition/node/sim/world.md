@@ -12,3 +12,5 @@ chance the data could be fetched back right now if the server lost its own copy)
 target; placements, checks passed, failed and incomplete, renewals; credits issued for placements and spent on maintenance; the
 times maintenance could not be paid because a holder's float ran out; and the mean trust. `Outcome::to_json` is the
 machine-readable form.
+
+Models, each testable alone: **churn** (connected or not, exponential stretches), **storage loss** (wiped clients fail checks), **slow peers** (inconclusive checks, never failed), **dishonest peers** (paid, keep nothing, fail checks, never a way to fetch the data back; the credits they receive are reported separately) and, in [Abuse](abuse.md), **flooding** and probing.

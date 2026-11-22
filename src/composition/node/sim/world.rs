@@ -61,6 +61,8 @@ pub struct Outcome {
     pub credits_issued: u64,
     /// Credits the server spent, in holders' credits, on checks and renewals.
     pub credits_spent: u64,
+    /// Credits the server issued to clients that kept nothing.
+    pub credits_to_dishonest: u64,
     /// Times a maintenance operation could not be paid because the holder's float ran out.
     pub unpaid: u64,
     /// Mean trust the server ended with across clients that contributed, in millionths.
@@ -79,12 +81,24 @@ impl Outcome {
             "placements": self.placements, "checksPassed": self.checks_passed,
             "checksFailed": self.checks_failed, "incomplete": self.incomplete,
             "renewals": self.renewals, "creditsIssued": self.credits_issued,
-            "creditsSpent": self.credits_spent, "unpaid": self.unpaid, "meanTrust": self.mean_trust,
+            "creditsSpent": self.credits_spent, "creditsToDishonest": self.credits_to_dishonest,
+            "unpaid": self.unpaid, "meanTrust": self.mean_trust,
         })
     }
 }
 
+// How a client behaves beyond going offline.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Behavior {
+    Normal,
+    /// Misses most checks.
+    Slow,
+    /// Takes the payment and keeps nothing.
+    Dishonest,
+}
+
 struct Client {
+    behavior: Behavior,
     id: IdentityId,
     online: bool,
     next_toggle: u64,
@@ -143,6 +157,7 @@ struct World<'a> {
     incomplete: u64,
     renewals: u64,
     issued: u64,
+    to_dishonest: u64,
     spent: u64,
     unpaid: u64,
 }
@@ -179,7 +194,18 @@ impl<'a> World<'a> {
                 } else {
                     h.mean_offline_seconds
                 };
+                // The first clients are dishonest, the next slow, the rest normal: deterministic and nested.
+                let dishonest = (h.dishonest_fraction * h.count as f64).round() as usize;
+                let slow = (h.slow_fraction * h.count as f64).round() as usize;
+                let behavior = if n < dishonest {
+                    Behavior::Dishonest
+                } else if n < dishonest + slow {
+                    Behavior::Slow
+                } else {
+                    Behavior::Normal
+                };
                 Client {
+                    behavior,
                     id: identity(n),
                     online,
                     next_toggle: START + rng.exponential(mean),
@@ -212,6 +238,7 @@ impl<'a> World<'a> {
             incomplete: 0,
             renewals: 0,
             issued: 0,
+            to_dishonest: 0,
             spent: 0,
             unpaid: 0,
         })
@@ -279,9 +306,17 @@ impl<'a> World<'a> {
                 self.book.release(item, id);
                 continue;
             }
-            self.held.insert((item, id), self.clients[index].generation);
+            // A dishonest client's generation never matches again: it keeps nothing.
+            let kept = match self.clients[index].behavior {
+                Behavior::Dishonest => u64::MAX,
+                _ => self.clients[index].generation,
+            };
+            self.held.insert((item, id), kept);
             self.placements += 1;
             self.issued += wanted.credits_per_object;
+            if self.clients[index].behavior == Behavior::Dishonest {
+                self.to_dishonest += wanted.credits_per_object;
+            }
             self.clients[index]
                 .float
                 .get_or_insert(self.s.float_per_holder);
@@ -344,7 +379,16 @@ impl<'a> World<'a> {
         if !self.pay(provider, price, now, item) {
             return;
         }
-        if self.rng.chance(self.s.honest.unresponsive) {
+        let silence = match self
+            .clients
+            .iter()
+            .find(|c| c.id == provider)
+            .map(|c| c.behavior)
+        {
+            Some(Behavior::Slow) => self.s.honest.slow_unresponsive,
+            _ => self.s.honest.unresponsive,
+        };
+        if self.rng.chance(silence) {
             self.incomplete += 1;
             self.attempted.insert((item, provider), now);
             return;
@@ -498,6 +542,7 @@ impl<'a> World<'a> {
             renewals: self.renewals,
             credits_issued: self.issued,
             credits_spent: self.spent,
+            credits_to_dishonest: self.to_dishonest,
             unpaid: self.unpaid,
             mean_trust: if trusts.is_empty() {
                 0.0
@@ -606,6 +651,55 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    // Churn alone makes data unavailable at times but never fails a check or loses a copy.
+    #[test]
+    fn churn_alone_reduces_availability_only() {
+        let mut s = perfect();
+        s.honest.mean_online_seconds = 3600.0;
+        s.honest.mean_offline_seconds = 3.0 * 3600.0;
+        let outcome = run(&s).unwrap();
+        assert_eq!(outcome.checks_failed, 0);
+        assert!(outcome.retrievable < 0.999, "{outcome:?}");
+        assert!(
+            outcome.target_met > 0.5,
+            "copies persist through churn: {outcome:?}"
+        );
+    }
+
+    // Slow peers miss checks (inconclusive) but never fail them and keep their copies.
+    #[test]
+    fn slow_peers_are_inconclusive_not_failed() {
+        let mut s = perfect();
+        s.honest.slow_fraction = 1.0;
+        s.honest.slow_unresponsive = 0.9;
+        let outcome = run(&s).unwrap();
+        assert_eq!(outcome.checks_failed, 0);
+        assert!(outcome.incomplete > outcome.checks_passed, "{outcome:?}");
+        assert!(outcome.target_met > 0.9, "{outcome:?}");
+    }
+
+    // Dishonest peers are paid for placements, fail their checks and are never a way to get the data back;
+    // honest peers lose nothing to them.
+    #[test]
+    fn dishonest_peers_fail_checks_and_hold_nothing() {
+        let mut s = perfect();
+        s.honest.dishonest_fraction = 1.0;
+        let all = run(&s).unwrap();
+        assert!(
+            all.checks_failed > 0 && all.credits_to_dishonest > 0,
+            "{all:?}"
+        );
+        assert_eq!(all.retrievable, 0.0);
+        let mut some = perfect();
+        some.honest.dishonest_fraction = 0.5;
+        let half = run(&some).unwrap();
+        assert!(
+            half.checks_failed > 0 && half.credits_to_dishonest < half.credits_issued,
+            "{half:?}"
+        );
+        assert!(half.retrievable > 0.5, "{half:?}");
     }
 
     // The machine-readable form carries every measurement under stable names.
