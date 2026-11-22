@@ -13,6 +13,7 @@ pub(super) enum Topic {
     Storage,
     Node,
     NodeCtl,
+    Policy,
     ServerOptions,
     Logging,
 }
@@ -60,6 +61,13 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         label: "node-init | node-show",
         summary: "Create or inspect a minimum useful node root.",
         details: "Usage: talksphere node-init --node-root DIRECTORY [--config FILE] | talksphere node-show --node-root DIRECTORY\n\nnode-init creates a fresh owner-only node root with its own protected identity and every durable owner (Board, Services, Ledger, Storage, lease catalog). The optional --config FILE is a node.json document (version 1; optional offering, capacity, credits and control members); omitted members use finite defaults and an explicit \"offering\": null makes a requester-only node. The document is validated before anything is created. An existing root with content is refused untouched; a failure after creation leaves the partial root for inspection. Output is only the public CR2SE ID.\nnode-show reads the root without starting it or taking any lock and reports identity, role, capacity, cataloged leases, the peer policy state (defaults, valid or invalid policy.json), initialized or incomplete state and whether the control socket exists.\nAn optional policy.json in the node root sets peer policy parameters (version 1; admission, quota, trust, credit, redundancy and connection members, see docs/policy/PARAMETERS.md); omitted members keep defaults that reproduce the minimum node, and serve --node-root refuses to start on an invalid file.\nInvalid syntax exits with status 2; runtime failures exit 1 and explain the problem on stderr; success and help exit 0. See plans/10_Minimum_node/PLAN.md.\n",
+    },
+    HelpTopic {
+        topic: Topic::Policy,
+        names: &["policy", "policy.json", "policy-sim", "policy_sim"],
+        label: "help policy",
+        summary: "Peer policy: policy.json, inspection and the simulation.",
+        details: "Usage: talksphere help policy\n\nCR2SE leaves trust, credit bootstrap, quotas, redundancy and connection upkeep to each identity. An optional policy.json in a node root (version 1; admission, quota, trust, credit, redundancy and connection members) sets them; omitted members keep defaults that reproduce the minimum node, an invalid file stops serve --node-root, and node-show reports its state. Every member, default and range is in docs/policy/PARAMETERS.md.\nnode-ctl policy-show prints the validated parameters; policy-explain --peer ID shows the local observations about a peer and what each decision would be (see help node-ctl). A node with credit.wanted publishes a wanted Storage offering, pays clients in its own credits for holding sealed copies of hosted items (node-ctl replica-add, replicas, wanted-add; clients run fulfil) and keeps them checked and renewed over the clients' own connections.\nThe simulation compares parameters under a modelled unreliable client fleet: cargo run --locked --release --example policy_sim -- help sweep. It runs the real policy and replica code against a modelled network and prints figures under stated assumptions, recorded in docs/policy/SIMULATIONS.md. Example help and success exit with status 0, runtime failures 1 and invalid arguments 2. See plans/12_Peer_policy/PLAN.md.\n",
     },
     HelpTopic {
         topic: Topic::Storage,

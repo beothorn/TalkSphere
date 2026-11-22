@@ -9,6 +9,7 @@ production networking, and it is Linux-only like the node composition.
 | [Scenario](scenario.md) | The simulated population, prices and the policy under test |
 | [World](world.md) | The simulation loop and its measurements |
 | [Abuse](abuse.md) | Request-rate abuse against the quota policy |
+| [Sweep](sweep.md) | Parameter sweeps over seeded runs, rendered as tables |
 
 **What is real:** the policy contracts (`Configured`), the observation table, the replica book (volatile backing), the
 maintenance planner and the CR2SE redundancy report, exactly the code the node runs. **What is modelled:** time (a controlled

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "admission": { "connections": 2048, "perPeerConnections": 2 },
+  "quota": { "pending": 4, "requestsPerMinute": 120, "failuresPerMinute": 30 },
+  "trust": { "checkPassed": 50000, "checkFailed": 400000, "contribution": 100000, "failure": 20000, "ceiling": 700000 },
+  "credit": {
+    "bootstrapCredits": 0,
+    "wanted": { "creditsPerObject": 5, "maximumObjectBytes": 16384, "retentionSeconds": 86400 },
+    "releasePercent": 50
+  },
+  "redundancy": {
+    "target": 10,
+    "checkSeconds": 86400,
+    "staggerPercent": 50,
+    "renewBeforeSeconds": 14400,
+    "maxSpend": 1000,
+    "retrySeconds": 600
+  },
+  "connection": { "pingSeconds": 30, "pingTimeoutSeconds": 10, "reconnectMaxSeconds": 120 }
+}

@@ -37,3 +37,9 @@ invalid file. Changes take effect at the next start.
 
 Automatic trust is off unless a step is set, and a raise requires a nonzero ceiling, so trust never
 rises without an operator decision to allow it.
+
+## Recommended starting profile
+
+[phone-fleet.policy.json](phone-fleet.policy.json) is the profile the [simulations](SIMULATIONS.md) support for a server that keeps data at
+unreliable clients: ten replicas, daily checks, a request limit of 120 a minute and slowly earned, quickly lost trust. It is
+a starting point, not a measurement of real phones. The built-in defaults stay conservative and reproduce the minimum node.

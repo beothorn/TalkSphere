@@ -763,6 +763,23 @@ mod tests {
         }
     }
 
+    // The phone-fleet profile recommended by the simulations is a valid policy document and keeps its values.
+    #[test]
+    fn the_recommended_phone_fleet_profile_is_valid() {
+        let p = Params::parse(include_bytes!(
+            "../../../docs/policy/phone-fleet.policy.json"
+        ))
+        .unwrap();
+        assert_eq!(p.redundancy.target, 10);
+        assert_eq!(p.quota.requests_per_minute, 120);
+        assert_eq!(p.redundancy.check_seconds, 86_400);
+        assert!(p.credit.wanted.is_some());
+        assert_eq!(
+            Params::parse(&serde_json::to_vec(&p.to_json()).unwrap()).unwrap(),
+            p
+        );
+    }
+
     // An absent policy file selects the defaults; a present one is parsed; an unreadable one is refused.
     #[test]
     fn loading_handles_absent_present_and_unreadable_files() {

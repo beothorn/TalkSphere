@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-19 are complete.
+Status: in progress; steps 1-20 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -35,7 +35,7 @@ large simulations without touching protocol code.
 - [x] **17.** Add local commands to inspect policy decisions and their inputs.
 - [x] **18.** Add a deterministic multi-peer simulation harness using real modules.
 - [x] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
-- [ ] **20.** Run parameter sweeps and record their results.
+- [x] **20.** Run parameter sweeps and record their results.
 - [ ] **21.** Document policy parameters, defaults and help.
 - [ ] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
 - [ ] **23.** Complete the policy acceptance evidence and handoff.
@@ -286,6 +286,8 @@ Add a documented command that sweeps policy parameters (replica target, check
 interval, trust steps, quotas) over seeded runs and writes a report to
 `docs/policy/SIMULATIONS.md`. Record the first results and the defaults chosen
 from them.
+
+Completed: the `policy_sim` example (`run`, `abuse`, `sweep`) and [SIMULATIONS.md](../../docs/policy/SIMULATIONS.md) with the first results: a target of about ten gives about 99 % retrievability on the default flaky fleet, daily checks are as good as hourly ones, and a request limit of 120 a minute stops flooding without refusing honest peers in the model. The built-in defaults stay conservative; the chosen values are the [phone-fleet profile](../../docs/policy/phone-fleet.policy.json). The sweep also showed that dishonest clients are paid in proportion to their share because no placement rule excludes them yet; that follow-up is recorded in the results.
 
 ### 21. Document policy parameters, defaults and help
 

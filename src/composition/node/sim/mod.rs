@@ -4,4 +4,5 @@
 pub mod abuse;
 pub mod rng;
 pub mod scenario;
+pub mod sweep;
 pub mod world;
