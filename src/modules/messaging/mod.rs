@@ -31,3 +31,6 @@ pub mod receipt;
 pub mod encryption;
 
 pub mod credential;
+
+pub mod placement;
+pub mod store;

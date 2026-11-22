@@ -10,6 +10,8 @@
 | [Operation](operation.md) | Inputs and outputs of the six operations and the check |
 | [Ports](ports.md) | Clock, entropy and signer supplied by composition |
 | [Signing](signing.md) | Message signing bytes, sender signing and verification |
+| [Placement](placement.md) | A placement record and its payload |
+| [Store](store.md) | Durable bounded placement storage |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |

@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-11 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-12 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -21,7 +21,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **9.** Build and verify recovery request and receipt signatures.
 - [x] **10.** Implement the encrypted Messaging payload format.
 - [x] **11.** Publish and validate the Board identity encryption credential.
-- [ ] **12.** Persist bounded payload staging and placement records.
+- [x] **12.** Persist bounded payload staging and placement records.
 - [ ] **13.** Implement placement states, expiration and per-placement serialization.
 - [ ] **14.** Implement durable participant preparation, commit, abort and status queries.
 - [ ] **15.** Recover Messaging participants before admitting new work.
@@ -240,6 +240,8 @@ fields upstream lists, atomically and owner-only. Placement persistence is the m
 paid Storage and not the node's replica book. Reject placement ID reuse and
 never replace a record. Test reopen, corrupt records, write failure and the
 staging bound.
+
+Completed: [placement](../../src/modules/messaging/placement.md) and [store](../../src/modules/messaging/store.md), volatile and native, with identical contract tests. The store is a concrete type with a volatile backing and injectable write failure instead of a trait. Incomplete uploads are held in memory under a bounded reservation (step 16) rather than persisted, because they create no obligation.
 
 ### 13. Implement placement states, expiration and per-placement serialization
 
