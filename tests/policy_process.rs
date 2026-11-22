@@ -64,3 +64,36 @@ fn admission_policy_refuses_connections_beyond_the_limit() {
     // The admitted peer is unaffected by the refusal.
     assert!(a.ctl(&["fetch", "--contact", &contact]).is_ok());
 }
+
+// A peer that exceeds the per-identity request rate has its connection closed by quota policy, while a
+// peer within the rate is unaffected, and the provider charges nothing for the refused requests.
+#[test]
+fn request_rate_limit_closes_only_the_noisy_peer() {
+    let dir = Dir::new("rate");
+    let (mut a, mut b, mut c) = (
+        Node::init(&dir.0, "a", None),
+        Node::init(&dir.0, "b", None),
+        Node::init(&dir.0, "c", None),
+    );
+    b.set_policy(r#"{"version":1,"quota":{"requestsPerMinute":4}}"#);
+    b.start(None);
+    a.start(None);
+    c.start(None);
+    let contact = b.contact(b.port);
+    // Each fetch opens a few request streams; the limit allows only a handful per minute.
+    let mut outcomes = Vec::new();
+    for _ in 0..8 {
+        outcomes.push(a.ctl(&["fetch", "--contact", &contact]).is_ok());
+    }
+    assert!(
+        outcomes[0],
+        "the first fetch is within the limit: {outcomes:?}"
+    );
+    assert!(
+        outcomes.iter().any(|ok| !ok),
+        "the noisy peer was never limited: {outcomes:?}"
+    );
+    // Another identity has its own allowance.
+    assert!(c.ctl(&["fetch", "--contact", &contact]).is_ok());
+    assert_eq!(number(&balance(&b, &a), "issued"), 0);
+}

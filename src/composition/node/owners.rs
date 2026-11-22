@@ -92,6 +92,7 @@ pub fn open(
     tracing::trace!("Opening node owners before admitting peer work");
     config.validate().map_err(|e| e.to_string())?;
     let params = Params::load(&layout.policy()).map_err(|e| format!("peer policy: {e}"))?;
+    let peer_policy = Configured::policy(params);
     let observations = Arc::new(
         FileObservations::open(&layout.observations())
             .map_err(|e| format!("opening the peer observations failed: {e:?}"))?,
@@ -136,7 +137,21 @@ pub fn open(
         .map_err(|e| format!("opening the lease catalog failed: {e:?}"))?,
     );
     let storage = if config.offering.is_some() {
-        Some(open_storage(layout, &config, local, create, clock.clone())?)
+        let neutral = PeerView {
+            peer: IdentityId([0; 32]),
+            trust_millionths: 0,
+            summary: Default::default(),
+            now_seconds: 0,
+        };
+        let pending = peer_policy.quota.limits(&neutral).pending;
+        Some(open_storage(
+            layout,
+            &config,
+            local,
+            create,
+            clock.clone(),
+            pending,
+        )?)
     } else {
         None
     };
@@ -267,7 +282,7 @@ pub fn open(
     Ok(Owners {
         local,
         provider: storage.is_some(),
-        policy: Configured::policy(params),
+        policy: peer_policy,
         params,
         observations,
         config,
@@ -411,9 +426,12 @@ fn open_storage(
     local: IdentityId,
     create: bool,
     clock: Arc<NativeClock>,
+    pending_per_peer: usize,
 ) -> Result<StorageParts, String> {
     tracing::trace!("Opening the durable Storage owner");
-    let capacity = config.capacity;
+    let mut capacity = config.capacity;
+    // The quota policy may only tighten the provider's per-requester operation limit.
+    capacity.per_owner = capacity.per_owner.min(pending_per_peer);
     let bytes = Arc::new(
         storage::bytes::Store::open(&layout.storage(), create).map_err(stage("Storage bytes"))?,
     );

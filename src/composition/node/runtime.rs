@@ -11,7 +11,7 @@ use super::{
     link::{Command, Link},
     owners::{self, Owners},
 };
-use crate::composition::policy::{Kind, Verdict};
+use crate::composition::policy::{Kind, Rates, Verdict};
 use crate::composition::server::{
     Stage,
     config::Config,
@@ -28,8 +28,8 @@ use crate::modules::{
     },
     transport::{
         api::{
-            Accepted, ConnectRequest, ConnectionRole, Event, ExpectedPeer, PeerContext, Request,
-            TransportControl,
+            Accepted, ConnectRequest, ConnectionRole, Event, ExpectedPeer, FailureOrigin,
+            PeerContext, Request, StreamOutcome, TransportControl,
         },
         handles::{ConnectionHandle, ConnectionId},
         ports::identity::IdentityId as WireId,
@@ -191,6 +191,11 @@ fn drive(
 ) -> Result<(), String> {
     tracing::trace!("Driving the node event loop");
     let mut last_flush = Instant::now();
+    let mut shared = Shared {
+        link,
+        owners,
+        limiter: Limiter::default(),
+    };
     let waker = Waker::from(Arc::new(Notify(signal.clone())));
     let mut cx = Context::from_waker(&waker);
     let mut pending: Pending = Vec::new();
@@ -211,7 +216,7 @@ fn drive(
             transport
                 .observe(&event)
                 .map_err(|e| format!("transport failed: {e:?}"))?;
-            route(transport, bridge, link, owners, &mut pending, event, report);
+            route(transport, bridge, &mut shared, &mut pending, event, report);
         }
         if last_flush.elapsed() >= OBSERVATION_FLUSH {
             last_flush = Instant::now();
@@ -303,13 +308,25 @@ fn serve_commands(
 fn route(
     transport: &mut Transport,
     bridge: &mut Bridge,
-    link: &Link,
-    owners: &Owners,
+    ctx: &mut Shared<'_>,
     pending: &mut Pending,
     event: Event,
     report: &mut impl FnMut(Status),
 ) {
     tracing::trace!("Routing one verified observation");
+    let Shared {
+        link,
+        owners,
+        limiter,
+    } = ctx;
+    if !limiter.permit(owners, link, &event) {
+        if let Some(connection) = connection_of(&event) {
+            close(transport, pending, &connection);
+        }
+        if matches!(event, Event::StreamOpened { .. }) {
+            return;
+        }
+    }
     let authenticated = match &event {
         Event::Authenticated(context) => Some(context.connection.clone()),
         _ => None,
@@ -353,6 +370,71 @@ fn route(
                 close(transport, pending, &connection);
             }
         }
+    }
+}
+
+// What routing needs besides Transport and the bridge.
+struct Shared<'a> {
+    link: &'a Link,
+    owners: &'a Owners,
+    limiter: Limiter,
+}
+
+/// Rolling-minute counters of requests the peers opened and of failures attributed to them.
+#[derive(Default)]
+struct Limiter {
+    requests: Rates,
+    failures: Rates,
+}
+
+impl Limiter {
+    // Count one request or failure against the quota policy; false means the limit is exceeded and the
+    // connection must close. Free reads and paid requests are both streams, so one counter covers probing.
+    fn permit(&mut self, owners: &Owners, link: &Link, event: &Event) -> bool {
+        tracing::trace!("Applying per-identity rate limits");
+        let (peer, failure) = match event {
+            Event::StreamOpened { context, .. } => (IdentityId(context.peer_identity.0), false),
+            Event::StreamClosed { stream, outcome } if failed_by_peer(outcome) => {
+                match link.peers().peer_of(stream.connection_id()) {
+                    Some(peer) => (peer, true),
+                    None => return true,
+                }
+            }
+            _ => return true,
+        };
+        let now = owners::unix_seconds();
+        let limits = owners.policy.quota.limits(&owners.peer_view(peer, now));
+        if failure {
+            owners.observations.record(peer, Kind::Failed, now);
+            return self.failures.hit(peer, now, limits.failures_per_minute);
+        }
+        let allowed = self.requests.hit(peer, now, limits.requests_per_minute);
+        if !allowed {
+            tracing::debug!("A peer exceeded its request rate and its connection is being closed");
+            owners.observations.record(peer, Kind::Refused, now);
+        }
+        allowed
+    }
+}
+
+// Whether a stream ended because the peer failed it or cancelled it.
+fn failed_by_peer(outcome: &StreamOutcome) -> bool {
+    matches!(
+        outcome,
+        StreamOutcome::Failed(_)
+            | StreamOutcome::Cancelled {
+                origin: FailureOrigin::Peer,
+                ..
+            }
+    )
+}
+
+// The connection an event concerns, when it concerns exactly one.
+fn connection_of(event: &Event) -> Option<ConnectionId> {
+    match event {
+        Event::StreamOpened { context, .. } => Some(context.connection.clone()),
+        Event::StreamClosed { stream, .. } => Some(stream.connection_id().clone()),
+        _ => None,
     }
 }
 
@@ -455,6 +537,23 @@ mod tests {
             )
         });
         (thread, observed)
+    }
+    // Only failures and peer cancellations count against a peer's failure rate; normal completion and
+    // cancellations the node itself made never do.
+    #[test]
+    fn only_peer_attributable_endings_count_as_failures() {
+        use crate::modules::transport::api::{CancellationReason, Failure, FailureCode};
+        assert!(!failed_by_peer(&StreamOutcome::Completed));
+        let cancelled = |origin| StreamOutcome::Cancelled {
+            origin,
+            reason: CancellationReason::Cancelled,
+        };
+        assert!(!failed_by_peer(&cancelled(FailureOrigin::Local)));
+        assert!(failed_by_peer(&cancelled(FailureOrigin::Peer)));
+        assert!(failed_by_peer(&StreamOutcome::Failed(Failure {
+            origin: FailureOrigin::Local,
+            code: FailureCode::ProtocolViolation,
+        })));
     }
     // An initialized node recovers, publishes, listens, then drains to a clean stop with exit Ok.
     #[test]

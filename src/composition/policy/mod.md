@@ -8,6 +8,7 @@ them from real usage or simulation without touching protocol code.
 | --- | --- |
 | [Contracts](contracts.md) | The six decision traits, their inputs and outputs |
 | [Parameters](params.md) | Validated `policy.json` with finite ranges and conservative defaults |
+| [Rates](rates.md) | Bounded rolling-minute counters per identity |
 | [Observations](observations.md) | Bounded per-peer facts that decisions read |
 | [Configured](configured.md) | Implementation of every contract from one parameter set |
 

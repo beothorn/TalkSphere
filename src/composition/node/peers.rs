@@ -69,6 +69,15 @@ impl Peers {
         Some(table.remove(index).peer)
     }
 
+    /// The peer a live connection belongs to.
+    pub fn peer_of(&self, connection: &ConnectionId) -> Option<IdentityId> {
+        tracing::trace!("Looking up the peer of a connection");
+        self.lock()
+            .iter()
+            .find(|l| l.connection.id() == connection)
+            .map(|l| l.peer)
+    }
+
     /// Live connections in total.
     pub fn count(&self) -> usize {
         tracing::trace!("Counting live connections");
@@ -156,6 +165,7 @@ mod tests {
             vec![IdentityId([1; 32]), IdentityId([2; 32])]
         );
         assert_eq!(peers.connection_to(IdentityId([1; 32])), Some(a2.clone()));
+        assert_eq!(peers.peer_of(b.id()), Some(IdentityId([2; 32])));
         assert_eq!(peers.remove(a2.id()), Some(IdentityId([1; 32])));
         assert_eq!(peers.connection_to(IdentityId([1; 32])), Some(a1.clone()));
         assert_eq!(peers.remove(a2.id()), None);

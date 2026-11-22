@@ -6,6 +6,7 @@ pub mod configured;
 pub mod contracts;
 pub mod observations;
 pub mod params;
+pub mod rates;
 
 pub use configured::Configured;
 pub use contracts::{
@@ -14,3 +15,4 @@ pub use contracts::{
 };
 pub use observations::{Invalid, Kind, Observations};
 pub use params::{Params, ParamsError};
+pub use rates::Rates;

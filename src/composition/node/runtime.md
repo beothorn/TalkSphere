@@ -26,3 +26,14 @@ Every authenticated connection is recorded as an observation. Connections the pe
 connection is closed before it is registered or served. Connections this node chose to open are never refused.
 An unconfigured peer is admitted by default and may read the free Board and definition; paid work still needs
 the provider's nonzero Ledger trust. Observations are written every 5 seconds and at shutdown.
+
+## Quotas and rate limits
+
+Per-identity limits come from the [quota policy](../policy/contracts.md) and apply before any work or charge.
+Every stream a peer opens counts as one request in a rolling minute, so free Board and definition reads and
+paid requests share one limit; every stream that fails or that the peer cancels counts as one failure. A peer
+that exceeds `requestsPerMinute` or `failuresPerMinute` has the offending connection closed and a refusal is
+recorded, and refused events are not counted again. Simultaneous pending operations per requester use the
+smaller of `capacity.perOwner` and `quota.pending` (one value for all peers, because the Storage gate takes
+one number); a request over it is refused before work with `resource_limit` and no charge. Defaults impose no
+rate limit.

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-5 and 8 are complete.
+Status: in progress; steps 1-6 and 8 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -21,7 +21,7 @@ large simulations without touching protocol code.
 - [x] **3.** Load policy parameters from a validated policy file.
 - [x] **4.** Record per-peer observations durably and within fixed bounds.
 - [x] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
-- [ ] **6.** Apply per-identity quotas and rate limits before accepting work.
+- [x] **6.** Apply per-identity quotas and rate limits before accepting work.
 - [ ] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
 - [x] **8.** Track live peer connections by identity.
 - [ ] **9.** Send requests to a peer over the connection that peer opened.
@@ -162,6 +162,8 @@ request rate) before quotes are accepted, refusing with `resource_limit` and no
 charge. Rate-limit failed authentication and identifier probing without
 revealing whether a resource exists. Test each limit at its boundary and that
 refusals cost nothing.
+
+Completed: [Rates](../../src/composition/policy/rates.md) and the [runtime quota rules](../../src/composition/node/runtime.md). Rate and failure limits close the offending connection (the stream layer has no per-identity reply hook); the pending limit tightens `capacity.perOwner` and is uniform across peers. Step 7 reviews whether CR2SE should define a clearer refusal for rate limits.
 
 ### 7. Review CR2SE quota and refusal rules and propose language-independent changes upstream
 
