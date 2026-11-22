@@ -377,7 +377,7 @@ fn removal_settles_release_credits_once_and_recoverably() {
         vec![(key(3), f.store.record(id).unwrap().metadata.sender_id, 5)]
     );
     // Applying again (crash repair after the record was written but before the journal was) does not issue twice either.
-    assert!(f.participant.apply(key(3), &remove).is_ok());
+    assert!(f.participant.apply(key(3), &remove, 1000).is_ok());
     assert_eq!(f.issuer.issued().len(), 1);
 }
 
@@ -575,7 +575,7 @@ fn dependency_failures_refuse_work_and_recovery_applies_once() {
     let token = f.participant.prepare(key(2), &effect).unwrap();
     let first = f.participant.commit(key(2), &token).unwrap();
     // Re-applying the same recovery (as crash repair would) returns the recorded receipt and does not sign again.
-    assert_eq!(f.participant.apply(key(2), &effect), Ok(first));
+    assert_eq!(f.participant.apply(key(2), &effect, 1000), Ok(first));
     f.clock.fail();
     assert_eq!(
         f.participant.prepare(key(3), &Effect::Query),
@@ -608,4 +608,28 @@ fn stored_other(f: &Fixture) -> PlacementId {
     let token = f.participant.prepare(key(8), &effect).unwrap();
     f.participant.commit(key(8), &token).unwrap();
     id
+}
+
+// A commit at a retained decision time uses that time rather than the clock, and committing again (even later) returns the same outcome.
+#[test]
+fn commit_at_applies_the_retained_decision_time() {
+    let f = fixture();
+    let id = stored(&f);
+    let token = f
+        .participant
+        .prepare(key(2), &recover_effect(id, 7))
+        .unwrap();
+    f.clock.advance(1);
+    let Outcome::Recovered { receipt, .. } = f.participant.commit_at(key(2), &token, 1007).unwrap()
+    else {
+        panic!("recovered")
+    };
+    assert_eq!(receipt.recovered_at, 1007);
+    f.clock.advance(5);
+    assert_eq!(
+        f.participant
+            .commit_at(key(2), &token, 1100)
+            .map(|o| matches!(o, Outcome::Recovered { receipt: r, .. } if r == receipt)),
+        Ok(true)
+    );
 }

@@ -185,6 +185,21 @@ impl Participant {
     /// effect was applied (committing again completes it).
     pub fn commit(&self, key: OperationKey, token: &[u8; 32]) -> Result<Outcome, Error> {
         tracing::trace!("Committing a Messaging effect");
+        let now = self.clock.now()?;
+        self.commit_at(key, token, now)
+    }
+
+    /// Like [`Participant::commit`] but applying the effect at the decision time `at`, which the coordinator selected and retained, so
+    /// a delayed delivery or a restart reproduces the same acceptance, expiry and receipt times. `at` comes from the finalized result.
+    /// # Errors
+    /// As for `commit`.
+    pub fn commit_at(
+        &self,
+        key: OperationKey,
+        token: &[u8; 32],
+        at: u64,
+    ) -> Result<Outcome, Error> {
+        tracing::trace!("Committing a Messaging effect at a retained decision time");
         match self.journal.get(key) {
             None => Err(Error::NotAvailable),
             Some(Entry::Aborted) => Err(Error::Conflict),
@@ -193,7 +208,7 @@ impl Participant {
                 token: expected, ..
             }) if expected != *token => Err(Error::NotAvailable),
             Some(Entry::Prepared { effect, .. }) => {
-                let outcome = self.apply(key, &effect)?;
+                let outcome = self.apply(key, &effect, at)?;
                 self.journal.put(key, Entry::Committed(outcome.clone()))?;
                 if let Some(id) = effect.placement() {
                     self.locks().remove(&id);
@@ -304,8 +319,7 @@ impl Participant {
     }
 
     // Apply an effect idempotently: an effect already visible in the store is recognized and its outcome rebuilt.
-    fn apply(&self, key: OperationKey, effect: &Effect) -> Result<Outcome, Error> {
-        let now = self.clock.now()?;
+    fn apply(&self, key: OperationKey, effect: &Effect, now: u64) -> Result<Outcome, Error> {
         match effect {
             Effect::Query => Ok(Outcome::Query),
             Effect::Store {
