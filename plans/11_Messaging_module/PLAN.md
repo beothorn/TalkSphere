@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-8 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-9 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -18,7 +18,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **6.** Validate Messaging offering terms and advertised limits.
 - [x] **7.** Validate operation-specific inputs and outputs.
 - [x] **8.** Build and verify the exact message signing bytes.
-- [ ] **9.** Build and verify recovery request and receipt signatures.
+- [x] **9.** Build and verify recovery request and receipt signatures.
 - [ ] **10.** Implement the encrypted Messaging payload format.
 - [ ] **11.** Publish and validate the Board identity encryption credential.
 - [ ] **12.** Persist bounded payload staging and placement records.
@@ -211,6 +211,8 @@ Completed: [signing](../../src/modules/messaging/signing.md); MS-01 passes again
 Build the recovery request bytes and the provider receipt bytes, sign them and
 verify both. Test MS-06 and the receipt part of MS-07: each wrong provider,
 message, hash, recovery ID, recipient key or signature fails.
+
+Completed: [receipt](../../src/modules/messaging/receipt.md); MS-06 and MS-07 match the independent vector byte for byte and every single-value mutation of a request or receipt is rejected.
 
 ### 10. Implement the encrypted Messaging payload format
 
