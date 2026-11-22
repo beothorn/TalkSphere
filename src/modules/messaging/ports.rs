@@ -32,3 +32,21 @@ pub trait Signer: Send + Sync {
     /// `Unavailable` when the key is not accessible.
     fn sign(&self, message: &[u8]) -> Result<Signature, Error>;
 }
+
+/// Chooses the early-release credits offered for removing a placement; the node fills this from its peer policy.
+pub trait ReleasePolicy: Send + Sync {
+    /// Credits to offer given the placement's cumulative store and renewal payments and the smallest amount the sender
+    /// accepts. The module bounds the answer by the payments itself, so a policy cannot enlarge the ceiling.
+    fn release(&self, cumulative_payments: u64, minimum: u64) -> u64;
+}
+
+/// A policy that never offers release credits.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NoRelease;
+
+impl ReleasePolicy for NoRelease {
+    /// Always zero.
+    fn release(&self, _cumulative_payments: u64, _minimum: u64) -> u64 {
+        0
+    }
+}

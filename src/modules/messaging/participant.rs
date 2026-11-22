@@ -133,14 +133,18 @@ impl Participant {
             return Err(Error::Unavailable);
         }
         let now = self.clock.now()?;
-        self.check_preconditions(effect, now)?;
         let mut token = [0u8; 32];
         self.entropy.fill(&mut token)?;
         let mut locks = self.locks();
+        if let Some(id) = effect.placement()
+            && locks.get(&id).is_some_and(|holder| *holder != key)
+        {
+            return Err(Error::Conflict);
+        }
+        // Preconditions are judged while holding the lock table, after any earlier operation on the placement has finished: otherwise
+        // a second operation could pass them just before the first applied and then be mistaken for a replay of it.
+        self.check_preconditions(effect, now)?;
         if let Some(id) = effect.placement() {
-            if locks.get(&id).is_some_and(|holder| *holder != key) {
-                return Err(Error::Conflict);
-            }
             locks.insert(id, key);
         }
         if let Err(error) = self.journal.put(

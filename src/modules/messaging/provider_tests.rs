@@ -1,7 +1,7 @@
 //! Provider tests for assessing and committing stores (MS-02, MS-03).
 use super::*;
 use crate::modules::messaging::{
-    operation::{Cursor, DiscoverInput, RecoverInput, RenewInput, StatusInput},
+    operation::{Cursor, DiscoverInput, RecoverInput, RemoveInput, RenewInput, StatusInput},
     receipt,
 };
 use crate::modules::{
@@ -830,5 +830,182 @@ fn ms_10_concurrent_renewals_have_one_winner() {
     assert_eq!(
         h.store.record(stored.placement_id).unwrap().expires_at,
         1020
+    );
+}
+
+// A release policy offering a fixed percentage of the payments, like the node's configured policy but without the minimum floor, so
+// the tests can show that the module itself bounds the result.
+struct Percent(u64);
+impl super::super::ports::ReleasePolicy for Percent {
+    fn release(&self, payments: u64, minimum: u64) -> u64 {
+        (payments * self.0 / 100).max(minimum)
+    }
+}
+
+// A provider over the harness's participant that offers `percent` of the payments as release credits.
+fn releasing(h: &Harness, percent: u64) -> Provider {
+    Provider::new(
+        terms(),
+        h.provider.participant().clone(),
+        h.clock.clone(),
+        h.staging.clone(),
+    )
+    .with_release_policy(Arc::new(Percent(percent)))
+}
+
+fn removal(p: PlacementId, expected: u64, minimum: u64) -> RemoveInput {
+    RemoveInput {
+        placement_id: p,
+        removal_id: super::super::ids::RemovalId([4; 32]),
+        expected_expires_at: expected,
+        minimum_release_credits: minimum,
+    }
+}
+
+// MS-11/MS-12 quote rules: the release amount is the policy's choice bounded by the minimum and by the cumulative store and renewal
+// payments; later prices of other operations never enlarge the ceiling; nothing changes while quoting.
+#[test]
+fn quote_removal_bounds_release_credits_by_the_payments() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let (a, p) = (h.sender.identity(), stored.placement_id);
+    let half = releasing(&h, 50);
+    let quote = half.quote_removal(a, &removal(p, 1010, 0)).unwrap();
+    assert_eq!(
+        (quote.release_credits, quote.price),
+        (8, half.terms().remove_price),
+        "50% of 17 rounds down"
+    );
+    // The minimum raises the offer up to the ceiling but never above the payments.
+    assert_eq!(
+        half.quote_removal(a, &removal(p, 1010, 12))
+            .unwrap()
+            .release_credits,
+        12
+    );
+    assert_eq!(
+        half.quote_removal(a, &removal(p, 1010, 17))
+            .unwrap()
+            .release_credits,
+        17
+    );
+    assert_eq!(
+        half.quote_removal(a, &removal(p, 1010, 18)).err(),
+        Some(Error::Invalid)
+    );
+    // A policy that offers more than the payments is cut to them.
+    assert_eq!(
+        releasing(&h, 500)
+            .quote_removal(a, &removal(p, 1010, 0))
+            .unwrap()
+            .release_credits,
+        17
+    );
+    // Operations that charge other prices do not change the ceiling; renewals do.
+    h.provider
+        .discover(
+            h.recipient.identity(),
+            DiscoverInput {
+                cursor: None,
+                limit: 1,
+            },
+        )
+        .unwrap();
+    h.provider
+        .status(a, StatusInput { placement_id: p })
+        .unwrap();
+    assert_eq!(
+        releasing(&h, 100)
+            .quote_removal(a, &removal(p, 1010, 0))
+            .unwrap()
+            .release_credits,
+        17
+    );
+    h.provider
+        .renew(
+            key(2),
+            a,
+            RenewInput {
+                placement_id: p,
+                expected_expires_at: 1010,
+                additional_seconds: 10,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        releasing(&h, 100)
+            .quote_removal(a, &removal(p, 1020, 0))
+            .unwrap()
+            .release_credits,
+        17 + 15
+    );
+    // The default policy offers nothing, so a positive minimum is refused.
+    assert_eq!(
+        h.provider
+            .quote_removal(a, &removal(p, 1020, 0))
+            .unwrap()
+            .release_credits,
+        0
+    );
+    assert_eq!(
+        h.provider.quote_removal(a, &removal(p, 1020, 1)).err(),
+        Some(Error::Limit)
+    );
+    assert_eq!(h.store.record(p).unwrap().state, State::Pending);
+}
+
+// A removal can be quoted only by the sender of a pending, unexpired placement that still has the expiry the sender saw.
+#[test]
+fn quote_removal_refuses_unauthorized_or_stale_requests() {
+    let h = harness();
+    let stored = h
+        .provider
+        .store(key(1), h.sender.identity(), input(&h, b"abc", 10))
+        .unwrap();
+    let p = stored.placement_id;
+    let half = releasing(&h, 50);
+    assert_eq!(
+        half.quote_removal(h.recipient.identity(), &removal(p, 1010, 0))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        half.quote_removal(h.sender.identity(), &removal(PlacementId([9; 32]), 1010, 0))
+            .err(),
+        Some(Error::NotAvailable)
+    );
+    assert_eq!(
+        half.quote_removal(h.sender.identity(), &removal(p, 1009, 0))
+            .err(),
+        Some(Error::Conflict)
+    );
+    h.clock.set(1004);
+    h.provider
+        .recover(key(2), h.recipient.identity(), recovery_request(&h, p, 7))
+        .unwrap();
+    assert_eq!(
+        half.quote_removal(h.sender.identity(), &removal(p, 1010, 0))
+            .err(),
+        Some(Error::NotAvailable),
+        "recovered"
+    );
+    let again = harness();
+    let stored = again
+        .provider
+        .store(key(1), again.sender.identity(), input(&again, b"abc", 10))
+        .unwrap();
+    again.clock.set(1010);
+    assert_eq!(
+        releasing(&again, 50)
+            .quote_removal(
+                again.sender.identity(),
+                &removal(stored.placement_id, 1010, 0)
+            )
+            .err(),
+        Some(Error::NotAvailable),
+        "expired"
     );
 }

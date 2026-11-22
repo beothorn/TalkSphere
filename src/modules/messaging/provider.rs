@@ -13,11 +13,11 @@ use super::{
     ids::{PlacementId, Signature},
     metadata::{Metadata, SignedMessage},
     operation::{
-        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RenewInput, RenewOutput,
-        StatusInput, StatusOutput, StoreInput, StoreOutput,
+        DiscoverInput, DiscoverOutput, Entry, RecoverInput, RecoverOutput, RemoveInput, RenewInput,
+        RenewOutput, StatusInput, StatusOutput, StoreInput, StoreOutput,
     },
     participant::Participant,
-    ports::Clock,
+    ports::{Clock, NoRelease, ReleasePolicy},
     pricing, receipt, signing,
     staging::{Reservation, Staging},
     state::{Encoding, MINIMUM_ENCRYPTED_BYTES, State},
@@ -82,6 +82,7 @@ pub struct Provider {
     participant: Arc<Participant>,
     clock: Arc<dyn Clock>,
     staging: Staging,
+    release: Arc<dyn ReleasePolicy>,
 }
 
 impl Provider {
@@ -98,7 +99,16 @@ impl Provider {
             participant,
             clock,
             staging,
+            release: Arc::new(NoRelease),
         }
+    }
+
+    /// Use `policy` to choose early-release credits when removals are quoted; without it none are offered.
+    #[must_use]
+    pub fn with_release_policy(mut self, policy: Arc<dyn ReleasePolicy>) -> Self {
+        tracing::trace!("Installing the release credit policy");
+        self.release = policy;
+        self
     }
 
     /// The terms this provider serves.
@@ -460,6 +470,61 @@ impl Provider {
             }),
             _ => Err(Error::Conflict),
         }
+    }
+}
+
+/// The terms of one removal, fixed before anything changes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RemovalQuote {
+    /// The exact early-release credits that will be issued to the sender.
+    pub release_credits: u64,
+    /// The removal charge.
+    pub price: u64,
+}
+
+impl Provider {
+    /// Quote a removal: one exact release amount from the policy, bounded below by the sender's minimum and above by the
+    /// placement's cumulative store and renewal payments. Discover, recover, status, remove and check prices are never added to
+    /// those payments, so they cannot enlarge the ceiling. Nothing changes.
+    /// # Errors
+    /// `NotAvailable` unless the placement is pending, unexpired and owned by the sender; `Conflict` when the expiry the sender saw
+    /// is stale; `Invalid` when the minimum exceeds the payments; `Limit` when the policy offers less than the minimum.
+    pub fn quote_removal(
+        &self,
+        caller: IdentityId,
+        input: &RemoveInput,
+    ) -> Result<RemovalQuote, Error> {
+        tracing::trace!("Quoting early-release credits for a removal");
+        let now = self.clock.now()?;
+        let record = self
+            .participant
+            .store()
+            .record(input.placement_id)
+            .ok_or(Error::NotAvailable)?;
+        if record.state != State::Pending
+            || !record.active_at(now)
+            || record.metadata.sender_id != caller
+        {
+            return Err(Error::NotAvailable);
+        }
+        if record.expires_at != input.expected_expires_at {
+            return Err(Error::Conflict);
+        }
+        let payments = record.payments;
+        if input.minimum_release_credits > payments {
+            return Err(Error::Invalid);
+        }
+        let release_credits = self
+            .release
+            .release(payments, input.minimum_release_credits)
+            .min(payments);
+        if release_credits < input.minimum_release_credits {
+            return Err(Error::Limit);
+        }
+        Ok(RemovalQuote {
+            release_credits,
+            price: self.terms.remove_price,
+        })
     }
 }
 

@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-22 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-23 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -32,7 +32,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **20.** Return cached recovery output for an exact retry without a new charge.
 - [x] **21.** Implement sender-only status with the recorded receipt.
 - [x] **22.** Implement guarded renewal for pending and recovered placements.
-- [ ] **23.** Quote early-release credits before removal.
+- [x] **23.** Quote early-release credits before removal.
 - [ ] **24.** Settle the removal charge and release credits once in one recoverable decision.
 - [ ] **25.** Retain removal replay results for the lifetime of the ledger.
 - [ ] **26.** Implement authorized paid byte evidence for pending placements.
@@ -335,6 +335,8 @@ Compute one exact `releaseCredits` through the module's release port (filled by 
 node), bounded by the minimum requested and the cumulative store and renewal payments. Bind it in the quote
 before any change. Test the quote rules of MS-11 and MS-12, including that
 discover, recover, status, remove and check prices never enlarge the ceiling.
+
+Completed: `Provider::quote_removal` and the `ReleasePolicy` port in [ports](../../src/modules/messaging/ports.md) (the node fills it from `Credit::release` at composition, step 30). While testing this, a race in `Participant::prepare` was found and fixed: preconditions are now judged under the placement lock so a concurrent identical renewal cannot be mistaken for a replay.
 
 ### 24. Settle the removal charge and release credits once in one recoverable decision
 
