@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-14 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-15 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -24,7 +24,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **12.** Persist bounded payload staging and placement records.
 - [x] **13.** Implement placement states, expiration and per-placement serialization.
 - [x] **14.** Implement durable participant preparation, commit, abort and status queries.
-- [ ] **15.** Recover Messaging participants before admitting new work.
+- [x] **15.** Recover Messaging participants before admitting new work.
 - [ ] **16.** Assess store metadata before receiving the payload body.
 - [ ] **17.** Commit validated stores as durable pending placements.
 - [ ] **18.** Implement recipient-only discovery with the exclusive cursor.
@@ -265,6 +265,8 @@ Completed: [effects](../../src/modules/messaging/effect.md), [journal](../../src
 On open, resolve prepared participants from Services decisions before new work
 is admitted. Test recovery at each prepared state and that no new store is
 accepted until recovery completes.
+
+Completed: [recovery](../../src/modules/messaging/recovery.md), tested with native stores reopened after a simulated crash at the prepared state and in the apply-before-journal window.
 
 ### 16. Assess store metadata before receiving the payload body
 

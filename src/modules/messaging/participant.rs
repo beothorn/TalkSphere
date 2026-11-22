@@ -89,7 +89,6 @@ impl Participant {
     }
 
     /// Admit new work. Called only by recovery once every prepared effect is resolved.
-    #[allow(dead_code)] // Called by recovery, added in the next step.
     pub(super) fn set_ready(&self) {
         tracing::trace!("Admitting new Messaging work after recovery");
         self.ready.store(true, Ordering::SeqCst);

@@ -44,3 +44,5 @@ pub mod effect;
 pub mod journal;
 
 pub mod participant;
+
+pub mod recovery;
