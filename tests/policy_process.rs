@@ -705,3 +705,71 @@ fn a_failed_check_removes_the_replica_and_lowers_trust() {
     // trust the operator set when funding, floored at zero).
     assert_eq!(number(&balance(&server, &client), "trust"), 0);
 }
+
+// The policy can be inspected: the parameters come back exactly as validated, and an explanation for a
+// peer shows the local observations and the decisions they lead to, without anything the peer supplied.
+#[test]
+fn policy_show_and_explain_report_decisions_and_their_inputs() {
+    let dir = Dir::new("explain");
+    let (mut server, mut client) = (
+        Node::init(&dir.0, "server", None),
+        Node::init(&dir.0, "client", None),
+    );
+    server.set_policy(
+        r#"{"version":1,"admission":{"connections":8,"perPeerConnections":2},
+            "quota":{"pending":3,"requestsPerMinute":600},
+            "trust":{"checkPassed":100000,"checkFailed":200000,"ceiling":500000},
+            "credit":{"bootstrapCredits":40,"bootstrapTrust":1,"bootstrapBudget":100}}"#,
+    );
+    server.start(None);
+    client.start(None);
+    let shown = server.ctl(&["policy-show"]).unwrap();
+    assert_eq!(shown["parameters"]["quota"]["pending"], 3);
+    assert_eq!(
+        shown["parameters"]["quota"]["failuresPerMinute"],
+        serde_json::Value::Null
+    );
+    assert_eq!(shown["parameters"]["credit"]["bootstrapBudget"], 100);
+    assert_eq!(shown["bootstrapCreditsIssued"], 0);
+    // Before the client ever connects its history is empty and a first grant would be issued.
+    let before = server
+        .ctl(&["policy-explain", "--peer", &client.id])
+        .unwrap();
+    assert_eq!(before["admission"], "allow");
+    assert_eq!(before["bootstrap"]["grant"], 40);
+    assert_eq!(before["observations"]["connections"], 0);
+    assert_eq!(before["limits"]["requestsPerMinute"], 600);
+    assert_eq!(
+        before["limits"]["failuresPerMinute"],
+        serde_json::Value::Null
+    );
+    client
+        .ctl(&["fetch", "--contact", &server.contact(server.port)])
+        .unwrap();
+    let after = server
+        .ctl(&["policy-explain", "--peer", &client.id])
+        .unwrap();
+    assert_eq!(after["observations"]["connections"], 1);
+    assert_eq!(after["observations"]["bootstrapCredits"], 40);
+    assert_eq!(after["trustMillionths"], 1);
+    assert_eq!(after["bootstrap"]["grant"], serde_json::Value::Null);
+    assert_eq!(
+        after["bootstrap"]["reason"],
+        "this identity was already granted"
+    );
+    assert_eq!(after["liveConnections"]["fromPeer"], 1);
+    assert_eq!(after["trustAfter"]["checkPassed"], 100_001);
+    // A failed check would drop trust to the floor; an event that changes nothing is reported as null.
+    assert_eq!(after["trustAfter"]["checkFailed"], 0);
+    assert_eq!(after["trustAfter"]["failed"], serde_json::Value::Null);
+    assert_eq!(
+        server.ctl(&["policy-show"]).unwrap()["bootstrapCreditsIssued"],
+        40
+    );
+    // A malformed identity is a refusal, not a guess.
+    assert!(
+        server
+            .ctl(&["policy-explain", "--peer", "nonsense"])
+            .is_err()
+    );
+}

@@ -20,6 +20,8 @@ const ACTIONS: &[(&str, &[&str], &[&str])] = &[
     ("wanted-add", &["--file"], &[]),
     ("replica-add", &["--file"], &[]),
     ("replicas", &[], &[]),
+    ("policy-show", &[], &[]),
+    ("policy-explain", &["--peer"], &[]),
     (
         "store",
         &["--contact", "--file", "--retention-seconds", "--max-spend"],
@@ -298,6 +300,10 @@ mod tests {
         assert!(parse(&words("--node-root r wanted-add --file f")).is_ok());
         assert!(parse(&words("--node-root r replica-add --file f")).is_ok());
         assert!(parse(&words("--node-root r replicas")).is_ok());
+        assert!(parse(&words("--node-root r policy-show")).is_ok());
+        assert!(parse(&words("--node-root r policy-explain --peer p")).is_ok());
+        assert!(parse(&words("--node-root r policy-explain")).is_err());
+        assert!(parse(&words("--node-root r policy-show --peer p")).is_err());
         assert!(parse(&words("--node-root r replica-add")).is_err());
         assert!(parse(&words("--node-root r replicas --file f")).is_err());
         assert!(parse(&words("--node-root r fulfil")).is_err());

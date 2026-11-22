@@ -26,3 +26,4 @@ return `unsupported`.
 
 `wanted-add` queues one object for the next client that fulfils this node's [wanted offering](../wanted.md); `fulfil` offers to fulfil a peer's wanted terms. `status` also reports the wanted queue.
 `replica-add` seals a hosted item and adds it to the [replica book](../replicas/mod.md); `replicas` lists items, the target and confirmed replicas.
+`policy-show` returns the validated peer policy parameters and node-wide counters; `policy-explain --peer ID` returns the local observations about a peer and what admission, quota, trust and bootstrap would decide for it now. Only configuration and local observations appear, never peer-supplied text.

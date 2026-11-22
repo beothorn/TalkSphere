@@ -23,6 +23,7 @@ use crate::{
             },
             wanted::Refusal,
         },
+        policy::{Event, Verdict},
         server::pump::Signal,
     },
     modules::{
@@ -257,6 +258,72 @@ impl Handler {
         }))
     }
 
+    // The validated policy parameters and the node-wide counters decisions depend on.
+    fn policy_show(&self) -> Value {
+        tracing::trace!("Showing the peer policy");
+        json!({
+            "parameters": self.owners.params.to_json(),
+            "bootstrapCreditsIssued": self.owners.observations.bootstrap_total(),
+            "liveConnections": self.link.peers().count(),
+            "wanted": self.owners.wanted.as_ref().map(|w| {
+                let (queued, in_flight) = w.counts();
+                json!({"queued": queued, "inFlight": in_flight})
+            }),
+        })
+    }
+
+    // What each policy contract would decide for one peer right now, and the recorded inputs behind it.
+    // Only local observations and configuration appear; nothing the peer supplied.
+    fn policy_explain(&self, request: &Request) -> Result<Value, ControlError> {
+        tracing::trace!("Explaining peer policy decisions for one peer");
+        let peer = Self::identity(request, "peer")?;
+        let at = now();
+        let view = self.owners.peer_view(peer, at);
+        let policy = &self.owners.policy;
+        let live = self.link.peers().count();
+        let from_peer = self.link.peers().count_for(peer);
+        let admission = match policy.admission.admit(&view, live, from_peer) {
+            Verdict::Allow => json!("allow"),
+            Verdict::Refuse(reason) => json!(format!("refuse: {reason:?}")),
+        };
+        let limits = policy.quota.limits(&view);
+        let rate = |n: u32| if n == u32::MAX { Value::Null } else { json!(n) };
+        let trust_after = |event| policy.trust.adjust(&view, event);
+        let granted = policy
+            .credit
+            .bootstrap(&view, self.owners.observations.bootstrap_total());
+        let why = match (granted, self.owners.params.credit.bootstrap_credits) {
+            (Some(_), _) => "a first grant would be issued on connection",
+            (None, 0) => "bootstrap is disabled",
+            (None, _) if view.summary.bootstrap_credits > 0 => "this identity was already granted",
+            (None, _) => "the bootstrap budget is used up",
+        };
+        let s = &view.summary;
+        Ok(json!({
+            "peer": text::format(peer),
+            "trustMillionths": view.trust_millionths,
+            "observations": {
+                "firstSeen": s.first_seen, "connections": s.connections,
+                "contributions": s.contributions, "checksPassed": s.checks_passed,
+                "checksFailed": s.checks_failed, "refusals": s.refusals, "failures": s.failures,
+                "bootstrapCredits": s.bootstrap_credits,
+            },
+            "liveConnections": {"total": live, "fromPeer": from_peer},
+            "admission": admission,
+            "limits": {
+                "pending": limits.pending, "requestsPerMinute": rate(limits.requests_per_minute),
+                "failuresPerMinute": rate(limits.failures_per_minute),
+            },
+            "trustAfter": {
+                "checkPassed": trust_after(Event::CheckPassed),
+                "checkFailed": trust_after(Event::CheckFailed),
+                "contributionVerified": trust_after(Event::ContributionVerified),
+                "failed": trust_after(Event::Failed),
+            },
+            "bootstrap": {"grant": granted.map(|g| g.credits), "reason": why},
+        }))
+    }
+
     // Hosted items with the CR2SE redundancy state, the local target and the unexpired confirmed agreements
     // shown separately, plus which observations are stale and when each agreement expires.
     fn replicas(&self) -> Value {
@@ -393,6 +460,8 @@ impl Execute for Handler {
             "leases" => Ok(self.leases()),
             "outcomes" => self.outcomes(request),
             "wanted-add" => self.wanted_add(request),
+            "policy-show" => Ok(self.policy_show()),
+            "policy-explain" => self.policy_explain(request),
             "replica-add" => self.replica_add(request),
             "replicas" => Ok(self.replicas()),
             "fetch" | "fulfil" | "store" | "retrieve" | "renew" | "check" | "remove" => {
