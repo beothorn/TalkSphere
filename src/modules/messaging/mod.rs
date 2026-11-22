@@ -27,3 +27,5 @@ pub mod codec;
 pub mod signing;
 
 pub mod receipt;
+
+pub mod encryption;

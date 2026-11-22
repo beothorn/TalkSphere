@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-9 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-10 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -19,7 +19,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **7.** Validate operation-specific inputs and outputs.
 - [x] **8.** Build and verify the exact message signing bytes.
 - [x] **9.** Build and verify recovery request and receipt signatures.
-- [ ] **10.** Implement the encrypted Messaging payload format.
+- [x] **10.** Implement the encrypted Messaging payload format.
 - [ ] **11.** Publish and validate the Board identity encryption credential.
 - [ ] **12.** Persist bounded payload staging and placement records.
 - [ ] **13.** Implement placement states, expiration and per-placement serialization.
@@ -221,6 +221,8 @@ X25519, HKDF salt and info, XChaCha20-Poly1305 and the `0x01` layout. Decryption
 yields no plaintext on failure. Test MS-14 against the existing independent
 fixture, plus wrong key, mutated metadata, tag tamper, version change and
 truncation. Confirm the generic envelope is never substituted.
+
+Completed: [encryption](../../src/modules/messaging/encryption.md); the output matches the independent PyNaCl payload byte for byte and every failure case yields no plaintext.
 
 ### 11. Publish and validate the Board identity encryption credential
 

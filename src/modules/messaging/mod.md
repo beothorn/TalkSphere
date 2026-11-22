@@ -10,6 +10,7 @@
 | [Operation](operation.md) | Inputs and outputs of the six operations and the check |
 | [Ports](ports.md) | Clock, entropy and signer supplied by composition |
 | [Signing](signing.md) | Message signing bytes, sender signing and verification |
+| [Encryption](encryption.md) | The identity-encrypted payload format |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |
 | [Codec](codec.md) | Typed requests and responses over the Services value model |
 | [Terms](terms.md) | Validated offering economics and limits |
