@@ -2,6 +2,12 @@
 //! hold one replica of the same message. Every node has its own protected identity store, Services, Ledger and Board files; the
 //! providers also own placements and journals. Keys never leave Identity: signatures and payload decryption use the same protected
 //! identity that authenticates the TCP connection.
+//!
+//! Process model (deliberate): all four nodes run in ONE OS process, each driven by its own reactor over real loopback TCP, with
+//! separate identity files, stores and listeners. Nothing is shared between nodes except the process address space and the
+//! readiness signal, and every byte between them crosses an authenticated socket. The limit is that this exercise cannot show
+//! a provider process crashing or restarting; that is covered by the `messaging::service::crash` tests and, for Storage, by the
+//! Storage example's child-process provider.
 use super::{
     failure,
     node::{self, Node, ProtectedIdentity},

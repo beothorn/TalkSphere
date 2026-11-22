@@ -460,7 +460,8 @@ identities sign and decrypt. `examples/messaging/` runs a sender, a recipient an
 own protected identity, TCP listener and native stores, in one OS process: replicas at both providers at exact prices, discovery,
 a signed recovery with decryption, one delivery of two replicas, status with receipt, renewal, a paid check and a removal releasing
 credits once. Deviation from the wording above: the nodes share one OS process (Storage's example can additionally run one provider
-as a child process); crash and reopen behavior is covered by `service::crash`. The exercise also exposed that a provider must price
+as a child process); crash and reopen behavior is covered by `service::crash`. This single-process choice was confirmed by the
+project owner; its limit is that provider process restarts are not exercised end to end here. The exercise also exposed that a provider must price
 recoveries from its own store, now `StorePlacements`.
 
 Completed (36): `examples/messaging.rs`, [docs/messaging/EXERCISE.md](../../docs/messaging/EXERCISE.md), `talksphere help messaging`, root

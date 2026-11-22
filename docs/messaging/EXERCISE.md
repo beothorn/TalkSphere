@@ -11,7 +11,9 @@ cargo run --locked --example messaging -- run
 cargo test --locked --example messaging
 ```
 
-Run creates four nodes in one process, each with its own protected identity file, its own listener and its own native Board,
+Run creates four nodes in one operating-system process (a deliberate choice: separate reactors, identity files, stores and
+listeners, with every byte crossing an authenticated loopback socket, but no separate process lifetimes, so it cannot show a
+provider process crashing or restarting; see the limit below), each with its own protected identity file, its own listener and its own native Board,
 Services and Ledger journals: a sender, a recipient and two providers. The providers also own native Messaging placements and a
 participant journal and recover them before the offering is published. The nodes authenticate pinned public identities over
 loopback TCP. The same protected identity authenticates each connection, signs messages and recovery requests, and decrypts the
