@@ -99,35 +99,55 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   All 25 detailed steps are complete for the finite Linux minimum profile: two separately operated
   `serve --node-root` processes demonstrate AT-E01 and its failure cases. See the
   [node handoff](../src/composition/node/HANDOFF.md) and [acceptance evidence](../docs/minimum-node/ACCEPTANCE.md).
-- [ ] **12. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
+- [ ] **12. [Peer policy and admission](12_Peer_policy/PLAN.md).** Isolate every decision CR2SE leaves
+  to local policy (admission, quotas, trust, bootstrap and earned credits,
+  replica targets, check and repair cadence, connections) behind contracts with
+  parameters in one validated file. Admit unconfigured peers, call clients over
+  the connections they opened, keep server-hosted data at client replicas, and
+  add a deterministic simulation harness for tuning. Planned in 23 steps; not started.
+
+## TalkSphere-required modules and client journey
+
+These modules are optional in CR2SE's minimum profile but required by
+TalkSphere, whose clients (for example a messenger app) use messages, profile
+pages and feeds through TalkSphere servers over CR2SE only.
+
+- [ ] **13. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
   discovery/recovery, receipts, renewal, release/removal, status, checks and
-  retries with durable replay guards. Optional in CR2SE's minimum profile, but
-  moved ahead of the other optional modules because the client journey needs it.
-  Planned in 38 steps; not started.
-- [ ] **13. [Full client journey](12_Client_journey/PLAN.md).** Create a full client journey where two clients
-  share storage, get credits and are able to send messages. Each node is able to
-  save and retrieve a file. Planned in 20 steps after Messaging; not started.
+  retries with durable replay guards. Planned in 38 steps; not started.
+- [ ] **14. [Hosted pages and feeds in CR2SE](13_Hosted_publications/PLAN.md).** Specification work in
+  CR2SE: let any provider host publisher-signed pages and feed posts, public or
+  encrypted for chosen readers, reusing Messaging placements, so publishers
+  that cannot accept connections (phones) can publish. Planned in 16 steps; not started.
+- [ ] **15. Static Pages module.** Implement hosted pages and the existing
+  publisher-served pages as accepted in milestone 14, reusing the Messaging
+  placement implementation. Planned after milestone 14.
+- [ ] **16. Public Feeds module.** Implement hosted feeds and the existing
+  publisher-served feeds as accepted in milestone 14, with signed posts,
+  attachments, cursors and local merging. Planned after milestone 14.
+- [ ] **17. [Full client journey](14_Client_journey/PLAN.md).** Over CR2SE only, two servers and several
+  outbound-only clients: clients earn credits by providing Storage, exchange
+  encrypted messages, publish and read profile pages and feeds, and each server
+  saves its hosted data at client replicas and retrieves it after loss.
+  Planned in 17 steps; not started.
 
 ## Optional CR2SE modules and full-feature PoC
 
-These modules are planned for TalkSphere but are optional in CR2SE's minimum
-profile. Implement each independently and register only complete capabilities.
+These modules are optional in CR2SE's minimum profile and not yet required by
+TalkSphere. Implement each independently and register only complete capabilities.
 
-- [ ] **14. Node API module.** Add authenticated local client access, versioned
-  JSON-line messages, bounded blobs, session-scoped handles, cancellation and
-  explicit spending/issuer authority. Test isolation and out-of-order replies.
-- [ ] **15. Discovery module.** Add signed records, paid atomic indexing, bounded
-  iterative lookup, cursors, retention checks and equivocation handling.
-- [ ] **16. Public File Sharing module.** Add canonical manifests, signed
+- [ ] **18. Discovery module.** Add signed records, paid atomic indexing, bounded
+  iterative lookup, cursors, retention checks and equivocation handling. Likely
+  needed by the messenger to find people; reassess after the client journey.
+- [ ] **19. Public File Sharing module.** Add canonical manifests, signed
   catalogs, paid ranges, resumable multi-host retrieval, safe paths and
   piece/file verification; reuse Discovery record formats through contracts.
-- [ ] **17. Public Feeds module.** Add signed publication, attachments, bounded
-  paid reads, exclusive cursors and local feed merging.
-- [ ] **18. Static Pages module.** Add authorized local publication, path/media
-  validation, fixed-price bounded retrieval and immutable response snapshots.
-- [ ] **19. Computation module.** Add an explicitly authorized, bounded runtime,
+- [ ] **20. Computation module.** Add an explicitly authorized, bounded runtime,
   exact metered pricing/reservations, timeout/error results and local checking.
-- [ ] **20. Full-feature PoC and portability.** Complete the upstream feature
+- [ ] **21. Node API module.** Add authenticated local client access, versioned
+  JSON-line messages, bounded blobs, session-scoped handles, cancellation and
+  explicit spending/issuer authority. Test isolation and out-of-order replies.
+- [ ] **22. Full-feature PoC and portability.** Complete the upstream feature
   matrix with three identities, independent encrypted replicas, retained keys
   and recovery catalog, recovery on replacement hardware with a provider
   offline, crash injection and uncertain-delivery tests. Cross-check canonical

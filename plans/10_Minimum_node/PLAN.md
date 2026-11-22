@@ -57,7 +57,7 @@ In scope: the eight required modules composed in `serve`, operator configuration
 authorized local control, configured contacts, finite grants and trust, and
 two-process acceptance on Linux. Out of scope: the CR2SE Node API, Discovery,
 the six optional families, wanted Storage through local control, and the full
-client journey (now milestone 13, after Messaging). A minimum node is not the full-feature PoC, and
+client journey (now milestone 17). A minimum node is not the full-feature PoC, and
 two TalkSphere processes do not establish interoperability with another
 implementation.
 

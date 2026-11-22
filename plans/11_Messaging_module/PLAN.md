@@ -2,10 +2,11 @@
 
 Status: planned for review; no step is implemented yet.
 
-This is roadmap milestone 12 and planning folder 11, following the minimum
-useful node. Messaging is optional in CR2SE's minimum profile, but the full
-client journey (milestone 13) needs it to send messages, so it moves ahead of
-the Node API and the other optional families.
+This is roadmap milestone 13 and planning folder 11, following peer policy
+(milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
+CR2SE's minimum profile but required by TalkSphere: the full client journey
+needs it, and the hosted pages and feeds proposal
+([plan](../13_Hosted_publications/PLAN.md)) reuses its placement rules.
 
 ## Steps
 
@@ -37,7 +38,7 @@ the Node API and the other optional families.
 - [ ] **26.** Implement authorized paid byte evidence for pending placements.
 - [ ] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [ ] **28.** Reclaim expired, recovered and removed placement resources safely.
-- [ ] **29.** Enforce placement quotas and rate-limit failed probing.
+- [ ] **29.** Apply peer policy quotas and rate-limit failed probing.
 - [ ] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
 - [ ] **32.** Validate recovered messages and decrypt only after authentication.
@@ -79,8 +80,18 @@ In scope: the complete version 1 provider and requester under
 payload format, durable placements and replay results, Services/Ledger
 settlement of release credits, and process-level tests between TalkSphere nodes.
 Out of scope: installing Messaging in `serve --node-root` and its `node-ctl`
-commands (the client journey, milestone 13), Discovery, the Node API and
-interoperability with another implementation.
+commands (the [client journey](../14_Client_journey/PLAN.md), milestone 17),
+hosted pages and feeds, Discovery, the Node API and interoperability with
+another implementation.
+
+Reuse: placement storage, states, retention, renewal, removal, checks and
+replay results get clear internal boundaries inside `src/modules/messaging/`,
+but are not extracted into a shared module yet. Hosted pages and feeds will be
+the second user; the extraction happens in their plan, once the accepted
+specification shows exactly what is shared.
+
+Policy: quotas, rate limits and the early-release amount are decided through
+the peer policy contracts, not constants in the module.
 
 Messaging persistence is local and independent of the paid Storage service, as
 upstream requires (MS-17). Payload size is bounded by finite configuration and
@@ -261,7 +272,7 @@ expected value succeeds. Test MS-10.
 
 ### 23. Quote early-release credits before removal
 
-Compute one exact `releaseCredits` from local policy, bounded by the minimum
+Compute one exact `releaseCredits` through the peer policy contract, bounded by the minimum
 requested and the cumulative store and renewal payments. Bind it in the quote
 before any change. Test the quote rules of MS-11 and MS-12, including that
 discover, recover, status, remove and check prices never enlarge the ceiling.
@@ -298,10 +309,10 @@ Release payload bytes and staging when obligations end while keeping receipts,
 recovery caches until expiry and removal tombstones as required. Test that
 reclaim never removes data still owed to a retry or status query.
 
-### 29. Enforce placement quotas and rate-limit failed probing
+### 29. Apply peer policy quotas and rate-limit failed probing
 
-Apply finite per-sender and per-recipient placement quotas and bound failed
-identity proof, discovery and identifier probing. Unauthorized replies never
+Apply per-sender and per-recipient placement quotas from the peer policy
+contracts and bound failed identity proof, discovery and identifier probing. Unauthorized replies never
 reveal whether a placement exists. Test quota refusal before work and the
 indistinguishability required by MS-04.
 
