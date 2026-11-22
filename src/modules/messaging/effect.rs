@@ -18,8 +18,12 @@ use serde_json::{Value, json};
 /// The state change of one accepted operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Effect {
-    /// A read-only operation (discover, status, check): nothing changes.
-    Query,
+    /// A read-only operation (discover, status): nothing changes. The encoded request is kept so a lost staged result can be produced
+    /// again after a restart.
+    Query {
+        /// The request value in the Services value encoding.
+        request: Vec<u8>,
+    },
     /// Create a pending placement for a verified message.
     Store {
         /// The provider-chosen placement identifier, fixed at preparation so a retry is the same placement.
@@ -118,7 +122,7 @@ impl Effect {
     pub fn encode(&self) -> Vec<u8> {
         tracing::trace!("Encoding a Messaging effect");
         let value = match self {
-            Self::Query => json!({"kind": "query"}),
+            Self::Query { request } => json!({"kind": "query", "request": hex(request)}),
             Self::Store {
                 placement_id,
                 message,
@@ -169,7 +173,9 @@ impl Effect {
         let bad = || Error::Storage;
         let id = |n: &str| text_of(n).and_then(unhex::<32>).ok_or(Error::Storage);
         Ok(match text_of("kind").ok_or_else(bad)? {
-            "query" => Self::Query,
+            "query" => Self::Query {
+                request: text_of("request").and_then(unhex_vec).ok_or_else(bad)?,
+            },
             "store" => {
                 let payload = text_of("payload").and_then(unhex_vec).ok_or_else(bad)?;
                 Self::Store {
@@ -238,7 +244,7 @@ impl Effect {
     /// The placement this effect concerns, when it names one.
     pub fn placement(&self) -> Option<PlacementId> {
         match self {
-            Self::Query => None,
+            Self::Query { .. } => None,
             Self::Store { placement_id, .. } | Self::Renew { placement_id, .. } => {
                 Some(*placement_id)
             }
@@ -380,7 +386,9 @@ mod tests {
     fn effects_and_outcomes_round_trip() {
         let p = PlacementId([11; 32]);
         let effects = [
-            Effect::Query,
+            Effect::Query {
+                request: vec![1, 2, 3],
+            },
             Effect::Store {
                 placement_id: p,
                 message: message(),
@@ -478,7 +486,7 @@ mod tests {
     #[test]
     fn effects_name_their_placement() {
         let p = PlacementId([11; 32]);
-        assert_eq!(Effect::Query.placement(), None);
+        assert_eq!(Effect::Query { request: vec![] }.placement(), None);
         assert_eq!(
             Effect::Renew {
                 placement_id: p,

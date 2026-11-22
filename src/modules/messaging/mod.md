@@ -20,6 +20,7 @@
 | [Check](check.md) | Requester judgement of byte checks from private expectations |
 | [Provider](provider.md) | Store assessment before the body and durable commit |
 | [Receive](receive.md) | Authenticating, deduplicating and decrypting recovered messages |
+| [Service](service/mod.md) | Services provider adapter, requester client and Ledger release issuer |
 | [Reclaim](reclaim.md) | Freeing finished placements without losing what is owed |
 | [Staging](staging.md) | Bounded reservations for incoming payloads |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |

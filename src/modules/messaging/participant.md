@@ -11,3 +11,6 @@ Durable preparation, idempotent commit, abort and status of accepted effects, fo
 - Timestamps (`acceptedAt`, `recoveredAt`) are taken at the durable commit, never at preparation. Recovery receipts are signed at commit through the signer port.
 
 - `with_release_issuer(issuer)`: installs the issuer used when a removal commits. Committing a `Remove` effect that releases credits first checks (with the fixed decision time and the placement locked) that the removal can be recorded, then issues the credits once under the operation key, then records the removal and releases the payload. An exact repeat of the commit, or crash repair after the removal was recorded, issues again idempotently, so a settlement interrupted between its records is completed exactly once. A removal that releases credits without an installed issuer is `Unsupported`; a refused issuance leaves the placement pending and the effect prepared.
+
+- `commit_at(key, token, at)`: like `commit` but applying the effect at the coordinator's retained decision time `at`, so delayed delivery or a restart reproduces the same acceptance, expiry and receipt times.
+- `receipt_at(record, input, at)`: the provider-signed recovery receipt for a decision time (deterministic signing makes finalization and commit agree). `prepared_effect(key)`: the effect journaled as prepared under a key.

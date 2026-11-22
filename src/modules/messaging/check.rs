@@ -40,6 +40,16 @@ pub struct Expectation {
 }
 
 impl Expectation {
+    /// An expectation held by the requester for one challenge: the placement, the offset and the byte the provider must return.
+    pub fn new(placement_id: PlacementId, offset: u64, byte: u8) -> Self {
+        tracing::trace!("Creating a private byte-check expectation");
+        Self {
+            placement_id,
+            offset,
+            byte,
+        }
+    }
+
     /// Derive the expectation from the payload the sender stored, or `None` when `offset` is outside it.
     pub fn from_payload(placement_id: PlacementId, payload: &[u8], offset: u64) -> Option<Self> {
         tracing::trace!("Deriving a private byte-check expectation");

@@ -40,6 +40,13 @@ pub trait ReleasePolicy: Send + Sync {
     fn release(&self, cumulative_payments: u64, minimum: u64) -> u64;
 }
 
+impl<F: Fn(u64, u64) -> u64 + Send + Sync> ReleasePolicy for F {
+    /// A closure over `(cumulative_payments, minimum)` is a policy, so composition can adapt the node's credit policy directly.
+    fn release(&self, cumulative_payments: u64, minimum: u64) -> u64 {
+        self(cumulative_payments, minimum)
+    }
+}
+
 /// A policy that never offers release credits.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoRelease;

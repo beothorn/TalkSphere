@@ -16,3 +16,5 @@ not block indefinitely or log secrets.
 ## PendingLimits
 
 `per_sender(sender)` and `per_recipient(recipient)` give the most pending placements one identity may hold or have waiting at this provider. `FixedLimits` applies the same two numbers to everyone (default 1024 each).
+
+A closure `Fn(cumulative_payments, minimum) -> u64` is also a `ReleasePolicy`, so composition can adapt the node's credit policy directly.

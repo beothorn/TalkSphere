@@ -115,6 +115,45 @@ impl Participant {
         &self.store
     }
 
+    /// The provider-signed receipt a recovery of `record` by `input` would carry at decision time `at`. Ed25519 signing is deterministic,
+    /// so finalizing a result and later applying the commit produce identical bytes.
+    /// # Errors
+    /// `Unavailable` when the provider cannot sign.
+    pub fn receipt_at(
+        &self,
+        record: &super::placement::Record,
+        input: &super::operation::RecoverInput,
+        at: u64,
+    ) -> Result<super::operation::Receipt, Error> {
+        tracing::trace!("Building a recovery receipt for a decision time");
+        let binding = Binding {
+            provider_id: self.signer.identity(),
+            placement_id: input.placement_id,
+            message_id: record.metadata.message_id,
+            sender_id: record.metadata.sender_id,
+            recipient_id: record.metadata.recipient_id,
+            payload_hash: record.metadata.payload_hash,
+        };
+        let provider_signature =
+            receipt::sign_receipt(self.signer.as_ref(), &binding, input.recovery_id, at)?;
+        Ok(super::operation::Receipt {
+            recovery_id: input.recovery_id,
+            recovered_at: at,
+            recipient_public_key: input.recipient_public_key,
+            recipient_signature: input.recipient_signature,
+            provider_signature,
+        })
+    }
+
+    /// The effect journaled as prepared under `key`, if any.
+    pub fn prepared_effect(&self, key: OperationKey) -> Option<Effect> {
+        tracing::trace!("Reading a prepared effect");
+        match self.journal.get(key) {
+            Some(Entry::Prepared { effect, .. }) => Some(effect),
+            _ => None,
+        }
+    }
+
     /// The current time from the injected clock.
     pub(super) fn now(&self) -> Result<u64, Error> {
         self.clock.now()
@@ -266,7 +305,7 @@ impl Participant {
     // Check, without changing anything, that the effect could be applied now.
     fn check_preconditions(&self, effect: &Effect, now: u64) -> Result<(), Error> {
         match effect {
-            Effect::Query => Ok(()),
+            Effect::Query { .. } => Ok(()),
             Effect::Store {
                 placement_id,
                 message,
@@ -321,7 +360,7 @@ impl Participant {
     // Apply an effect idempotently: an effect already visible in the store is recognized and its outcome rebuilt.
     fn apply(&self, key: OperationKey, effect: &Effect, now: u64) -> Result<Outcome, Error> {
         match effect {
-            Effect::Query => Ok(Outcome::Query),
+            Effect::Query { .. } => Ok(Outcome::Query),
             Effect::Store {
                 placement_id,
                 message,
@@ -384,23 +423,7 @@ impl Participant {
                         price: *price,
                     });
                 }
-                let binding = Binding {
-                    provider_id: self.signer.identity(),
-                    placement_id: input.placement_id,
-                    message_id: record.metadata.message_id,
-                    sender_id: record.metadata.sender_id,
-                    recipient_id: record.metadata.recipient_id,
-                    payload_hash: record.metadata.payload_hash,
-                };
-                let provider_signature =
-                    receipt::sign_receipt(self.signer.as_ref(), &binding, input.recovery_id, now)?;
-                let receipt = super::operation::Receipt {
-                    recovery_id: input.recovery_id,
-                    recovered_at: now,
-                    recipient_public_key: input.recipient_public_key,
-                    recipient_signature: input.recipient_signature,
-                    provider_signature,
-                };
+                let receipt = self.receipt_at(&record, input, now)?;
                 lifecycle::mark_recovered(&self.store, input.placement_id, now, receipt, *price)?;
                 Ok(Outcome::Recovered {
                     placement_id: input.placement_id,

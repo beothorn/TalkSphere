@@ -31,16 +31,20 @@ pub(crate) struct Harness {
 
 // The acceptance-harness terms issued by the provider test identity (seed 2).
 pub(crate) fn terms() -> Terms {
+    Terms::parse(&offering(), TestIdentity::new(2).identity()).unwrap()
+}
+
+// The acceptance-harness offering published by the provider test identity (seed 2).
+pub(crate) fn offering() -> crate::modules::board::offering::Offering {
     let mut o: Value = serde_json::from_str(include_str!("fixtures/offering.json")).unwrap();
     let id = TestIdentity::new(2).identity();
     o["creditIssuer"] = crate::modules::identity::text::format(id).into();
     let board = serde_json::json!({"version":1,"providedServices":[o],"wantedServices":[]});
-    let offering = Board::parse(&serde_json::to_vec(&board).unwrap(), BoardLimits::default())
+    Board::parse(&serde_json::to_vec(&board).unwrap(), BoardLimits::default())
         .unwrap()
         .offerings
         .remove("messaging-standard")
-        .unwrap();
-    Terms::parse(&offering, id).unwrap()
+        .unwrap()
 }
 
 // A ready provider at time 1000 over volatile state: sender A (seed 1), provider B (seed 2), recipient C (seed 3).

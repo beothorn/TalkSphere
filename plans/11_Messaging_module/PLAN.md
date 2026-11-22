@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-29, 32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-30, 32 and 34 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -39,7 +39,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **27.** Verify Messaging checks using private expectations and trusted timing.
 - [x] **28.** Reclaim expired, recovered and removed placement resources safely.
 - [x] **29.** Bound placements per sender and per recipient through a module limits port.
-- [ ] **30.** Register Messaging handlers and publish usable offerings.
+- [x] **30.** Register Messaging handlers and publish usable offerings.
 - [ ] **31.** Bind Messaging requester operations to Peer Protocol.
 - [x] **32.** Validate recovered messages and decrypt only after authentication.
 - [ ] **33.** Exercise crash recovery at every coordination boundary.
@@ -395,6 +395,8 @@ Completed: the `PendingLimits` port (with `FixedLimits`, default 1024 each) chec
 Register the provider handler with Services and publish the offering only when
 the handler and its durable owners are ready. Test registration, refusal when
 dependencies are missing and that nothing unfinished is advertised.
+
+Completed: [service](../../src/modules/messaging/service/mod.md) in `src/modules/messaging/service/` (provider adapter, requester client, Ledger release issuer), tested through the real Services coordinator, Board and Ledger (`service/tests.rs`: every operation with exact charges, refused stores, abort, recovery retry, paid-check evidence and rules, removal with release credits, readiness and registration). The node composition that opens and registers these owners is part of the client journey (plan 14, step 2).
 
 ### 31. Bind Messaging requester operations to Peer Protocol
 

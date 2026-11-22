@@ -5,3 +5,5 @@
 cannot be read stops recovery with `Unavailable` and new work stays refused, and recovery can simply be run again. It never re-executes or retries anything on its own authority. The `Report` counts committed, aborted and undecided operations.
 
 Evidence: a fresh participant refuses work until recovery has run; after a restart each prepared store is committed, aborted or left undecided by the table of decisions, with the undecided placement ID still locked; the window after applying and before journaling is repaired with the original time; an unreadable decision keeps work refused.
+
+- `DeferToServices`: a decisions policy that leaves every prepared operation to the Services coordinator, which re-delivers its recorded decisions (with their retained decision times) through its own resume step.

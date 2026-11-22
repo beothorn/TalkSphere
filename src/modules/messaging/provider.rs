@@ -127,6 +127,13 @@ impl Provider {
         &self.terms
     }
 
+    /// The current time from the provider's clock.
+    /// # Errors
+    /// `Unavailable` when the clock fails.
+    pub fn now(&self) -> Result<u64, Error> {
+        self.clock.now()
+    }
+
     /// The participant.
     pub fn participant(&self) -> &Arc<Participant> {
         &self.participant

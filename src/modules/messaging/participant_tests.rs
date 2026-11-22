@@ -578,11 +578,16 @@ fn dependency_failures_refuse_work_and_recovery_applies_once() {
     assert_eq!(f.participant.apply(key(2), &effect, 1000), Ok(first));
     f.clock.fail();
     assert_eq!(
-        f.participant.prepare(key(3), &Effect::Query),
+        f.participant
+            .prepare(key(3), &Effect::Query { request: vec![] }),
         Err(Error::Unavailable)
     );
     f.clock.set(1000);
-    assert!(f.participant.prepare(key(3), &Effect::Query).is_ok());
+    assert!(
+        f.participant
+            .prepare(key(3), &Effect::Query { request: vec![] })
+            .is_ok()
+    );
     f.provider.break_signing();
     let other = stored_other(&f);
     let again = f

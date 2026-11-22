@@ -28,6 +28,19 @@ pub trait Decisions: Send + Sync {
     fn decision(&self, key: OperationKey) -> Result<Decision, Error>;
 }
 
+/// A policy that leaves every prepared operation to the Services coordinator: none is committed or aborted here, each stays prepared and
+/// locked, and the coordinator then delivers its recorded decisions (with their retained decision times) through its own resume step.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DeferToServices;
+
+impl Decisions for DeferToServices {
+    /// Always undecided, so the coordinator alone decides.
+    fn decision(&self, _key: OperationKey) -> Result<Decision, Error> {
+        tracing::trace!("Deferring a prepared Messaging operation to the coordinator");
+        Ok(Decision::Undecided)
+    }
+}
+
 /// What recovery did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Report {
