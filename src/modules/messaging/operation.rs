@@ -23,6 +23,8 @@ pub struct StoreInput {
 pub struct StoreOutput {
     /// Provider-chosen placement identifier.
     pub placement_id: PlacementId,
+    /// The stored message's identifier.
+    pub message_id: super::ids::MessageId,
     /// Provider acceptance time.
     pub accepted_at: u64,
     /// `accepted_at` plus the retention.

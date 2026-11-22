@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-6 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-7 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -16,7 +16,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **4.** Import the pinned Messaging definition and independent fixtures.
 - [x] **5.** Implement exact Messaging price calculations.
 - [x] **6.** Validate Messaging offering terms and advertised limits.
-- [ ] **7.** Validate operation-specific inputs and outputs.
+- [x] **7.** Validate operation-specific inputs and outputs.
 - [ ] **8.** Build and verify the exact message signing bytes.
 - [ ] **9.** Build and verify recovery request and receipt signatures.
 - [ ] **10.** Implement the encrypted Messaging payload format.
@@ -194,6 +194,8 @@ Implement the operation discriminant: required fields per operation, rejection
 of known fields from another operation, paired cursor fields, limit bounds,
 fixed lengths and non-empty payloads. Validate outputs the same way for the
 requester. Test each operation with missing, extra and malformed fields.
+
+Completed: [codec](../../src/modules/messaging/codec.md) for requests, responses and the check, with round-trip and exhaustive negative tests (every required member, wrong types, wrong lengths, foreign, unknown and duplicate members, size mismatch, cursor and limit rules). `StoreOutput` gained the specified `messageId`.
 
 ### 8. Build and verify the exact message signing bytes
 
