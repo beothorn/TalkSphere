@@ -119,6 +119,14 @@ impl Store {
         Ok(())
     }
 
+    /// Whether one more placement with `payload_len` payload bytes would fit the finite bounds right now.
+    pub fn has_room(&self, payload_len: u64) -> bool {
+        tracing::trace!("Checking placement store capacity");
+        let state = self.lock();
+        state.index.len() < self.limits.placements
+            && self.active_bytes(&state).saturating_add(payload_len) <= self.limits.payload_bytes
+    }
+
     /// The record of a placement, without its payload.
     pub fn record(&self, id: PlacementId) -> Option<Record> {
         tracing::trace!("Reading a placement record");
@@ -295,26 +303,7 @@ fn discard_payload(backing: &mut Backing, id: PlacementId) {
     }
 }
 
-// Lowercase hex of bytes.
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-// Strict lowercase hex of exactly N bytes.
-fn unhex<const N: usize>(text: &str) -> Option<[u8; N]> {
-    if text.len() != N * 2
-        || !text
-            .bytes()
-            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-    {
-        return None;
-    }
-    let mut out = [0u8; N];
-    for (i, byte) in out.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&text[i * 2..i * 2 + 2], 16).ok()?;
-    }
-    Some(out)
-}
+use super::file_io::{hex, unhex};
 
 // JSON form of a record.
 fn record_json(r: &Record) -> Value {
@@ -411,13 +400,10 @@ fn parse_record(value: &Value) -> Option<Record> {
     })
 }
 
-// Native file operations: owner-only directory, atomic replacement and a strict loader.
+// Native file operations: paths and a strict loader; atomic writes live in `file_io`.
 mod native {
     use super::*;
-    use std::{
-        io::Write,
-        os::unix::fs::{DirBuilderExt, OpenOptionsExt},
-    };
+    pub(super) use crate::modules::messaging::file_io::{create_dir, write_atomic};
 
     /// Largest accepted record file.
     const MAXIMUM_RECORD_BYTES: u64 = 16 * 1024;
@@ -428,31 +414,6 @@ mod native {
     pub(super) fn payload_path(dir: &Path, id: PlacementId) -> PathBuf {
         dir.join(format!("{}.payload", hex(&id.0)))
     }
-
-    pub(super) fn create_dir(dir: &Path) -> Result<(), Error> {
-        std::fs::DirBuilder::new()
-            .recursive(true)
-            .mode(0o700)
-            .create(dir)
-            .map_err(|_| Error::Storage)
-    }
-
-    // Write a private temporary file, flush it and rename it over the target.
-    pub(super) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
-        let temporary = path.with_extension("tmp");
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&temporary)
-            .map_err(|_| Error::Storage)?;
-        file.write_all(bytes)
-            .and_then(|()| file.sync_all())
-            .map_err(|_| Error::Storage)?;
-        std::fs::rename(&temporary, path).map_err(|_| Error::Storage)
-    }
-
     // Load every record, verifying that each active record's payload exists with the declared size.
     pub(super) fn load(dir: &Path, limits: Limits) -> Result<BTreeMap<PlacementId, Record>, Error> {
         let mut index = BTreeMap::new();

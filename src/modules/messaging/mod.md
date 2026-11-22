@@ -13,6 +13,9 @@
 | [Placement](placement.md) | A placement record and its payload |
 | [Store](store.md) | Durable bounded placement storage |
 | [Lifecycle](lifecycle.md) | Expiration, transitions and per-placement serialization |
+| [Effect](effect.md) | Effects and outcomes with durable encoding |
+| [Journal](journal.md) | Durable participant journal |
+| [Participant](participant.md) | Prepare, commit, abort and status of effects |
 | [Credential](credential.md) | Board `identityEncryption` lookup and verification |
 | [Encryption](encryption.md) | The identity-encrypted payload format |
 | [Receipt](receipt.md) | Recovery request and provider receipt signatures |

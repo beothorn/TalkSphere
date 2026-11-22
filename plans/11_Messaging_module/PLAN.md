@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: in progress; steps 1-13 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; steps 1-14 are complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -23,7 +23,7 @@ needs it, and the hosted pages and feeds proposal
 - [x] **11.** Publish and validate the Board identity encryption credential.
 - [x] **12.** Persist bounded payload staging and placement records.
 - [x] **13.** Implement placement states, expiration and per-placement serialization.
-- [ ] **14.** Implement durable participant preparation, commit, abort and status queries.
+- [x] **14.** Implement durable participant preparation, commit, abort and status queries.
 - [ ] **15.** Recover Messaging participants before admitting new work.
 - [ ] **16.** Assess store metadata before receiving the payload body.
 - [ ] **17.** Commit validated stores as durable pending placements.
@@ -257,6 +257,8 @@ Completed: [lifecycle](../../src/modules/messaging/lifecycle.md); serialization 
 Implement the Services participant contract for Messaging effects, like Storage
 steps 13–14: prepare durably, commit and abort idempotently, and answer status
 queries. Test repeated commit and abort, unknown decisions and write loss.
+
+Completed: [effects](../../src/modules/messaging/effect.md), [journal](../../src/modules/messaging/journal.md) and [participant](../../src/modules/messaging/participant.md). The participant works on Messaging's own typed effects; the Services `Provider` adapter (step 30) maps them onto Services blobs and decision-time finalization. Placement locks keep two operations from preparing on one placement.
 
 ### 15. Recover Messaging participants before admitting new work
 
