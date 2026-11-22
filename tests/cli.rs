@@ -177,3 +177,15 @@ fn storage_help_describes_the_native_exercise() {
     assert!(details.contains("cargo run --locked --example storage -- help run"));
     assert!(details.contains("RUST_LOG"));
 }
+
+// The Messaging topic advertises the explicit Linux exercise and exposes detailed help without acquiring state.
+#[test]
+fn messaging_help_describes_the_replicated_exercise() {
+    assert!(successful_stdout(&["--help"]).contains("help messaging"));
+    let details = successful_stdout(&["help", "messaging"]);
+    assert!(details.contains("cargo run --locked --example messaging -- run"));
+    assert!(details.contains("cargo run --locked --example messaging -- help run"));
+    assert!(details.contains("two providers"));
+    assert!(details.contains("RUST_LOG"));
+    assert!(details.contains("docs/messaging/EXERCISE.md"));
+}

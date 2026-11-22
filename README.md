@@ -177,7 +177,7 @@ establish interoperability with an independent implementation. Paid Storage is c
 [38-step plan](plans/9_Storage_module/PLAN.md); the [Storage guide](src/modules/storage/README.md)
 and [handoff](src/modules/storage/HANDOFF.md) record scope and the next milestone. See the
 [Peer Protocol handoff](src/modules/peer_protocol/HANDOFF.md) for integration boundaries.
-The minimum useful node and [peer policy](plans/12_Peer_policy/PLAN.md) are complete (see below); the [Messaging module](plans/11_Messaging_module/PLAN.md) (engine, Services adapter, Peer Protocol requester and crash recovery implemented; the authenticated multi-node exercise is open, see its [handoff](src/modules/messaging/HANDOFF.md)), the [hosted pages and feeds specification](plans/13_Hosted_publications/PLAN.md) and the [full client journey](plans/14_Client_journey/PLAN.md) are planned next, and the other optional standard families remain later work.
+The minimum useful node and [peer policy](plans/12_Peer_policy/PLAN.md) are complete (see below); the [Messaging module](plans/11_Messaging_module/PLAN.md) (complete: engine, Services adapter, Peer Protocol requester, crash recovery, Identity-backed decryption and an authenticated four-node [exercise](docs/messaging/EXERCISE.md); see its [handoff](src/modules/messaging/HANDOFF.md)), the [hosted pages and feeds specification](plans/13_Hosted_publications/PLAN.md) and the [full client journey](plans/14_Client_journey/PLAN.md) are planned next, and the other optional standard families remain later work.
 
 ## Board document tools
 
@@ -271,6 +271,20 @@ cargo test --locked --example storage
 The test suite covers a separate provider process, provider-opened wanted
 work and recovery of encrypted bytes from an independent provider.
 See the [Storage exercise guide](docs/storage/EXERCISE.md).
+
+## Messaging exercise
+
+Run the bounded Linux exercise over authenticated loopback with four nodes (sender, recipient and two providers): paid replicas,
+recovery with decryption through a protected identity, one delivery of two replicas, a paid byte check, renewal and a removal that
+releases credits once.
+
+```sh
+cargo run --locked -- help messaging
+cargo run --locked --example messaging -- run
+cargo test --locked --example messaging
+```
+
+See the [Messaging exercise guide](docs/messaging/EXERCISE.md).
 
 ## Local Services exercise
 
