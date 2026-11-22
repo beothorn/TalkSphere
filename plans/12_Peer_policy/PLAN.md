@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-22 are complete.
+Status: all 23 steps are complete for the finite Linux Storage profile; Messaging, hosted pages and feeds, and the client journey build on it.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -38,7 +38,7 @@ large simulations without touching protocol code.
 - [x] **20.** Run parameter sweeps and record their results.
 - [x] **21.** Document policy parameters, defaults and help.
 - [x] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
-- [ ] **23.** Complete the policy acceptance evidence and handoff.
+- [x] **23.** Complete the policy acceptance evidence and handoff.
 
 ## Baseline, scope and review
 
@@ -125,7 +125,7 @@ and returns a typed decision with a reason. Provide conservative default
 implementations that reproduce today's behavior. Test that the defaults change
 nothing observable in the existing node tests.
 
-Completed: [Contracts](../../src/composition/policy/contracts.md) and [defaults](../../src/composition/policy/defaults.md) with unit tests; they are wired into the node from step 5.
+Completed: [Contracts](../../src/composition/policy/contracts.md) and [configured defaults](../../src/composition/policy/configured.md) with unit tests; they are wired into the node from step 5.
 
 ### 3. Load policy parameters from a validated policy file
 
@@ -310,3 +310,5 @@ Completed: `a_server_keeps_a_replica_set_at_outbound_clients_and_repairs_it` in 
 Write `docs/policy/ACCEPTANCE.md` and a handoff for Messaging, hosted pages and
 feeds, update the roadmap and README, run the full check list and record
 coverage.
+
+Completed: [Acceptance evidence](../../docs/policy/ACCEPTANCE.md) and the [handoff](../../src/composition/policy/HANDOFF.md); the final check list passed and production line coverage was measured with the [coverage procedure](../../docs/coverage.md).

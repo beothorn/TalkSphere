@@ -291,3 +291,10 @@ the full contributor checks and all six example tests. The native process
 restart, encrypted replica restore, wanted contribution and deliberate
 run/help commands succeeded. Production line coverage was **93.85%**
 (24529/26135) under the library coverage procedure.
+
+Peer policy completion measured **30079/32462 executable production lines (92.66%)** under the procedure above, with all library,
+integration, process and doctest suites passing under instrumentation (893 library tests). The new policy, replica, upkeep and simulation
+files are between 91 % and 100 %, except `src/composition/node/wanted.rs` (27 %): its completion handler runs only inside serve
+processes whose profiles abrupt-termination tests discard; process tests (`a_client_earns_credits_by_fulfilling_wanted_storage`,
+the replication and story tests) exercise it. Run only one coverage job at a time: overlapping jobs share `target/llvm-cov-target` and
+delete each other's test binaries, which fails the tests that spawn the current executable.

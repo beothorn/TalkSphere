@@ -1,6 +1,6 @@
 //! Bounded per-peer observations that policy decisions read.
 //!
-//! Callers: node composition records facts as they happen and builds a [`PeerView`] summary
+//! Callers: node composition records facts as they happen and builds a `PeerView` summary
 //! for each decision. Everything is bounded: a fixed number of peers, saturating counters,
 //! and age-out of idle entries. Entries are keyed by authenticated identity only; no
 //! peer-supplied text is stored, so nothing here is a trusted fact about the peer beyond

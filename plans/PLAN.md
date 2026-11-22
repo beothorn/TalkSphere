@@ -99,12 +99,14 @@ Confirmed new protocol defects are also filed upstream under the contributor ins
   All 25 detailed steps are complete for the finite Linux minimum profile: two separately operated
   `serve --node-root` processes demonstrate AT-E01 and its failure cases. See the
   [node handoff](../src/composition/node/HANDOFF.md) and [acceptance evidence](../docs/minimum-node/ACCEPTANCE.md).
-- [ ] **12. [Peer policy and admission](12_Peer_policy/PLAN.md).** Isolate every decision CR2SE leaves
+- [x] **12. [Peer policy and admission](12_Peer_policy/PLAN.md).** Isolate every decision CR2SE leaves
   to local policy (admission, quotas, trust, bootstrap and earned credits,
   replica targets, check and repair cadence, connections) behind contracts with
   parameters in one validated file. Admit unconfigured peers, call clients over
   the connections they opened, keep server-hosted data at client replicas, and
-  add a deterministic simulation harness for tuning. Planned in 23 steps; not started.
+  add a deterministic simulation harness for tuning. All 23 detailed steps are complete for
+  the finite Linux Storage profile. See the [policy handoff](../src/composition/policy/HANDOFF.md) and
+  [acceptance evidence](../docs/policy/ACCEPTANCE.md).
 
 ## TalkSphere-required modules and client journey
 

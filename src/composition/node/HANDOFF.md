@@ -40,7 +40,7 @@ accepted exchanges drain up to `--shutdown-ms`, and release the lock; a second s
 
 Production line coverage measured 94.12% with the [coverage procedure](../../../docs/coverage.md).
 
-[Peer policy](../../../plans/12_Peer_policy/PLAN.md) (milestone 12), the
+[Peer policy](../policy/HANDOFF.md) (milestone 12, complete), the
 [Messaging module](../../../plans/11_Messaging_module/PLAN.md) (13), the
 [hosted pages and feeds specification](../../../plans/13_Hosted_publications/PLAN.md) (14) and the
 [full client journey](../../../plans/14_Client_journey/PLAN.md) (17) are planned; the other optional modules remain open.
