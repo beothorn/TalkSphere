@@ -5,7 +5,7 @@ contexts/operation keys, atomic persistence and the serialized state owner. Focu
 contracts cover accepted terms/reservations, prepare/commit/abort/status, canonical
 transfers, protected signing, exact fee negotiation, transfer replay/query,
 original-issuer payment evidence, guarded claims, encrypted redemption, maintenance
-and read-only status summaries. See the same-stem companion beside each source.
+once-per-operation release-credit issuance and read-only status summaries. See the same-stem companion beside each source.
 
 Error distinguishes Invalid, Unsupported, Denied, Limit, Cancelled, Conflict,
 Insufficient, Storage, Unknown and Unavailable. Storage means known precommit

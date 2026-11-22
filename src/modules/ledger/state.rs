@@ -21,6 +21,8 @@ pub(super) struct State {
     pub claims: BTreeMap<[u8; 32], super::claims::ClaimRecord>,
     pub transfers: BTreeMap<(IdentityId, [u8; 16]), super::transfer_state::TransferResult>,
     pub operations: BTreeMap<super::contract::OperationKey, super::reservation::Operation>,
+    /// Issuances recorded once per Services operation (early-release credits), kept for the ledger's lifetime.
+    pub releases: BTreeMap<super::contract::OperationKey, (IdentityId, u64)>,
 }
 pub(super) struct Inner<P> {
     pub state: State,
@@ -152,28 +154,7 @@ impl<P: Persistence> Ledger<P> {
         if amount == 0 {
             return Err(Error::Invalid);
         }
-        self.change(context, Action::Administer, |s| {
-            if super::reservation::available(s, super::reservation::Resource::Issuance)? < amount {
-                return Err(Error::Insufficient);
-            }
-            if super::reservation::available(s, super::reservation::Resource::IssuedRoom(peer))?
-                < amount
-            {
-                return Err(Error::Limit);
-            }
-            let available = s.issuance.checked_sub(amount).ok_or(Error::Insufficient)?;
-            let next = s
-                .accounts
-                .issued
-                .get(&peer)
-                .copied()
-                .unwrap_or(0)
-                .checked_add(amount)
-                .ok_or(Error::Limit)?;
-            s.issuance = available;
-            s.accounts.issued.insert(peer, next);
-            Ok(())
-        })
+        self.change(context, Action::Administer, |s| s.issue(peer, amount))
     }
     /// Explicitly install a locally reconciled owned balance; remote queries cannot invoke administration.
     /// # Errors
@@ -304,6 +285,32 @@ impl<P: Persistence> Ledger<P> {
     }
 }
 impl State {
+    // Move `amount` of finite local issuance to `peer`'s issued balance, checking capacity and room before changing anything.
+    pub(super) fn issue(&mut self, peer: IdentityId, amount: u64) -> Result<(), Error> {
+        if super::reservation::available(self, super::reservation::Resource::Issuance)? < amount {
+            return Err(Error::Insufficient);
+        }
+        if super::reservation::available(self, super::reservation::Resource::IssuedRoom(peer))?
+            < amount
+        {
+            return Err(Error::Limit);
+        }
+        let available = self
+            .issuance
+            .checked_sub(amount)
+            .ok_or(Error::Insufficient)?;
+        let next = self
+            .accounts
+            .issued
+            .get(&peer)
+            .copied()
+            .unwrap_or(0)
+            .checked_add(amount)
+            .ok_or(Error::Limit)?;
+        self.issuance = available;
+        self.accounts.issued.insert(peer, next);
+        Ok(())
+    }
     // Encode complete exact state only after cardinality, self-balance and byte bounds pass.
     pub(super) fn record(&self, local: IdentityId, limits: Limits) -> Result<Record, Error> {
         tracing::trace!("Preparing complete Ledger transaction image");
@@ -333,7 +340,7 @@ impl State {
         if self.operations.len() > limits.operations {
             return Err(Error::Limit);
         }
-        if self.claims.len() > limits.claims {
+        if self.claims.len() > limits.claims || self.releases.len() > limits.operations {
             return Err(Error::Limit);
         }
         super::reservation::available(self, super::reservation::Resource::Issuance)?;
@@ -359,7 +366,12 @@ impl State {
             }
             super::reservation::available(self, op.resource)?;
         }
-        let payload=serde_json::to_vec(&json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations),"transfers":super::transfer_state::encode(self)?,"claims":super::claims::encode(self)})).map_err(|_|Error::Invalid)?;
+        let mut image = json!({"version":1,"owned":encode(&self.accounts.owned),"issued":encode(&self.accounts.issued),"trust":trust,"issuance":self.issuance,"internal":self.internal,"operations":super::reservation::encode(&self.operations),"transfers":super::transfer_state::encode(self)?,"claims":super::claims::encode(self)});
+        // Absent when empty so images written before releases existed stay canonical.
+        if !self.releases.is_empty() {
+            image["releases"] = super::release::encode(&self.releases);
+        }
+        let payload = serde_json::to_vec(&image).map_err(|_| Error::Invalid)?;
         if payload.len() > limits.state_bytes {
             return Err(Error::Limit);
         }
@@ -389,6 +401,7 @@ impl State {
         s.claims = super::claims::decode(&v["claims"], local, limits.claims)?;
         s.transfers = super::transfer_state::decode(&v["transfers"], local, limits.transfers)?;
         s.operations = super::reservation::decode(&v["operations"], limits.operations)?;
+        s.releases = super::release::decode(&v["releases"], limits.operations)?;
         s.accounts.owned = map(&v["owned"], limits.accounts)?;
         s.accounts.issued = map(&v["issued"], limits.accounts)?;
         for (id, n) in map(&v["trust"], limits.accounts)? {
