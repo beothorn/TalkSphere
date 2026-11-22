@@ -54,6 +54,33 @@ fn command_and_option_details_are_accessible_without_starting_server() {
     );
 }
 
+// The peer policy topic is discoverable under each spelling, and the node-ctl help names every policy,
+// wanted-Storage and replica action so none is undocumented.
+#[test]
+fn policy_help_is_discoverable_and_node_ctl_help_names_every_new_action() {
+    let policy = successful_stdout(&["help", "policy"]);
+    for name in ["policy.json", "policy-sim", "policy_sim"] {
+        assert_eq!(successful_stdout(&["help", name]), policy, "{name}");
+    }
+    assert!(policy.contains("docs/policy/PARAMETERS.md") && policy.contains("policy_sim"));
+    assert!(successful_stdout(&["--help"]).contains("help policy"));
+    let node_ctl = successful_stdout(&["help", "node-ctl"]);
+    for action in [
+        "fulfil",
+        "wanted-add",
+        "replica-add",
+        "replicas",
+        "policy-show",
+        "policy-explain",
+    ] {
+        assert!(node_ctl.contains(action), "node-ctl help lacks {action}");
+    }
+    let node = successful_stdout(&["help", "node-show"]);
+    assert!(node.contains("policy.json"));
+    let serve = successful_stdout(&["help", "--contact"]);
+    assert!(serve.contains("reconnectMaxSeconds") && serve.contains("pingSeconds"));
+}
+
 #[test]
 fn version_is_derived_from_package_metadata() {
     let expected = format!("talksphere {}\n", env!("CARGO_PKG_VERSION"));

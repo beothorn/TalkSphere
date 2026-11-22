@@ -228,6 +228,34 @@ node supports provider-issued credits, objects up to 16384 bytes and Storage onl
 [acceptance evidence](docs/minimum-node/ACCEPTANCE.md), the
 [handoff](src/composition/node/HANDOFF.md) and the [plan](plans/10_Minimum_node/PLAN.md).
 
+## Peer policy and hosted replicas
+
+CR2SE leaves trust, credit bootstrap, quotas, redundancy and connection upkeep to each identity. An optional `policy.json` in a
+node root sets them (every parameter, default and range is in the [parameter reference](docs/policy/PARAMETERS.md); a
+[phone-fleet starting profile](docs/policy/phone-fleet.policy.json) is recommended by the
+[simulations](docs/policy/SIMULATIONS.md)). A server with `credit.wanted` pays clients in its own credits for holding sealed copies
+of the items it hosts, checks and renews them over the clients' own connections, and reports the CR2SE redundancy state:
+
+```sh
+cargo run --locked -- node-init --node-root /tmp/ts-server
+cp docs/policy/phone-fleet.policy.json /tmp/ts-server/policy.json          # optional; node-show reports its state
+cargo run --locked -- serve --node-root /tmp/ts-server --listen 127.0.0.1:7001
+cargo run --locked -- node-ctl --node-root /tmp/ts-server replica-add --file ./item   # seal and host an item
+cargo run --locked -- node-ctl --node-root /tmp/ts-client trust --peer <SERVER-ID> --millionths 1
+cargo run --locked -- node-ctl --node-root /tmp/ts-client fulfil --contact '<SERVER-ID>?address=127.0.0.1&port=7001'
+cargo run --locked -- node-ctl --node-root /tmp/ts-server replicas                    # state, target, confirmed copies
+cargo run --locked -- node-ctl --node-root /tmp/ts-server policy-explain --peer <CLIENT-ID>
+cargo run --locked -- serve --node-root /tmp/ts-client --contact '<SERVER-ID>?address=127.0.0.1&port=7001'   # keeps the connection
+cargo run --locked --release --example policy_sim -- sweep      # compare parameters in simulation
+cargo run --locked -- help policy
+cargo test --locked --test policy_process
+```
+
+Client nodes started with `--contact` stay connected (pings and bounded reconnects), unconfigured peers are admitted under
+per-identity quotas, and a server can buy from a client that only connects outward. The simulation runs the real policy code against
+a modelled fleet; figures are under stated assumptions, not predictions. See the [policy module guide](src/composition/policy/mod.md),
+the [replica guide](src/composition/node/replicas/mod.md) and the [plan](plans/12_Peer_policy/PLAN.md).
+
 ## Native Storage exercise
 
 Run the bounded Linux exercise over authenticated loopback. It stores and

@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-20 are complete.
+Status: in progress; steps 1-21 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -36,7 +36,7 @@ large simulations without touching protocol code.
 - [x] **18.** Add a deterministic multi-peer simulation harness using real modules.
 - [x] **19.** Model peer churn, unreliable peers and abusive peers in simulations.
 - [x] **20.** Run parameter sweeps and record their results.
-- [ ] **21.** Document policy parameters, defaults and help.
+- [x] **21.** Document policy parameters, defaults and help.
 - [ ] **22.** Exercise unconfigured peers, reverse requests and policy decisions between node processes.
 - [ ] **23.** Complete the policy acceptance evidence and handoff.
 
@@ -294,6 +294,8 @@ Completed: the `policy_sim` example (`run`, `abuse`, `sweep`) and [SIMULATIONS.m
 Document every parameter in `docs/policy/PARAMETERS.md` and the policy
 contracts' companion files, and add detailed help topics for the new commands
 and options with CLI tests.
+
+Completed: [PARAMETERS.md](../../docs/policy/PARAMETERS.md) lists every parameter, the contract and module guides were updated as each step landed, `talksphere help policy` was added, the node-ctl, node-show and serve option help covers every new action, a CLI test checks discoverability, and the root README has a peer policy section.
 
 ### 22. Exercise unconfigured peers, reverse requests and policy decisions between node processes
 
