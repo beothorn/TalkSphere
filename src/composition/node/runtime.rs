@@ -11,7 +11,7 @@ use super::{
     link::{Command, Link},
     owners::{self, Owners},
 };
-use crate::composition::policy::Params;
+use crate::composition::policy::{Kind, Verdict};
 use crate::composition::server::{
     Stage,
     config::Config,
@@ -27,7 +27,10 @@ use crate::modules::{
         engine::bridge::{Bridge, Config as BridgeConfig},
     },
     transport::{
-        api::{Accepted, ConnectRequest, Event, ExpectedPeer, Request, TransportControl},
+        api::{
+            Accepted, ConnectRequest, ConnectionRole, Event, ExpectedPeer, PeerContext, Request,
+            TransportControl,
+        },
         handles::{ConnectionHandle, ConnectionId},
         ports::identity::IdentityId as WireId,
     },
@@ -47,6 +50,8 @@ const EXCHANGE_LIFETIME: Duration = Duration::from_secs(30);
 const DRAIN_POLL: Duration = Duration::from_millis(5);
 /// Wait granularity when no event or command is pending.
 const IDLE_WAIT: Duration = Duration::from_secs(1);
+/// Longest time recorded peer observations stay unwritten while the node runs.
+const OBSERVATION_FLUSH: Duration = Duration::from_secs(5);
 
 /// Everything the control channel needs once the node is open.
 pub struct Started {
@@ -74,8 +79,6 @@ pub fn run<G>(
 ) -> Result<(), String> {
     tracing::trace!("Starting the node runtime");
     let config = read_config(layout)?;
-    let policy = Params::load(&layout.policy()).map_err(|e| e.to_string())?;
-    tracing::debug!(?policy, "Loaded the peer policy parameters");
     let credentials =
         credentials::load(&server, false).map_err(|e| format!("identity failed: {e:?}"))?;
     let local = IdentityId(credentials.local_id.0);
@@ -110,14 +113,21 @@ pub fn run<G>(
         signal: signal.clone(),
         listen: ready.address,
     })?;
+    owners.observations.age_out(owners::unix_seconds());
     let result = drive(
         &mut transport,
         &mut bridge,
         &link,
+        &owners,
         &commands,
         &signal,
         &mut report,
     );
+    if owners.observations.flush().is_err() {
+        tracing::warn!(
+            "Peer observations could not be written at shutdown; recent events are lost"
+        );
+    }
     // Stop control first so no new request starts while peer work drains.
     drop(guard);
     drop(commands);
@@ -174,11 +184,13 @@ fn drive(
     transport: &mut Transport,
     bridge: &mut Bridge,
     link: &Link,
+    owners: &Owners,
     commands: &Receiver<Command>,
     signal: &Signal,
     report: &mut impl FnMut(Status),
 ) -> Result<(), String> {
     tracing::trace!("Driving the node event loop");
+    let mut last_flush = Instant::now();
     let waker = Waker::from(Arc::new(Notify(signal.clone())));
     let mut cx = Context::from_waker(&waker);
     let mut pending: Pending = Vec::new();
@@ -199,7 +211,13 @@ fn drive(
             transport
                 .observe(&event)
                 .map_err(|e| format!("transport failed: {e:?}"))?;
-            route(transport, bridge, link, &mut pending, event, report);
+            route(transport, bridge, link, owners, &mut pending, event, report);
+        }
+        if last_flush.elapsed() >= OBSERVATION_FLUSH {
+            last_flush = Instant::now();
+            if owners.observations.flush().is_err() {
+                tracing::warn!("Peer observations could not be written; they stay in memory");
+            }
         }
         bridge
             .poll(transport, &mut cx)
@@ -286,6 +304,7 @@ fn route(
     transport: &mut Transport,
     bridge: &mut Bridge,
     link: &Link,
+    owners: &Owners,
     pending: &mut Pending,
     event: Event,
     report: &mut impl FnMut(Status),
@@ -302,6 +321,10 @@ fn route(
     }
     match bridge.event(transport, event) {
         Ok(Some(Event::Authenticated(context))) => {
+            if !admit(owners, link, &context) {
+                close(transport, pending, &context.connection);
+                return;
+            }
             let handle = transport
                 .connection_handles()
                 .find(|h| h.id() == &context.connection)
@@ -331,6 +354,32 @@ fn route(
             }
         }
     }
+}
+
+// Decide admission of one authenticated connection by policy and record the observation.
+// Only connections the peer opened are refused; connections this node chose to open are kept.
+fn admit(owners: &Owners, link: &Link, context: &PeerContext) -> bool {
+    tracing::trace!("Deciding admission of an authenticated connection");
+    let peer = IdentityId(context.peer_identity.0);
+    let now = owners::unix_seconds();
+    if context.role == ConnectionRole::Acceptor {
+        let view = owners.peer_view(peer, now);
+        let verdict = owners.policy.admission.admit(
+            &view,
+            link.peers().count(),
+            link.peers().count_for(peer),
+        );
+        if let Verdict::Refuse(reason) = verdict {
+            tracing::debug!(
+                ?reason,
+                "An authenticated connection was refused by admission policy"
+            );
+            owners.observations.record(peer, Kind::Refused, now);
+            return false;
+        }
+    }
+    owners.observations.record(peer, Kind::Connected, now);
+    true
 }
 
 // Close the connection whose adapter registration failed and fail any worker waiting on it.

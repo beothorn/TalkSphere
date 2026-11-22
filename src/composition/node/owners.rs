@@ -10,8 +10,10 @@ use super::{
     catalog::FileCatalog,
     config::NodeConfig,
     layout::Layout,
+    observation_store::FileObservations,
     offering::{self, Prepared},
 };
+use crate::composition::policy::{Configured, Params, PeerView, Policy};
 use crate::modules::{
     board,
     identity::api::IdentityId,
@@ -66,6 +68,12 @@ pub struct Owners {
     pub catalog: Arc<FileCatalog>,
     /// Whether a provider handler is installed (an offering is configured).
     pub provider: bool,
+    /// Validated peer policy parameters read from `policy.json` (defaults when absent).
+    pub params: Params,
+    /// Peer policy decisions built from the parameters.
+    pub policy: Policy,
+    /// Durable per-peer observations that policy decisions read.
+    pub observations: Arc<FileObservations>,
     board: Arc<board::state::Provider>,
     board_authority: Arc<board::authority::Authority>,
     prepared: Prepared,
@@ -83,6 +91,11 @@ pub fn open(
 ) -> Result<Owners, String> {
     tracing::trace!("Opening node owners before admitting peer work");
     config.validate().map_err(|e| e.to_string())?;
+    let params = Params::load(&layout.policy()).map_err(|e| format!("peer policy: {e}"))?;
+    let observations = Arc::new(
+        FileObservations::open(&layout.observations())
+            .map_err(|e| format!("opening the peer observations failed: {e:?}"))?,
+    );
     let deadline = Instant::now() + STARTUP_DEADLINE;
     let services = Arc::new(services::authority::Authority::new());
     let grant = |action| {
@@ -254,6 +267,9 @@ pub fn open(
     Ok(Owners {
         local,
         provider: storage.is_some(),
+        policy: Configured::policy(params),
+        params,
+        observations,
         config,
         endpoint,
         registry,
@@ -268,7 +284,45 @@ pub fn open(
     })
 }
 
+/// Current Unix time in whole seconds, or zero when the system clock is before the epoch.
+pub fn unix_seconds() -> u64 {
+    tracing::trace!("Reading the Unix time for policy decisions");
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
 impl Owners {
+    /// What policy decisions may know about `peer` at Unix time `now`: its current local trust
+    /// (zero when unreadable, the safe direction) and recorded observations.
+    pub fn peer_view(&self, peer: IdentityId, now: u64) -> PeerView {
+        tracing::trace!("Building a peer view for a policy decision");
+        let trust = self
+            .ledger_authority
+            .grant(self.local, ledger::authority::Action::Read, GRANT_BYTES)
+            .ok()
+            .and_then(|grant| {
+                self.account
+                    .view(
+                        &ledger::contract::Context {
+                            version: 1,
+                            grant: &grant,
+                            deadline: Instant::now() + Duration::from_secs(5),
+                            cancelled: false,
+                        },
+                        peer,
+                    )
+                    .ok()
+            })
+            .map_or(0, |view| view.trust.millionths());
+        PeerView {
+            peer,
+            trust_millionths: trust,
+            summary: self.observations.summary(peer),
+            now_seconds: now,
+        }
+    }
+
     /// Publish the configured Board and definition, replacing any earlier publication.
     /// Call only after `open` succeeded, so no offering is visible before recovery.
     /// A requester-only node publishes an empty Board, which withdraws an earlier offering.

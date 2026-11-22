@@ -22,3 +22,7 @@ The result exposes the local identity, validated policy, Peer Protocol endpoint,
 registry/runtime/authority, Ledger and its authority, and the requester lease catalog. The
 Storage value budget is fixed (depth 12, 4096 nodes, 65536 bytes), which bounds objects to
 16384 bytes in this profile.
+
+`open` also reads the optional [policy file](../policy/params.md) (`Owners::params`, `Owners::policy`) and opens the
+[observation store](observation_store.md). `peer_view(peer, now)` returns the peer's current local trust (zero when
+unreadable) and recorded observations for policy decisions.

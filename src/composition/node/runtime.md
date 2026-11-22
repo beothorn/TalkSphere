@@ -18,3 +18,11 @@ refuses new exchanges and lets accepted exchanges finish while connections drain
 configured shutdown time. A repeated request or the deadline forces remaining connections closed and
 returns a shutdown error. Control stops after the drain, then Transport, the bridge and the owners
 are released and `Stopped` is reported, so the identity lock is free for the next start.
+
+## Admission and observations
+
+Every authenticated connection is recorded as an observation. Connections the peer opened are checked by the
+[admission policy](../policy/contracts.md) with the node's and the peer's live connection counts; a refused
+connection is closed before it is registered or served. Connections this node chose to open are never refused.
+An unconfigured peer is admitted by default and may read the free Board and definition; paid work still needs
+the provider's nonzero Ledger trust. Observations are written every 5 seconds and at shutdown.

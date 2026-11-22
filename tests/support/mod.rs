@@ -74,6 +74,11 @@ impl Node {
         }
     }
 
+    // Write this node's peer policy document; it takes effect at the next start.
+    pub fn set_policy(&self, document: &str) {
+        std::fs::write(self.root.join("policy.json"), document).unwrap();
+    }
+
     // Start serving, optionally on a fixed port, and wait for the ready line.
     pub fn start(&mut self, port: Option<u16>) {
         self.start_with(port, None);

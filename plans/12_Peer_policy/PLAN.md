@@ -1,6 +1,6 @@
 # Peer policy and admission plan
 
-Status: in progress; steps 1-4 and 8 are complete.
+Status: in progress; steps 1-5 and 8 are complete.
 
 This is roadmap milestone 12 and planning folder 12, following the minimum
 useful node. CR2SE deliberately leaves trust, credit bootstrap, quotas,
@@ -20,7 +20,7 @@ large simulations without touching protocol code.
 - [x] **2.** Define policy contracts that decide only from recorded observations.
 - [x] **3.** Load policy parameters from a validated policy file.
 - [x] **4.** Record per-peer observations durably and within fixed bounds.
-- [ ] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
+- [x] **5.** Admit unconfigured authenticated peers under finite per-identity limits.
 - [ ] **6.** Apply per-identity quotas and rate limits before accepting work.
 - [ ] **7.** Review CR2SE quota and refusal rules and propose language-independent changes upstream.
 - [x] **8.** Track live peer connections by identity.
@@ -152,6 +152,8 @@ is not a configured contact, and make admission an explicit admission-policy
 decision. Board and definition reads stay free but rate-limited, as CR2SE
 allows. Add process tests for an unconfigured peer reading the Board and being
 refused paid work at zero trust.
+
+Completed: admission is decided by the policy contract when a peer-opened connection authenticates, using the live counts and observations; process tests show an unconfigured peer reading metadata and being refused paid work at zero trust, and a connection limit closing the second peer. Free reads are rate-limited in step 6.
 
 ### 6. Apply per-identity quotas and rate limits before accepting work
 
