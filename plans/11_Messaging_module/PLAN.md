@@ -1,6 +1,6 @@
 # Messaging module plan
 
-Status: planned for review; no step is implemented yet. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
+Status: in progress; step 1 is complete. Revised on 2026-11-22 after peer policy (milestone 12) was completed.
 
 This is roadmap milestone 13 and planning folder 11, following peer policy
 (milestone 12, [plan](../12_Peer_policy/PLAN.md)). Messaging is optional in
@@ -10,7 +10,7 @@ needs it, and the hosted pages and feeds proposal
 
 ## Steps
 
-- [ ] **1.** Reconcile Messaging requirements with the existing module contracts.
+- [x] **1.** Reconcile Messaging requirements with the existing module contracts.
 - [ ] **2.** Define Messaging types and dependency ports.
 - [ ] **3.** Add deterministic Messaging test helpers.
 - [ ] **4.** Import the pinned Messaging definition and independent fixtures.
@@ -137,6 +137,8 @@ Cryptography. List what is missing, notably release-credit issuance inside one
 recoverable decision and the Board encryption field. Record the payload bound
 the finite profile can support. Recheck upstream main. Write
 `src/modules/messaging/REQUIREMENTS.md`; no code changes.
+
+Completed: [Requirements](../../src/modules/messaging/REQUIREMENTS.md). Payloads are bounded at 16384 bytes in the finite profile; four gaps were found, the main one being that release credits are not yet part of a Services decision.
 
 ### 2. Define Messaging types and dependency ports
 
