@@ -9,7 +9,7 @@ use crate::{
         cryptography::random::SystemEntropy,
         identity::{
             api::{Contact, IdentityProvider},
-            authority::{ReadPublic, Sign},
+            authority::{Decrypt, ReadPublic, Sign},
             config::Limits,
             provider::Identity,
             storage::FileStore,
@@ -62,8 +62,13 @@ pub fn load(config: &Config, stored_contacts: bool) -> Result<Credentials, Failu
     let sign = provider
         .grant::<Sign>(&admin, &handle, 65548)
         .map_err(|_| Failure::Identity)?;
-    let identity =
-        TransportIdentity::new(provider, handle, read, sign).map_err(|_| Failure::Identity)?;
+    // Agreement budget: one 32-byte remote key per message payload; service modules share this identity through `protected()`.
+    let decrypt = provider
+        .grant::<Decrypt>(&admin, &handle, 64)
+        .map_err(|_| Failure::Identity)?;
+    let identity = TransportIdentity::new(provider, handle, read, sign)
+        .and_then(|identity| identity.with_decrypt(decrypt))
+        .map_err(|_| Failure::Identity)?;
     Ok(Credentials {
         identity,
         local_id: IdentityId(public.identity.id().0),

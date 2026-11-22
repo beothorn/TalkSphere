@@ -13,3 +13,11 @@ and uncertain storage outcomes map to unavailable. Detailed Identity failures re
 available at local lifecycle boundaries. Transcript creation, role separation,
 freshness, proof verification and session key publication remain Transport-owned.
 This adapter does not start a socket server.
+
+## Sharing with service modules
+
+`TransportIdentity.with_decrypt(capability)` adds a `Decrypt` capability (the server credential loader grants 64 bytes, one
+remote X25519 key per payload) before the identity is shared; it fails once a shared handle exists. `protected()` returns a
+cloneable `ProtectedIdentity` over the same provider, handle and grants, so a process holds the credential store lock once.
+`ProtectedIdentity` offers `public()`, `sign(bytes)` and `agree(remote public key)`; agreement is denied when no decrypt
+capability was configured. Service modules build their own transcripts and key derivation on top; nothing exposes private keys.

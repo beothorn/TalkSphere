@@ -52,6 +52,10 @@ impl Identity for TestIdentity {
 }
 // Persist pinned test keys, close the provider and reload them before composing the actual Transport port.
 fn identity(role: &str) -> TestIdentity {
+    identity_with(role, false)
+}
+// The same, optionally configured with scoped decrypt authority for service-specific agreement.
+fn identity_with(role: &str, decrypt: bool) -> TestIdentity {
     static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let root = std::env::temp_dir().join(format!(
         "talksphere-adapter-{}-{role}-{}",
@@ -80,8 +84,17 @@ fn identity(role: &str) -> TestIdentity {
     let (handle, _) = provider.load(&admin).unwrap();
     let read = provider.grant::<ReadPublic>(&admin, &handle, 4096).unwrap();
     let sign = provider.grant::<Sign>(&admin, &handle, 4096).unwrap();
+    let decrypt = decrypt.then(|| {
+        provider
+            .grant::<crate::modules::identity::authority::Decrypt>(&admin, &handle, 64)
+            .unwrap()
+    });
+    let inner = TransportIdentity::new(provider, handle, read, sign).unwrap();
     TestIdentity {
-        inner: TransportIdentity::new(provider, handle, read, sign).unwrap(),
+        inner: match decrypt {
+            Some(decrypt) => inner.with_decrypt(decrypt).unwrap(),
+            None => inner,
+        },
         root,
     }
 }
@@ -216,11 +229,12 @@ fn denied_authority_and_contact_mismatch_stop_authentication() {
     .unwrap();
     hi.sent(FrameType::Hello).unwrap();
     let foreign = crate::modules::identity::authority::Authority::new();
-    i.inner.sign = foreign
+    let shared = std::sync::Arc::get_mut(&mut i.inner.inner).unwrap();
+    shared.sign = foreign
         .grant(
-            i.inner
+            shared
                 .provider
-                .public(&i.inner.handle, &i.inner.read)
+                .public(&shared.handle, &shared.read)
                 .unwrap()
                 .identity
                 .id(),
@@ -275,4 +289,29 @@ fn dependency_mapping_preserves_available_failure_classes() {
     ] {
         assert_eq!(map_error(error), expected);
     }
+}
+
+// Scenario: service modules share the identity Transport authenticates with. Signing works through the shared handle and is
+// deterministic for the same bytes, agreement is denied until decrypt authority was configured and then succeeds.
+#[test]
+fn a_shared_protected_identity_signs_and_agrees_only_with_configured_authority() {
+    let i = identity("initiator");
+    let shared = i.inner.protected();
+    assert_eq!(
+        shared.sign(b"bytes").unwrap(),
+        shared.sign(b"bytes").unwrap()
+    );
+    assert_ne!(
+        shared.sign(b"bytes").unwrap(),
+        shared.sign(b"other").unwrap()
+    );
+    assert_eq!(
+        shared.agree(&[9; 32]).err(),
+        Some(crate::modules::identity::error::IdentityError::AccessDenied)
+    );
+    let configured = identity_with("acceptor", true);
+    let agreeing = configured.inner.protected();
+    assert!(agreeing.agree(&[9; 32]).is_ok());
+    assert!(agreeing.agree(&[0; 32]).is_err());
+    assert!(agreeing.public().is_ok());
 }

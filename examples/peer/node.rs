@@ -28,6 +28,11 @@ use talksphere::{
         transport::{api::*, handles::ConnectionHandle},
     },
 };
+/// The shared protected identity of a file-backed node.
+pub(super) type ProtectedIdentity = talksphere::composition::identity::ProtectedIdentity<
+    identity::storage::FileStore,
+    SystemEntropy,
+>;
 pub(super) struct Node {
     transport: Transport,
     bridge: Bridge,
@@ -72,9 +77,20 @@ impl Node {
         factory: Arc<dyn peer::engine::bridge::Factory>,
         signal: Signal,
     ) -> Result<Self, String> {
+        Self::with_identity(path, |_| Ok(factory), signal)
+    }
+
+    // Let the service stack share the protected identity that Transport authenticates with, so its signatures and decryption
+    // use the same keys as the connection; the identity store is locked once and never re-opened.
+    pub(super) fn with_identity(
+        path: &Path,
+        build: impl FnOnce(ProtectedIdentity) -> Result<Arc<dyn peer::engine::bridge::Factory>, String>,
+        signal: Signal,
+    ) -> Result<Self, String> {
         tracing::trace!("Composing an explicit authenticated example node");
         let config = Config::new(Options::local(path.into()).map_err(failure)?).map_err(failure)?;
         let credentials = server::credentials::load(&config, false).map_err(failure)?;
+        let factory = build(credentials.identity.protected())?;
         let mut transport = server::transport::compose(config, credentials).map_err(failure)?;
         let bridge = Bridge::register(
             &mut transport.driver,
