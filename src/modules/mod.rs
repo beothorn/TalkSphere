@@ -12,6 +12,8 @@ pub mod messaging;
 
 pub mod hosted_publications;
 
+pub mod pages;
+
 pub mod peer_protocol;
 
 pub mod storage;
