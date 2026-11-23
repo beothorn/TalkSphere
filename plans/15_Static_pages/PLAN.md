@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-11 complete).
+Status: in progress (steps 1-12 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -39,7 +39,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **9.** Implement list with visibility, ordering and cursors.
 - [x] **10.** Implement get with bounds and indistinguishable denials.
 - [x] **11.** Implement renew, remove with release credits, and the byte check.
-- [ ] **12.** Add the Services codec, the pinned service definition and its catalogue.
+- [x] **12.** Add the Services codec, the pinned service definition and its catalogue.
 - [ ] **13.** Add the participant journal and recovery of prepared effects.
 - [ ] **14.** Add the Services provider adapter with staged results and finalization.
 - [ ] **15.** Add the requester client with exact pricing, result validation and check rules.
@@ -147,6 +147,8 @@ Completed: `provider/publisher.rs` with renew, remove and check; the requester-s
 Typed requests and responses over the Services value model (exact field sets per operation, unknown fields rejected, forbidden fields of another
 operation rejected, the `store` body and `content` as bytes), the pinned service definition from the proposal with its Services catalogue like
 Messaging's `standard.rs`, and the partial-cursor and kind/limit input rules. Tests: HP-15 definition fields, field-set rejections, round trips.
+
+Completed: `codec.rs`, `standard.rs` and `fixtures/definition.json` (extracted from the proposal's service-definition section).
 
 ### 13. Participant and recovery
 

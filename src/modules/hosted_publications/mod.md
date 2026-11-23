@@ -14,6 +14,8 @@
 | [Lifecycle](lifecycle.md) | Expiration, removal and renewal transitions |
 | [Operation](operation.md) | Typed operation inputs and outputs |
 | [Provider](provider.md) | Assessing, pricing and committing operations |
+| [Codec](codec.md) | Typed requests and responses over the Services value model |
+| [Standard](standard.md) | Pinned definition and Services recognition |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

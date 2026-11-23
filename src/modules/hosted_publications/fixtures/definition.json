@@ -1,0 +1,335 @@
+{
+  "id": "hosted-publication-standard",
+  "service": "cr2se.hosted-publication",
+  "serviceVersion": 1,
+  "description": "Host signed pages and feed posts for readers until expiration.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "operation": {
+        "type": "string",
+        "description": "Operation: store, list, get, renew, or remove."
+      },
+      "placementId": {
+        "type": "bytes",
+        "description": "Host-generated 32-byte placement identifier.",
+        "optional": true
+      },
+      "publicationId": {
+        "type": "bytes",
+        "description": "Publisher-generated 32-byte publication identifier.",
+        "optional": true
+      },
+      "publisherId": {
+        "type": "bytes",
+        "description": "Publisher CR2SE ID.",
+        "optional": true
+      },
+      "kind": {
+        "type": "string",
+        "description": "Publication kind: page, feed-post, or resource.",
+        "optional": true
+      },
+      "sequence": {
+        "type": "uint64",
+        "description": "Publisher-assigned sequence.",
+        "optional": true
+      },
+      "publishedAt": {
+        "type": "uint64",
+        "description": "Publisher-claimed time in Unix seconds.",
+        "optional": true
+      },
+      "visibility": {
+        "type": "string",
+        "description": "public or restricted.",
+        "optional": true
+      },
+      "audience": {
+        "type": "array",
+        "description": "Sorted 32-byte reader identity IDs for restricted content.",
+        "items": {
+          "type": "bytes",
+          "description": "Reader CR2SE ID."
+        },
+        "optional": true
+      },
+      "contentSize": {
+        "type": "uint64",
+        "description": "Exact content size in bytes.",
+        "optional": true
+      },
+      "contentHash": {
+        "type": "bytes",
+        "description": "32-byte SHA-256 content hash.",
+        "optional": true
+      },
+      "publisherPublicKey": {
+        "type": "bytes",
+        "description": "Publisher 32-byte Ed25519 public key.",
+        "optional": true
+      },
+      "publisherSignature": {
+        "type": "bytes",
+        "description": "Publisher 64-byte publication signature.",
+        "optional": true
+      },
+      "content": {
+        "type": "bytes",
+        "description": "Exact publication content bytes.",
+        "optional": true
+      },
+      "retentionSeconds": {
+        "type": "uint64",
+        "description": "Requested initial retention in seconds.",
+        "optional": true
+      },
+      "beforeSequence": {
+        "type": "uint64",
+        "description": "Exclusive list cursor sequence.",
+        "optional": true
+      },
+      "beforePublicationId": {
+        "type": "bytes",
+        "description": "Exclusive list cursor publication ID.",
+        "optional": true
+      },
+      "limit": {
+        "type": "uint32",
+        "description": "Maximum list entries requested.",
+        "optional": true
+      },
+      "maximumBytes": {
+        "type": "uint64",
+        "description": "Largest content the reader accepts.",
+        "optional": true
+      },
+      "expectedExpiresAt": {
+        "type": "uint64",
+        "description": "Placement expiration expected by the requester.",
+        "optional": true
+      },
+      "additionalSeconds": {
+        "type": "uint64",
+        "description": "Retention seconds added by renewal.",
+        "optional": true
+      },
+      "removalId": {
+        "type": "bytes",
+        "description": "Publisher-generated 32-byte removal identifier.",
+        "optional": true
+      },
+      "minimumReleaseCredits": {
+        "type": "uint64",
+        "description": "Smallest early-release credit amount accepted.",
+        "optional": true
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "operation": {
+        "type": "string",
+        "description": "Completed operation."
+      },
+      "placementId": {
+        "type": "bytes",
+        "description": "Host-generated 32-byte placement identifier.",
+        "optional": true
+      },
+      "publicationId": {
+        "type": "bytes",
+        "description": "Publication identifier.",
+        "optional": true
+      },
+      "publisherId": {
+        "type": "bytes",
+        "description": "Publisher CR2SE ID.",
+        "optional": true
+      },
+      "kind": {
+        "type": "string",
+        "description": "Publication kind.",
+        "optional": true
+      },
+      "sequence": {
+        "type": "uint64",
+        "description": "Publisher-assigned sequence.",
+        "optional": true
+      },
+      "publishedAt": {
+        "type": "uint64",
+        "description": "Publisher-claimed time.",
+        "optional": true
+      },
+      "visibility": {
+        "type": "string",
+        "description": "public or restricted.",
+        "optional": true
+      },
+      "audience": {
+        "type": "array",
+        "description": "Reader identity IDs.",
+        "items": {
+          "type": "bytes",
+          "description": "Reader CR2SE ID."
+        },
+        "optional": true
+      },
+      "contentSize": {
+        "type": "uint64",
+        "description": "Content size in bytes.",
+        "optional": true
+      },
+      "contentHash": {
+        "type": "bytes",
+        "description": "32-byte SHA-256 content hash.",
+        "optional": true
+      },
+      "publisherPublicKey": {
+        "type": "bytes",
+        "description": "Publisher Ed25519 public key.",
+        "optional": true
+      },
+      "publisherSignature": {
+        "type": "bytes",
+        "description": "Publisher signature.",
+        "optional": true
+      },
+      "content": {
+        "type": "bytes",
+        "description": "Exact content bytes.",
+        "optional": true
+      },
+      "acceptedAt": {
+        "type": "uint64",
+        "description": "Host acceptance time.",
+        "optional": true
+      },
+      "previousExpiresAt": {
+        "type": "uint64",
+        "description": "Expiration before renewal.",
+        "optional": true
+      },
+      "expiresAt": {
+        "type": "uint64",
+        "description": "Current placement expiration.",
+        "optional": true
+      },
+      "entries": {
+        "type": "array",
+        "description": "Listed publication metadata.",
+        "items": {
+          "type": "object",
+          "fields": {
+            "placementId": {
+              "type": "bytes",
+              "description": "Placement identifier."
+            },
+            "publicationId": {
+              "type": "bytes",
+              "description": "Publication identifier."
+            },
+            "kind": {
+              "type": "string",
+              "description": "Publication kind."
+            },
+            "sequence": {
+              "type": "uint64",
+              "description": "Publisher sequence."
+            },
+            "publishedAt": {
+              "type": "uint64",
+              "description": "Publisher-claimed time."
+            },
+            "visibility": {
+              "type": "string",
+              "description": "public or restricted."
+            },
+            "contentSize": {
+              "type": "uint64",
+              "description": "Content size."
+            },
+            "contentHash": {
+              "type": "bytes",
+              "description": "Content hash."
+            },
+            "acceptedAt": {
+              "type": "uint64",
+              "description": "Acceptance time."
+            },
+            "expiresAt": {
+              "type": "uint64",
+              "description": "Expiration time."
+            }
+          }
+        },
+        "optional": true
+      },
+      "more": {
+        "type": "bool",
+        "description": "Whether another readable entry existed.",
+        "optional": true
+      },
+      "removalId": {
+        "type": "bytes",
+        "description": "Removal identifier.",
+        "optional": true
+      },
+      "removed": {
+        "type": "bool",
+        "description": "True after successful removal.",
+        "optional": true
+      },
+      "releaseCredits": {
+        "type": "uint64",
+        "description": "Provider-issued early-release credits.",
+        "optional": true
+      },
+      "price": {
+        "type": "uint64",
+        "description": "Credits charged.",
+        "optional": true
+      }
+    }
+  },
+  "check": {
+    "description": "Challenge a pending placement for one publisher-selected content byte.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "placementId": {
+          "type": "bytes",
+          "description": "Pending placement identifier."
+        },
+        "offset": {
+          "type": "uint64",
+          "description": "Zero-based challenged content offset."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": {
+          "type": "string",
+          "description": "Requester-computed result: pass, fail, or inconclusive."
+        },
+        "placementId": {
+          "type": "bytes",
+          "description": "Placement identifier that was checked."
+        },
+        "offset": {
+          "type": "uint64",
+          "description": "Challenged offset."
+        },
+        "value": {
+          "type": "bytes",
+          "description": "One-byte provider evidence when returned.",
+          "optional": true
+        }
+      }
+    }
+  }
+}
