@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-15 complete).
+Status: in progress (steps 1-16 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -43,7 +43,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **13.** Add the participant journal and recovery of prepared effects.
 - [x] **14.** Add the Services provider adapter with staged results and finalization.
 - [x] **15.** Add the requester client with exact pricing, result validation and check rules.
-- [ ] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
+- [x] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
 - [ ] **17.** Add Static Pages canonical paths and media types.
 - [ ] **18.** Add the page manifest codec and hosted page assembly on the reader side.
 - [ ] **19.** Add latest-version selection and equivocation detection across hosts.
@@ -177,6 +177,8 @@ Completed: `service/client.rs`, `check.rs` and a full lifecycle through the real
 
 Resume unfinished operations from the coordinator's record across Services, Ledger and hosted placements, including release credits issued once.
 Tests: a crash injected at every boundary of store, renew and remove, with exactly-once effects (HP-12).
+
+Completed: `service/recovery.rs` and `service/crash_tests.rs` (store, renew, remove and get at ten and eight coordination boundaries over three file directories).
 
 ### 17. Paths and media types
 

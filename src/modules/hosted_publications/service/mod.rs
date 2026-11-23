@@ -6,6 +6,7 @@ pub mod client;
 mod outputs;
 mod project;
 pub mod provider;
+pub mod recovery;
 
 pub use client::{Client, Placements};
 pub use provider::ServiceProvider;
@@ -15,3 +16,5 @@ mod tests;
 
 #[cfg(test)]
 mod coordinator_tests;
+#[cfg(test)]
+mod crash_tests;
