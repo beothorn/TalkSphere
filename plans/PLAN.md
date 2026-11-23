@@ -122,9 +122,9 @@ pages and feeds through TalkSphere servers over CR2SE only.
   encrypted for chosen readers, reusing Messaging placements, so publishers
   that cannot accept connections (phones) can publish. Done in 16 steps: specification pushed to CR2SE and proposed in
   [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14); upstream acceptance pending.
-- [ ] **15. Static Pages module.** Implement hosted pages and the existing
+- [ ] **15. [Static Pages module](15_Static_pages/PLAN.md).** Implement hosted pages and the existing
   publisher-served pages as accepted in milestone 14, reusing the Messaging
-  placement implementation. Planned after milestone 14.
+  placement implementation. Planned in 20 steps; not started.
 - [ ] **16. Public Feeds module.** Implement hosted feeds and the existing
   publisher-served feeds as accepted in milestone 14, with signed posts,
   attachments, cursors and local merging. Planned after milestone 14.
