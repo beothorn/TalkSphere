@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: planned; no step is implemented yet.
+Status: in progress (steps 1-2 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -28,8 +28,8 @@ specification, recheck every step against the new revision before relying on it.
 
 ## Steps
 
-- [ ] **1.** Record the Hosted Publications and Static Pages requirements, owners and gaps in a reconciliation file.
-- [ ] **2.** Add the hosted publication module scaffold, identifiers and typed errors.
+- [x] **1.** Record the Hosted Publications and Static Pages requirements, owners and gaps in a reconciliation file.
+- [x] **2.** Add the hosted publication module scaffold, identifiers and typed errors.
 - [ ] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
 - [ ] **4.** Implement publication verification against the authenticated publisher.
 - [ ] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
@@ -58,11 +58,15 @@ case to an owner module and step, listing gaps (for example the Board needs no
 change, the Services catalogue needs the new definition). Done when every case
 has an owner and step. Test: none beyond a link check.
 
+Completed: `REQUIREMENTS.md` maps HP-01..15 and PG-01..12; HP-09 waits for milestone 16.
+
 ### 2. Scaffold, identifiers and errors
 
 Create the module, `mod.md`, README, typed `Error` (Invalid, Denied, Conflict,
 Limit, Unavailable, Storage), ID newtypes with exact 32-byte checks, and a
 `Clock`/`Entropy` port. Unit tests cover length checks and error classes.
+
+Completed: `ids.rs` reuses Messaging's placement, removal and signature types; `error.rs` maps to Services and Messaging.
 
 ### 3. Signing bytes
 

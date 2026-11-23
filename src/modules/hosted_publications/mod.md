@@ -1,0 +1,9 @@
+# Hosted Publications module guide
+
+| Contract | Responsibility |
+| --- | --- |
+| [Requirements](REQUIREMENTS.md) | Mapping of HP-01 to HP-15 and PG-01 to PG-12 to owners, support and gaps |
+| [Ids](ids.md) | Publication and content-hash identifiers; reused placement and removal IDs |
+| [Error](error.md) | Typed failures and their Services mapping |
+
+See the [module README](README.md) for purpose, status and relationships.

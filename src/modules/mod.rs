@@ -10,6 +10,8 @@ pub mod ledger;
 
 pub mod messaging;
 
+pub mod hosted_publications;
+
 pub mod peer_protocol;
 
 pub mod storage;
