@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-6 complete).
+Status: in progress (steps 1-7 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -34,7 +34,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **4.** Implement publication verification against the authenticated publisher.
 - [x] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
 - [x] **6.** Add the Board `cr2se.hosted-publication` offering terms and exact pricing.
-- [ ] **7.** Add the durable placement record and store with its state machine.
+- [x] **7.** Add the durable placement record and store with its state machine.
 - [ ] **8.** Implement the store operation with sequence and duplicate rules.
 - [ ] **9.** Implement list with visibility, ordering and cursors.
 - [ ] **10.** Implement get with bounds and indistinguishable denials.
@@ -106,6 +106,8 @@ Completed: `terms.rs` and `fixtures/offering.json`; the finite profile caps cont
 Durable placement record (pending, removed, expired), protected file storage
 following Messaging's pattern, bounded tables, duplicate `(publisherId,
 publicationId)` guard. Tests cover restart and bounds.
+
+Completed: `placement.rs`, `store.rs` (duplicate and same-sequence rules enforced atomically at insert) and `lifecycle.rs` with thread races; Messaging's owner-only file helpers are shared.
 
 ### 8. Store operation
 

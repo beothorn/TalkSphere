@@ -9,6 +9,9 @@
 | [Verify](verify.md) | Publisher, rule, size, hash and signature checks with bounds |
 | [Envelope](envelope.md) | Restricted-content layout, sealing, structure check and opening |
 | [Terms](terms.md) | Validated offering economics, limits and exact prices |
+| [Placement](placement.md) | Placement states, record and content |
+| [Store](store.md) | Durable bounded placement storage and host rules |
+| [Lifecycle](lifecycle.md) | Expiration, removal and renewal transitions |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

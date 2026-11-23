@@ -12,7 +12,7 @@ use std::{
 /// Create a directory (and parents) readable only by its owner.
 /// # Errors
 /// `Storage` when it cannot be created.
-pub(super) fn create_dir(dir: &Path) -> Result<(), Error> {
+pub(crate) fn create_dir(dir: &Path) -> Result<(), Error> {
     tracing::trace!("Creating an owner-only Messaging directory");
     std::fs::DirBuilder::new()
         .recursive(true)
@@ -24,7 +24,7 @@ pub(super) fn create_dir(dir: &Path) -> Result<(), Error> {
 /// Replace `path` atomically with `bytes`: write a private temporary file, flush it, then rename it over the target.
 /// # Errors
 /// `Storage` on any failure; the previous file is left in place.
-pub(super) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
+pub(crate) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
     tracing::trace!("Writing a Messaging file atomically");
     let temporary = path.with_extension("tmp");
     let mut file = std::fs::OpenOptions::new()
@@ -41,12 +41,12 @@ pub(super) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
 }
 
 /// Lowercase hexadecimal text of bytes.
-pub(super) fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// Decode strict lowercase hexadecimal into exactly N bytes.
-pub(super) fn unhex<const N: usize>(text: &str) -> Option<[u8; N]> {
+pub(crate) fn unhex<const N: usize>(text: &str) -> Option<[u8; N]> {
     if text.len() != N * 2
         || !text
             .bytes()
@@ -62,7 +62,7 @@ pub(super) fn unhex<const N: usize>(text: &str) -> Option<[u8; N]> {
 }
 
 /// Decode strict lowercase hexadecimal of any length.
-pub(super) fn unhex_vec(text: &str) -> Option<Vec<u8>> {
+pub(crate) fn unhex_vec(text: &str) -> Option<Vec<u8>> {
     if !text.len().is_multiple_of(2)
         || !text
             .bytes()

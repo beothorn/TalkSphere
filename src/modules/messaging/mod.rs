@@ -39,7 +39,7 @@ pub mod store;
 
 pub mod lifecycle;
 
-mod file_io;
+pub(crate) mod file_io;
 
 pub mod effect;
 

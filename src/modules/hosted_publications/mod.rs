@@ -15,3 +15,8 @@ pub mod verify;
 pub mod envelope;
 
 pub mod terms;
+
+pub mod placement;
+pub mod store;
+
+pub mod lifecycle;
