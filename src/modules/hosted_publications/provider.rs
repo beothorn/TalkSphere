@@ -19,9 +19,12 @@ use super::{
 };
 use crate::modules::{
     identity::api::IdentityId,
-    messaging::ports::{Clock, Entropy, PendingLimits},
+    messaging::ports::{Clock, Entropy, NoRelease, PendingLimits, ReleaseIssuer, ReleasePolicy},
 };
 use std::sync::Arc;
+
+mod publisher;
+pub use publisher::{RemovalQuote, RemovePlan, RenewPlan};
 
 /// A store that passed every check and is priced, ready to be committed.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +46,11 @@ pub struct Provider {
     clock: Arc<dyn Clock>,
     entropy: Arc<dyn Entropy>,
     limits: Arc<dyn PendingLimits>,
+    release: Arc<dyn ReleasePolicy>,
+    issuer: Option<Arc<dyn ReleaseIssuer>>,
+    // Serializes the one-shot mutating methods so assess-then-commit is atomic for them; the Services participant holds a per-placement
+    // lock across the same two steps instead.
+    serial: std::sync::Mutex<()>,
 }
 
 impl Provider {
@@ -62,7 +70,24 @@ impl Provider {
             clock,
             entropy,
             limits,
+            release: Arc::new(NoRelease),
+            issuer: None,
+            serial: std::sync::Mutex::new(()),
         }
+    }
+
+    /// Use `policy` to choose early-release credits when removals are quoted; without it none are offered.
+    pub fn with_release_policy(mut self, policy: Arc<dyn ReleasePolicy>) -> Self {
+        tracing::trace!("Installing the release credit policy");
+        self.release = policy;
+        self
+    }
+
+    /// Install the issuer used when a removal that releases credits commits; without it such a removal is `Unsupported`.
+    pub fn with_release_issuer(mut self, issuer: Arc<dyn ReleaseIssuer>) -> Self {
+        tracing::trace!("Installing the release credit issuer");
+        self.issuer = Some(issuer);
+        self
     }
 
     /// The validated terms this provider enforces.
@@ -169,7 +194,8 @@ impl Provider {
         Ok(output_of(&record))
     }
 
-    /// Check, price and commit a store in one step with a fresh placement ID at the current time; returns the output and the price.
+    /// Check, price and commit a store in one step with a fresh placement ID at the current time; returns the output and the price. The
+    /// check and the commit are serialized against other one-shot mutations of this provider.
     /// # Errors
     /// As [`Provider::assess_store`] and [`Provider::commit_store`], plus `Unavailable` without entropy.
     pub fn store_publication(
@@ -178,6 +204,7 @@ impl Provider {
         request: &StoreRequest,
     ) -> Result<(StoreOutput, u64), Error> {
         tracing::trace!("Storing a publication");
+        let _serial = self.serial.lock().unwrap_or_else(|e| e.into_inner());
         let plan = self.assess_store(publisher, request)?;
         let at = self.clock.now()?;
         let output = self.commit_store(&plan, self.new_placement_id()?, at)?;

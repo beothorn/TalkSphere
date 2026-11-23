@@ -4,7 +4,7 @@
 //! of any wire encoding. The authenticated requester is supplied separately by Services and is never a field of a request, so a peer
 //! cannot claim another identity.
 use super::{
-    ids::{ContentHash, PlacementId, PublicationId},
+    ids::{ContentHash, PlacementId, PublicationId, RemovalId},
     metadata::{Kind, Publication, Visibility},
 };
 use crate::modules::identity::api::IdentityId;
@@ -96,4 +96,74 @@ pub struct GetRequest {
 pub struct GetOutput {
     /// The publication as stored.
     pub publication: Publication,
+}
+
+/// A renewal request for one pending placement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RenewRequest {
+    /// The placement to extend.
+    pub placement_id: PlacementId,
+    /// The expiry the publisher believes is current; renewal applies only to exactly this value.
+    pub expected_expires_at: u64,
+    /// Seconds to add, within the offering's retention limits.
+    pub additional_seconds: u64,
+}
+
+/// What an accepted renewal reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RenewOutput {
+    /// The renewed placement.
+    pub placement_id: PlacementId,
+    /// The expiry before this renewal.
+    pub previous_expires_at: u64,
+    /// The new expiry.
+    pub expires_at: u64,
+}
+
+/// A removal request: the publisher ends one pending placement early.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RemoveRequest {
+    /// The placement to remove.
+    pub placement_id: PlacementId,
+    /// The publisher's replay identifier; the same value repeats the same removal.
+    pub removal_id: RemovalId,
+    /// The expiry the publisher believes is current.
+    pub expected_expires_at: u64,
+    /// The smallest early-release credit amount the publisher accepts.
+    pub minimum_release_credits: u64,
+}
+
+/// What a completed removal reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RemoveOutput {
+    /// The removed placement.
+    pub placement_id: PlacementId,
+    /// The replay identifier of this removal.
+    pub removal_id: RemovalId,
+    /// Always true for a success.
+    pub removed: bool,
+    /// Early-release credits issued to the publisher.
+    pub release_credits: u64,
+    /// The removal charge.
+    pub price: u64,
+}
+
+/// A byte-evidence request for one pending placement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CheckRequest {
+    /// The placement to challenge.
+    pub placement_id: PlacementId,
+    /// The zero-based content offset, below the content size.
+    pub offset: u64,
+}
+
+/// One content byte served as evidence that the host still holds the publication.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CheckOutput {
+    /// The challenged placement.
+    pub placement_id: PlacementId,
+    /// The challenged offset.
+    pub offset: u64,
+    /// The content byte at that offset (a ciphertext byte when restricted).
+    pub value: u8,
 }

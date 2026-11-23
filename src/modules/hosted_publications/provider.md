@@ -23,3 +23,23 @@ without any difference in entries, `more` or price. An empty page is a successfu
 price `max(minimum, ceil(contentSize * R))`. Unknown, wrong-publisher, expired, removed and unauthorized publications are the same `NotAvailable`;
 a `maximumBytes` of zero or above the offering is `Invalid`; content larger than the reader's bound is `Limit`; content the host cannot return
 completely is `Storage`. The reader verifies the bytes itself. Repeating a get is a new invocation and charge.
+
+**Renew (publisher only).** `assessRenew(publisher, request)` requires a pending, unexpired placement of the publisher (otherwise one concealed
+`NotAvailable`), added seconds within the offering's retention limits (`Invalid`), the exact expected expiry (`Conflict`, checked here so a used
+expectation is never mistaken for the repetition of an applied renewal) and `expected + additional` not past `acceptedAt + maximumTotalRetentionSeconds`
+(`Limit`); the price is `max(minimum, ceil(size * seconds * N))`. `commitRenew(plan, at)` extends the expiry from the expectation and adds the price to
+the payments; the expiry only grows, so a later expiry means the renewal was already applied and the output is rebuilt (crash repair).
+
+**Remove (publisher only).** `quoteRemoval` fixes the release credits: the policy's offer bounded above by the placement's cumulative store and renewal
+payments (list, get, remove and check prices are never added) and below by the publisher's minimum (`Invalid` when the minimum exceeds the payments,
+`Limit` when the policy offers less, `Conflict` for a stale expiry), with the remove price. `assessRemove` answers an exact retry (same removal ID on
+the removed placement) from the durable record, with no expiry check; otherwise it quotes. `commitRemove(key, request, quote, at)` checks state and time,
+issues the credits once under the Services operation key, records the removal and releases the content; repeating it after the removal was recorded
+issues again idempotently, so an interrupted settlement completes exactly once. Credits without an installed issuer are `Unsupported`; a refused
+issuance leaves the placement pending. A different removal ID on a removed placement is `NotAvailable`.
+
+**Check (publisher only).** `check(publisher, request)` returns the content byte at `offset` (a ciphertext byte for restricted content) of a pending,
+unexpired placement; an offset at or beyond the size is `Invalid`; foreign, unknown, inactive and expired placements are one concealed `NotAvailable`.
+
+The one-shot `renew`, `remove` and `storePublication` serialize assessment and commit with an internal lock; a caller that separates the two steps
+(the Services participant) must lock the placement between them.

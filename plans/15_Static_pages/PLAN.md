@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-10 complete).
+Status: in progress (steps 1-11 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -38,7 +38,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **8.** Implement the store operation with sequence and duplicate rules.
 - [x] **9.** Implement list with visibility, ordering and cursors.
 - [x] **10.** Implement get with bounds and indistinguishable denials.
-- [ ] **11.** Implement renew, remove with release credits, and the byte check.
+- [x] **11.** Implement renew, remove with release credits, and the byte check.
 - [ ] **12.** Add the Services provider adapter and requester client with durable replay.
 - [ ] **13.** Add Static Pages canonical paths and media types.
 - [ ] **14.** Add the page manifest codec and hosted page assembly on the reader side.
@@ -135,6 +135,8 @@ Completed: `Provider::get` with `GetRequest` and `GetOutput`.
 Reuse Messaging's rules by contract: guarded renewal with total ceiling, removal
 quote with release credits and idempotent replay through the Ledger
 `issue_release`, one-byte check with local verdict. Tests: HP-11 to HP-14.
+
+Completed: `provider/publisher.rs` with renew, remove and check; the requester-side verdict of the check arrives with the client in step 12.
 
 ### 12. Services adapter and client
 

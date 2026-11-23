@@ -11,4 +11,7 @@ Logical inputs and outputs of the five operations and the check; the authenticat
 
 - `GetRequest`: `publisherId`, `publicationId` and `maximumBytes` (`1 ..= maximumContentBytes`). `GetOutput`: the complete publication exactly as stored.
 
-Later steps add renew, remove and check values here.
+- `RenewRequest`: `placementId`, `expectedExpiresAt`, `additionalSeconds`. `RenewOutput`: `placementId`, `previousExpiresAt`, `expiresAt`.
+- `RemoveRequest`: `placementId`, `removalId`, `expectedExpiresAt`, `minimumReleaseCredits`. `RemoveOutput`: `placementId`, `removalId`, `removed` (true),
+  `releaseCredits`, `price`.
+- `CheckRequest`: `placementId`, `offset`. `CheckOutput`: `placementId`, `offset`, one content `value` byte.
