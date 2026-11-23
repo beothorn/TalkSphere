@@ -181,7 +181,7 @@ fn rate(value: &Value, name: &str) -> Result<Rate, Error> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::modules::board::{
         config::Limits,

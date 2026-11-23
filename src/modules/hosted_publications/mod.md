@@ -12,6 +12,8 @@
 | [Placement](placement.md) | Placement states, record and content |
 | [Store](store.md) | Durable bounded placement storage and host rules |
 | [Lifecycle](lifecycle.md) | Expiration, removal and renewal transitions |
+| [Operation](operation.md) | Typed operation inputs and outputs |
+| [Provider](provider.md) | Assessing, pricing and committing operations |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

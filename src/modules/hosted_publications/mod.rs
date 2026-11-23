@@ -20,3 +20,7 @@ pub mod placement;
 pub mod store;
 
 pub mod lifecycle;
+
+pub mod operation;
+
+pub mod provider;
