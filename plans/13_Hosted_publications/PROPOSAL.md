@@ -1,9 +1,9 @@
 # Hosted Publications proposal record
 
-Status: drafted locally in a CR2SE checkout; not pushed and not filed upstream.
+Status: pushed to CR2SE and filed as [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14); upstream acceptance pending.
 
 Base: [CR2SE 73edf2d](https://github.com/beothorn/CR2SE/commit/73edf2d). The proposal adds three commits (titles only; their
-hashes exist only in the local checkout until pushed):
+commits [0ddc95e](https://github.com/beothorn/CR2SE/commit/0ddc95e), [2b38974](https://github.com/beothorn/CR2SE/commit/2b38974), [53f1245](https://github.com/beothorn/CR2SE/commit/53f1245)):
 
 1. Add independently generated Hosted Publications vectors.
 2. Specify Hosted Publications: provider-hosted signed pages and feeds.
@@ -27,6 +27,4 @@ pricing, renewal, release-credit removal and byte checks; page paths and media t
 Feeds. Existing Pages and Feeds are unchanged. Includes inputs, outputs, pseudocode, diagrams, acceptance tests HP-01..HP-15 and
 independently generated vectors. The change is available on request as commits on top of 73edf2d.
 
-Blocker: filing needs the project owner's go-ahead, because this is a feature proposal rather than a confirmed defect, and the
-commits are not yet pushed so the issue cannot link them. File it, and push the CR2SE commits only if asked, then record the issue
-URL here and complete step 16.
+Filed on the owner's go-ahead after searching open and closed issues for an existing proposal (none).

@@ -1,7 +1,6 @@
 # Hosted pages and feeds specification plan
 
-Status: specification drafted and committed in a CR2SE checkout (steps 1-15 complete); step 16, filing upstream, is blocked on
-the project owner (see [PROPOSAL.md](PROPOSAL.md)).
+Status: complete. The specification is pushed to CR2SE and proposed in [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14) (see [PROPOSAL.md](PROPOSAL.md)); upstream acceptance is pending.
 
 This is roadmap milestone 14 and planning folder 13. It is CR2SE specification
 work, not TalkSphere code. The TalkSphere Static Pages and Public Feeds modules
@@ -37,7 +36,7 @@ TalkSphere implementation should reuse the Messaging implementation.
 - [x] **13.** Add independently generated fixed vectors for the new signing and encryption bytes.
 - [x] **14.** Update Redundancy, ModuleContracts, Glossary and PoC.
 - [x] **15.** Review the change for consistency, privacy and abuse.
-- [ ] **16.** File the proposal upstream and record it locally.
+- [x] **16.** File the proposal upstream and record it locally.
 
 ## Baseline, scope and review
 
@@ -169,6 +168,7 @@ feed posts; page snapshots as a signed manifest plus separately hosted resource 
 with a per-publication content key wrapped per reader; Messaging's placement, pricing, renewal, release-credit and check
 rules reused by reference; publisher-assigned sequence numbers, with equivocation detected by readers.
 
-Step 16 is not complete: the commits are local and unpushed, and the upstream issue is a feature proposal rather than the
-protocol-defect report AGENTS.md pre-authorizes, so it has not been filed. Milestones 15 and 16 proceed against the local
-proposal and must be revisited if upstream review changes it.
+Step 16: the owner approved; the commits are pushed ([0ddc95e](https://github.com/beothorn/CR2SE/commit/0ddc95e),
+[2b38974](https://github.com/beothorn/CR2SE/commit/2b38974), [53f1245](https://github.com/beothorn/CR2SE/commit/53f1245)) and the proposal is
+[beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14). Milestones 15 and 16 proceed against this proposal and must be
+revisited if upstream review changes it.

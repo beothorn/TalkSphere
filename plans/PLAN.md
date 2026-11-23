@@ -117,11 +117,11 @@ pages and feeds through TalkSphere servers over CR2SE only.
 - [x] **13. [Messaging module](11_Messaging_module/PLAN.md).** Add signed/encrypted placement, recipient
   discovery/recovery, receipts, renewal, release/removal, status, checks and
   retries with durable replay guards. Completed in 38 steps (revised after peer policy): engine, Services adapter and requester client, Peer Protocol requester intents, crash recovery across Services/Ledger/Messaging files, Identity-backed decryption and an authenticated four-node exercise with replicas (one OS process).
-- [ ] **14. [Hosted pages and feeds in CR2SE](13_Hosted_publications/PLAN.md).** Specification work in
+- [x] **14. [Hosted pages and feeds in CR2SE](13_Hosted_publications/PLAN.md).** Specification work in
   CR2SE: let any provider host publisher-signed pages and feed posts, public or
   encrypted for chosen readers, reusing Messaging placements, so publishers
-  that cannot accept connections (phones) can publish. Steps 1-15 (specification drafted and committed in a CR2SE checkout,
-  unpushed) are done; step 16 (file upstream) is blocked on the project owner.
+  that cannot accept connections (phones) can publish. Done in 16 steps: specification pushed to CR2SE and proposed in
+  [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14); upstream acceptance pending.
 - [ ] **15. Static Pages module.** Implement hosted pages and the existing
   publisher-served pages as accepted in milestone 14, reusing the Messaging
   placement implementation. Planned after milestone 14.
