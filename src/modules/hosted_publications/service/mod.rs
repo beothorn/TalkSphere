@@ -4,11 +4,13 @@
 //! participant, the codec and the Services handler contracts.
 pub mod client;
 mod outputs;
+pub mod placements;
 mod project;
 pub mod provider;
 pub mod recovery;
 
 pub use client::{Client, Placements};
+pub use placements::StorePlacements;
 pub use provider::ServiceProvider;
 
 #[cfg(test)]

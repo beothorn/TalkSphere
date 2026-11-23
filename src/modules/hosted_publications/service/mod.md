@@ -6,6 +6,7 @@ The layer between Services and the hosted publication engine. Composition regist
 | --- | --- |
 | [Provider](provider.md) | Stage, prepare, finalize and commit through Services |
 | [Client](client.md) | Requester contract, exact pricing and check rules |
+| [Placements](placements.md) | Provider-side placement sizes for pricing |
 | [Recovery](recovery.md) | Resuming unfinished operations from the coordinator's record |
 
 Startup order for a provider: recover the participant deferring to Services (`DeferToServices`), construct the `ServiceProvider`, register it, open the coordinator, resume its pending work, then publish the offering.
