@@ -107,7 +107,13 @@ pub(super) mod tests {
     use zeroize::Zeroizing;
 
     /// The independent vectors, parsed into sections of `label: hexadecimal` lines.
-    pub(crate) struct Vectors(Vec<(String, Vec<(String, String)>)>);
+    pub(crate) struct Vectors(Vec<Section>);
+
+    /// A change to metadata used by the mutation test.
+    type Mutation = Box<dyn Fn(&mut Metadata)>;
+
+    /// One vector section: its title and its `label: value` lines.
+    type Section = (String, Vec<(String, String)>);
 
     impl Vectors {
         /// Parse the copied upstream vector file.
@@ -269,7 +275,7 @@ pub(super) mod tests {
         };
         let base = sign_publication(&publisher, draft, b"hello".to_vec()).unwrap();
         let original = signing_bytes(&base.metadata, &base.content);
-        let mutations: Vec<Box<dyn Fn(&mut Metadata)>> = vec![
+        let mutations: Vec<Mutation> = vec![
             Box::new(|m| m.publication_id.0[0] ^= 1),
             Box::new(|m| m.publisher_id.0[0] ^= 1),
             Box::new(|m| m.kind = Kind::Page),
