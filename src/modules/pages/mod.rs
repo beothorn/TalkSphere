@@ -6,3 +6,7 @@ pub mod media;
 pub mod path;
 
 pub use error::Error;
+
+pub mod manifest;
+
+pub mod hosted;

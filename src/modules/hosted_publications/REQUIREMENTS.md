@@ -47,7 +47,10 @@ plus 104 per reader and a 16-byte tag).
 3. **HP-05 seeds two feed posts at sequence 7**, but section 7 makes a host reject a second pending publication at the same sequence, so the
    case cannot be built through `store`, and the `(sequence, publicationId)` tie-break of list can never apply at one host. Implemented as
    written (the store refuses the pair); the tie-break key is kept. To be confirmed upstream before filing a protocol report.
-4. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
+4. **Restricted resources in a manifest.** Section 11 says a manifest entry holds the SHA-256 of the resource content and the assembly rule says the publication's `contentSize` and
+   `contentHash` equal the entry; for a restricted resource the publication's content is the envelope, so TalkSphere sizes and hashes the stored (encrypted) bytes, which is the only reading that
+   makes both rules hold. To be clarified upstream.
+5. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
 
 ## Rules the module enforces itself
 
