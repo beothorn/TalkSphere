@@ -6,7 +6,7 @@ Provider-hosted, publisher-signed pages and feed posts: the CR2SE proposal
 version 1, pricing model `cr2se.hosted-publication.v1`. Optional in CR2SE's minimum profile; planned in
 [milestone 15](../../../plans/15_Static_pages/PLAN.md).
 
-**Status:** in progress (plan steps 1-2: reconciliation, identifiers and errors). Nothing is advertised on a Board and no operation exists yet.
+**Status:** in progress (plan steps 1-3: reconciliation, identifiers, errors, metadata and signing with the V1-V3 vectors). Nothing is advertised on a Board and no operation exists yet.
 
 A publisher that cannot accept connections (a phone) signs a publication and stores it, for a paid retention period, at any number of
 hosts. Readers list and fetch it from any host and verify the publisher's signature themselves, so a host can withhold or serve an

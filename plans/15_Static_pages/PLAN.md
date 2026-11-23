@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-2 complete).
+Status: in progress (steps 1-3 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -30,7 +30,7 @@ specification, recheck every step against the new revision before relying on it.
 
 - [x] **1.** Record the Hosted Publications and Static Pages requirements, owners and gaps in a reconciliation file.
 - [x] **2.** Add the hosted publication module scaffold, identifiers and typed errors.
-- [ ] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
+- [x] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
 - [ ] **4.** Implement publication verification against the authenticated publisher.
 - [ ] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
 - [ ] **6.** Add the Board `cr2se.hosted-publication` offering, terms and exact pricing.
@@ -73,6 +73,8 @@ Completed: `ids.rs` reuses Messaging's placement, removal and signature types; `
 `Publication` metadata and `signing_bytes`, big-endian integers, exact
 constants, audience order check. Tests reproduce V1, V2 and V3 signing bytes and
 SHA-256 and the Ed25519 signatures byte for byte, and mutate every field.
+
+Completed: `metadata.rs`, `signing.rs`; vectors are copied to `fixtures/vectors.md` and reproduced byte for byte.
 
 ### 4. Verification
 

@@ -5,3 +5,7 @@ pub mod error;
 pub mod ids;
 
 pub use error::Error;
+
+pub mod metadata;
+
+pub mod signing;
