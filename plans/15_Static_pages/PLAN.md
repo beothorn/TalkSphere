@@ -39,15 +39,19 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **9.** Implement list with visibility, ordering and cursors.
 - [x] **10.** Implement get with bounds and indistinguishable denials.
 - [x] **11.** Implement renew, remove with release credits, and the byte check.
-- [ ] **12.** Add the Services provider adapter and requester client with durable replay.
-- [ ] **13.** Add Static Pages canonical paths and media types.
-- [ ] **14.** Add the page manifest codec and hosted page assembly on the reader side.
-- [ ] **15.** Add latest-version selection and equivocation detection across hosts.
-- [ ] **16.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
-- [ ] **17.** Bind both services to the Peer Protocol endpoint and the node composition.
-- [ ] **18.** Add the publisher publish and reader fetch commands with help topics.
-- [ ] **19.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
-- [ ] **20.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
+- [ ] **12.** Add the Services codec, the pinned service definition and its catalogue.
+- [ ] **13.** Add the participant journal and recovery of prepared effects.
+- [ ] **14.** Add the Services provider adapter with staged results and finalization.
+- [ ] **15.** Add the requester client with exact pricing, result validation and check rules.
+- [ ] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
+- [ ] **17.** Add Static Pages canonical paths and media types.
+- [ ] **18.** Add the page manifest codec and hosted page assembly on the reader side.
+- [ ] **19.** Add latest-version selection and equivocation detection across hosts.
+- [ ] **20.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
+- [ ] **21.** Bind both services to the Peer Protocol endpoint and the node composition.
+- [ ] **22.** Add the publisher publish and reader fetch commands with help topics.
+- [ ] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
+- [ ] **24.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
 
 ## Details
 
@@ -138,50 +142,72 @@ quote with release credits and idempotent replay through the Ledger
 
 Completed: `provider/publisher.rs` with renew, remove and check; the requester-side verdict of the check arrives with the client in step 12.
 
-### 12. Services adapter and client
+### 12. Codec, definition and catalogue
 
-Provider and requester traits for Services, operation keys, replay cache and
-crash recovery like Messaging steps 30 to 33. Tests: HP-15 definitions and
-independence of replicas.
+Typed requests and responses over the Services value model (exact field sets per operation, unknown fields rejected, forbidden fields of another
+operation rejected, the `store` body and `content` as bytes), the pinned service definition from the proposal with its Services catalogue like
+Messaging's `standard.rs`, and the partial-cursor and kind/limit input rules. Tests: HP-15 definition fields, field-set rejections, round trips.
 
-### 13. Paths and media types
+### 13. Participant and recovery
+
+Effects (`Query`, `Store`, `Renew`, `Remove`) and outcomes with strict durable encoding, a bounded journal of prepared, committed and aborted
+operations, the participant's prepare, commit, abort and status with per-placement locks and idempotent apply, and recovery that defers to
+Services. Tests: the Messaging participant scenarios (locks, token replay, crash between apply and journal, corrupt journal refused).
+
+### 14. Services provider adapter
+
+`ServiceProvider` mapping stage, prepare, finalize and commit onto the engine; stores finalized with the coordinator's decision time; read-only
+operations keep their request in the journal; cached retry only for removals. Tests: staged results after restart, finalization, evidence.
+
+### 15. Requester client
+
+`Client` with exact pricing from the offering (store by size and retention, get by the returned size bounds, renew by the known size, removal by
+the quoted release credits), result validation (the publication belongs to its request, expiry arithmetic) and the check rules with a private
+expectation. Tests: HP-06, HP-11 to HP-13 pricing and verdicts, hostile results.
+
+### 16. Crash recovery
+
+Resume unfinished operations from the coordinator's record across Services, Ledger and hosted placements, including release credits issued once.
+Tests: a crash injected at every boundary of store, renew and remove, with exactly-once effects (HP-12).
+
+### 17. Paths and media types
 
 Static Pages sections 3 and 4: canonical paths and media type validation.
 Tests: PG-03, PG-04.
 
-### 14. Manifest and page assembly
+### 18. Manifest and page assembly
 
 Canonical manifest bytes, root `/` text/html, per-resource checks and the
 incomplete-page rule. Tests: HP-08 and its rejection list.
 
-### 15. Latest version and equivocation
+### 19. Latest version and equivocation
 
 Reader-side selection of the highest verified sequence across hosts,
 equivocation report, best-known wording. Tests: HP-10.
 
-### 16. Publisher-served page
+### 20. Publisher-served page
 
 `cr2se.page` version 1 get operation, fixed price, immutable snapshot, local
 check. Tests: PG-01 to PG-12 for the supported subset.
 
-### 17. Peer Protocol and node binding
+### 21. Peer Protocol and node binding
 
 Register both services with the node, publish the offerings after recovery, and
 bind requester intents. Tests: authenticated in-process node pair.
 
-### 18. Commands and help
+### 22. Commands and help
 
 `talksphere publish ...` and `talksphere page ...` commands with detailed help
 topics, README examples and CLI tests (exit status 2 for invalid arguments).
 
-### 19. Exercise
+### 23. Exercise
 
 An example and `docs/pages/EXERCISE.md`: a publisher that only dials out stores
 a signed page at two hosts, one host stops, a reader still fetches and verifies
 it; a restricted page is readable only by its audience. As with Messaging, nodes
 may share one OS process; say so in the example source.
 
-### 20. Acceptance and wrap-up
+### 24. Acceptance and wrap-up
 
 Matrix HP-01..15 and PG-01..12 with evidence, fmt/clippy/test/build/help,
 production coverage above 80% per `docs/coverage.md`, README and roadmap
