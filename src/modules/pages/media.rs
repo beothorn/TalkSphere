@@ -31,6 +31,12 @@ impl MediaType {
         }
     }
 
+    /// The generic label `application/octet-stream`, valid by construction, used for content with no better label.
+    pub fn octet_stream() -> Self {
+        tracing::trace!("Creating the generic media type");
+        Self("application/octet-stream".to_string())
+    }
+
     /// The media type as text.
     pub fn as_str(&self) -> &str {
         &self.0
@@ -81,6 +87,10 @@ mod tests {
         );
         assert!(MediaType::parse(&longest).is_ok());
         assert!(MediaType::parse("text/html").unwrap().is_html());
+        assert_eq!(
+            MediaType::octet_stream(),
+            MediaType::parse("application/octet-stream").unwrap()
+        );
         assert!(!MediaType::parse("text/plain").unwrap().is_html());
     }
 

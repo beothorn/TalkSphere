@@ -1,0 +1,15 @@
+{
+  "id": "page",
+  "service": "cr2se.page",
+  "serviceVersion": 1,
+  "description": "Return static resources published as this identity's page.",
+  "creditIssuer": "PROVIDER_ID",
+  "price": 4,
+  "info": {
+    "maximumPathBytes": 1024,
+    "maximumResourceBytes": 100
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}

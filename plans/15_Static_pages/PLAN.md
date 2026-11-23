@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-19 complete).
+Status: in progress (steps 1-20 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -47,7 +47,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **17.** Add Static Pages canonical paths and media types.
 - [x] **18.** Add the page manifest codec and hosted page assembly on the reader side.
 - [x] **19.** Add latest-version selection and equivocation detection across hosts.
-- [ ] **20.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
+- [x] **20.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
 - [ ] **21.** Bind both services to the Peer Protocol endpoint and the node composition.
 - [ ] **22.** Add the publisher publish and reader fetch commands with help topics.
 - [ ] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
@@ -205,6 +205,8 @@ Completed: `hosted_publications/latest.rs` (shared by pages and feeds).
 
 `cr2se.page` version 1 get operation, fixed price, immutable snapshot, local
 check. Tests: PG-01 to PG-12 for the supported subset.
+
+Completed: `pages/service/` (terms, codec, check, store with a confined directory source, definition catalogue, provider adapter and client) with a coordinator test of exact charging.
 
 ### 21. Peer Protocol and node binding
 

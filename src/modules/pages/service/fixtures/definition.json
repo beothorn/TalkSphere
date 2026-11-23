@@ -1,0 +1,97 @@
+{
+  "id": "page",
+  "service": "cr2se.page",
+  "serviceVersion": 1,
+  "description": "Return static resources published as this identity's page.",
+  "input": {
+    "type": "object",
+    "fields": {
+      "path": {
+        "type": "string",
+        "description": "Canonical path of the requested resource within the publisher's page."
+      },
+      "maximumBytes": {
+        "type": "uint64",
+        "description": "Largest resource content size in bytes that the visitor accepts."
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "fields": {
+      "path": {
+        "type": "string",
+        "description": "Canonical path returned, exactly equal to the requested path."
+      },
+      "mediaType": {
+        "type": "string",
+        "description": "Lowercase type/subtype label for the returned content."
+      },
+      "contentSize": {
+        "type": "uint64",
+        "description": "Exact number of returned content bytes."
+      },
+      "contentHash": {
+        "type": "bytes",
+        "description": "Exact 32-byte SHA-256 hash of the returned content."
+      },
+      "content": {
+        "type": "bytes",
+        "description": "Complete static content bytes for the requested path."
+      },
+      "price": {
+        "type": "uint64",
+        "description": "Exact credits charged for the successful get invocation."
+      }
+    }
+  },
+  "check": {
+    "description": "Locally verify that one complete get output matches its requested path, agreed price, declared size, media type, and SHA-256 content hash.",
+    "input": {
+      "type": "object",
+      "fields": {
+        "requestedPath": {
+          "type": "string",
+          "description": "Canonical path supplied in the checked get invocation."
+        },
+        "path": {
+          "type": "string",
+          "description": "Canonical path contained in the checked output."
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Media type contained in the checked output."
+        },
+        "contentSize": {
+          "type": "uint64",
+          "description": "Declared byte length contained in the checked output."
+        },
+        "contentHash": {
+          "type": "bytes",
+          "description": "Declared 32-byte SHA-256 content hash contained in the checked output."
+        },
+        "content": {
+          "type": "bytes",
+          "description": "Complete content bytes contained in the checked output."
+        },
+        "agreedPrice": {
+          "type": "uint64",
+          "description": "Fixed offering price accepted before the checked invocation."
+        },
+        "price": {
+          "type": "uint64",
+          "description": "Price contained in the checked output."
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "fields": {
+        "outcome": {
+          "type": "string",
+          "description": "Visitor-computed verification result: pass, fail, or inconclusive."
+        }
+      }
+    }
+  }
+}

@@ -10,3 +10,5 @@ pub use error::Error;
 pub mod manifest;
 
 pub mod hosted;
+
+pub mod service;
