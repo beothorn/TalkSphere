@@ -110,14 +110,7 @@ impl Store {
         if state.index.contains_key(&id) {
             return Err(Error::Conflict);
         }
-        let conflicting = state.index.values().filter(|r| r.active_at(now)).any(|r| {
-            r.metadata.publisher_id == metadata.publisher_id
-                && (r.metadata.publication_id == metadata.publication_id
-                    || (metadata.kind.is_listed()
-                        && r.metadata.kind == metadata.kind
-                        && r.metadata.sequence == metadata.sequence))
-        });
-        if conflicting {
+        if conflicts_with(&state.index, metadata, now) {
             return Err(Error::Conflict);
         }
         if state.index.len() >= self.limits.placements
@@ -135,6 +128,13 @@ impl Store {
         }
         state.index.insert(id, placement.record.clone());
         Ok(())
+    }
+
+    /// Whether storing a publication with this metadata at `now` would break the host rules: an active placement of the same publisher
+    /// with the same publication ID, or (for pages and feed posts) the same kind and sequence with another publication ID.
+    pub fn conflicts(&self, metadata: &Metadata, now: u64) -> bool {
+        tracing::trace!("Checking the hosted store rules for a publication");
+        conflicts_with(&self.lock().index, metadata, now)
     }
 
     /// Whether one more placement with `content_len` content bytes would fit the finite bounds right now.
@@ -290,6 +290,17 @@ impl Store {
     fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
         self.state.lock().unwrap_or_else(|e| e.into_inner())
     }
+}
+
+// The host rules shared by `insert` and `conflicts`.
+fn conflicts_with(index: &BTreeMap<PlacementId, Record>, metadata: &Metadata, now: u64) -> bool {
+    index.values().filter(|r| r.active_at(now)).any(|r| {
+        r.metadata.publisher_id == metadata.publisher_id
+            && (r.metadata.publication_id == metadata.publication_id
+                || (metadata.kind.is_listed()
+                    && r.metadata.kind == metadata.kind
+                    && r.metadata.sequence == metadata.sequence))
+    })
 }
 
 // Write a content: memory or an owner-only file replaced atomically.

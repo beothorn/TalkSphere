@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-12 complete).
+Status: in progress (steps 1-13 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -40,7 +40,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **10.** Implement get with bounds and indistinguishable denials.
 - [x] **11.** Implement renew, remove with release credits, and the byte check.
 - [x] **12.** Add the Services codec, the pinned service definition and its catalogue.
-- [ ] **13.** Add the participant journal and recovery of prepared effects.
+- [x] **13.** Add the participant journal and recovery of prepared effects.
 - [ ] **14.** Add the Services provider adapter with staged results and finalization.
 - [ ] **15.** Add the requester client with exact pricing, result validation and check rules.
 - [ ] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
@@ -155,6 +155,8 @@ Completed: `codec.rs`, `standard.rs` and `fixtures/definition.json` (extracted f
 Effects (`Query`, `Store`, `Renew`, `Remove`) and outcomes with strict durable encoding, a bounded journal of prepared, committed and aborted
 operations, the participant's prepare, commit, abort and status with per-placement locks and idempotent apply, and recovery that defers to
 Services. Tests: the Messaging participant scenarios (locks, token replay, crash between apply and journal, corrupt journal refused).
+
+Completed: `effect.rs`, `journal.rs`, `participant.rs` (locks on placement, publication and sequence slot) and `recovery.rs`.
 
 ### 14. Services provider adapter
 

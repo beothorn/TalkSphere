@@ -16,6 +16,10 @@
 | [Provider](provider.md) | Assessing, pricing and committing operations |
 | [Codec](codec.md) | Typed requests and responses over the Services value model |
 | [Standard](standard.md) | Pinned definition and Services recognition |
+| [Effect](effect.md) | Effects and outcomes with durable encoding |
+| [Journal](journal.md) | Durable participant journal |
+| [Participant](participant.md) | Prepare, commit, abort and status of effects |
+| [Recovery](recovery.md) | Resolving prepared operations before admitting work |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

@@ -14,3 +14,4 @@ placement, or more records than the bound is `Storage`; nothing is repaired, and
 - `update(id, change)`: applies a closure to one record under the lock and persists it atomically; identity, metadata and signature cannot change.
 - `get`, `record`, `records`, `has_room`, `active_publication(publisher, publication, now)`, `active_of_kind(publisher, kind, now)` (newest first by
   sequence then publication ID, both descending), `active_count(publisher, now)`, `release_content` and `discard` (content first, then record).
+- `conflicts(metadata, now)`: whether storing this metadata would break the host rules, so the participant can refuse before preparing.

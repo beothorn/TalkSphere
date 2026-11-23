@@ -95,6 +95,13 @@ impl Provider {
         &self.terms
     }
 
+    /// The current time from the injected clock.
+    /// # Errors
+    /// `Unavailable` without a trustworthy clock.
+    pub fn now(&self) -> Result<u64, Error> {
+        self.clock.now().map_err(Error::from)
+    }
+
     /// The placement store, for composition and tests.
     pub fn store(&self) -> &Arc<Store> {
         &self.store
