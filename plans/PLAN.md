@@ -122,12 +122,21 @@ pages and feeds through TalkSphere servers over CR2SE only.
   encrypted for chosen readers, reusing Messaging placements, so publishers
   that cannot accept connections (phones) can publish. Done in 16 steps: specification pushed to CR2SE and proposed in
   [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14); upstream acceptance pending.
-- [ ] **15. [Static Pages module](15_Static_pages/PLAN.md).** Implement hosted pages and the existing
+- [x] **15. [Static Pages module](15_Static_pages/PLAN.md).** Implement hosted pages and the existing
   publisher-served pages as accepted in milestone 14, reusing the Messaging
-  placement implementation. Planned in 24 steps; steps 1-23 done.
+  placement implementation. Completed in 24 steps: the Hosted Publications service
+  (signing and vectors, the restricted envelope, exact prices, durable placements, store, list, get, renew,
+  remove with release credits, byte checks, Services adapter and client, crash recovery, Peer Protocol intents,
+  best-known version and equivocation) and the Static Pages module (canonical paths, media types, the page manifest,
+  hosted page assembly and the publisher-served `cr2se.page`), with an authenticated exercise of a publisher that
+  only dials out and two hosts. The hosted proposal is not yet accepted upstream; see the
+  [Hosted Publications acceptance](../src/modules/hosted_publications/ACCEPTANCE.md),
+  [Static Pages acceptance](../src/modules/pages/ACCEPTANCE.md) and [handoff](../src/modules/hosted_publications/HANDOFF.md).
 - [ ] **16. Public Feeds module.** Implement hosted feeds and the existing
   publisher-served feeds as accepted in milestone 14, with signed posts,
-  attachments, cursors and local merging. Planned after milestone 14.
+  attachments, cursors and local merging. The hosted engine, envelope, version
+  selection and Peer Protocol intents already exist (milestone 15); HP-09 and
+  the feed-post checks remain. Not started.
 - [ ] **17. [Full client journey](14_Client_journey/PLAN.md).** Over CR2SE only, two servers and several
   outbound-only clients: clients earn credits by providing Storage, exchange
   encrypted messages, publish and read profile pages and feeds, and each server

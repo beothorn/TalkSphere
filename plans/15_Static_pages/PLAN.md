@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-23 complete).
+Status: complete (all 24 steps).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -51,7 +51,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **21.** Bind both services to the Peer Protocol endpoint with requester intents and real-endpoint tests.
 - [x] **22.** Add the pages example command and its help topics.
 - [x] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
-- [ ] **24.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
+- [x] **24.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
 
 ## Details
 
@@ -237,3 +237,5 @@ Completed: `examples/pages/{owners,exercise}.rs` and `docs/pages/EXERCISE.md`; t
 Matrix HP-01..15 and PG-01..12 with evidence, fmt/clippy/test/build/help,
 production coverage above 80% per `docs/coverage.md`, README and roadmap
 updates, and a handoff note for milestone 16.
+
+Completed: `hosted_publications/{ACCEPTANCE,HANDOFF}.md`, `pages/ACCEPTANCE.md`, the roadmap and README updates and the measured coverage in `docs/coverage.md`.

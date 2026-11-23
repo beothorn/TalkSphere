@@ -306,3 +306,7 @@ Messaging (plan 11) keeps its tests in `*_tests.rs` files and `service/crash.rs`
 Messaging completion (steps 35-38, with the Identity agreement, shared node identity and four-node exercise) measured
 **34358/36989 production lines (92.89%)** for the repository and **4038/4283 (94.28%)** inside `src/modules/messaging`, with the same
 exclusion regex; the instrumented run exited 0.
+
+Static Pages and Hosted Publications completion (milestone 15) measured **38864/41741 production lines (93.11%)** for the repository, **3448/3632 (94.93%)** inside
+`src/modules/hosted_publications` and **1043/1112 (93.79%)** inside `src/modules/pages`, with the Messaging exclusion regex (`/tests/`, `/tests.rs`, `/test_support/`,
+`_tests.rs`, `/crash.rs`); the instrumented run exited 0 and all required checks pass.
