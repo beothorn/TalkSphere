@@ -286,6 +286,19 @@ cargo test --locked --example messaging
 
 See the [Messaging exercise guide](docs/messaging/EXERCISE.md).
 
+## Hosted pages exercise
+
+Run the bounded Linux exercise over authenticated loopback with four nodes (two hosts, a publisher that only dials out and a reader): the same signed page stored at both hosts at exact prices, read and verified with the publisher
+offline and from one host alone, a newer page encrypted for one reader, the best-known version across hosts, renewal, a paid byte check and a removal that releases credits once.
+
+```sh
+cargo run --locked -- help pages
+cargo run --locked --example pages -- run
+cargo test --locked --example pages
+```
+
+See the [hosted pages exercise guide](docs/pages/EXERCISE.md).
+
 ## Local Services exercise
 
 Run `cargo run --locked --example services` for an explicitly installed custom text

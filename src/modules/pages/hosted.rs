@@ -247,10 +247,28 @@ impl Page {
     }
 }
 
+/// Verify a manifest publication and open its manifest: it must verify against the intended publisher, be a `page`, be decryptable by this reader when
+/// restricted, and decode. A reader calls this first to learn which resource publications to fetch.
+/// # Errors
+/// `Invalid` when the publication fails verification, is not a `page` or its manifest is malformed; `NotAvailable` when it is restricted and the reader holds
+/// no key that opens it.
+pub fn manifest_of(
+    manifest_publication: &Publication,
+    expected_publisher: IdentityId,
+    reader: &Reader<'_>,
+) -> Result<Manifest, Error> {
+    tracing::trace!("Opening a hosted page manifest");
+    verify(manifest_publication, expected_publisher, reader.bounds)?;
+    if manifest_publication.metadata.kind != Kind::Page {
+        return Err(Error::Invalid);
+    }
+    let plaintext = plaintext_of(manifest_publication, reader)?;
+    Manifest::decode(&plaintext, reader.maximum_resources)
+}
+
 /// Verify a manifest publication and assemble the page it describes from `fetch`.
 /// # Errors
-/// `Invalid` when the manifest publication fails verification, is not a `page`, or its manifest is malformed; `NotAvailable` when it is
-/// restricted and the reader holds no key that opens it. Resource failures do not fail the assembly: they are reported in the page.
+/// As [`manifest_of`]. Resource failures do not fail the assembly: they are reported in the page.
 pub fn assemble(
     manifest_publication: &Publication,
     expected_publisher: IdentityId,
@@ -258,13 +276,8 @@ pub fn assemble(
     fetch: &dyn Fetch,
 ) -> Result<Page, Error> {
     tracing::trace!("Assembling a hosted page");
-    verify(manifest_publication, expected_publisher, reader.bounds)?;
+    let manifest = manifest_of(manifest_publication, expected_publisher, reader)?;
     let metadata = &manifest_publication.metadata;
-    if metadata.kind != Kind::Page {
-        return Err(Error::Invalid);
-    }
-    let plaintext = plaintext_of(manifest_publication, reader)?;
-    let manifest = Manifest::decode(&plaintext, reader.maximum_resources)?;
     let mut page = Page {
         publisher: expected_publisher,
         sequence: metadata.sequence,

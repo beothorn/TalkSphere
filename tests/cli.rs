@@ -189,3 +189,17 @@ fn messaging_help_describes_the_replicated_exercise() {
     assert!(details.contains("RUST_LOG"));
     assert!(details.contains("docs/messaging/EXERCISE.md"));
 }
+
+// The pages topic advertises the explicit Linux exercise and exposes detailed help without acquiring state, under both of its names.
+#[test]
+fn pages_help_describes_the_hosted_exercise() {
+    assert!(successful_stdout(&["--help"]).contains("help pages"));
+    let details = successful_stdout(&["help", "pages"]);
+    assert!(details.contains("cargo run --locked --example pages -- run"));
+    assert!(details.contains("cargo run --locked --example pages -- help run"));
+    assert!(details.contains("two hosts"));
+    assert!(details.contains("never accepts connections") || details.contains("only dials out"));
+    assert!(details.contains("RUST_LOG"));
+    assert!(details.contains("docs/pages/EXERCISE.md"));
+    assert_eq!(successful_stdout(&["help", "hosted-publications"]), details);
+}

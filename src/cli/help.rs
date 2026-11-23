@@ -12,6 +12,7 @@ pub(super) enum Topic {
     PeerProtocol,
     Storage,
     Messaging,
+    Pages,
     Node,
     NodeCtl,
     Policy,
@@ -83,6 +84,13 @@ pub(super) const TOPICS: &[HelpTopic] = &[
         label: "help messaging",
         summary: "Exercise paid Messaging with replicas over authenticated loopback.",
         details: "Usage: talksphere help messaging\n\nRun cargo run --locked --example messaging -- run on Linux. Creates four authenticated loopback nodes with private temporary protected identities and independent native stores: a sender, a recipient and two providers. The sender encrypts one message to the recipient's published key, signs it and stores a replica at each provider at its exact quoted price. The recipient discovers it at both providers, recovers it with a signed request, decrypts it and receives it once. The sender then reads the recovery receipt, renews a placement, runs one paid byte check on an unread message and removes it, releasing credits exactly once. One placement is one copy at one provider; redundancy is the sender's choice. Nothing is advertised by default serve or node-init; the module is exercised through its Services provider and Peer Protocol requester plans. RUST_LOG controls stderr logging. Detailed example help is cargo run --locked --example messaging -- help run. Help exits with status 0, example failures use status 1 and invalid syntax uses status 2. See docs/messaging/EXERCISE.md.\n",
+    },
+    HelpTopic {
+        topic: Topic::Pages,
+        names: &["pages", "hosted-publications"],
+        label: "help pages",
+        summary: "Exercise hosted pages: a publisher that never accepts connections and two hosts.",
+        details: "Usage: talksphere help pages\n\nRun cargo run --locked --example pages -- run on Linux. Creates four authenticated loopback nodes with private temporary protected identities and independent native stores: two hosts, a publisher that only dials out (like a phone that cannot accept connections) and a reader. The publisher signs one public page snapshot and stores the same signed publications at both hosts at their exact quoted prices. While the publisher is offline the reader lists, fetches and verifies the page, then again from one host alone. The publisher then stores a newer page encrypted to the reader's published key at one host; the reader opens it, a reader without the key learns nothing and across both hosts the reader takes the best-known (never proven latest) version. The publisher renews a placement, runs one paid byte check and removes the old page, which releases credits exactly once. One placement is one copy at one host; redundancy is the publisher's choice. The publisher-served cr2se.page service and the hosted publication service are exercised through their Services providers and Peer Protocol requester plans; nothing is advertised by default serve or node-init. RUST_LOG controls stderr logging. Detailed example help is cargo run --locked --example pages -- help run. Help exits with status 0, example failures use status 1 and invalid syntax uses status 2. See docs/pages/EXERCISE.md.\n",
     },
     HelpTopic {
         topic: Topic::PeerProtocol,

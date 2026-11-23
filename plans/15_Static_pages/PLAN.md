@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-21 complete).
+Status: in progress (steps 1-23 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -49,8 +49,8 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **19.** Add latest-version selection and equivocation detection across hosts.
 - [x] **20.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
 - [x] **21.** Bind both services to the Peer Protocol endpoint with requester intents and real-endpoint tests.
-- [ ] **22.** Add the publisher publish and reader fetch commands with help topics.
-- [ ] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
+- [x] **22.** Add the pages example command and its help topics.
+- [x] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
 - [ ] **24.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
 
 ## Details
@@ -216,10 +216,12 @@ the check evidence shape) and tests over real endpoints with three independently
 
 Completed: `hosted_publications/wire.rs`, `pages/service/wire.rs`, the Peer Protocol and Services replay hooks and `engine/endpoint/tests/{hosted_publications,pages}.rs`.
 
-### 22. Commands and help
+### 22. Command and help
 
-`talksphere publish ...` and `talksphere page ...` commands with detailed help
-topics, README examples and CLI tests (exit status 2 for invalid arguments).
+The `examples/pages` command (`run`, `help run`) with detailed `talksphere help pages` (also `hosted-publications`) help, README examples and CLI tests (exit status 2 for invalid arguments). A real
+publisher or reader command over a node needs the node composition, which belongs to the [client journey](../14_Client_journey/PLAN.md), as for Messaging.
+
+Completed: `examples/pages.rs`, `src/cli/help.rs` topic and `tests/cli.rs`.
 
 ### 23. Exercise
 
@@ -227,6 +229,8 @@ An example and `docs/pages/EXERCISE.md`: a publisher that only dials out stores
 a signed page at two hosts, one host stops, a reader still fetches and verifies
 it; a restricted page is readable only by its audience. As with Messaging, nodes
 may share one OS process; say so in the example source.
+
+Completed: `examples/pages/{owners,exercise}.rs` and `docs/pages/EXERCISE.md`; the run passes over real authenticated loopback TCP.
 
 ### 24. Acceptance and wrap-up
 
