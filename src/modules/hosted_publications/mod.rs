@@ -11,3 +11,5 @@ pub mod metadata;
 pub mod signing;
 
 pub mod verify;
+
+pub mod envelope;

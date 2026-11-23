@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-4 complete).
+Status: in progress (steps 1-5 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -32,7 +32,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **2.** Add the hosted publication module scaffold, identifiers and typed errors.
 - [x] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
 - [x] **4.** Implement publication verification against the authenticated publisher.
-- [ ] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
+- [x] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
 - [ ] **6.** Add the Board `cr2se.hosted-publication` offering, terms and exact pricing.
 - [ ] **7.** Add the durable placement record and store with its state machine.
 - [ ] **8.** Implement the store operation with sequence and duplicate rules.
@@ -90,6 +90,8 @@ Completed: `verify.rs` with `Bounds`.
 Layout of section 5: header 61 bytes, entries 104 bytes, ciphertext at least 16.
 Use Cryptography X25519, HKDF-SHA-256 and XChaCha20-Poly1305. Tests reproduce
 every V3 byte, open with the reader key, and reject each HP-07 failure.
+
+Completed: `envelope.rs` reproduces the 295-byte V3 envelope; Messaging's `PersistentAgreement` lets a protected Identity open it.
 
 ### 6. Terms and pricing
 
