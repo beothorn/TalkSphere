@@ -252,6 +252,12 @@ fn with_placeholders(input: &Input) -> Result<Value, Error> {
                 .map(|(name, value)| Ok((name.clone(), with_placeholders(value)?)))
                 .collect::<Result<_, Error>>()?,
         )),
+        Input::Array(items) => Ok(Value::Array(
+            items
+                .iter()
+                .map(with_placeholders)
+                .collect::<Result<_, Error>>()?,
+        )),
         Input::Body {
             length,
             text: false,

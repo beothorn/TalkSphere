@@ -59,15 +59,19 @@ pub fn provider<P: Persistence>(
         return Err(Error::Denied);
     }
     let v = message.value();
+    // Messaging replays recoveries and removals by their IDs; hosted publications replay removals by their ID.
+    let service = match (v["service"].as_str(), v["input"]["operation"].as_str()) {
+        (Some("cr2se.messaging"), Some("recover" | "remove")) => "cr2se.messaging",
+        (Some("cr2se.hosted-publication"), Some("remove")) => "cr2se.hosted-publication",
+        _ => return Ok(None),
+    };
     if message.kind() != Kind::Propose
         || v["mode"].as_str() != Some("invoke")
-        || v["service"].as_str() != Some("cr2se.messaging")
         || scalar::uint32(&v["serviceVersion"])? != 1
-        || !matches!(v["input"]["operation"].as_str(), Some("recover" | "remove"))
     {
         return Ok(None);
     }
-    let registration = match ports.registry.recover(ports.recover, "cr2se.messaging", 1) {
+    let registration = match ports.registry.recover(ports.recover, service, 1) {
         Ok(pin) => pin,
         Err(services::Error::Unavailable) => return Ok(None),
         Err(error) => return Err(error.into()),
@@ -86,7 +90,7 @@ pub fn provider<P: Persistence>(
         bytes: limits.state_bytes,
     })?;
     let proposal = Proposal {
-        service: "cr2se.messaging".into(),
+        service: service.into(),
         version: 1,
         offering: v["offeringId"].as_str().ok_or(Error::Invalid)?.into(),
         publisher: text::parse(v["publisherId"].as_str().ok_or(Error::Invalid)?)

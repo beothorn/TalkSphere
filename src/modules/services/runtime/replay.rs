@@ -22,7 +22,7 @@ impl<P: Persistence> Coordinator<P> {
         {
             return Err(Error::Denied);
         }
-        if proposal.service != "cr2se.messaging" || proposal.version != 1 {
+        if !is_replayable(&proposal.service) || proposal.version != 1 {
             return Ok(None);
         }
         let state = self.state.lock().map_err(|_| Error::Unavailable)?;
@@ -109,7 +109,7 @@ impl<P: Persistence> Coordinator<P> {
         )?;
         self.check(observation, Action::Observe, &state)?;
         let op = state.records.get(&original).ok_or(Error::Denied)?;
-        if op.service != "cr2se.messaging" || op.version != 1 || op.check.is_some() {
+        if !is_replayable(&op.service) || op.version != 1 || op.check.is_some() {
             return Err(Error::Unsupported);
         }
         if peer.local != self.config.local
@@ -194,6 +194,11 @@ impl<P: Persistence> Coordinator<P> {
     }
 }
 // A family's opt-in cannot enable generic replay or substitute another operation's identifier.
+// The families whose recoveries or removals carry replay identifiers: Messaging and hosted publications.
+fn is_replayable(service: &str) -> bool {
+    matches!(service, "cr2se.messaging" | "cr2se.hosted-publication")
+}
+
 fn eligible(
     requester: &dyn crate::modules::services::handler::Requester,
     input: &Value,

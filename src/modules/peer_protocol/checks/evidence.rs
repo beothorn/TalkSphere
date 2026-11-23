@@ -25,7 +25,7 @@ pub(super) fn schema(
         "cr2se.storage" => {
             json!({"type":"object","fields":{"leaseId":{"type":"bytes","description":"Original challenged 32-byte lease identifier."},"offset":{"type":"uint64","description":"Original challenged byte offset."},"value":{"type":"bytes","description":"Complete one-byte provider evidence."}}})
         }
-        "cr2se.messaging" => {
+        "cr2se.messaging" | "cr2se.hosted-publication" => {
             json!({"type":"object","fields":{"placementId":{"type":"bytes","description":"Original challenged 32-byte placement identifier."},"offset":{"type":"uint64","description":"Original challenged byte offset."},"value":{"type":"bytes","description":"Complete one-byte provider evidence."}}})
         }
         "cr2se.discovery" => {
@@ -46,7 +46,7 @@ fn fixed(service: &str, evidence: &Value) -> Result<(), Error> {
     tracing::trace!("Checking exact standard evidence identifier and sample widths");
     let required: &[(&str, usize)] = match service {
         "cr2se.storage" => &[("leaseId", 32), ("value", 1)],
-        "cr2se.messaging" => &[("placementId", 32), ("value", 1)],
+        "cr2se.messaging" | "cr2se.hosted-publication" => &[("placementId", 32), ("value", 1)],
         "cr2se.discovery" => &[("indexId", 32), ("recordId", 32)],
         _ => return Ok(()),
     };

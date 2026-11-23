@@ -9,6 +9,7 @@ pub mod provider;
 pub mod standard;
 pub mod store;
 pub mod terms;
+pub mod wire;
 
 #[cfg(test)]
 mod coordinator_tests;

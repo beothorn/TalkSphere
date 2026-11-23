@@ -42,3 +42,5 @@ pub mod service;
 pub mod check;
 
 pub mod latest;
+
+pub mod wire;

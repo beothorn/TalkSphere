@@ -50,7 +50,9 @@ plus 104 per reader and a 16-byte tag).
 4. **Restricted resources in a manifest.** Section 11 says a manifest entry holds the SHA-256 of the resource content and the assembly rule says the publication's `contentSize` and
    `contentHash` equal the entry; for a restricted resource the publication's content is the envelope, so TalkSphere sizes and hashes the stored (encrypted) bytes, which is the only reading that
    makes both rules hold. To be clarified upstream.
-5. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
+5. **The Peer Protocol quote has no pricing input for a hosted get or renew**, although their prices depend on a size the requester cannot see beforehand. A local CR2SE commit (not pushed)
+   adds `contentSize` to the Peer Protocol table, allows `releaseCredits` for hosted remove and states how the reader bounds and the result confirms it; TalkSphere implements that binding.
+6. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
 
 ## Rules the module enforces itself
 

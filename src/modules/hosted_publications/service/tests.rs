@@ -190,6 +190,16 @@ fn a_store_is_staged_finalized_and_committed() {
                         text: false,
                     },
                 ),
+                // The endpoint describes an array member as an unresolved array, never as a complete value.
+                ("audience", Value::Array(items)) => (
+                    name.clone(),
+                    Input::Array(
+                        items
+                            .iter()
+                            .map(|item| Input::Complete(item.clone()))
+                            .collect(),
+                    ),
+                ),
                 _ => (name.clone(), Input::Complete(v.clone())),
             })
             .collect(),

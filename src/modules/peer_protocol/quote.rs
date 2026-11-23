@@ -306,7 +306,7 @@ pub(crate) fn operation(metadata: &Input) -> Option<&str> {
         _ => None,
     }
 }
-// Only specified provider-dependent factors enter version-one pricingInputs; Messaging removal binds release separately.
+// Only specified provider-dependent factors enter version-one pricingInputs; Messaging and hosted publication removals bind release separately.
 pub(crate) fn factors(
     service: &str,
     operation: Option<&str>,
@@ -321,9 +321,12 @@ pub(crate) fn factors(
         ("cr2se.public-file-sharing", Some("download")) => Some("downloadBytes"),
         ("cr2se.storage", Some("renew")) => Some("sizeBytes"),
         ("cr2se.messaging", Some("recover" | "renew")) => Some("payloadSize"),
+        ("cr2se.hosted-publication", Some("get" | "renew")) => Some("contentSize"),
         _ => None,
     };
-    if service == "cr2se.messaging" && operation == Some("remove") {
+    if matches!(service, "cr2se.messaging" | "cr2se.hosted-publication")
+        && operation == Some("remove")
+    {
         if let [(name, Value::Uint64(n))] = fields.as_slice()
             && name == "releaseCredits"
         {

@@ -177,7 +177,7 @@ impl Message {
             for (name, value) in v["pricingInputs"].as_object().ok_or(Error::Invalid)? {
                 if matches!(
                     name.as_str(),
-                    "manifestBytes" | "downloadBytes" | "sizeBytes" | "payloadSize"
+                    "manifestBytes" | "downloadBytes" | "sizeBytes" | "payloadSize" | "contentSize"
                 ) {
                     scalar::uint64(value)?;
                 }

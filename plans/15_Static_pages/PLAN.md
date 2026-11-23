@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-20 complete).
+Status: in progress (steps 1-21 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -48,7 +48,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **18.** Add the page manifest codec and hosted page assembly on the reader side.
 - [x] **19.** Add latest-version selection and equivocation detection across hosts.
 - [x] **20.** Add the publisher-served `cr2se.page` provider with its offering and get operation.
-- [ ] **21.** Bind both services to the Peer Protocol endpoint and the node composition.
+- [x] **21.** Bind both services to the Peer Protocol endpoint with requester intents and real-endpoint tests.
 - [ ] **22.** Add the publisher publish and reader fetch commands with help topics.
 - [ ] **23.** Exercise a phone-style publisher with two hosts and one reader over authenticated connections.
 - [ ] **24.** Record the acceptance matrix HP-01..15 and PG-01..12, run all checks and update the roadmap.
@@ -208,10 +208,13 @@ check. Tests: PG-01 to PG-12 for the supported subset.
 
 Completed: `pages/service/` (terms, codec, check, store with a confined directory source, definition catalogue, provider adapter and client) with a coordinator test of exact charging.
 
-### 21. Peer Protocol and node binding
+### 21. Peer Protocol binding
 
-Register both services with the node, publish the offerings after recovery, and
-bind requester intents. Tests: authenticated in-process node pair.
+Requester intents (`Remote`) with exact spending ceilings for both services, the Peer Protocol quote bindings the hosted service needs (`contentSize` pricing input for get and renew, release credits for remove, replay of removals,
+the check evidence shape) and tests over real endpoints with three independently owned stacks. Installing the families in the node composition belongs to the
+[client journey](../14_Client_journey/PLAN.md), like Messaging's.
+
+Completed: `hosted_publications/wire.rs`, `pages/service/wire.rs`, the Peer Protocol and Services replay hooks and `engine/endpoint/tests/{hosted_publications,pages}.rs`.
 
 ### 22. Commands and help
 

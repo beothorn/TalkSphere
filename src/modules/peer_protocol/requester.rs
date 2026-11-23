@@ -456,7 +456,9 @@ fn factors(
     for (name, value) in map {
         fields.push((name.clone(), Value::Uint64(scalar::uint64(value)?)));
     }
-    if service == "cr2se.messaging" && operation == Some("remove") {
+    if matches!(service, "cr2se.messaging" | "cr2se.hosted-publication")
+        && operation == Some("remove")
+    {
         if !fields.is_empty() {
             return Err(Error::Invalid);
         }

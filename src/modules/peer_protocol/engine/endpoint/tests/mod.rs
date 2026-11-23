@@ -136,10 +136,12 @@ fn call(
     completed.try_recv().unwrap()
 }
 
+mod hosted_publications;
 mod incoming;
 mod invitations;
 mod messaging;
 mod outgoing;
+mod pages;
 mod retries;
 
 #[path = "resources.rs"]
