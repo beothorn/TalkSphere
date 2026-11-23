@@ -21,6 +21,7 @@
 | [Participant](participant.md) | Prepare, commit, abort and status of effects |
 | [Recovery](recovery.md) | Resolving prepared operations before admitting work |
 | [Service](service/mod.md) | Services provider adapter |
+| [Check](check.md) | Requester judgement of byte checks |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

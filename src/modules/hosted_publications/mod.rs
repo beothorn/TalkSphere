@@ -38,3 +38,5 @@ pub mod participant;
 pub mod recovery;
 
 pub mod service;
+
+pub mod check;

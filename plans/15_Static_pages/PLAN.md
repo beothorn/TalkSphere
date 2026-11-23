@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-14 complete).
+Status: in progress (steps 1-15 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -42,7 +42,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **12.** Add the Services codec, the pinned service definition and its catalogue.
 - [x] **13.** Add the participant journal and recovery of prepared effects.
 - [x] **14.** Add the Services provider adapter with staged results and finalization.
-- [ ] **15.** Add the requester client with exact pricing, result validation and check rules.
+- [x] **15.** Add the requester client with exact pricing, result validation and check rules.
 - [ ] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
 - [ ] **17.** Add Static Pages canonical paths and media types.
 - [ ] **18.** Add the page manifest codec and hosted page assembly on the reader side.
@@ -170,6 +170,8 @@ Completed: `service/{mod,provider,project,outputs}.rs`; header-only store assess
 `Client` with exact pricing from the offering (store by size and retention, get by the returned size bounds, renew by the known size, removal by
 the quoted release credits), result validation (the publication belongs to its request, expiry arithmetic) and the check rules with a private
 expectation. Tests: HP-06, HP-11 to HP-13 pricing and verdicts, hostile results.
+
+Completed: `service/client.rs`, `check.rs` and a full lifecycle through the real Services coordinator, Board and Ledger with exact charges (store 17, list 1, get 2, renew 8, remove 2 with 12 credits released).
 
 ### 16. Crash recovery
 

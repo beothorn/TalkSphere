@@ -1,12 +1,17 @@
-//! Hosted publication bindings to Services: the provider adapter (and, in later steps, the requester client and recovery).
+//! Hosted publication bindings to Services: the requester client and the provider adapter (crash recovery is added by a later plan step).
 //!
 //! Callers: node composition, which registers the adapter with the Services registry, and tests. Dependencies: the provider engine, the
 //! participant, the codec and the Services handler contracts.
+pub mod client;
 mod outputs;
 mod project;
 pub mod provider;
 
+pub use client::{Client, Placements};
 pub use provider::ServiceProvider;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod coordinator_tests;

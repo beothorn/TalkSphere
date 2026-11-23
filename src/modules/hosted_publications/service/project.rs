@@ -3,8 +3,14 @@
 //! A store carries its content, which quotes and assessments must not copy, so both sides derive the same body-free projection from a
 //! request: operation, declared content size and retention. Every other operation projects to its complete request value.
 use crate::modules::{
-    hosted_publications::error::Error,
-    services::{self, value::Value},
+    hosted_publications::{
+        codec::{self, Request},
+        error::Error,
+    },
+    services::{
+        self,
+        value::{Budget, Value},
+    },
 };
 
 /// The operation discriminator of a request value.
@@ -21,6 +27,21 @@ pub(crate) fn operation(value: &Value) -> Result<&str, services::Error> {
     }
 }
 
+/// The assessment metadata of a complete request: the body-free projection of a store, otherwise the request itself.
+/// # Errors
+/// `Invalid`/`Limit` for a malformed or oversized request.
+pub(crate) fn metadata(input: &Value, budget: Budget) -> Result<Value, services::Error> {
+    tracing::trace!("Projecting hosted publication assessment metadata");
+    input.bounded(budget)?;
+    match codec::parse_request(input).map_err(map)? {
+        Request::Store(store) => Ok(store_metadata(
+            store.publication.metadata.content_size,
+            store.retention_seconds,
+        )),
+        _ => Ok(input.clone()),
+    }
+}
+
 /// The body-free store projection `{operation, contentSize, retentionSeconds}`.
 pub(crate) fn store_metadata(content_size: u64, retention_seconds: u64) -> Value {
     tracing::trace!("Building the store assessment projection");
@@ -34,6 +55,20 @@ pub(crate) fn store_metadata(content_size: u64, retention_seconds: u64) -> Value
 /// A one-member factor object.
 pub(crate) fn factor(name: &str, value: u64) -> Value {
     Value::Object(vec![(name.into(), Value::Uint64(value))])
+}
+
+/// A uint64 member of an object value.
+/// # Errors
+/// `Invalid` when absent or not a uint64.
+pub(crate) fn number(value: &Value, name: &str) -> Result<u64, services::Error> {
+    tracing::trace!("Reading a hosted publication uint64 field");
+    let Value::Object(fields) = value else {
+        return Err(services::Error::Invalid);
+    };
+    match fields.iter().find(|(n, _)| n == name) {
+        Some((_, Value::Uint64(n))) => Ok(*n),
+        _ => Err(services::Error::Invalid),
+    }
 }
 
 /// Map a module error to Services.
