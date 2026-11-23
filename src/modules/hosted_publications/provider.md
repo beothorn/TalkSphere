@@ -43,3 +43,7 @@ unexpired placement; an offset at or beyond the size is `Invalid`; foreign, unkn
 
 The one-shot `renew`, `remove` and `storePublication` serialize assessment and commit with an internal lock; a caller that separates the two steps
 (the Services participant) must lock the placement between them.
+
+**Header assessment and sizes.** `assessHeader(publisher, metadata, retention)` judges a store from its header alone (authenticated publisher, metadata rules, a restricted size that can hold its envelope, retention,
+room, quota) and returns the exact price; `assessStore` repeats it after the content arrived and adds the signature, size, hash and envelope checks. `readableContentSize(reader, publisher, publication)` gives the size a get
+would return, concealed like get itself, so the price can be stated before the work.

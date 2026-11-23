@@ -7,3 +7,6 @@ restricted one has between one and `maximumAudience` strictly ascending, unique 
 actual length and is within the smaller of `maximumContentBytes` and the 16384-byte profile limit; the SHA-256 of the content equals the
 content hash; and the Ed25519 signature verifies over the exact signing bytes. Any failure is `Invalid` and names no field. `Bounds`
 defaults to 64 readers and the profile budget.
+
+`checkMetadata(metadata, bounds)` applies the rules that need the metadata alone (resource sequence, audience shape, declared size within the offering and profile limits) so a host can judge a store from its header
+before the content arrives.

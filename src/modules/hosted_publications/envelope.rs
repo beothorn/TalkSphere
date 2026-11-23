@@ -171,6 +171,14 @@ pub fn seal(
     )
 }
 
+/// The smallest envelope for `entries` readers: the header, every entry and a content ciphertext tag. A restricted publication whose
+/// declared size is below this cannot be valid, so a host can refuse it from the header alone.
+pub fn minimum_bytes(entries: usize) -> usize {
+    HEADER_BYTES
+        .saturating_add(ENTRY_BYTES.saturating_mul(entries))
+        .saturating_add(MINIMUM_CIPHERTEXT_BYTES)
+}
+
 /// Check the structure a host can verify without any key: the version byte, an entry count equal to the audience count and a
 /// length of exactly the header, all entries and at least a tag.
 /// # Errors
@@ -181,11 +189,7 @@ pub fn check_structure(content: &[u8], audience_count: usize) -> Result<(), Erro
     if entries != audience_count || entries == 0 {
         return Err(Error::Invalid);
     }
-    let minimum = HEADER_BYTES
-        .checked_add(ENTRY_BYTES.checked_mul(entries).ok_or(Error::Invalid)?)
-        .and_then(|n| n.checked_add(MINIMUM_CIPHERTEXT_BYTES))
-        .ok_or(Error::Invalid)?;
-    if content.len() < minimum {
+    if content.len() < minimum_bytes(entries) {
         return Err(Error::Invalid);
     }
     Ok(())

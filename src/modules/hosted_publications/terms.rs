@@ -191,7 +191,7 @@ pub(crate) mod tests {
     const PROVIDER: IdentityId = IdentityId([2; 32]);
 
     // The acceptance-harness offering issued by the provider test identity.
-    fn offering() -> Offering {
+    pub(crate) fn offering() -> Offering {
         let mut o: Value = serde_json::from_str(include_str!("fixtures/offering.json")).unwrap();
         o["creditIssuer"] = crate::modules::identity::text::format(PROVIDER).into();
         let board = serde_json::json!({"version":1,"providedServices":[o],"wantedServices":[]});

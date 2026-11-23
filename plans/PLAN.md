@@ -124,7 +124,7 @@ pages and feeds through TalkSphere servers over CR2SE only.
   [beothorn/CR2SE#14](https://github.com/beothorn/CR2SE/issues/14); upstream acceptance pending.
 - [ ] **15. [Static Pages module](15_Static_pages/PLAN.md).** Implement hosted pages and the existing
   publisher-served pages as accepted in milestone 14, reusing the Messaging
-  placement implementation. Planned in 24 steps; steps 1-13 done.
+  placement implementation. Planned in 24 steps; steps 1-14 done.
 - [ ] **16. Public Feeds module.** Implement hosted feeds and the existing
   publisher-served feeds as accepted in milestone 14, with signed posts,
   attachments, cursors and local merging. Planned after milestone 14.

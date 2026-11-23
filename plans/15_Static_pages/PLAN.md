@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-13 complete).
+Status: in progress (steps 1-14 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -41,7 +41,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **11.** Implement renew, remove with release credits, and the byte check.
 - [x] **12.** Add the Services codec, the pinned service definition and its catalogue.
 - [x] **13.** Add the participant journal and recovery of prepared effects.
-- [ ] **14.** Add the Services provider adapter with staged results and finalization.
+- [x] **14.** Add the Services provider adapter with staged results and finalization.
 - [ ] **15.** Add the requester client with exact pricing, result validation and check rules.
 - [ ] **16.** Recover across Services, Ledger and hosted files after crashes at every boundary.
 - [ ] **17.** Add Static Pages canonical paths and media types.
@@ -162,6 +162,8 @@ Completed: `effect.rs`, `journal.rs`, `participant.rs` (locks on placement, publ
 
 `ServiceProvider` mapping stage, prepare, finalize and commit onto the engine; stores finalized with the coordinator's decision time; read-only
 operations keep their request in the journal; cached retry only for removals. Tests: staged results after restart, finalization, evidence.
+
+Completed: `service/{mod,provider,project,outputs}.rs`; header-only store assessment, `Provider::assess_header` and `readable_content_size`. The end-to-end coordinator rig arrives with the client (step 15).
 
 ### 15. Requester client
 

@@ -7,15 +7,15 @@
 use super::{
     envelope,
     error::Error,
-    ids::PlacementId,
-    metadata::{Publication, Visibility},
+    ids::{PlacementId, PublicationId},
+    metadata::{Metadata, Publication, Visibility},
     operation::{
         GetOutput, GetRequest, ListEntry, ListOutput, ListRequest, StoreOutput, StoreRequest,
     },
     placement::{Placement, Record, State},
     store::Store,
     terms::Terms,
-    verify::{Bounds, verify},
+    verify::{Bounds, check_metadata, verify},
 };
 use crate::modules::{
     identity::api::IdentityId,
@@ -121,37 +121,87 @@ impl Provider {
         request: &StoreRequest,
     ) -> Result<StorePlan, Error> {
         tracing::trace!("Assessing a hosted store request");
-        let now = self.clock.now()?;
         let publication = &request.publication;
-        let terms = &self.terms;
-        let bounds = Bounds {
-            maximum_audience: usize::from(terms.maximum_audience),
-            maximum_content_bytes: terms.maximum_content_bytes,
-        };
+        let bounds = self.bounds();
         verify(publication, publisher, bounds)?;
         if publication.metadata.visibility == Visibility::Restricted {
             envelope::check_structure(&publication.content, publication.metadata.audience.len())?;
         }
-        let retention = request.retention_seconds;
-        if retention < terms.minimum_retention_seconds
-            || retention > terms.maximum_retention_seconds
-            || retention > terms.maximum_total_retention_seconds
-            || now.checked_add(retention).is_none()
+        let price =
+            self.assess_header(publisher, &publication.metadata, request.retention_seconds)?;
+        Ok(StorePlan {
+            publisher,
+            publication: publication.clone(),
+            retention_seconds: request.retention_seconds,
+            price,
+        })
+    }
+
+    /// Check a store from its header alone, before the content has arrived, and return its exact price. This is every rule that does not
+    /// need the content or the signature: the header names the authenticated publisher, passes the metadata rules, a restricted size can hold
+    /// its envelope, the retention is within the offering, there is room, and the publisher is under its quota. The full
+    /// [`Provider::assess_store`] repeats these after the content is received.
+    /// # Errors
+    /// `Invalid` for a rule violation or retention outside the offering; `Limit` when a table or quota is full or the price overflows;
+    /// `Unavailable` without a trustworthy clock.
+    pub fn assess_header(
+        &self,
+        publisher: IdentityId,
+        metadata: &Metadata,
+        retention_seconds: u64,
+    ) -> Result<u64, Error> {
+        tracing::trace!("Assessing a hosted store header");
+        let now = self.clock.now()?;
+        let terms = &self.terms;
+        if metadata.publisher_id != publisher {
+            return Err(Error::Invalid);
+        }
+        check_metadata(metadata, self.bounds())?;
+        if metadata.visibility == Visibility::Restricted
+            && metadata.content_size < envelope::minimum_bytes(metadata.audience.len()) as u64
         {
             return Err(Error::Invalid);
         }
-        let size = publication.metadata.content_size;
-        if !self.store.has_room(size)
+        if retention_seconds < terms.minimum_retention_seconds
+            || retention_seconds > terms.maximum_retention_seconds
+            || retention_seconds > terms.maximum_total_retention_seconds
+            || now.checked_add(retention_seconds).is_none()
+        {
+            return Err(Error::Invalid);
+        }
+        if !self.store.has_room(metadata.content_size)
             || self.store.active_count(publisher, now) >= self.limits.per_sender(publisher)
         {
             return Err(Error::Limit);
         }
-        Ok(StorePlan {
-            publisher,
-            publication: publication.clone(),
-            retention_seconds: retention,
-            price: terms.store_price(size, retention)?,
-        })
+        terms.store_price(metadata.content_size, retention_seconds)
+    }
+
+    // The bounds the offering puts on every publication.
+    fn bounds(&self) -> Bounds {
+        Bounds {
+            maximum_audience: usize::from(self.terms.maximum_audience),
+            maximum_content_bytes: self.terms.maximum_content_bytes,
+        }
+    }
+
+    /// The content size of the publication `get` would return to `reader`, when it is readable now. Used to state the exact get price
+    /// before the work, and concealed like `get` itself: an unreadable publication gives `NotAvailable`.
+    /// # Errors
+    /// `NotAvailable` for an unknown, expired, removed or unauthorized publication; `Unavailable` without a clock.
+    pub fn readable_content_size(
+        &self,
+        reader: IdentityId,
+        publisher: IdentityId,
+        publication: PublicationId,
+    ) -> Result<u64, Error> {
+        tracing::trace!("Finding the size of a readable publication");
+        let now = self.clock.now()?;
+        self.store
+            .active_publication(publisher, publication, now)
+            .filter(|record| may_read(record, reader))
+            .map(|record| record.metadata.content_size)
+            .ok_or(Error::NotAvailable)
     }
 
     /// Commit an assessed store durably under `placement_id` at the decision time `at`, then report it. Repeating the exact commit (same

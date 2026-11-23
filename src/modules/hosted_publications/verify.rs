@@ -7,7 +7,7 @@
 //! bytes. Restricted envelope structure is checked separately by `envelope` (plan step 5).
 use super::{
     error::Error,
-    metadata::{Kind, Publication, Visibility},
+    metadata::{Kind, Metadata, Publication, Visibility},
     signing::{MAXIMUM_CONTENT_BYTES, MAXIMUM_SIGNING_BYTES, signing_bytes},
 };
 use crate::modules::{
@@ -69,6 +69,25 @@ pub fn verify(
 fn check_rules(publication: &Publication, bounds: Bounds) -> Result<(), Error> {
     tracing::trace!("Checking publication metadata rules");
     let metadata = &publication.metadata;
+    check_metadata(metadata, bounds)?;
+    if publication.content.len() as u64 != metadata.content_size {
+        return Err(Error::Invalid);
+    }
+    let actual = hash::sha256(&publication.content, publication.content.len())
+        .map_err(|_| Error::Invalid)?;
+    if actual != metadata.content_hash.0 {
+        return Err(Error::Invalid);
+    }
+    Ok(())
+}
+
+/// The rules that depend on the metadata alone, so a host can judge a store from its header before the content arrives: a resource has
+/// sequence zero, a public publication has no audience, a restricted one has a bounded strictly ascending unique audience, and the
+/// declared size is at least one and within the offering and profile limits.
+/// # Errors
+/// `Invalid` for the first rule that fails.
+pub fn check_metadata(metadata: &Metadata, bounds: Bounds) -> Result<(), Error> {
+    tracing::trace!("Checking publication header rules");
     if metadata.kind == Kind::Resource && metadata.sequence != 0 {
         return Err(Error::Invalid);
     }
@@ -89,16 +108,10 @@ fn check_rules(publication: &Publication, bounds: Bounds) -> Result<(), Error> {
     {
         return Err(Error::Invalid);
     }
-    let size = publication.content.len() as u64;
     let largest = bounds
         .maximum_content_bytes
         .min(MAXIMUM_CONTENT_BYTES as u64);
-    if size == 0 || size != metadata.content_size || size > largest {
-        return Err(Error::Invalid);
-    }
-    let actual = hash::sha256(&publication.content, publication.content.len())
-        .map_err(|_| Error::Invalid)?;
-    if actual != metadata.content_hash.0 {
+    if metadata.content_size == 0 || metadata.content_size > largest {
         return Err(Error::Invalid);
     }
     Ok(())

@@ -19,3 +19,5 @@ authenticated by `metadataBytes || R`. The content is XChaCha20-Poly1305 of the 
   agreement (the private key never leaves it) and decrypts. Any failure is `Invalid` and no plaintext is returned.
 
 A reader in the audience can copy the plaintext, every member sees every audience key, and hosts see the audience IDs.
+
+`minimumBytes(entries)` is the smallest valid envelope (header, entries and a tag), so a restricted publication whose declared size is below it is refused from the header.
