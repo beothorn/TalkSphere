@@ -1,0 +1,43 @@
+{
+  "id": "hosted-publication-standard",
+  "service": "cr2se.hosted-publication",
+  "serviceVersion": 1,
+  "description": "Host signed pages and feed posts for readers until expiration.",
+  "creditIssuer": "PROVIDER_ID",
+  "pricing": {
+    "model": "cr2se.hosted-publication.v1",
+    "minimumPrice": 1,
+    "contentByteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "contentByteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "readByteUsageFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "renewalByteStorageDurationFactor": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "listPrice": 1,
+    "removePrice": 2
+  },
+  "checkPrice": 3,
+  "info": {
+    "maximumContentBytes": 100,
+    "minimumRetentionSeconds": 1,
+    "maximumRetentionSeconds": 100,
+    "maximumTotalRetentionSeconds": 200,
+    "maximumListResults": 2,
+    "maximumAudience": 4,
+    "maximumManifestResources": 8,
+    "checkResponseSeconds": 5
+  },
+  "preconditions": [
+    "cr2se.identity"
+  ]
+}

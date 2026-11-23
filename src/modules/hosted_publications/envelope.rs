@@ -95,8 +95,13 @@ pub fn seal_with(
     randomness: Randomness,
 ) -> Result<Vec<u8>, Error> {
     tracing::trace!("Sealing restricted content for its audience");
+    // The whole envelope, not just the plaintext, must fit the content bound.
+    let envelope_bytes = HEADER_BYTES
+        .saturating_add(ENTRY_BYTES.saturating_mul(reader_keys.len()))
+        .saturating_add(plaintext.len())
+        .saturating_add(MINIMUM_CIPHERTEXT_BYTES);
     if plaintext.is_empty()
-        || plaintext.len() + MINIMUM_CIPHERTEXT_BYTES > MAXIMUM_CONTENT_BYTES
+        || envelope_bytes > MAXIMUM_CONTENT_BYTES
         || reader_keys.is_empty()
         || reader_keys.len() != randomness.wrap_nonces.len()
     {

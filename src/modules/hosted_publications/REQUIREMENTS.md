@@ -30,6 +30,14 @@ If upstream changes the proposal before accepting it, recheck every step.
 | HP-15 | definitions, independence of replicas | `standard`, Services adapter | Messaging `standard` | 6, 12, 19 |
 | PG-01..12 | publisher-served `cr2se.page` | `pages::service` | Services provider contracts | 13, 16 |
 
+## Content bound of the finite profile
+
+Services values share a logical budget of depth 12, 4096 nodes and 65536 bytes, so publication content is at most **16384 bytes** in this
+profile, the same limit as a Messaging payload and a Storage object. An offering's `maximumContentBytes` may not exceed it and the module
+refuses larger values before allocating. The upstream example offering advertises 10000000 bytes; a conforming node of this profile
+advertises at most 16384. Real pages and posts are split into resources and posts below this size (a restricted envelope adds 61 bytes
+plus 104 per reader and a 16-byte tag).
+
 ## Gaps found
 
 1. **Messaging's participant is Messaging-specific.** Hosted Publications reuses Messaging's rules by reference and its public pricing

@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-5 complete).
+Status: in progress (steps 1-6 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -33,7 +33,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
 - [x] **4.** Implement publication verification against the authenticated publisher.
 - [x] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
-- [ ] **6.** Add the Board `cr2se.hosted-publication` offering, terms and exact pricing.
+- [x] **6.** Add the Board `cr2se.hosted-publication` offering terms and exact pricing.
 - [ ] **7.** Add the durable placement record and store with its state machine.
 - [ ] **8.** Implement the store operation with sequence and duplicate rules.
 - [ ] **9.** Implement list with visibility, ordering and cursors.
@@ -97,7 +97,9 @@ Completed: `envelope.rs` reproduces the 295-byte V3 envelope; Messaging's `Persi
 
 Offering `hosted-publication-standard` parsed and validated; limits ordered;
 `storePrice`, `getPrice`, `renewPrice` with exact rational ceiling arithmetic.
-Tests use the HP pricing (minimum 1, factors 1/2) and overflow edges.
+Tests use the HP pricing (minimum 1, factors 1/2) and overflow edges. The pinned service definition and its Services catalogue are part of step 12.
+
+Completed: `terms.rs` and `fixtures/offering.json`; the finite profile caps content at 16384 bytes (see REQUIREMENTS.md).
 
 ### 7. Placement store
 

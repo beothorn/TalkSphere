@@ -14,8 +14,9 @@ use crate::modules::{
 
 /// Domain string that starts every publication signing input.
 pub const DOMAIN: &[u8] = b"CR2SE-PUBLICATION-V1";
-/// Largest content a publication may carry in this finite profile, shared with Storage's logical value budget.
-pub const MAXIMUM_CONTENT_BYTES: usize = 1 << 16;
+/// Largest content a publication may carry in this finite profile: the same 16384-byte limit as a Messaging payload and a Storage
+/// object, so the content fits the finite Services value budget (65536 bytes in all) together with its other fields.
+pub const MAXIMUM_CONTENT_BYTES: usize = 1 << 14;
 /// Largest signing input handled: the content bound plus the metadata with a maximum audience.
 pub const MAXIMUM_SIGNING_BYTES: usize = MAXIMUM_CONTENT_BYTES + 32 * 65_536 + 256;
 

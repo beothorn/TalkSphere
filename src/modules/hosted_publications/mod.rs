@@ -13,3 +13,5 @@ pub mod signing;
 pub mod verify;
 
 pub mod envelope;
+
+pub mod terms;
