@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-3 complete).
+Status: in progress (steps 1-4 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -31,7 +31,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **1.** Record the Hosted Publications and Static Pages requirements, owners and gaps in a reconciliation file.
 - [x] **2.** Add the hosted publication module scaffold, identifiers and typed errors.
 - [x] **3.** Implement canonical publication metadata and the publication signing bytes with the V1 to V3 vectors.
-- [ ] **4.** Implement publication verification against the authenticated publisher.
+- [x] **4.** Implement publication verification against the authenticated publisher.
 - [ ] **5.** Implement the restricted envelope layout, encryption and opening with the V3 vector.
 - [ ] **6.** Add the Board `cr2se.hosted-publication` offering, terms and exact pricing.
 - [ ] **7.** Add the durable placement record and store with its state machine.
@@ -81,7 +81,9 @@ Completed: `metadata.rs`, `signing.rs`; vectors are copied to `fixtures/vectors.
 `verify(publication, expected_publisher)`: derive the identity ID from the
 public key, compare, validate kind, sequence rule (resource sequence zero),
 visibility and audience, size and hash, then the signature. Tests cover each
-rejection with distinct errors and no allocation beyond bounds.
+rejection and the bounds; one `Invalid` error names no field so callers cannot probe which rule rejected a value.
+
+Completed: `verify.rs` with `Bounds`.
 
 ### 5. Envelope
 

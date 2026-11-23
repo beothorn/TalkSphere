@@ -6,6 +6,7 @@
 | [Ids](ids.md) | Publication and content-hash identifiers; reused placement and removal IDs |
 | [Metadata](metadata.md) | Kinds, visibility, publication metadata and the signed publication |
 | [Signing](signing.md) | Exact signing bytes, publisher signing and the independent vectors |
+| [Verify](verify.md) | Publisher, rule, size, hash and signature checks with bounds |
 | [Error](error.md) | Typed failures and their Services mapping |
 
 See the [module README](README.md) for purpose, status and relationships.

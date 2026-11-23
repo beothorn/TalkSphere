@@ -9,3 +9,5 @@ pub use error::Error;
 pub mod metadata;
 
 pub mod signing;
+
+pub mod verify;
