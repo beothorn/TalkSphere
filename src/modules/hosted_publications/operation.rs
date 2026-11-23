@@ -79,3 +79,21 @@ pub struct ListOutput {
     /// Whether another readable entry followed the last returned one.
     pub more: bool,
 }
+
+/// A get request: one complete publication by its publisher and identifier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GetRequest {
+    /// The publisher the reader intended; a different publisher's publication is never returned.
+    pub publisher_id: IdentityId,
+    /// The wanted publication.
+    pub publication_id: PublicationId,
+    /// The largest content the reader accepts, in `1 ..= maximumContentBytes`.
+    pub maximum_bytes: u64,
+}
+
+/// The complete stored publication, exactly the signed bytes, for the reader to verify.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GetOutput {
+    /// The publication as stored.
+    pub publication: Publication,
+}

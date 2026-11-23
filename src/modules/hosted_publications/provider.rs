@@ -9,7 +9,9 @@ use super::{
     error::Error,
     ids::PlacementId,
     metadata::{Publication, Visibility},
-    operation::{ListEntry, ListOutput, ListRequest, StoreOutput, StoreRequest},
+    operation::{
+        GetOutput, GetRequest, ListEntry, ListOutput, ListRequest, StoreOutput, StoreRequest,
+    },
     placement::{Placement, Record, State},
     store::Store,
     terms::Terms,
@@ -227,6 +229,38 @@ impl Provider {
                 more,
             },
             self.terms.list_price,
+        ))
+    }
+
+    /// Return one complete readable publication and the exact get price: `max(minimum, ceil(contentSize * R))`.
+    ///
+    /// The publication must be an active placement of the intended publisher that the reader may read. Unknown, expired, removed and
+    /// unauthorized publications are indistinguishable (`NotAvailable`). The reader verifies the returned bytes itself; repeating a get is
+    /// a new invocation and charge because it changes no state.
+    /// # Errors
+    /// `Invalid` for a zero `maximum_bytes` or one above the offering; `NotAvailable` as above; `Limit` when the content is larger than the
+    /// reader's `maximum_bytes`; `Storage` when the stored bytes cannot be returned completely; `Unavailable` without a clock.
+    pub fn get(&self, reader: IdentityId, request: &GetRequest) -> Result<(GetOutput, u64), Error> {
+        tracing::trace!("Getting a hosted publication");
+        let now = self.clock.now()?;
+        if request.maximum_bytes == 0 || request.maximum_bytes > self.terms.maximum_content_bytes {
+            return Err(Error::Invalid);
+        }
+        let record = self
+            .store
+            .active_publication(request.publisher_id, request.publication_id, now)
+            .filter(|record| may_read(record, reader))
+            .ok_or(Error::NotAvailable)?;
+        if record.metadata.content_size > request.maximum_bytes {
+            return Err(Error::Limit);
+        }
+        let price = self.terms.get_price(record.metadata.content_size)?;
+        let placement = self.store.get(record.id)?.ok_or(Error::Storage)?;
+        Ok((
+            GetOutput {
+                publication: placement.publication(),
+            },
+            price,
         ))
     }
 
@@ -797,5 +831,184 @@ pub(crate) mod tests {
             (empty_for_stranger.entries.len(), empty_for_stranger.more),
             (0, false)
         );
+    }
+
+    // HP-02 and HP-06: a get returns exactly the signed bytes, which verify without trusting the host; the price is
+    // max(1, ceil(size * 1/2)) and repeating the get charges again.
+    #[test]
+    fn get_returns_the_exact_signed_publication() {
+        let h = harness();
+        let me = h.publisher.identity();
+        let reader = IdentityId([8; 32]);
+        let publication = public(&h.publisher, 1, Kind::Resource, 0, b"abc");
+        h.provider
+            .store_publication(me, &request(publication.clone(), 10))
+            .unwrap();
+        let ask = GetRequest {
+            publisher_id: me,
+            publication_id: PublicationId([1; 32]),
+            maximum_bytes: 3,
+        };
+        let (output, price) = h.provider.get(reader, &ask).unwrap();
+        assert_eq!((output.publication.clone(), price), (publication, 2));
+        assert_eq!(verify(&output.publication, me, Bounds::default()), Ok(()));
+        assert_eq!(h.provider.get(reader, &ask).unwrap().1, 2);
+        // A one-byte publication costs the minimum.
+        h.provider
+            .store_publication(
+                me,
+                &request(public(&h.publisher, 2, Kind::Resource, 0, b"x"), 10),
+            )
+            .unwrap();
+        let one = GetRequest {
+            publication_id: PublicationId([2; 32]),
+            maximum_bytes: 1,
+            ..ask
+        };
+        assert_eq!(h.provider.get(reader, &one).unwrap().1, 1);
+    }
+
+    // HP-06: a bound below the content size, a zero bound and a bound above the offering fail; unknown, wrong-publisher, expired and
+    // removed publications are all the same concealed failure, as is a restricted one for a stranger.
+    #[test]
+    fn get_failures_are_bounded_and_concealed() {
+        let h = harness();
+        let me = h.publisher.identity();
+        let reader = IdentityId([8; 32]);
+        h.provider
+            .store_publication(
+                me,
+                &request(public(&h.publisher, 1, Kind::Resource, 0, b"abc"), 10),
+            )
+            .unwrap();
+        let ask = GetRequest {
+            publisher_id: me,
+            publication_id: PublicationId([1; 32]),
+            maximum_bytes: 100,
+        };
+        assert_eq!(
+            h.provider
+                .get(
+                    reader,
+                    &GetRequest {
+                        maximum_bytes: 2,
+                        ..ask
+                    }
+                )
+                .err(),
+            Some(Error::Limit)
+        );
+        assert_eq!(
+            h.provider
+                .get(
+                    reader,
+                    &GetRequest {
+                        maximum_bytes: 0,
+                        ..ask
+                    }
+                )
+                .err(),
+            Some(Error::Invalid)
+        );
+        assert_eq!(
+            h.provider
+                .get(
+                    reader,
+                    &GetRequest {
+                        maximum_bytes: 101,
+                        ..ask
+                    }
+                )
+                .err(),
+            Some(Error::Invalid)
+        );
+        let unknown = GetRequest {
+            publication_id: PublicationId([7; 32]),
+            ..ask
+        };
+        let other_publisher = GetRequest {
+            publisher_id: IdentityId([2; 32]),
+            ..ask
+        };
+        assert_eq!(
+            h.provider.get(reader, &unknown).err(),
+            Some(Error::NotAvailable)
+        );
+        assert_eq!(
+            h.provider.get(reader, &other_publisher).err(),
+            Some(Error::NotAvailable)
+        );
+        h.clock.advance(10);
+        assert_eq!(
+            h.provider.get(reader, &ask).err(),
+            Some(Error::NotAvailable)
+        );
+        h.clock.fail();
+        assert_eq!(h.provider.get(reader, &ask).err(), Some(Error::Unavailable));
+    }
+
+    // HP-04: a restricted publication is returned to its audience and its publisher and is indistinguishable from an unknown one for
+    // everyone else; a content file lost from the store is a storage failure, never a partial result.
+    #[test]
+    fn restricted_gets_and_lost_content() {
+        let h = harness();
+        let me = h.publisher.identity();
+        let (reader, stranger) = (IdentityId([8; 32]), IdentityId([9; 32]));
+        let key =
+            x25519_dalek::PublicKey::from(&x25519_dalek::StaticSecret::from([4; 32])).to_bytes();
+        let mut metadata = public(&h.publisher, 5, Kind::FeedPost, 9, b"x").metadata;
+        metadata.visibility = Visibility::Restricted;
+        let sealed = envelope::seal(b"hi", &metadata, &[key], &SequenceEntropy::new(1)).unwrap();
+        let d = Draft {
+            publication_id: PublicationId([5; 32]),
+            kind: Kind::FeedPost,
+            sequence: 9,
+            published_at: 900,
+            visibility: Visibility::Restricted,
+            audience: vec![reader],
+        };
+        let restricted = sign_publication(&h.publisher, d, sealed).unwrap();
+        let wide = Terms {
+            maximum_content_bytes: 200,
+            ..terms()
+        };
+        let provider = Provider::new(
+            wide,
+            Arc::new(Store::volatile(Limits {
+                placements: 8,
+                content_bytes: 1000,
+            })),
+            h.clock.clone(),
+            Arc::new(SequenceEntropy::new(7)),
+            Arc::new(FixedLimits::default()),
+        );
+        provider
+            .store_publication(me, &request(restricted.clone(), 10))
+            .unwrap();
+        let ask = GetRequest {
+            publisher_id: me,
+            publication_id: PublicationId([5; 32]),
+            maximum_bytes: 200,
+        };
+        assert_eq!(
+            provider.get(reader, &ask).unwrap().0.publication,
+            restricted
+        );
+        assert_eq!(provider.get(me, &ask).unwrap().0.publication, restricted);
+        let missing = GetRequest {
+            publication_id: PublicationId([6; 32]),
+            ..ask
+        };
+        assert_eq!(
+            provider.get(stranger, &ask).err(),
+            provider.get(stranger, &missing).err()
+        );
+        assert_eq!(
+            provider.get(stranger, &ask).err(),
+            Some(Error::NotAvailable)
+        );
+        let id = provider.store().records()[0].id;
+        provider.store().release_content(id).unwrap();
+        assert_eq!(provider.get(reader, &ask).err(), Some(Error::Storage));
     }
 }

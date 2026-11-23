@@ -18,3 +18,8 @@ descending, strictly after the cursor, at most `limit` (`1 ..= maximumListResult
 and the fixed list price. A reader may read public publications, restricted ones naming it in the audience, and its own; the rest are omitted
 without any difference in entries, `more` or price. An empty page is a successful charged list. A resource kind or limit outside the bounds is
 `Invalid`; no clock is `Unavailable`. Expired and removed placements are not listed.
+
+**Get.** `get(reader, request)` returns the complete active placement of the intended publisher's publication when the reader may read it, with
+price `max(minimum, ceil(contentSize * R))`. Unknown, wrong-publisher, expired, removed and unauthorized publications are the same `NotAvailable`;
+a `maximumBytes` of zero or above the offering is `Invalid`; content larger than the reader's bound is `Limit`; content the host cannot return
+completely is `Storage`. The reader verifies the bytes itself. Repeating a get is a new invocation and charge.

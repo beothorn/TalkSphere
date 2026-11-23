@@ -1,6 +1,6 @@
 # Static Pages and Hosted Publications plan
 
-Status: in progress (steps 1-9 complete).
+Status: in progress (steps 1-10 complete).
 
 This is roadmap milestone 15 and planning folder 15. It implements the CR2SE
 [Hosted Publications](https://github.com/beothorn/CR2SE/blob/53f12451859e0ad207ade9b8a23be20ceb404495/modules/hosted-publications/README.md)
@@ -37,7 +37,7 @@ specification, recheck every step against the new revision before relying on it.
 - [x] **7.** Add the durable placement record and store with its state machine.
 - [x] **8.** Implement the store operation with sequence and duplicate rules.
 - [x] **9.** Implement list with visibility, ordering and cursors.
-- [ ] **10.** Implement get with bounds and indistinguishable denials.
+- [x] **10.** Implement get with bounds and indistinguishable denials.
 - [ ] **11.** Implement renew, remove with release credits, and the byte check.
 - [ ] **12.** Add the Services provider adapter and requester client with durable replay.
 - [ ] **13.** Add Static Pages canonical paths and media types.
@@ -127,6 +127,8 @@ Completed: `Provider::list` with `ListRequest`, `ListEntry` and `ListOutput`.
 
 `maximumBytes` bound, readable lookup, exact stored bytes, price. Tests: HP-06
 and the unknown/expired/removed/unauthorized indistinguishability.
+
+Completed: `Provider::get` with `GetRequest` and `GetOutput`.
 
 ### 11. Renew, remove, check
 

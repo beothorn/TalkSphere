@@ -9,4 +9,6 @@ Logical inputs and outputs of the five operations and the check; the authenticat
   `ListEntry`: placement ID, publication ID, kind, sequence, claimed time, visibility, content size and hash, acceptance and expiry. `ListOutput`: the
   publisher, the entries and `more`; the next cursor is the last entry's sequence and publication ID.
 
-Later steps add get, renew, remove and check values here.
+- `GetRequest`: `publisherId`, `publicationId` and `maximumBytes` (`1 ..= maximumContentBytes`). `GetOutput`: the complete publication exactly as stored.
+
+Later steps add renew, remove and check values here.
