@@ -8,8 +8,8 @@ use super::{
     envelope,
     error::Error,
     ids::PlacementId,
-    metadata::Publication,
-    operation::{StoreOutput, StoreRequest},
+    metadata::{Publication, Visibility},
+    operation::{ListEntry, ListOutput, ListRequest, StoreOutput, StoreRequest},
     placement::{Placement, Record, State},
     store::Store,
     terms::Terms,
@@ -95,7 +95,7 @@ impl Provider {
             maximum_content_bytes: terms.maximum_content_bytes,
         };
         verify(publication, publisher, bounds)?;
-        if publication.metadata.visibility == super::metadata::Visibility::Restricted {
+        if publication.metadata.visibility == Visibility::Restricted {
             envelope::check_structure(&publication.content, publication.metadata.audience.len())?;
         }
         let retention = request.retention_seconds;
@@ -182,6 +182,54 @@ impl Provider {
         Ok((output, plan.price))
     }
 
+    /// List one publisher's readable publications of one kind, newest first, and the exact list price.
+    ///
+    /// A reader may read every public publication and the restricted ones that name it in the audience, or that it published itself.
+    /// Publications the reader may not read are omitted without any difference in the shape of the result, `more` or the price, so an
+    /// unauthorized reader learns nothing about their existence. An empty page is a successful, charged list.
+    /// # Errors
+    /// `Invalid` for a resource kind or a limit outside `1 ..= maximumListResults`; `Unavailable` without a clock.
+    pub fn list(
+        &self,
+        reader: IdentityId,
+        request: &ListRequest,
+    ) -> Result<(ListOutput, u64), Error> {
+        tracing::trace!("Listing hosted publications");
+        let now = self.clock.now()?;
+        if !request.kind.is_listed()
+            || request.limit == 0
+            || request.limit > self.terms.maximum_list_results
+        {
+            return Err(Error::Invalid);
+        }
+        let limit = request.limit as usize;
+        let mut readable = self
+            .store
+            .active_of_kind(request.publisher_id, request.kind, now)
+            .into_iter()
+            .filter(|record| may_read(record, reader))
+            // Strictly after the cursor in the descending order means a smaller `(sequence, publicationId)`.
+            .filter(|record| {
+                request.before.is_none_or(|cursor| {
+                    (record.metadata.sequence, record.metadata.publication_id) < cursor
+                })
+            });
+        let entries: Vec<ListEntry> = readable
+            .by_ref()
+            .take(limit)
+            .map(|r| entry_of(&r))
+            .collect();
+        let more = readable.next().is_some();
+        Ok((
+            ListOutput {
+                publisher_id: request.publisher_id,
+                entries,
+                more,
+            },
+            self.terms.list_price,
+        ))
+    }
+
     /// A fresh unpredictable placement identifier that no stored placement uses.
     /// # Errors
     /// `Unavailable` without entropy; never derived from a fallback.
@@ -195,6 +243,34 @@ impl Provider {
                 return Ok(id);
             }
         }
+    }
+}
+
+// Whether `reader` may list or get the publication of a placement: public ones, the audience and the publisher itself.
+fn may_read(record: &Record, reader: IdentityId) -> bool {
+    let metadata = &record.metadata;
+    metadata.visibility == Visibility::Public
+        || metadata.publisher_id == reader
+        || metadata
+            .audience
+            .binary_search_by(|id| id.0.cmp(&reader.0))
+            .is_ok()
+}
+
+// The list entry of a recorded placement.
+fn entry_of(record: &Record) -> ListEntry {
+    let m = &record.metadata;
+    ListEntry {
+        placement_id: record.id,
+        publication_id: m.publication_id,
+        kind: m.kind,
+        sequence: m.sequence,
+        published_at: m.published_at,
+        visibility: m.visibility,
+        content_size: m.content_size,
+        content_hash: m.content_hash,
+        accepted_at: record.accepted_at,
+        expires_at: record.expires_at,
     }
 }
 
@@ -520,5 +596,206 @@ pub(crate) mod tests {
             Some(Error::Unavailable)
         );
         assert!(h.provider.store().records().is_empty());
+    }
+
+    // A request for one publisher's kind with an optional cursor.
+    fn list_request(
+        publisher: IdentityId,
+        kind: Kind,
+        before: Option<(u64, PublicationId)>,
+        limit: u32,
+    ) -> ListRequest {
+        ListRequest {
+            publisher_id: publisher,
+            kind,
+            before,
+            limit,
+        }
+    }
+
+    // HP-05: posts at sequences 7 (two publications), 5 are listed newest first with publication ID breaking the tie, in pages of two
+    // that continue strictly after the cursor, each charged the list price, and invalid requests are refused.
+    #[test]
+    fn list_orders_pages_and_charges() {
+        let h = harness();
+        let me = h.publisher.identity();
+        let reader = IdentityId([8; 32]);
+        // A host refuses two active placements at one sequence (section 7), so the acceptance case's equal-sequence pair cannot be
+        // built through store; see REQUIREMENTS gap 4. Here: sequences 7, 6 and 5.
+        for (id, sequence) in [(1u8, 7u64), (2, 6), (3, 5)] {
+            h.provider
+                .store_publication(
+                    me,
+                    &request(
+                        public(&h.publisher, id, Kind::FeedPost, sequence, b"hi"),
+                        10,
+                    ),
+                )
+                .unwrap();
+        }
+        h.provider
+            .store_publication(
+                me,
+                &request(public(&h.publisher, 9, Kind::Page, 1, b"page"), 10),
+            )
+            .unwrap();
+        let (first, price) = h
+            .provider
+            .list(reader, &list_request(me, Kind::FeedPost, None, 2))
+            .unwrap();
+        assert_eq!(price, 1);
+        assert_eq!(
+            first.entries.iter().map(|e| e.sequence).collect::<Vec<_>>(),
+            vec![7, 6]
+        );
+        assert!(first.more);
+        let last = first.entries.last().unwrap();
+        let cursor = (last.sequence, last.publication_id);
+        let (second, _) = h
+            .provider
+            .list(reader, &list_request(me, Kind::FeedPost, Some(cursor), 2))
+            .unwrap();
+        assert_eq!(
+            second
+                .entries
+                .iter()
+                .map(|e| e.sequence)
+                .collect::<Vec<_>>(),
+            vec![5]
+        );
+        assert!(!second.more);
+        // Pages list only the asked kind and publisher; the entry mirrors the placement.
+        let (pages, _) = h
+            .provider
+            .list(reader, &list_request(me, Kind::Page, None, 2))
+            .unwrap();
+        assert_eq!(pages.entries.len(), 1);
+        assert_eq!(
+            (
+                pages.entries[0].accepted_at,
+                pages.entries[0].expires_at,
+                pages.entries[0].content_size
+            ),
+            (1000, 1010, 4)
+        );
+        // An empty page is a successful charged list, and expired placements are not listed.
+        let (none, price) = h
+            .provider
+            .list(
+                reader,
+                &list_request(IdentityId([1; 32]), Kind::Page, None, 1),
+            )
+            .unwrap();
+        assert_eq!((none.entries.len(), none.more, price), (0, false, 1));
+        h.clock.advance(10);
+        assert!(
+            h.provider
+                .list(reader, &list_request(me, Kind::FeedPost, None, 2))
+                .unwrap()
+                .0
+                .entries
+                .is_empty()
+        );
+        for (kind, limit) in [(Kind::Resource, 1), (Kind::Page, 0), (Kind::Page, 3)] {
+            assert_eq!(
+                h.provider
+                    .list(reader, &list_request(me, kind, None, limit))
+                    .err(),
+                Some(Error::Invalid)
+            );
+        }
+        h.clock.fail();
+        assert_eq!(
+            h.provider
+                .list(reader, &list_request(me, Kind::Page, None, 1))
+                .err(),
+            Some(Error::Unavailable)
+        );
+    }
+
+    // HP-04: restricted publications are listed only for their audience and the publisher; everyone else sees an empty page with the same
+    // shape, flag and price as an empty publisher, and a hidden item never affects `more` or the position of public items.
+    #[test]
+    fn restricted_items_are_hidden_without_a_trace() {
+        let h = harness();
+        let me = h.publisher.identity();
+        let (reader, stranger) = (IdentityId([8; 32]), IdentityId([9; 32]));
+        let key =
+            x25519_dalek::PublicKey::from(&x25519_dalek::StaticSecret::from([4; 32])).to_bytes();
+        let draft = |id: u8,
+                     sequence: u64,
+                     visibility: Visibility,
+                     audience: Vec<IdentityId>,
+                     content: Vec<u8>| {
+            let d = Draft {
+                publication_id: PublicationId([id; 32]),
+                kind: Kind::FeedPost,
+                sequence,
+                published_at: 900,
+                visibility,
+                audience,
+            };
+            sign_publication(&h.publisher, d, content).unwrap()
+        };
+        let mut metadata = public(&h.publisher, 5, Kind::FeedPost, 9, b"x").metadata;
+        metadata.visibility = Visibility::Restricted;
+        let sealed = envelope::seal(b"hi", &metadata, &[key], &SequenceEntropy::new(1)).unwrap();
+        // The seal is a bounded 100+ byte envelope, so use a wider offering for this scenario.
+        let wide = Terms {
+            maximum_content_bytes: 200,
+            ..terms()
+        };
+        let provider = Provider::new(
+            wide,
+            Arc::new(Store::volatile(Limits {
+                placements: 8,
+                content_bytes: 1000,
+            })),
+            h.clock.clone(),
+            Arc::new(SequenceEntropy::new(7)),
+            Arc::new(FixedLimits::default()),
+        );
+        let restricted = draft(5, 9, Visibility::Restricted, vec![reader], sealed);
+        provider
+            .store_publication(me, &request(restricted, 10))
+            .unwrap();
+        provider
+            .store_publication(
+                me,
+                &request(
+                    draft(6, 4, Visibility::Public, vec![], b"open".to_vec()),
+                    10,
+                ),
+            )
+            .unwrap();
+        let ask = |who| {
+            provider
+                .list(who, &list_request(me, Kind::FeedPost, None, 1))
+                .unwrap()
+        };
+        // The audience member and the publisher see the restricted item first.
+        assert_eq!(ask(reader).0.entries[0].visibility, Visibility::Restricted);
+        assert_eq!(ask(me).0.entries[0].sequence, 9);
+        // A stranger sees only the public post, with `more` false, exactly as if the hidden one did not exist.
+        let (seen, price) = ask(stranger);
+        assert_eq!(
+            (
+                seen.entries.len(),
+                seen.entries[0].sequence,
+                seen.more,
+                price
+            ),
+            (1, 4, false, 1)
+        );
+        let (empty_for_stranger, _) = provider
+            .list(
+                stranger,
+                &list_request(IdentityId([3; 32]), Kind::FeedPost, None, 1),
+            )
+            .unwrap();
+        assert_eq!(
+            (empty_for_stranger.entries.len(), empty_for_stranger.more),
+            (0, false)
+        );
     }
 }

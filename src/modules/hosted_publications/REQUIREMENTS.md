@@ -44,7 +44,10 @@ plus 104 per reader and a 16-byte tag).
    helpers and ports, but owns its placement, journal and effect types, so neither module reads the other's private state.
 2. **HP-09 needs Public Feeds canonical message bytes**, which belong to milestone 16. Milestone 15 stores any `feed-post` content as
    opaque verified bytes; the feed-specific checks arrive with the feeds module.
-3. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
+3. **HP-05 seeds two feed posts at sequence 7**, but section 7 makes a host reject a second pending publication at the same sequence, so the
+   case cannot be built through `store`, and the `(sequence, publicationId)` tie-break of list can never apply at one host. Implemented as
+   written (the store refuses the pair); the tie-break key is kept. To be confirmed upstream before filing a protocol report.
+4. **No Board change.** The audience's encryption keys are found through the existing `identityEncryption` field.
 
 ## Rules the module enforces itself
 

@@ -12,3 +12,9 @@ with the exact price (`Invalid`, `Limit` or `Unavailable` on failure). `commitSt
 already used by another active page or feed post of the publisher is `Conflict`; repeating the same commit returns the recorded output (crash
 repair); the same placement ID for a different publication is `Conflict`. `storePublication` does both with a fresh unpredictable placement ID.
 `newPlacementId` fails with `Unavailable` without entropy and never invents an identifier.
+
+**List.** `list(reader, request)` returns one publisher's active placements of the asked kind, newest first by `(sequence, publicationId)`
+descending, strictly after the cursor, at most `limit` (`1 ..= maximumListResults`), with `more` true only when another readable entry followed,
+and the fixed list price. A reader may read public publications, restricted ones naming it in the audience, and its own; the rest are omitted
+without any difference in entries, `more` or price. An empty page is a successful charged list. A resource kind or limit outside the bounds is
+`Invalid`; no clock is `Unavailable`. Expired and removed placements are not listed.
